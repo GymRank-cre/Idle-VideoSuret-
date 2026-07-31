@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<link rel="icon" href="data:,">
+<title>Maquette A — tour 3D WebGL</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    background: #0b1220; color: #fff;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; font-weight: 600;
+  }
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* Habillage 2D par-dessus la scène : HUD, étiquettes d'étage, gains. */
+  #overlay { position: fixed; inset: 0; pointer-events: none; }
+
+  .hud {
+    position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255, 255, 255, .94); color: #16324a;
+    border: 3px solid #223a55; border-radius: 18px; padding: 8px 12px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, .3);
+  }
+  .hud .cash { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .hud .cps { font-size: 12px; color: #16a34a; }
+  .tag {
+    position: absolute; transform: translate(0, -50%);
+    background: rgba(255, 255, 255, .95); color: #16324a;
+    border: 2.5px solid #223a55; border-radius: 999px;
+    padding: 1px 9px; font-size: 11px; white-space: nowrap; opacity: .95;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, .28);
+  }
+  .tag b { font-variant-numeric: tabular-nums; }
+  .gain {
+    position: absolute; transform: translate(-50%, -50%);
+    font-size: 15px; font-weight: 800; color: #34d399;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, .7);
+    animation: rise 1.2s ease-out forwards;
+  }
+  @keyframes rise {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); }
+    18% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+  }
+  .hint {
+    position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom));
+    text-align: center; font-size: 12.5px; color: #cbd5e1;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .8);
+  }
+  .badge {
+    position: absolute; top: max(74px, calc(env(safe-area-inset-top) + 64px)); left: 12px;
+    background: #2563eb; border: 2px solid #1e3a8a; border-radius: 999px;
+    padding: 3px 12px; font-size: 11.5px; letter-spacing: .08em;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+<div id="overlay">
+  <div class="hud">
+    <span style="font-size:24px">💶</span>
+    <div style="flex:1">
+      <div class="cash" id="cash">128,4k €</div>
+      <div class="cps" id="cps">1,2k €/s</div>
+    </div>
+  </div>
+  <div class="badge">MAQUETTE A — 3D WEBGL</div>
+  <div class="hint">Glisse pour tourner autour de la tour · pince ou molette pour zoomer · tape un étage pour lancer sa production</div>
+</div>
+
+<script src="../vendor/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------- données
+
+  const FLOORS = [
+    { id: 'accueil', name: 'Accueil & filtrage', icon: '🛎️', wall: 0xfde68a, accent: 0xf59e0b,
+      wear: [0xf59e0b, 0xfbbf24], crew: 5, cycle: 3.0, kit: 'bureau' },
+    { id: 'cameras', name: 'Pose de caméras', icon: '📹', wall: 0xbfdbfe, accent: 0x3b82f6,
+      wear: [0x2563eb, 0x60a5fa], crew: 4, cycle: 4.5, kit: 'atelier' },
+    { id: 'reseau', name: 'Câblage & réseau IP', icon: '🔌', wall: 0xbbf7d0, accent: 0x22c55e,
+      wear: [0x16a34a, 0x4ade80], crew: 4, cycle: 6.0, kit: 'baie' },
+    { id: 'pc', name: 'Télésurveillance', icon: '🖥️', wall: 0xa5f3fc, accent: 0x06b6d4,
+      wear: [0x0891b2, 0x22d3ee], crew: 3, cycle: 8.0, kit: 'pc' },
+  ];
+
+  const W = 8.4;      // largeur du bâtiment
+  const D = 5.2;      // profondeur
+  const H = 2.75;     // hauteur d'un étage
+  const SHAFT = 1.5;  // largeur de la cage d'ascenseur
+
+  // ------------------------------------------------------- rendu 3D
+
+  const stage = document.getElementById('stage');
+  const overlay = document.getElementById('overlay');
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = skyTexture();
+  scene.fog = new THREE.Fog(0xbcd9ef, 52, 120);
+
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+
+  // Lumières : ciel doux, soleil rasant qui porte les ombres.
+  scene.add(new THREE.HemisphereLight(0xdff1ff, 0x6b7f96, 1.25));
+  const sun = new THREE.DirectionalLight(0xfff3d6, 1.5);
+  sun.position.set(11, 18, 12);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -16; sun.shadow.camera.right = 16;
+  sun.shadow.camera.top = 22; sun.shadow.camera.bottom = -6;
+  sun.shadow.camera.far = 60;
+  sun.shadow.bias = -0.0012;
+  scene.add(sun);
+
+  function skyTexture() {
+    const c = document.createElement('canvas');
+    c.width = 2; c.height = 256;
+    const g = c.getContext('2d').createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, '#4aa3e0');
+    g.addColorStop(0.55, '#9fd2f2');
+    g.addColorStop(1, '#e6f4fd');
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 2, 256);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+
+  const mat = (color, opts) => new THREE.MeshLambertMaterial(Object.assign({ color }, opts || {}));
+  const box = (w, h, d, m) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+
+  // ------------------------------------------------------- le décor
+
+  const world = new THREE.Group();
+  scene.add(world);
+
+  // sol et trottoir
+  const ground = box(90, 0.6, 90, mat(0x6f7f92));
+  ground.position.y = -0.3;
+  ground.receiveShadow = true;
+  world.add(ground);
+
+  const pavement = box(W + 6.5, 0.35, D + 6.5, mat(0xa9b6c4));
+  pavement.position.y = 0.1;
+  pavement.receiveShadow = true;
+  world.add(pavement);
+
+  const road = box(90, 0.02, 7, mat(0x54606f));
+  road.position.set(0, 0.32, D / 2 + 8.4);
+  road.receiveShadow = true;
+  world.add(road);
+  for (let i = -6; i <= 6; i++) {
+    const dash = box(1.6, 0.02, 0.22, mat(0xf2c94c));
+    dash.position.set(i * 3.4, 0.35, D / 2 + 8.4);
+    world.add(dash);
+  }
+
+  // hall d'entrée
+  const lobby = new THREE.Group();
+  const lobbyShell = box(W, H * 0.92, D, mat(0xe7eef6));
+  lobbyShell.position.y = H * 0.46 + 0.28;
+  lobbyShell.castShadow = lobbyShell.receiveShadow = true;
+  lobby.add(lobbyShell);
+  const glass = box(W - 1.2, H * 0.6, 0.12,
+    new THREE.MeshLambertMaterial({ color: 0x8fd0f8, transparent: true, opacity: 0.75 }));
+  glass.position.set(0, H * 0.42 + 0.28, D / 2 + 0.02);
+  lobby.add(glass);
+  const sign = box(4.2, 0.62, 0.16, mat(0xffffff));
+  sign.position.set(0, H * 0.92 + 0.05, D / 2 + 0.08);
+  lobby.add(sign);
+  const signBar = box(4.2, 0.16, 0.2, mat(0x2563eb));
+  signBar.position.set(0, H * 0.92 - 0.18, D / 2 + 0.1);
+  lobby.add(signBar);
+  world.add(lobby);
+
+  const BASE = H * 0.92 + 0.28;   // hauteur du premier plancher
+
+  // --------------------------------------------------- les étages
+
+  const floors = [];
+
+  FLOORS.forEach((def, i) => {
+    const y = BASE + i * H;
+    const g = new THREE.Group();
+    g.position.y = y;
+
+    // dalle
+    const slab = box(W, 0.26, D, mat(def.wall));
+    slab.position.y = 0.13;
+    slab.castShadow = slab.receiveShadow = true;
+    g.add(slab);
+
+    // mur du fond, coloré au métier
+    const back = box(W, H - 0.26, 0.22, mat(def.wall));
+    back.position.set(0, (H - 0.26) / 2 + 0.26, -D / 2 + 0.11);
+    back.castShadow = back.receiveShadow = true;
+    g.add(back);
+
+    // murs latéraux (la façade avant reste ouverte : c'est la coupe)
+    for (const s of [-1, 1]) {
+      const side = box(0.22, H - 0.26, D, mat(0xeef3f8));
+      side.position.set(s * (W / 2 - 0.11), (H - 0.26) / 2 + 0.26, 0);
+      side.castShadow = side.receiveShadow = true;
+      g.add(side);
+    }
+
+    // fenêtre dans le mur du fond
+    const win = box(2.4, 1.15, 0.08,
+      new THREE.MeshLambertMaterial({ color: 0x9ad6fb, emissive: 0x22405c, emissiveIntensity: 0.5 }));
+    win.position.set(W / 2 - 2.3, 1.55, -D / 2 + 0.2);
+    g.add(win);
+
+    // cloison de la cage d'ascenseur
+    const wallShaft = box(0.16, H - 0.26, D - 0.4, mat(0xc3cedb));
+    wallShaft.position.set(-W / 2 + SHAFT, (H - 0.26) / 2 + 0.26, 0);
+    wallShaft.castShadow = true;
+    g.add(wallShaft);
+
+    // mobilier + personnel
+    const roomLeft = -W / 2 + SHAFT + 0.5;
+    const roomRight = W / 2 - 0.6;
+    furnish(g, def, roomLeft, roomRight);
+
+    const crew = [];
+    for (let k = 0; k < def.crew; k++) {
+      const p = person(def.wear[k % def.wear.length]);
+      const from = roomLeft + 0.3 + Math.random() * (roomRight - roomLeft - 1.2);
+      p.userData = {
+        from,
+        to: Math.min(roomRight - 0.35, from + 0.8 + Math.random() * 1.6),
+        speed: 0.5 + Math.random() * 0.5,
+        phase: Math.random() * Math.PI * 2,
+        z: -D / 2 + 1.5 + Math.random() * (D - 2.4),
+      };
+      p.position.set(from, 0.26, p.userData.z);
+      g.add(p);
+      crew.push(p);
+    }
+
+    // liseré de production sur l'arête avant de la dalle
+    const railBg = box(W - 0.3, 0.13, 0.16, mat(0x94a3b8));
+    railBg.position.set(0, 0.2, D / 2 - 0.02);
+    g.add(railBg);
+    const rail = box(1, 0.16, 0.2, mat(def.accent));
+    rail.position.set(0, 0.2, D / 2 - 0.01);
+    g.add(rail);
+
+    world.add(g);
+    floors.push({
+      def, group: g, slab, rail, crew, y,
+      railWidth: W - 0.3,
+      progress: Math.random() * def.cycle,
+      running: i < 3,          // les trois premiers ont leur chef de service
+      auto: i < 3,
+    });
+    slab.userData.floorIndex = i;
+  });
+
+  function furnish(g, def, left, right) {
+    const put = (m, x, y, z) => { m.position.set(x, y + 0.26, z); m.castShadow = true; g.add(m); return m; };
+    const span = right - left;
+
+    if (def.kit === 'bureau' || def.kit === 'pc') {
+      for (let i = 0; i < 3; i++) {
+        const x = left + 0.7 + (i * span) / 3;
+        put(box(1.15, 0.08, 0.7, mat(0xd8bd94)), x, 0.74, -0.9);
+        for (const [dx, dz] of [[-0.5, -0.3], [0.5, -0.3], [-0.5, 0.3], [0.5, 0.3]]) {
+          put(box(0.07, 0.7, 0.07, mat(0x8d7351)), x + dx, 0.35, -0.9 + dz);
+        }
+        const screen = put(box(0.62, 0.4, 0.05,
+          new THREE.MeshLambertMaterial({ color: 0x111827, emissive: def.accent, emissiveIntensity: 0.55 })),
+          x, 1.0, -1.15);
+        screen.rotation.x = -0.12;
+        put(box(0.4, 0.35, 0.4, mat(0x475569)), x, 0.18, -0.35);
+      }
+    }
+    if (def.kit === 'atelier') {
+      for (let i = 0; i < 4; i++) {
+        put(box(0.55, 0.55, 0.55, mat(i % 2 ? 0xb98b57 : 0xcfa06a)), left + 0.6 + i * 0.75, 0.28, -1.5);
+      }
+      put(box(0.16, 1.9, 0.16, mat(0xd6a453)), right - 1.6, 0.95, -1.2);
+      put(box(0.16, 1.9, 0.16, mat(0xd6a453)), right - 1.15, 0.95, -1.2);
+      for (let i = 0; i < 4; i++) {
+        put(box(0.5, 0.06, 0.16, mat(0xd6a453)), right - 1.38, 0.35 + i * 0.42, -1.2);
+      }
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), mat(0x1f2937));
+      put(dome, right - 0.7, 1.9, -0.8);
+    }
+    if (def.kit === 'baie') {
+      for (let i = 0; i < 4; i++) {
+        const rack = put(box(0.62, 1.75, 0.7, mat(0x334155)), left + 0.7 + i * 0.85, 0.88, -1.4);
+        for (let k = 0; k < 6; k++) {
+          const led = box(0.5, 0.05, 0.03,
+            new THREE.MeshBasicMaterial({ color: k % 2 ? 0x22c55e : 0x38bdf8 }));
+          led.position.set(rack.position.x, 0.45 + k * 0.25, -1.04);
+          g.add(led);
+        }
+      }
+    }
+    // une plante verte, partout
+    put(box(0.3, 0.3, 0.3, mat(0xc2703f)), right - 0.35, 0.15, 1.3);
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 0), mat(0x3f9d4f));
+    put(leaf, right - 0.35, 0.62, 1.3);
+  }
+
+  function person(color) {
+    const p = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.17, 0.42, 4, 10), mat(color));
+    body.position.y = 0.46;
+    body.castShadow = true;
+    p.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.165, 14, 12), mat(0xf0c19a));
+    head.position.y = 0.87;
+    head.castShadow = true;
+    p.add(head);
+    return p;
+  }
+
+  // ------------------------------------------------- cage et cabine
+
+  const shaftGlass = box(SHAFT - 0.1, FLOORS.length * H + 0.4, D - 0.5,
+    new THREE.MeshLambertMaterial({ color: 0xbfe4ff, transparent: true, opacity: 0.28 }));
+  shaftGlass.position.set(-W / 2 + SHAFT / 2, BASE + (FLOORS.length * H) / 2, 0);
+  world.add(shaftGlass);
+
+  const cab = box(SHAFT - 0.45, 1.5, D - 1.4, mat(0xf8fafc));
+  cab.castShadow = true;
+  cab.position.set(-W / 2 + SHAFT / 2, BASE + 0.9, 0);
+  world.add(cab);
+  let cabTarget = cab.position.y;
+
+  // ------------------------------------------------ toit et chantier
+
+  const roofY = BASE + FLOORS.length * H;
+  const roofSlab = box(W, 0.26, D, mat(0xcbd5e1));
+  roofSlab.position.y = roofY + 0.13;
+  roofSlab.castShadow = roofSlab.receiveShadow = true;
+  world.add(roofSlab);
+
+  // échafaudage du prochain étage
+  const scaffold = new THREE.Group();
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const post = box(0.12, H, 0.12, mat(0xf59e0b));
+      post.position.set(sx * (W / 2 - 0.4), roofY + H / 2 + 0.26, sz * (D / 2 - 0.4));
+      post.castShadow = true;
+      scaffold.add(post);
+    }
+  }
+  for (const sz of [-1, 1]) {
+    const bar = box(W - 0.8, 0.1, 0.1, mat(0xfbbf24));
+    bar.position.set(0, roofY + H * 0.75, sz * (D / 2 - 0.4));
+    scaffold.add(bar);
+  }
+  world.add(scaffold);
+
+  // grue
+  const crane = new THREE.Group();
+  const mast = box(0.28, 7.5, 0.28, mat(0xf59e0b));
+  mast.position.set(-W / 2 - 2.6, roofY - 1.6, -D / 2 - 1.2);
+  mast.castShadow = true;
+  crane.add(mast);
+  const jib = box(7.5, 0.22, 0.22, mat(0xfbbf24));
+  jib.position.set(-W / 2 + 0.6, roofY + 2.1, -D / 2 - 1.2);
+  jib.castShadow = true;
+  crane.add(jib);
+  const cable = box(0.05, 2.2, 0.05, mat(0x475569));
+  cable.position.set(-W / 2 + 1.6, roofY + 1.0, -D / 2 - 1.2);
+  crane.add(cable);
+  const load = box(0.7, 0.5, 0.7, mat(0x94a3b8));
+  load.position.set(-W / 2 + 1.6, roofY - 0.2, -D / 2 - 1.2);
+  load.castShadow = true;
+  crane.add(load);
+  world.add(crane);
+
+  // fourgon d'intervention garé devant
+  const van = new THREE.Group();
+  const vanBody = box(3.1, 1.3, 1.5, mat(0xf1f5f9));
+  vanBody.position.y = 0.95; vanBody.castShadow = true;
+  van.add(vanBody);
+  const vanCab = box(1.1, 0.9, 1.45, mat(0xdbe6f2));
+  vanCab.position.set(1.6, 0.75, 0); vanCab.castShadow = true;
+  van.add(vanCab);
+  const stripe = box(3.1, 0.22, 1.52, mat(0x2563eb));
+  stripe.position.y = 0.72;
+  van.add(stripe);
+  for (const [wx, wz] of [[-0.9, 0.78], [-0.9, -0.78], [1.3, 0.78], [1.3, -0.78]]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.18, 14), mat(0x1f2937));
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(wx, 0.32, wz);
+    van.add(wheel);
+  }
+  van.position.set(-2.4, 0.3, D / 2 + 3.4);
+  van.rotation.y = 0.06;
+  world.add(van);
+
+  // --------------------------------------------------- caméra orbite
+
+  const TOP = BASE + FLOORS.length * H + 3.2;   // sommet de l'échafaudage
+  const orbit = { theta: 0.48, phi: 1.28, radius: 30, target: new THREE.Vector3(0, TOP / 2, 0) };
+  let autoSpin = true;
+
+  /** Recule assez pour que toute la tour tienne dans le cadre, portrait compris. */
+  function fitRadius() {
+    const vFov = (camera.fov * Math.PI) / 180;
+    const byHeight = (TOP * 0.60) / Math.tan(vFov / 2);
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+    // demi-diagonale au sol : la tour reste cadrée quel que soit l'angle
+    const byWidth = (Math.hypot(W, D) / 2 + 1.2) / Math.tan(hFov / 2);
+    return Math.max(byHeight, byWidth);
+  }
+
+  function applyCamera() {
+    orbit.phi = Math.max(0.5, Math.min(1.5, orbit.phi));
+    orbit.radius = Math.max(12, Math.min(60, orbit.radius));
+    camera.position.set(
+      orbit.target.x + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta),
+      orbit.target.y + orbit.radius * Math.cos(orbit.phi),
+      orbit.target.z + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta)
+    );
+    camera.lookAt(orbit.target);
+  }
+
+  const pointers = new Map();
+  let pinch = 0;
+  let dragged = false;
+
+  stage.addEventListener('pointerdown', (e) => {
+    stage.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    dragged = false;
+    autoSpin = false;
+  });
+
+  stage.addEventListener('pointermove', (e) => {
+    const prev = pointers.get(e.pointerId);
+    if (!prev) return;
+    const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (Math.abs(dx) + Math.abs(dy) > 3) dragged = true;
+
+    if (pointers.size >= 2) {
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch) orbit.radius *= pinch / dist;
+      pinch = dist;
+    } else {
+      orbit.theta -= dx * 0.008;
+      orbit.phi -= dy * 0.006;
+    }
+    applyCamera();
+  });
+
+  const endPointer = (e) => {
+    if (!dragged && pointers.size === 1) pick(e);
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = 0;
+  };
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', (e) => pointers.delete(e.pointerId));
+
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    autoSpin = false;
+    orbit.radius *= 1 + Math.sign(e.deltaY) * 0.09;
+    applyCamera();
+  }, { passive: false });
+
+  // --------------------------------------------- sélection d'un étage
+
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+
+  function pick(e) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(floors.map((f) => f.slab), false)[0];
+    if (!hit) return;
+    const f = floors[hit.object.userData.floorIndex];
+    if (!f.running) f.running = true;
+    cabTarget = f.y + 0.9;
+  }
+
+  // ---------------------------------------------- étiquettes et gains
+
+  const tags = FLOORS.map((def) => {
+    const node = document.createElement('div');
+    node.className = 'tag';
+    node.innerHTML = `${def.icon} ${def.name} · <b>0 %</b>`;
+    overlay.appendChild(node);
+    return node;
+  });
+
+  const anchor = new THREE.Vector3();
+
+  function project(v) {
+    anchor.copy(v).project(camera);
+    return {
+      x: (anchor.x * 0.5 + 0.5) * innerWidth,
+      y: (-anchor.y * 0.5 + 0.5) * innerHeight,
+      visible: anchor.z < 1,
+    };
+  }
+
+  function gain(f) {
+    const p = project(new THREE.Vector3(0, f.y + 1.9, D / 2));
+    if (!p.visible) return;
+    const node = document.createElement('div');
+    node.className = 'gain';
+    node.textContent = '+' + fmt(120 * (1 + floors.indexOf(f) * 6)) + ' €';
+    node.style.left = p.x + 'px';
+    node.style.top = p.y + 'px';
+    overlay.appendChild(node);
+    setTimeout(() => node.remove(), 1250);
+  }
+
+  // ------------------------------------------------- trésorerie factice
+
+  let cash = 128400;
+  const cashEl = document.getElementById('cash');
+  const cpsEl = document.getElementById('cps');
+  const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M'
+    : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.', ',') + 'k' : Math.floor(n);
+
+  // ------------------------------------------------------- animation
+
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+
+    if (autoSpin) { orbit.theta += dt * 0.06; applyCamera(); }
+
+    // cabine d'ascenseur
+    cab.position.y += (cabTarget - cab.position.y) * Math.min(1, dt * 3.2);
+
+    // grue qui pivote doucement
+    crane.rotation.y = Math.sin(now / 4200) * 0.22;
+
+    for (const f of floors) {
+      // personnel : va-et-vient avec un léger dandinement
+      for (const p of f.crew) {
+        const u = p.userData;
+        const t = Math.sin(now / 1000 * u.speed + u.phase);
+        p.position.x = u.from + ((t + 1) / 2) * (u.to - u.from);
+        p.position.y = 0.26 + Math.abs(Math.sin(now / 1000 * u.speed * 6 + u.phase)) * 0.035;
+        p.rotation.y = Math.cos(now / 1000 * u.speed + u.phase) > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
+
+      if (f.running) {
+        f.progress += dt;
+        if (f.progress >= f.def.cycle) {
+          f.progress = f.auto ? f.progress - f.def.cycle : 0;
+          f.running = f.auto;
+          cash += 120 * (1 + floors.indexOf(f) * 6);
+          gain(f);
+        }
+      }
+      const pct = Math.min(1, f.progress / f.def.cycle);
+      f.rail.scale.x = Math.max(0.001, pct * f.railWidth);
+      f.rail.position.x = -f.railWidth / 2 + (pct * f.railWidth) / 2;
+    }
+
+    // étiquettes projetées au-dessus de chaque étage
+    floors.forEach((f, i) => {
+      const p = project(new THREE.Vector3(-W / 2 - 0.6, f.y + 1.5, D / 2 + 0.4));
+      const tag = tags[i];
+      if (!p.visible) { tag.style.display = 'none'; return; }
+      tag.style.display = '';
+      // On garde l'étiquette dans le cadre même quand l'étage part sur le côté.
+      tag.style.left = Math.max(10, Math.min(innerWidth - tag.offsetWidth - 10, p.x - tag.offsetWidth)) + 'px';
+      tag.style.top = Math.max(96, Math.min(innerHeight - 46, p.y)) + 'px';
+      tag.querySelector('b').textContent = Math.floor(Math.min(1, f.progress / f.def.cycle) * 100) + ' %';
+    });
+
+    cashEl.textContent = fmt(cash) + ' €';
+    cpsEl.textContent = fmt(1240) + ' €/s';
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+
+  let framed = false;
+
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    if (!framed) { orbit.radius = fitRadius(); framed = true; }
+    applyCamera();
+  }
+
+  addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -37,6 +37,20 @@ Taper une pièce lance sa production ; le chevron ouvre le panneau de l'étage
 (effectif, paliers, recrutement, chef de service). Les gains jaillissent
 au-dessus de l'étage qui les produit.
 
+## Maquettes 3D en cours d'arbitrage
+
+Deux directions visuelles sont proposées pour remplacer la vue actuelle, sur les
+quatre premiers étages :
+
+| Maquette | Fichier | Technique |
+| --- | --- | --- |
+| A — vraie 3D | `demo/webgl.html` | WebGL via Three.js (`vendor/three.min.js`), caméra orbitale, ombres portées, personnel en volume |
+| B — isométrique | `demo/iso.html` | CSS 3D pur (`preserve-3d`), aucune dépendance, personnel en panneaux face caméra |
+
+Les deux se manipulent : on fait pivoter la tour, on tape un étage pour lancer sa
+production. Elles n'utilisent pas encore le moteur de jeu — ce sont des maquettes
+d'aspect, avec des chiffres factices.
+
 ## Boucle de jeu
 
 1. **Construire** — dix métiers à ouvrir dans l'ordre, du poste d'accueil à

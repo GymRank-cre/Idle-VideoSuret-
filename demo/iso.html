@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<link rel="icon" href="data:,">
+<title>Maquette B — tour isométrique CSS</title>
+<style>
+/* Tout le volume est obtenu avec des transformations CSS 3D : chaque étage est
+   une dalle, un mur du fond et deux murs latéraux assemblés dans l'espace.
+   Aucune bibliothèque, aucun canvas. */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; font-weight: 600;
+  color: #16324a;
+  background: linear-gradient(180deg, #4aa3e0 0%, #9fd2f2 46%, #e6f4fd 100%);
+}
+
+:root {
+  --w: 260px;      /* largeur du bâtiment */
+  --d: 165px;      /* profondeur */
+  --h: 96px;       /* hauteur d'un étage */
+  --tilt: 62deg;   /* inclinaison de la vue */
+  --spin: -28deg;  /* rotation autour de l'axe vertical */
+  --shaft: 46px;   /* largeur de la cage d'ascenseur */
+  --outline: #223a55;
+}
+
+#stage { position: fixed; inset: 0; perspective: 1500px; touch-action: none; overflow: hidden; }
+
+.world {
+  position: absolute; left: 50%; top: 70%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt)) rotateZ(var(--spin));
+}
+
+/* --- sol ------------------------------------------------------------- */
+
+.ground {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--w) + 260px); height: calc(var(--d) + 260px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, #b9c6d4, #97a7b8);
+  border-radius: 26px;
+}
+.road {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--w) + 620px); height: 92px;
+  transform: translate(-50%, -50%) translateY(calc(var(--d) / 2 + 128px)) translateZ(1px);
+  background: #5a6675;
+}
+.road::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 5px;
+  background: repeating-linear-gradient(90deg, #f2c94c 0 26px, transparent 26px 52px);
+}
+.shadow {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--w) + 30px); height: calc(var(--d) + 30px);
+  transform: translate(-50%, -50%) translate(26px, 26px) translateZ(2px);
+  background: rgba(20, 40, 60, .3); filter: blur(9px); border-radius: 16px;
+}
+
+/* --- une pièce -------------------------------------------------------- */
+
+.lvl { position: absolute; left: 0; top: 0; transform-style: preserve-3d; }
+
+.face { position: absolute; left: 50%; top: 50%; }
+
+/* dalle : reste dans le plan horizontal */
+.slab {
+  width: var(--w); height: var(--d);
+  transform: translate(-50%, -50%) translateZ(var(--z));
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.5), rgba(255,255,255,0) 60%),
+    var(--wall);
+  border: 3px solid var(--outline);
+}
+
+/* mur du fond : le plan bascule à la verticale */
+.back {
+  width: var(--w); height: var(--h);
+  transform: translate(-50%, -50%) translateY(calc(var(--d) / -2))
+             translateZ(calc(var(--z) + var(--h) / 2)) rotateX(90deg);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 74%, #fff), var(--wall));
+  border: 3px solid var(--outline);
+}
+
+/* murs latéraux */
+.side {
+  width: var(--d); height: var(--h);
+  transform: translate(-50%, -50%) translateX(var(--sx))
+             translateZ(calc(var(--z) + var(--h) / 2)) rotateZ(90deg) rotateX(90deg);
+  background: linear-gradient(180deg, #f4f7fb, #dee7f0);
+  border: 3px solid var(--outline);
+}
+.side.dark { background: linear-gradient(180deg, #e2e9f1, #c9d5e2); }
+
+/* fenêtre percée dans le mur du fond */
+.win {
+  position: absolute; right: 26px; top: 22px; width: 78px; height: 40px;
+  background: linear-gradient(180deg, #cfeeff, #8fd0f8);
+  border: 3px solid var(--outline); border-radius: 3px;
+}
+.win::after {
+  content: ''; position: absolute; inset: 0; margin: auto; width: 3px; height: 100%;
+  background: var(--outline);
+}
+
+/* cloison de la cage d'ascenseur */
+.core {
+  width: var(--d); height: var(--h);
+  transform: translate(-50%, -50%) translateX(calc(var(--w) / -2 + var(--shaft)))
+             translateZ(calc(var(--z) + var(--h) / 2)) rotateZ(90deg) rotateX(90deg);
+  background: linear-gradient(180deg, #d7dfe9, #bcc8d6);
+  border: 3px solid var(--outline);
+}
+
+/* --- éléments qui se tiennent debout face à l'écran ------------------- */
+
+.up {
+  position: absolute; left: 50%; top: 50%;
+  transform:
+    translateX(var(--x)) translateY(var(--y)) translateZ(var(--z))
+    rotateZ(calc(var(--spin) * -1)) rotateX(calc(var(--tilt) * -1))
+    translate(-50%, -100%);
+}
+
+.person { width: 17px; height: 34px; }
+.person::before {
+  content: ''; position: absolute; top: 0; left: 3px; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--skin); border: 2px solid rgba(0,0,0,.4);
+}
+.person::after {
+  content: ''; position: absolute; top: 11px; left: 0; width: 17px; height: 22px;
+  border-radius: 7px 7px 4px 4px; background: var(--wear); border: 2px solid rgba(0,0,0,.4);
+}
+
+.prop { font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+
+.chip {
+  position: absolute; transform: translate(0, -50%);
+  background: rgba(255,255,255,.96); border: 2.5px solid var(--outline);
+  border-radius: 999px; padding: 1px 9px; font-size: 11px; white-space: nowrap;
+  box-shadow: 0 2px 0 rgba(0,0,0,.25);
+}
+.chip b { font-variant-numeric: tabular-nums; }
+
+/* --- liseré de production sur l'arête avant --------------------------- */
+
+.rail {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--w) - 14px); height: 9px;
+  transform: translate(-50%, -50%) translateY(calc(var(--d) / 2 - 9px)) translateZ(calc(var(--z) + 4px));
+  background: #94a3b8; border-radius: 999px; overflow: hidden;
+}
+.rail > * { display: block; height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+
+/* --- toit, échafaudage, hall ----------------------------------------- */
+
+.roof {
+  width: var(--w); height: var(--d);
+  transform: translate(-50%, -50%) translateZ(var(--z));
+  background: linear-gradient(135deg, #dfe7f0, #c3cedb);
+  border: 3px solid var(--outline);
+}
+.build {
+  width: var(--w); height: var(--d);
+  transform: translate(-50%, -50%) translateZ(var(--z));
+  background: repeating-linear-gradient(45deg, #fde68a 0 16px, #fbbf24 16px 32px);
+  border: 3px dashed #a86a08;
+}
+.lobby-front {
+  width: var(--w); height: 84px;
+  transform: translate(-50%, -50%) translateY(calc(var(--d) / 2))
+             translateZ(42px) rotateX(90deg);
+  background: linear-gradient(180deg, #e8eff7 0 30%, #9ed4f7 30% 84%, #cfd9e4 84%);
+  border: 3px solid var(--outline);
+}
+
+/* --- habillage 2D ----------------------------------------------------- */
+
+#hud {
+  position: fixed; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px;
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 3px solid var(--outline); border-radius: 18px; padding: 8px 12px;
+  box-shadow: 0 4px 0 rgba(34,58,85,.25);
+}
+#hud .cash { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+#hud .cps { font-size: 12px; color: #16a34a; }
+.badge {
+  position: fixed; top: max(74px, calc(env(safe-area-inset-top) + 64px)); left: 12px;
+  background: #7c3aed; border: 2px solid #4c1d95; color: #fff;
+  border-radius: 999px; padding: 3px 12px; font-size: 11.5px; letter-spacing: .08em;
+}
+.hint {
+  position: fixed; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom));
+  text-align: center; font-size: 12.5px; color: #2c4257;
+}
+#gains { position: fixed; inset: 0; pointer-events: none; }
+.gain {
+  position: absolute; transform: translate(-50%, -50%);
+  font-size: 15px; font-weight: 800; color: #15803d;
+  text-shadow: 0 2px 0 #fff, 0 0 8px #fff;
+  animation: rise 1.2s ease-out forwards;
+}
+@keyframes rise {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  100% { opacity: 0; transform: translate(-50%, -170%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="stage"><div class="world" id="world"></div></div>
+
+<div id="hud">
+  <span style="font-size:24px">💶</span>
+  <div style="flex:1">
+    <div class="cash" id="cash">128,4k €</div>
+    <div class="cps" id="cps">1,2k €/s</div>
+  </div>
+</div>
+<div class="badge">MAQUETTE B — ISOMÉTRIQUE CSS</div>
+<div class="hint">Glisse pour faire pivoter la tour · tape un étage pour lancer sa production</div>
+<div id="gains"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const FLOORS = [
+    { name: 'Accueil & filtrage', icon: '🛎️', wall: '#fde68a', accent: '#f59e0b',
+      wear: ['#f59e0b', '#fbbf24'], crew: 5, cycle: 3.0, props: ['🪴', '🛋️', '🖥️'] },
+    { name: 'Pose de caméras', icon: '📹', wall: '#bfdbfe', accent: '#3b82f6',
+      wear: ['#2563eb', '#60a5fa'], crew: 4, cycle: 4.5, props: ['🪜', '📦', '📹'] },
+    { name: 'Câblage & réseau IP', icon: '🔌', wall: '#bbf7d0', accent: '#22c55e',
+      wear: ['#16a34a', '#4ade80'], crew: 4, cycle: 6.0, props: ['🗄️', '🧰', '🔌'] },
+    { name: 'Télésurveillance', icon: '🖥️', wall: '#a5f3fc', accent: '#06b6d4',
+      wear: ['#0891b2', '#22d3ee'], crew: 3, cycle: 8.0, props: ['🖥️', '🖥️', '☕'] },
+  ];
+
+  const SKIN = ['#f3c9a2', '#e0a878', '#c2865a', '#8d5a34', '#5c3a21'];
+  const H = 96, W = 260, D = 165, SHAFT = 46;
+  const LOBBY = 84;
+
+  const world = document.getElementById('world');
+  const overlay = document.getElementById('gains');
+
+  const el = (cls, style) => {
+    const n = document.createElement('div');
+    n.className = cls;
+    if (style) n.setAttribute('style', style);
+    return n;
+  };
+
+  // sol, ombre portée, chaussée
+  world.append(el('ground'), el('road'), el('shadow'));
+
+  // hall d'entrée
+  const lobby = el('lvl');
+  lobby.append(
+    el('face slab', `--z:0px;--wall:#e7eef6`),
+    el('face lobby-front')
+  );
+  world.append(lobby);
+
+  const levels = [];
+
+  FLOORS.forEach((def, i) => {
+    const z = LOBBY + i * H;
+    const lvl = el('lvl');
+    lvl.style.setProperty('--wall', def.wall);
+    lvl.style.setProperty('--accent', def.accent);
+    lvl.dataset.index = i;
+
+    lvl.append(
+      el('face slab', `--z:${z}px`),
+      el('face back', `--z:${z}px`),
+      el('face side', `--z:${z}px;--sx:${W / 2}px`),
+      el('face side dark', `--z:${z}px;--sx:${-W / 2}px`),
+      el('face core', `--z:${z}px`)
+    );
+    lvl.querySelector('.back').append(el('win'));
+
+    // mobilier, posé au fond de la pièce
+    def.props.forEach((p, k) => {
+      const prop = el('up prop', `--x:${-W / 2 + SHAFT + 34 + k * 46}px;--y:${-D / 2 + 46}px;--z:${z}px`);
+      prop.textContent = p;
+      lvl.append(prop);
+    });
+
+    // personnel
+    const left = -W / 2 + SHAFT + 16;
+    const right = W / 2 - 34;
+    for (let k = 0; k < def.crew; k++) {
+      const from = left + ((k * 53) % Math.max(40, right - left - 60));
+      const to = Math.min(right, from + 34 + ((k * 19) % 40));
+      const person = el('up person',
+        `--x:${from}px;--y:${-D / 2 + 96 + ((k * 37) % 52)}px;--z:${z}px;` +
+        `--from:${from}px;--to:${to}px;--dur:${(3.2 + (k % 5) * 0.4).toFixed(1)}s;` +
+        `--delay:${(-(k * 0.7)).toFixed(1)}s;--wear:${def.wear[k % def.wear.length]};` +
+        `--skin:${SKIN[(k * 3) % SKIN.length]}`);
+      person.dataset.from = from;
+      person.dataset.to = to;
+      person.dataset.speed = (0.5 + (k % 5) * 0.09).toFixed(2);
+      person.dataset.phase = (k * 1.7).toFixed(2);
+      lvl.append(person);
+    }
+
+    // liseré de production sur l'arête avant
+    const chip = el('chip');
+    chip.innerHTML = `${def.icon} ${def.name} · <b>0 %</b>`;
+    overlay.append(chip);
+
+    const rail = el('rail', `--z:${z}px;--accent:${def.accent}`);
+    rail.append(el(''));
+    lvl.append(rail);
+
+    world.append(lvl);
+    levels.push({
+      def, lvl, chip, rail, fill: rail.firstChild,
+      crew: [...lvl.querySelectorAll('.person')],
+      z, progress: Math.random() * def.cycle, running: i < 3, auto: i < 3,
+    });
+  });
+
+  // toit et chantier du prochain étage
+  const roofZ = LOBBY + FLOORS.length * H;
+  const roof = el('lvl');
+  roof.append(
+    el('face roof', `--z:${roofZ}px`),
+    el('face build', `--z:${roofZ + 3}px`)
+  );
+  const crane = el('up prop', `--x:0px;--y:0px;--z:${roofZ + 6}px`);
+  crane.textContent = '🏗️';
+  crane.style.fontSize = '46px';
+  roof.append(crane);
+  world.append(roof);
+
+  // ------------------------------------------------------ interaction
+
+  const stage = document.getElementById('stage');
+  const root = document.documentElement;
+  let spin = -28, tilt = 62, dragging = false, lastX = 0, lastY = 0, moved = false;
+
+  const apply = () => {
+    root.style.setProperty('--spin', spin + 'deg');
+    root.style.setProperty('--tilt', tilt + 'deg');
+  };
+
+  stage.addEventListener('pointerdown', (e) => {
+    dragging = true; moved = false;
+    lastX = e.clientX; lastY = e.clientY;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+    spin -= dx * 0.35;
+    tilt = Math.max(28, Math.min(80, tilt + dy * 0.2));
+    apply();
+  });
+  stage.addEventListener('pointerup', (e) => {
+    dragging = false;
+    if (moved) return;
+    const lvl = e.target.closest('.lvl');
+    if (!lvl || !lvl.dataset.index) return;
+    const f = levels[Number(lvl.dataset.index)];
+    if (f && !f.running) f.running = true;
+  });
+
+  // --------------------------------------------------------- animation
+
+  let cash = 128400;
+  const cashEl = document.getElementById('cash');
+  const fmt = (n) => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M'
+    : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.', ',') + 'k' : Math.floor(n);
+
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+
+    levels.forEach((f, i) => {
+      // le personnel fait la navette : on pilote --x, que le transform 3D consomme
+      for (const p of f.crew) {
+        const from = +p.dataset.from, to = +p.dataset.to;
+        const t = (Math.sin(now / 1000 * +p.dataset.speed + +p.dataset.phase) + 1) / 2;
+        p.style.setProperty('--x', (from + t * (to - from)).toFixed(1) + 'px');
+      }
+
+      if (f.running) {
+        f.progress += dt;
+        if (f.progress >= f.def.cycle) {
+          f.progress = f.auto ? f.progress - f.def.cycle : 0;
+          f.running = f.auto;
+          cash += 120 * (1 + i * 6);
+          pop(f, 120 * (1 + i * 6));
+        }
+      }
+      const pct = Math.min(1, f.progress / f.def.cycle);
+      f.fill.style.width = pct * 100 + '%';
+      f.chip.querySelector('b').textContent = Math.floor(pct * 100) + ' %';
+
+      // l'étiquette se cale sur la position écran de l'arête avant de l'étage
+      const r = f.rail.getBoundingClientRect();
+      f.chip.style.left = Math.max(8, Math.min(innerWidth - f.chip.offsetWidth - 8,
+        r.left - f.chip.offsetWidth - 6)) + 'px';
+      f.chip.style.top = (r.top + r.height / 2) + 'px';
+    });
+
+    cashEl.textContent = fmt(cash) + ' €';
+    requestAnimationFrame(frame);
+  }
+
+  function pop(f, amount) {
+    const r = f.rail.getBoundingClientRect();
+    if (!r.width) return;
+    const node = el('gain');
+    node.textContent = '+' + fmt(amount) + ' €';
+    node.style.left = (r.left + r.width / 2) + 'px';
+    node.style.top = r.top + 'px';
+    overlay.append(node);
+    setTimeout(() => node.remove(), 1250);
+  }
+
+  /** Cadre la tour quelle que soit la hauteur d'écran. */
+  function fit() {
+    const total = LOBBY + FLOORS.length * H + H;
+    const scale = Math.min(1, (innerHeight * 0.46) / total, (innerWidth * 0.95) / (W + 120));
+    world.style.setProperty('scale', scale.toFixed(3));
+  }
+
+  addEventListener('resize', fit);
+  apply();
+  fit();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
