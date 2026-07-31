@@ -47,6 +47,9 @@ quatre premiers étages :
 | A — vraie 3D | `demo/webgl.html` | WebGL via Three.js (`vendor/three.min.js`), caméra orbitale, ombres portées, personnel en volume |
 | B — isométrique | `demo/iso.html` | CSS 3D pur (`preserve-3d`), aucune dépendance, personnel en panneaux face caméra |
 
+Les prompts pour générer les modèles 3D de la maquette A sont dans
+[`docs/prompts-modeles-3d.md`](docs/prompts-modeles-3d.md).
+
 Les deux se manipulent : on fait pivoter la tour, on tape un étage pour lancer sa
 production. Elles n'utilisent pas encore le moteur de jeu — ce sont des maquettes
 d'aspect, avec des chiffres factices.
