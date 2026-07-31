@@ -1,0 +1,17 @@
+{
+  "name": "Sûreté Tycoon",
+  "short_name": "Sûreté Tycoon",
+  "description": "Jeu idle : montez votre entreprise de vidéosurveillance, alarmes et télésurveillance.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b12",
+  "theme_color": "#070b12",
+  "lang": "fr",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./assets/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Sûreté Tycoon — jeu idle vidéosurveillance &amp; alarmes</title>
+<meta name="description" content="Montez votre entreprise de sûreté : vidéosurveillance, alarmes intrusion, contrôle d'accès, télésurveillance. Jeu idle gratuit, sans installation.">
+<meta name="theme-color" content="#070b12">
+<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="./manifest.json">
+<link rel="stylesheet" href="./styles/main.css">
+<meta property="og:title" content="Sûreté Tycoon">
+<meta property="og:description" content="Le jeu idle du monde de la sûreté : vidéosurveillance, alarmes, télésurveillance.">
+<meta property="og:type" content="website">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="hud">
+    <div class="hud-top">
+      <div class="hud-brand">
+        <span class="rec" aria-hidden="true"></span>
+        <span class="hud-name">Sûreté Tycoon</span>
+      </div>
+      <button id="btn-menu" class="icon-btn" type="button" aria-label="Menu">⋯</button>
+    </div>
+
+    <div class="hud-cash">
+      <div class="cash" id="hud-cash">4 €</div>
+      <div class="cps" id="hud-cps">0 €/s</div>
+    </div>
+
+    <div class="hud-res">
+      <span class="chip" title="Étoiles de certification">⭐ <b id="hud-stars">0</b></span>
+      <span class="chip" title="Points de R&amp;D">🔬 <b id="hud-rd">0</b></span>
+      <button id="btn-boost" class="chip chip-btn" type="button" hidden>⚡ <b id="boost-label">Renfort</b></button>
+    </div>
+  </header>
+
+  <main id="view" class="view" tabindex="-1"></main>
+
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <button class="tab" data-tab="services" type="button"><span>🏢</span>Services</button>
+    <button class="tab" data-tab="upgrades" type="button"><span>🧰</span>Matériel<i class="dot" hidden></i></button>
+    <button class="tab" data-tab="contracts" type="button"><span>📄</span>Contrats<i class="dot" hidden></i></button>
+    <button class="tab" data-tab="research" type="button"><span>🔬</span>R&amp;D<i class="dot" hidden></i></button>
+    <button class="tab" data-tab="cert" type="button"><span>⭐</span>Certif.<i class="dot" hidden></i></button>
+  </nav>
+
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<div id="modal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+    <div id="modal-actions" class="modal-actions"></div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
