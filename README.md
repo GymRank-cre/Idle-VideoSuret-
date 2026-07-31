@@ -24,14 +24,27 @@ npx --yes serve .
 Le déploiement se fait tel quel sur n'importe quel hébergeur statique
 (Vercel, GitHub Pages, Netlify) : la racine du dépôt **est** le site.
 
+## La tour
+
+L'écran principal est l'immeuble de l'entreprise, vu **en coupe** : on le
+construit étage par étage et on le parcourt en le faisant défiler. Chaque étage
+est une pièce meublée où **le personnel se déplace** — plus il y a de postes,
+plus la pièce se remplit. Une cage d'ascenseur dessert l'étage sélectionné, le
+rez-de-chaussée porte l'enseigne, et le sommet reste un chantier tant qu'il
+reste un métier à ouvrir. Tout le décor est en CSS : aucune image, aucun sprite.
+
+Taper une pièce lance sa production ; le chevron ouvre le panneau de l'étage
+(effectif, paliers, recrutement, chef de service). Les gains jaillissent
+au-dessus de l'étage qui les produit.
+
 ## Boucle de jeu
 
-1. **Services** — dix métiers à ouvrir, du poste d'accueil à l'audit sûreté.
-   Chaque service tourne par cycles : on lance le cycle à la main, il verse son
-   chiffre d'affaires à la fin. Recruter des postes augmente le CA, les paliers
-   (25, 50, 100, 200…) le doublent.
+1. **Construire** — dix métiers à ouvrir dans l'ordre, du poste d'accueil à
+   l'audit sûreté. Chaque étage tourne par cycles : on lance le cycle à la main,
+   il verse son chiffre d'affaires à la fin. Recruter des postes augmente le CA,
+   les paliers (25, 50, 100, 200…) le doublent.
 2. **Chef de service** — une fois recruté, il relance les cycles tout seul :
-   c'est ce qui rend le service *idle*, en jeu comme hors-ligne.
+   c'est ce qui rend l'étage *idle*, en jeu comme hors-ligne.
 3. **Matériel** — investissements en euros : ×3 de CA, ×2 de vitesse, bonus globaux.
 4. **Contrats** — des appels d'offres apparaissent régulièrement. Signés, ils
    versent une prime proportionnelle au CA du moment plus des **points de R&D**.
@@ -60,13 +73,14 @@ npm test
 
 ```
 index.html            page unique
-styles/main.css       thème « salle de contrôle »
+styles/main.css       décor de l'immeuble et habillage cartoon
 src/format.js         mise en forme des nombres (échelle longue : k, M, Md, Bn…)
-src/data.js           contenu : services, améliorations, R&D, contrats, objectifs
+src/data.js           contenu : services, habillage des pièces, R&D, contrats, objectifs
 src/state.js          état, sauvegarde locale, migrations
 src/economy.js        arithmétique : coûts, multiplicateurs, production, étoiles
 src/game.js           boucle logique et actions du joueur
-src/ui.js             rendu DOM et rafraîchissement par image
+src/tower.js          l'immeuble en coupe : étages, personnel animé, ascenseur
+src/ui.js             onglets, panneau d'étage, rafraîchissement par image
 src/main.js           démarrage, requestAnimationFrame, sauvegarde automatique
 sw.js / manifest.json installation PWA
 ```

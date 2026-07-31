@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <title>Sûreté Tycoon — jeu idle vidéosurveillance &amp; alarmes</title>
 <meta name="description" content="Montez votre entreprise de sûreté : vidéosurveillance, alarmes intrusion, contrôle d'accès, télésurveillance. Jeu idle gratuit, sans installation.">
-<meta name="theme-color" content="#070b12">
+<meta name="theme-color" content="#7cc4f5">
 <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="./manifest.json">
 <link rel="stylesheet" href="./styles/main.css">
@@ -18,17 +18,13 @@
 <div id="app">
 
   <header class="hud">
-    <div class="hud-top">
-      <div class="hud-brand">
-        <span class="rec" aria-hidden="true"></span>
-        <span class="hud-name">Sûreté Tycoon</span>
+    <div class="hud-money">
+      <span class="coin-ico" aria-hidden="true">💶</span>
+      <div>
+        <div class="cash" id="hud-cash">4 €</div>
+        <div class="cps" id="hud-cps">0 €/s</div>
       </div>
       <button id="btn-menu" class="icon-btn" type="button" aria-label="Menu">⋯</button>
-    </div>
-
-    <div class="hud-cash">
-      <div class="cash" id="hud-cash">4 €</div>
-      <div class="cps" id="hud-cps">0 €/s</div>
     </div>
 
     <div class="hud-res">
@@ -39,6 +35,8 @@
   </header>
 
   <main id="view" class="view" tabindex="-1"></main>
+
+  <div id="sheet" class="sheet" hidden></div>
 
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button class="tab" data-tab="services" type="button"><span>🏢</span>Services</button>

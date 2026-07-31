@@ -81,12 +81,16 @@ export function tick(dt) {
 
     if (f.manager) {
       const cycles = Math.floor(f.progress / t);
-      earn(state, cycleRevenue(state, def) * cycles);
+      const gain = cycleRevenue(state, def) * cycles;
+      earn(state, gain);
       f.progress -= cycles * t;
+      game.emit('cycle', { def, amount: gain });
     } else {
-      earn(state, cycleRevenue(state, def));
+      const gain = cycleRevenue(state, def);
+      earn(state, gain);
       f.progress = 0;
       f.running = false;
+      game.emit('cycle', { def, amount: gain });
     }
   }
 

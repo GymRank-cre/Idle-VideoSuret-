@@ -141,6 +141,26 @@ export const FLOORS = [
   },
 ];
 
+/**
+ * Habillage de chaque étage de la tour : couleur de la pièce, mobilier posé
+ * contre le mur du fond, et couleurs de tenue du personnel qui s'y déplace.
+ * Purement cosmétique — rien ici n'entre dans les calculs.
+ */
+const SKINS = {
+  accueil:          { wall: '#fef3c7', accent: '#f59e0b', decor: ['🪴', '🛋️', '🖥️'], wear: ['#f59e0b', '#fbbf24'] },
+  cameras:          { wall: '#dbeafe', accent: '#3b82f6', decor: ['🪜', '📦', '📹'], wear: ['#2563eb', '#60a5fa'] },
+  reseau:           { wall: '#dcfce7', accent: '#22c55e', decor: ['🗄️', '🧰', '🔌'], wear: ['#16a34a', '#4ade80'] },
+  intrusion:        { wall: '#fee2e2', accent: '#ef4444', decor: ['🔔', '🧰', '🚨'], wear: ['#dc2626', '#f87171'] },
+  acces:            { wall: '#ede9fe', accent: '#8b5cf6', decor: ['🚪', '🪪', '🖨️'], wear: ['#7c3aed', '#a78bfa'] },
+  incendie:         { wall: '#ffedd5', accent: '#f97316', decor: ['🧯', '🚒', '📋'], wear: ['#ea580c', '#fb923c'] },
+  telesurveillance: { wall: '#cffafe', accent: '#06b6d4', decor: ['🖥️', '🖥️', '☕'], wear: ['#0891b2', '#22d3ee'] },
+  cyber:            { wall: '#e0e7ff', accent: '#6366f1', decor: ['💻', '🔐', '🗃️'], wear: ['#4f46e5', '#818cf8'] },
+  ia:               { wall: '#fae8ff', accent: '#d946ef', decor: ['🖥️', '🤖', '📡'], wear: ['#c026d3', '#e879f9'] },
+  audit:            { wall: '#ecfccb', accent: '#84cc16', decor: ['📊', '📚', '🗂️'], wear: ['#65a30d', '#a3e635'] },
+};
+
+for (const floor of FLOORS) Object.assign(floor, SKINS[floor.id]);
+
 /** Paliers de postes qui doublent le CA du service. */
 export const MILESTONES = [25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
 

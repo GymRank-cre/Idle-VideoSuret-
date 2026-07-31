@@ -2,7 +2,7 @@
 
 import * as G from './game.js';
 import { game } from './game.js';
-import { initUI, render, frame, toast, openModal } from './ui.js';
+import { initUI, render, frame, toast, openModal, onCycle, refreshSheetManager } from './ui.js';
 import { fmt, money, duration, percent } from './format.js';
 
 const MAX_STEP = 0.25;      // pas maximum d'un tick, évite les sauts après un lag
@@ -45,6 +45,10 @@ function wireEvents() {
         break;
       case 'manager':
         toast(`👔 ${payload.manager} prend la tête de « ${payload.name} »`, 'good');
+        refreshSheetManager();
+        break;
+      case 'cycle':
+        onCycle(payload.def.id, payload.amount);
         break;
       case 'offer':
         toast(`📄 Nouvel appel d'offres : <b>${payload.name}</b>`);
