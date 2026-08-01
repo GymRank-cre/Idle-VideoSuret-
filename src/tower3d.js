@@ -102,9 +102,13 @@ function createFloor(def, index, state) {
 
   const slab = box(W, .24, D, material(0xcbd5e1));
   slab.position.y = .12;
+  const edge = box(W + .08, .18, .18, material(hex(def.accent), { shininess: 35 }));
+  edge.position.set(0, .18, D / 2);
+  const rug = box(5.7, .035, 2.45, material(hex(def.wall)));
+  rug.position.set(-.15, .28, .35);
   const back = box(W, H - .25, .18, wall);
   back.position.set(0, H / 2, -D / 2);
-  group.add(slab, back);
+  group.add(slab, edge, rug, back);
   const ceiling = box(W, .1, D, material(0xf8fafc));
   ceiling.position.y = H - .05;
   group.add(ceiling);
@@ -126,6 +130,11 @@ function createFloor(def, index, state) {
   const light = box(3.4, .035, .34, material(0xfff3c4, { emissive: 0x5b4310 }));
   light.position.set(0, H - .13, -.25);
   group.add(light);
+  // Plante ronde façon jeu mobile, utilisée comme repère de profondeur.
+  const pot = cylinder(.22, .38, material(0xe28b55), 10); pot.position.set(3.45, .46, 1.55);
+  const leaves = new THREE.Mesh(new THREE.IcosahedronGeometry(.42, 1), material(0x43b96b));
+  leaves.position.set(3.45, 1.0, 1.55); leaves.castShadow = true;
+  group.add(pot, leaves);
   for (let i = 0; i < 3; i++) addFurniture(group, def, i);
 
   const workers = [];
@@ -262,7 +271,8 @@ export function buildTower(container, state) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xaedcf3);
   scene.fog = new THREE.Fog(0xaedcf3, 42, 88);
-  const camera = new THREE.PerspectiveCamera(39, 1, .1, 100);
+  // Longue focale : perspective quasi isométrique typique des tycoon mobiles.
+  const camera = new THREE.PerspectiveCamera(27, 1, .1, 130);
   scene.add(new THREE.HemisphereLight(0xe8f6ff, 0x64748b, 1.45));
   const sun = new THREE.DirectionalLight(0xfff3d6, 1.35);
   sun.position.set(10, 18, 12);
@@ -287,9 +297,9 @@ export function buildTower(container, state) {
   world.add(roof);
 
   const targetY = Math.max(3.2, BASE + open * H * .46);
-  let yaw = -.58;
-  let pitch = .24;
-  let distance = Math.max(19, 16 + open * 1.55);
+  let yaw = -.72;
+  let pitch = .36;
+  let distance = Math.max(27, 23 + open * 2.05);
   let dragging = false;
   let px = 0;
   let py = 0;
@@ -306,12 +316,12 @@ export function buildTower(container, state) {
     if (!dragging) return;
     pointers.set(e.pointerId, e);
     yaw -= (e.clientX - px) * .008;
-    pitch = Math.max(-.12, Math.min(.72, pitch + (e.clientY - py) * .005));
+    pitch = Math.max(.18, Math.min(.62, pitch + (e.clientY - py) * .004));
     px = e.clientX; py = e.clientY; positionCamera();
   });
   stage.addEventListener('pointerup', (e) => { pointers.delete(e.pointerId); dragging = pointers.size > 0; });
   stage.addEventListener('pointercancel', () => { pointers.clear(); dragging = false; });
-  stage.addEventListener('wheel', (e) => { e.preventDefault(); distance = Math.max(12, Math.min(38, distance + e.deltaY * .012)); positionCamera(); }, { passive: false });
+  stage.addEventListener('wheel', (e) => { e.preventDefault(); distance = Math.max(22, Math.min(58, distance + e.deltaY * .018)); positionCamera(); }, { passive: false });
 
   view = { root, stage, renderer, scene, camera, world, floors, roof, elevator, open, yaw, last: performance.now() };
   resize();
