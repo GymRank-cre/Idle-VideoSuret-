@@ -10,7 +10,7 @@ import {
   isUpgradeAvailable, isResearchAvailable,
 } from './economy.js';
 import { fmt, money, duration, multiplier, percent } from './format.js';
-import { buildTower, updateTower, updateBuildSlot, popCoin, moveCab, openFloors } from './tower.js';
+import { buildTower, updateTower, updateBuildSlot, popCoin, moveCab, openFloors } from './tower-view.js';
 import * as G from './game.js';
 import { game } from './game.js';
 

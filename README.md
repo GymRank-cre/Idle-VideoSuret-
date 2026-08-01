@@ -37,10 +37,15 @@ Taper une pièce lance sa production ; le chevron ouvre le panneau de l'étage
 (effectif, paliers, recrutement, chef de service). Les gains jaillissent
 au-dessus de l'étage qui les produit.
 
-## Maquettes 3D en cours d'arbitrage
+## Tour 3D intégrée
 
-Deux directions visuelles sont proposées pour remplacer la vue actuelle, sur les
-quatre premiers étages :
+La maquette A est désormais la vue principale du jeu : elle affiche les dix
+services en vraie 3D WebGL et reste connectée à la production, aux effectifs,
+aux chefs de service et à la construction. La caméra tourne au glisser et zoome
+à la molette. Les cartes superposées permettent de lancer un cycle ou d'ouvrir
+la gestion d'un étage sans sacrifier la lisibilité sur mobile.
+
+Les prototypes restent consultables séparément :
 
 | Maquette | Fichier | Technique |
 | --- | --- | --- |
@@ -50,9 +55,9 @@ quatre premiers étages :
 Les prompts pour générer les modèles 3D de la maquette A sont dans
 [`docs/prompts-modeles-3d.md`](docs/prompts-modeles-3d.md).
 
-Les deux se manipulent : on fait pivoter la tour, on tape un étage pour lancer sa
-production. Elles n'utilisent pas encore le moteur de jeu — ce sont des maquettes
-d'aspect, avec des chiffres factices.
+La tour intégrée est construite avec des formes low-poly procédurales. Elle est
+prête à recevoir progressivement les fichiers GLB décrits dans les prompts. Si
+WebGL n'est pas disponible, le jeu revient automatiquement à la tour CSS.
 
 ## Boucle de jeu
 
