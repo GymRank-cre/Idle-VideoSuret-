@@ -152,7 +152,7 @@ await step('les dix étages s\'affichent', async () => {
 await step('l\'ascenseur dessert l\'étage tapé', async () => {
   const is3d = await page.isVisible('.tower3d');
   const before = is3d ? '' : await page.$eval('.cab', (e) => e.style.transform);
-  await page.click('[data-floor="cameras"] [data-act="panel"], [data-floor3d="cameras"] [data-act="panel"]');
+  await page.click(is3d ? '[data-floor3d="audit"] [data-act="panel"]' : '[data-floor="cameras"] [data-act="panel"]');
   await page.waitForTimeout(250);
   const after = is3d ? 'sélection 3D' : await page.$eval('.cab', (e) => e.style.transform);
   if (!is3d && before === after) throw new Error('cabine immobile');

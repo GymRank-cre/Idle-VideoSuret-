@@ -12,6 +12,8 @@ const H = 2.75;
 const BASE = 2.55;
 const MAX_CREW = 7;
 let view = null;
+let selectedFloor = -1;
+let previousOpen = -1;
 
 const hex = (value) => Number.parseInt(value.slice(1), 16);
 const crewSize = (count) => count <= 0 ? 0 : Math.min(MAX_CREW, 1 + Math.floor(count / 6));
@@ -162,12 +164,12 @@ function createLobby() {
   return lobby;
 }
 
-function createRoof(open) {
+function createRoof(open, complete = false) {
   const roof = new THREE.Group();
   roof.position.y = BASE + open * H;
-  const deck = box(W, .22, D, material(open < FLOORS.length ? 0xfbbf24 : 0x94a3b8));
+  const deck = box(W, .22, D, material(complete ? 0x94a3b8 : 0xfbbf24));
   roof.add(deck);
-  if (open < FLOORS.length) {
+  if (!complete) {
     const mast = box(.3, 3.5, .3, material(0xf59e0b));
     mast.position.set(2.8, 1.55, -.5);
     const jib = new THREE.Group();
@@ -234,7 +236,7 @@ function overlayHtml(state, open) {
   const labels = FLOORS.slice(0, open).map((def, index) => {
     const f = state.floors[def.id];
     const y = open <= 1 ? 55 : 82 - index * (64 / (open - 1));
-    return `<div class="floor3d-card" data-floor3d="${def.id}" style="--y:${y.toFixed(2)}%">
+    return `<div class="floor3d-card${index === selectedFloor ? ' selected' : ''}" data-floor3d="${def.id}" style="--y:${y.toFixed(2)}%">
       <button class="floor3d-main" type="button" data-act="tap" data-id="${def.id}">
         <span>${def.icon}</span><b>${def.name}</b><em data-role="level">${fmt(f.count)}</em>
         <small data-role="meta"></small><i><u data-role="progress"></u></i>
@@ -247,6 +249,11 @@ function overlayHtml(state, open) {
     ${build ? `<button class="build3d" type="button" data-act="build" data-id="${build.id}">
       🏗️ <span><b>${build.name}</b><small>Construire · <i data-role="build-price">${money(costOf(build, 0, 1))}</i></small></span>
     </button>` : '<div class="tower3d-complete">⭐ SIÈGE SOCIAL ACHEVÉ</div>'}
+    ${open ? `<div class="floor3d-nav">
+      <button type="button" data-nav="up" ${selectedFloor >= open - 1 ? 'disabled' : ''}>▲</button>
+      <b>${selectedFloor + 1}</b><span>/ ${open}</span>
+      <button type="button" data-nav="down" ${selectedFloor <= 0 ? 'disabled' : ''}>▼</button>
+    </div>` : ''}
     <div class="tower3d-hint">Glisse pour tourner · pince ou molette pour zoomer</div>
     <div class="tower3d-gains" aria-hidden="true"></div>
   </div>`;
@@ -255,6 +262,9 @@ function overlayHtml(state, open) {
 export function buildTower(container, state) {
   dispose();
   const open = FLOORS.filter((d) => state.floors[d.id].count > 0).length;
+  if (open !== previousOpen) selectedFloor = open - 1;
+  selectedFloor = Math.max(0, Math.min(open - 1, selectedFloor));
+  previousOpen = open;
   container.innerHTML = `<div class="tower3d"><div class="tower3d-stage"></div>${overlayHtml(state, open)}</div>`;
   const root = container.querySelector('.tower3d');
   const stage = root.querySelector('.tower3d-stage');
@@ -285,21 +295,24 @@ export function buildTower(container, state) {
   const ground = box(55, .4, 55, material(0x79a96b));
   ground.position.y = -.25;
   const environment = createEnvironment();
-  const elevator = createElevator(open);
+  const elevator = createElevator(open ? 1 : 0);
   world.add(ground, environment, createLobby(), elevator);
   const floors = new Map();
-  FLOORS.slice(0, open).forEach((def, i) => {
-    const floor = createFloor(def, i, state);
+  if (open) {
+    const def = FLOORS[selectedFloor];
+    const floor = createFloor(def, 0, state);
     floors.set(def.id, floor);
     world.add(floor);
-  });
-  const roof = createRoof(open);
-  world.add(roof);
+  }
+  // Aucun plafond au-dessus d'un plateau actif : la caméra isométrique doit
+  // voir tout l'aménagement, comme une maison de poupée ouverte.
+  const roof = open ? new THREE.Group() : createRoof(0, false);
+  if (!open) world.add(roof);
 
-  const targetY = Math.max(3.2, BASE + open * H * .46);
+  const targetY = open ? 3.65 : 2.8;
   let yaw = -.72;
   let pitch = .36;
-  let distance = Math.max(27, 23 + open * 2.05);
+  let distance = 31;
   let dragging = false;
   let px = 0;
   let py = 0;
@@ -322,6 +335,12 @@ export function buildTower(container, state) {
   stage.addEventListener('pointerup', (e) => { pointers.delete(e.pointerId); dragging = pointers.size > 0; });
   stage.addEventListener('pointercancel', () => { pointers.clear(); dragging = false; });
   stage.addEventListener('wheel', (e) => { e.preventDefault(); distance = Math.max(22, Math.min(58, distance + e.deltaY * .018)); positionCamera(); }, { passive: false });
+  root.querySelector('.floor3d-nav')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-nav]');
+    if (!button || button.disabled) return;
+    selectedFloor += button.dataset.nav === 'up' ? 1 : -1;
+    buildTower(container, state);
+  });
 
   view = { root, stage, renderer, scene, camera, world, floors, roof, elevator, open, yaw, last: performance.now() };
   resize();
@@ -414,7 +433,7 @@ export function moveCab(floorId) {
   if (!view) return;
   const index = FLOORS.findIndex((def) => def.id === floorId);
   const cab = view.elevator?.userData.cab;
-  if (cab && index >= 0) cab.position.y = BASE + index * H + 1.05;
+  if (cab && index >= 0) cab.position.y = BASE + 1.05;
   const card = view.root.querySelector(`[data-floor3d="${floorId}"]`);
   card?.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(0)' }], { duration: 420 });
 }
