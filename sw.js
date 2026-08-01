@@ -1,6 +1,6 @@
 // Service worker minimal : cache applicatif, réseau d'abord pour rester à jour.
 
-const CACHE = 'surete-tycoon-v2';
+const CACHE = 'surete-tycoon-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -25,6 +25,9 @@ let lastTop = -1;   // dernier étage accessible, pour recadrer après un chanti
 export function initUI() {
   el.view = document.getElementById('view');
   el.cash = document.getElementById('hud-cash');
+  el.level = document.getElementById('hud-level');
+  el.energy = document.getElementById('hud-energy');
+  el.gems = document.getElementById('hud-gems');
   el.cps = document.getElementById('hud-cps');
   el.stars = document.getElementById('hud-stars');
   el.rd = document.getElementById('hud-rd');
@@ -98,6 +101,7 @@ function onClick(e) {
     case 'accept': redraw = G.acceptOffer(Number(uid)); break;
     case 'decline': redraw = G.declineOffer(Number(uid)); break;
     case 'certify': confirmCertify(); redraw = false; break;
+    case 'travel': showTravel(id); redraw = false; break;
     default: redraw = false;
   }
   if (redraw) render();
@@ -125,6 +129,7 @@ export function render() {
     switch (state.tab) {
       case 'upgrades': el.view.innerHTML = viewUpgrades(state); break;
       case 'contracts': el.view.innerHTML = viewContracts(state); break;
+      case 'world': el.view.innerHTML = viewWorld(state); break;
       case 'research': el.view.innerHTML = viewResearch(state); break;
       default: el.view.innerHTML = viewCert(state);
     }
@@ -523,7 +528,11 @@ function confirmCertify() {
 
 export function frame() {
   const state = game.state;
+  const level = Math.max(1, Math.floor(Math.log10(Math.max(10, state.stats.lifetimeEarned + 10)) * 18));
   el.cash.textContent = money(state.cash);
+  el.level.textContent = fmt(level);
+  el.energy.textContent = fmt(Math.min(999, 100 + state.stats.contractsDone * 5));
+  el.gems.textContent = fmt(state.stars + Object.keys(state.achievements).length * 3);
   el.cps.textContent = money(incomePerSecond(state)) + '/s';
   el.stars.textContent = fmt(state.stars);
   el.rd.textContent = fmt(state.rd);
@@ -537,6 +546,51 @@ export function frame() {
   updateCosts(state);
   updateTimers(state);
   updateDots(state);
+}
+
+// ----------------------------------------------------- carte / agences
+
+function viewWorld(state) {
+  const level = Math.max(1, Math.floor(Math.log10(Math.max(10, state.stats.lifetimeEarned + 10)) * 18));
+  const regions = [
+    { id: 'paris', name: 'Agence Métropole', icon: '🏢', req: 1, cls: 'hq', desc: 'Votre siège : vidéoprotection, intrusion et contrôle d’accès.' },
+    { id: 'lyon', name: 'Pôle industriel', icon: '🏭', req: 35, cls: 'factory', desc: 'Sites logistiques, usines et protection périmétrique.' },
+    { id: 'marseille', name: 'Port sécurisé', icon: '⚓', req: 70, cls: 'port', desc: 'Terminaux portuaires, douanes et surveillance maritime.' },
+    { id: 'europe', name: 'Direction européenne', icon: '🌐', req: 120, cls: 'europe', desc: 'Coordination internationale et grands comptes.' },
+  ];
+  return `<div class="world-view">
+    <div class="world-sky"><i></i><i></i><i></i></div>
+    <div class="world-island">
+      <div class="road r1"></div><div class="road r2"></div><div class="water"></div>
+      ${regions.map((r, i) => `<button class="map-site ${r.cls} ${level < r.req ? 'locked' : ''}"
+        type="button" data-act="travel" data-id="${r.id}" style="--i:${i}">
+        <span>${r.icon}</span><b>${r.name}</b><small>${level < r.req ? `🔒 Niveau ${r.req}` : i ? 'Disponible' : 'Votre agence'}</small>
+      </button>`).join('')}
+      ${Array.from({ length: 12 }, (_, i) => `<i class="map-building" style="--i:${i}"></i>`).join('')}
+    </div>
+    <div class="world-title"><b>Réseau Sûreté France</b><span>Sélectionne une agence</span></div>
+  </div>`;
+}
+
+function showTravel(id) {
+  const level = Math.max(1, Math.floor(Math.log10(Math.max(10, game.state.stats.lifetimeEarned + 10)) * 18));
+  const regions = {
+    paris: ['Agence Métropole', 1, 'Votre siège opérationnel rassemble tous les métiers de la sûreté.'],
+    lyon: ['Pôle industriel', 35, 'Déployez la protection périmétrique et la supervision des sites industriels.'],
+    marseille: ['Port sécurisé', 70, 'Sécurisez les terminaux, les entrepôts et les accès maritimes.'],
+    europe: ['Direction européenne', 120, 'Pilotez les contrats internationaux et les centres de supervision.'],
+  };
+  const region = regions[id];
+  if (!region) return;
+  const locked = level < region[1];
+  openModal({
+    title: 'Déplacement professionnel',
+    body: `<div class="travel-card"><div class="travel-thumb">${id === 'paris' ? '🏙️' : id === 'lyon' ? '🏭' : id === 'marseille' ? '⚓' : '🌍'}</div>
+      <div><h3>${region[0]}</h3><p>${region[2]}</p>${locked ? `<b class="travel-lock">Condition : niveau ${region[1]}</b>` : '<b class="travel-ok">📍 Destination disponible</b>'}</div></div>`,
+    actions: locked
+      ? [{ label: 'Fermer', cls: 'big ghost' }]
+      : [{ label: 'Annuler', cls: 'big ghost' }, { label: id === 'paris' ? 'Votre lieu' : 'Voyager', cls: 'big primary', onClick() { game.state.tab = 'services'; render(); } }],
+  });
 }
 
 /** Relaie un cycle payé vers la tour pour l'animation des gains. */

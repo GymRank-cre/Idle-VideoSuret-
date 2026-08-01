@@ -48,14 +48,23 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 /* --------------------------------------------------------------- HUD */
 
-.hud { padding: calc(8px + var(--safe-t)) 12px 8px; flex: none; }
+.hud { padding: calc(8px + var(--safe-t)) 12px 8px; flex: none; position: relative; z-index: 8; }
+.level-star {
+  position: absolute; left: 8px; top: calc(13px + var(--safe-t)); z-index: 2;
+  width: 58px; height: 58px; display: grid; place-items: center;
+  color: #fff; font-size: 19px; text-shadow: 0 2px 0 #102a56;
+  background: linear-gradient(145deg, #73c7ff, #2869d9 58%, #18449b);
+  border: 4px solid #173c7c;
+  clip-path: polygon(50% 0,63% 17%,85% 15%,83% 38%,100% 50%,83% 63%,85% 86%,62% 83%,50% 100%,37% 83%,14% 86%,17% 63%,0 50%,17% 38%,14% 15%,37% 17%);
+  filter: drop-shadow(0 3px 1px rgba(15,23,42,.35));
+}
 
 .hud-money {
   display: flex; align-items: center; gap: 10px;
   background: var(--paper);
   border: 3px solid var(--outline);
   border-radius: 18px;
-  padding: 8px 10px 8px 12px;
+  padding: 8px 10px 8px 12px; margin-left: 47px;
   box-shadow: 0 4px 0 rgba(34, 58, 85, .22);
 }
 .coin-ico { font-size: 26px; line-height: 1; }
@@ -71,7 +80,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   background: #eef2f7; border: 2px solid #cbd5e1; color: var(--muted); font-size: 18px;
 }
 
-.hud-res { display: flex; gap: 7px; margin-top: 7px; }
+.hud-res { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--paper); border: 2px solid var(--outline);
@@ -79,6 +88,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   box-shadow: 0 2px 0 rgba(34, 58, 85, .2);
 }
 .chip b { font-variant-numeric: tabular-nums; }
+.chip.energy { color: #b45309; background: #fff7d6; }
+.chip.gems { color: #7e22ce; background: #faf0ff; }
 .chip-btn { background: #fff7e6; border-color: #b4790c; color: #92600a; }
 .chip-btn:disabled { background: #eef2f7; border-color: #cbd5e1; color: #94a3b8; box-shadow: none; }
 .chip-btn.live { animation: throb 1s infinite; }
@@ -580,17 +591,39 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .stats span { color: var(--muted); }
 .stats b { font-variant-numeric: tabular-nums; }
 
+/* ====================================================== CARTE MONDE */
+.view:has(.world-view) { padding: 0 0 calc(var(--tabs-h) + var(--safe-b)); overflow: hidden; }
+.world-view { position: relative; width: 100%; height: 100%; min-height: 450px; overflow: hidden; background: linear-gradient(#0b4d8d, #16a7d0); }
+.world-sky { position: absolute; inset: 0; background: radial-gradient(circle at 50% 20%, rgba(68,197,238,.85), transparent 45%); }
+.world-sky i { position: absolute; width: 110px; height: 38px; background: rgba(255,255,255,.88); clip-path: polygon(10% 40%,25% 15%,42% 35%,60% 5%,90% 42%,100% 80%,0 100%); }
+.world-sky i:nth-child(1) { left: -25px; top: 8%; }.world-sky i:nth-child(2) { right: -20px; top: 20%; transform: scale(1.4); }.world-sky i:nth-child(3) { left: 25%; bottom: 4%; transform: scale(.7); }
+.world-island { position: absolute; left: 50%; top: 52%; width: 540px; height: 430px; transform: translate(-50%,-50%) rotateX(57deg) rotateZ(-35deg); transform-style: preserve-3d; border: 13px solid #b98b59; border-radius: 18% 28% 16% 24%; background: #d9d2bd; box-shadow: 0 18px 0 #8d623c, 0 35px 55px rgba(0,36,70,.55); }
+.road { position:absolute; z-index:1; background:#4b5563; border:3px solid #f4c542; }.road.r1 { left:0; right:0; top:48%; height:46px; }.road.r2 { top:0; bottom:0; left:46%; width:46px; }
+.water { position:absolute; right:-30px; bottom:-30px; width:190px; height:125px; border:8px solid #eee4c8; background:#1bc2dc; border-radius:50%; }
+.map-building { position:absolute; z-index:2; width:34px; height:42px; left:8%; top:10%; background:linear-gradient(90deg,#dceaf2 55%,#85aabd 56%); border:3px solid #416177; box-shadow:8px 8px 0 #58798b; }
+.map-building:nth-of-type(2),.map-building:nth-of-type(6),.map-building:nth-of-type(10){left:30%}.map-building:nth-of-type(3),.map-building:nth-of-type(7),.map-building:nth-of-type(11){left:57%}.map-building:nth-of-type(4),.map-building:nth-of-type(8),.map-building:nth-of-type(12){left:82%}
+.map-building:nth-of-type(n+5):nth-of-type(-n+8){top:43%}.map-building:nth-of-type(n+9){top:76%}
+.map-site { position:absolute; z-index:5; width:88px; min-height:76px; transform:rotateZ(35deg) rotateX(-57deg); color:#fff; text-shadow:0 2px 2px #17345a; }
+.map-site span { display:grid; place-items:center; width:54px; height:54px; margin:auto; font-size:28px; background:linear-gradient(#ffd632,#f38b16); border:4px solid #fff; border-radius:50% 50% 50% 8px; transform:rotate(-45deg); box-shadow:0 0 18px #ffd83d; }
+.map-site b,.map-site small { display:block; white-space:nowrap; font-size:10px; }.map-site small{font-size:8px;color:#d8ecff}.map-site.locked{filter:grayscale(.8);opacity:.72}
+.map-site.hq{left:42%;top:29%}.map-site.factory{left:16%;top:63%}.map-site.port{left:68%;top:62%}.map-site.europe{left:69%;top:12%}
+.world-title { position:absolute; top:12px; left:50%; transform:translateX(-50%); padding:7px 18px; color:#fff; text-align:center; background:rgba(18,39,75,.88); border:2px solid #8db8ff; border-radius:12px; box-shadow:0 3px 0 rgba(0,0,0,.25); }
+.world-title b,.world-title span{display:block;white-space:nowrap}.world-title b{font-size:14px}.world-title span{font-size:10px;color:#bcd7ff}
+.travel-card { display:flex; gap:14px; align-items:center; padding:12px; background:#fff; border:2px solid #cad7ea; border-radius:10px; }
+.travel-thumb { flex:none; width:100px; height:100px; display:grid; place-items:center; font-size:45px; background:linear-gradient(145deg,#9bdcff,#4f80d9); border-radius:9px; }
+.travel-card h3{margin:0 0 5px}.travel-card p{margin:0 0 10px;font-size:12px;color:var(--muted)}.travel-lock{color:#7c8798}.travel-ok{color:#3478dc}
+
 /* ================================================== NAVIGATION BASSE = */
 
 .tabs {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
   max-width: 560px; margin: 0 auto;
   height: calc(var(--tabs-h) + var(--safe-b)); padding-bottom: var(--safe-b);
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   background: var(--paper); border-top: 3px solid var(--outline);
 }
 .tab {
-  color: var(--muted); font-size: 10.5px; font-weight: 700;
+  color: var(--muted); font-size: 9px; font-weight: 700;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   position: relative;
 }

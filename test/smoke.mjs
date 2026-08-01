@@ -161,11 +161,11 @@ await step('l\'ascenseur dessert l\'étage tapé', async () => {
   return is3d ? after : after.replace(/[^0-9-]/g, '') + 'px';
 });
 
-for (const tab of ['upgrades', 'contracts', 'research', 'cert']) {
+for (const tab of ['upgrades', 'contracts', 'world', 'research', 'cert']) {
   await step(`onglet ${tab}`, async () => {
     await page.click(`.tab[data-tab="${tab}"]`);
     await page.waitForTimeout(250);
-    const n = await page.$$eval('#view .card, #view .empty, #view .ach', (els) => els.length);
+    const n = await page.$$eval('#view .card, #view .empty, #view .ach, #view .world-view', (els) => els.length);
     if (n === 0) throw new Error('vue vide');
     return n + ' blocs';
   });

@@ -18,6 +18,7 @@
 <div id="app">
 
   <header class="hud">
+    <div class="level-star"><b id="hud-level">1</b></div>
     <div class="hud-money">
       <span class="coin-ico" aria-hidden="true">💶</span>
       <div>
@@ -28,6 +29,8 @@
     </div>
 
     <div class="hud-res">
+      <span class="chip energy" title="Énergie">⚡ <b id="hud-energy">100</b></span>
+      <span class="chip gems" title="Cristaux">💎 <b id="hud-gems">0</b></span>
       <span class="chip" title="Étoiles de certification">⭐ <b id="hud-stars">0</b></span>
       <span class="chip" title="Points de R&amp;D">🔬 <b id="hud-rd">0</b></span>
       <button id="btn-boost" class="chip chip-btn" type="button" hidden>⚡ <b id="boost-label">Renfort</b></button>
@@ -42,6 +45,7 @@
     <button class="tab" data-tab="services" type="button"><span>🏢</span>Services</button>
     <button class="tab" data-tab="upgrades" type="button"><span>🧰</span>Matériel<i class="dot" hidden></i></button>
     <button class="tab" data-tab="contracts" type="button"><span>📄</span>Contrats<i class="dot" hidden></i></button>
+    <button class="tab" data-tab="world" type="button"><span>🌍</span>Carte</button>
     <button class="tab" data-tab="research" type="button"><span>🔬</span>R&amp;D<i class="dot" hidden></i></button>
     <button class="tab" data-tab="cert" type="button"><span>⭐</span>Certif.<i class="dot" hidden></i></button>
   </nav>

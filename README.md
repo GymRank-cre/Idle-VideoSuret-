@@ -59,6 +59,11 @@ La tour intégrée est construite avec des formes low-poly procédurales. Elle e
 prête à recevoir progressivement les fichiers GLB décrits dans les prompts. Si
 WebGL n'est pas disponible, le jeu revient automatiquement à la tour CSS.
 
+Le jeu comprend aussi une carte isométrique du réseau d'agences : siège
+métropolitain, pôle industriel, port sécurisé et direction européenne. Ces
+destinations se débloquent avec le niveau du dirigeant et reprennent la boucle
+carte → agence → gestion intérieure des tycoon mobiles.
+
 ## Boucle de jeu
 
 1. **Construire** — dix métiers à ouvrir dans l'ordre, du poste d'accueil à
