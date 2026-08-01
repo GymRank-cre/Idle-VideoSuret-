@@ -9,6 +9,7 @@ import { fmt, money, duration } from './format.js';
 const W = 8.4;
 const D = 5.2;
 const H = 2.75;
+const BASE = 2.55;
 const MAX_CREW = 7;
 let view = null;
 
@@ -22,20 +23,39 @@ function box(w, h, d, material) {
 }
 
 function material(color, extra = {}) {
-  return new THREE.MeshLambertMaterial({ color, ...extra });
+  return new THREE.MeshPhongMaterial({ color, shininess: 18, flatShading: true, ...extra });
+}
+
+function cylinder(radius, height, mat, sides = 12) {
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, sides), mat);
+  mesh.castShadow = mesh.receiveShadow = true;
+  return mesh;
 }
 
 function addWorker(group, def, index) {
   const worker = new THREE.Group();
   const skin = material([0xf3c9a2, 0xe0a878, 0xc2865a, 0x8d5a34][index % 4]);
   const uniform = material(hex(def.wear[index % def.wear.length]));
-  const body = box(.32, .62, .24, uniform);
-  body.position.y = .55;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.18, 10, 8), skin);
-  head.position.y = 1.03;
-  worker.add(body, head);
+  const body = box(.38, .54, .25, uniform);
+  body.position.y = .67;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 9), skin);
+  head.position.y = 1.1;
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(.205, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), material([0x3f2d25, 0x6b4226, 0x1f2937][index % 3]));
+  hair.position.y = 1.14;
+  const legs = [];
+  for (const x of [-.11, .11]) {
+    const leg = box(.12, .38, .13, material(0x26364a));
+    leg.position.set(x, .25, 0);
+    legs.push(leg);
+    const arm = box(.1, .43, .11, uniform);
+    arm.position.set(x * 2.25, .67, 0);
+    worker.add(arm);
+  }
+  worker.add(body, head, hair, ...legs);
   worker.position.set(-2.65 + (index % 4) * 1.35, .2, -.55 + Math.floor(index / 4) * 1.5);
   worker.userData.phase = index * 1.7;
+  worker.userData.baseX = worker.position.x;
+  worker.userData.legs = legs;
   group.add(worker);
   return worker;
 }
@@ -45,18 +65,38 @@ function addFurniture(group, def, index) {
   const dark = material(0x334155);
   const x = -2.6 + (index % 3) * 2.25;
   const z = -1.75;
-  const desk = box(1.25, .12, .62, material(0xd6b486));
+  const desk = box(1.25, .12, .62, material(0xd7b27b));
   desk.position.set(x, .64, z);
   const screen = box(.5, .38, .08, dark);
   screen.position.set(x, .91, z - .08);
   const device = box(.18, .18, .18, accent);
   device.position.set(x + .42, .8, z);
   group.add(desk, screen, device);
+
+  // Un objet-signature rend chaque métier identifiable sans texte dans la 3D.
+  if (index === 0) {
+    let prop;
+    if (['cameras', 'telesurveillance', 'ia'].includes(def.id)) {
+      prop = cylinder(.18, .48, dark, 10); prop.rotation.z = Math.PI / 2;
+    } else if (def.id === 'incendie') {
+      prop = cylinder(.18, .62, material(0xef4444), 12);
+    } else if (def.id === 'reseau' || def.id === 'cyber') {
+      prop = box(.55, 1.25, .45, material(0x27364a));
+      for (let k = 0; k < 4; k++) {
+        const led = box(.28, .035, .012, material(k % 2 ? 0x22c55e : 0x38bdf8, { emissive: k % 2 ? 0x052e16 : 0x082f49 }));
+        led.position.set(0, -.42 + k * .25, .232); prop.add(led);
+      }
+    } else {
+      prop = box(.5, .7, .2, accent);
+    }
+    prop.position.set(3.05, .72, -1.95);
+    group.add(prop);
+  }
 }
 
 function createFloor(def, index, state) {
   const group = new THREE.Group();
-  group.position.y = .55 + index * H;
+  group.position.y = BASE + index * H;
   const wall = material(hex(def.wall));
   const pale = material(0xf1f5f9);
 
@@ -65,11 +105,27 @@ function createFloor(def, index, state) {
   const back = box(W, H - .25, .18, wall);
   back.position.set(0, H / 2, -D / 2);
   group.add(slab, back);
+  const ceiling = box(W, .1, D, material(0xf8fafc));
+  ceiling.position.y = H - .05;
+  group.add(ceiling);
   for (const sideX of [-W / 2, W / 2]) {
-    const side = box(.18, H - .25, D, pale);
-    side.position.set(sideX, H / 2, 0);
+    // Retours de mur courts : la coupe reste ouverte même en vue trois-quarts.
+    const side = box(.18, H - .25, 1.15, pale);
+    side.position.set(sideX, H / 2, -D / 2 + .575);
     group.add(side);
+    const pillar = box(.22, H - .25, .22, material(hex(def.accent)));
+    pillar.position.set(sideX, H / 2, D / 2 - .12);
+    group.add(pillar);
   }
+  // Baies vitrées arrière, encadrements et bande lumineuse.
+  for (let x = -3.1; x <= 3.1; x += 1.55) {
+    const window = box(1.18, 1.08, .035, material(0x83cdef, { transparent: true, opacity: .72, shininess: 80 }));
+    window.position.set(x, 1.58, -D / 2 + .105);
+    group.add(window);
+  }
+  const light = box(3.4, .035, .34, material(0xfff3c4, { emissive: 0x5b4310 }));
+  light.position.set(0, H - .13, -.25);
+  group.add(light);
   for (let i = 0; i < 3; i++) addFurniture(group, def, i);
 
   const workers = [];
@@ -80,24 +136,39 @@ function createFloor(def, index, state) {
 
 function createLobby() {
   const lobby = new THREE.Group();
-  const shell = box(W, .55, D, material(0xe2e8f0));
+  const shell = box(W + .35, .55, D + .25, material(0xd3dae4));
   shell.position.y = .27;
-  const glass = box(W - 1.2, 1.4, .12, material(0x7dd3fc, { transparent: true, opacity: .72 }));
-  glass.position.set(0, .72, D / 2);
-  lobby.add(shell, glass);
+  const glassMat = material(0x62c5f2, { transparent: true, opacity: .68, shininess: 95 });
+  const glass = box(W - 1.0, 1.75, .12, glassMat);
+  glass.position.set(0, 1.1, D / 2);
+  const canopy = box(4.8, .18, 1.05, material(0x2563eb));
+  canopy.position.set(0, 2.05, D / 2 + .35);
+  const doorFrame = box(1.85, 1.75, .18, material(0x1e3a5f));
+  doorFrame.position.set(0, 1.1, D / 2 + .06);
+  const door = box(1.55, 1.6, .2, glassMat);
+  door.position.set(0, 1.0, D / 2 + .17);
+  const sign = box(3.9, .55, .18, material(0xffffff, { emissive: 0x16213a }));
+  sign.position.set(0, 2.42, D / 2 + .05);
+  lobby.add(shell, glass, canopy, doorFrame, door, sign);
   return lobby;
 }
 
 function createRoof(open) {
   const roof = new THREE.Group();
-  roof.position.y = .55 + open * H;
+  roof.position.y = BASE + open * H;
   const deck = box(W, .22, D, material(open < FLOORS.length ? 0xfbbf24 : 0x94a3b8));
   roof.add(deck);
   if (open < FLOORS.length) {
-    const mast = box(.22, 3.1, .22, material(0xf59e0b));
+    const mast = box(.3, 3.5, .3, material(0xf59e0b));
     mast.position.set(2.8, 1.55, -.5);
-    const jib = box(4.4, .18, .18, material(0xf59e0b));
-    jib.position.set(1.2, 3.0, -.5);
+    const jib = new THREE.Group();
+    const beam = box(5.5, .16, .16, material(0xfbbf24));
+    jib.add(beam);
+    for (let x = -2.3; x < 2.5; x += .65) {
+      const brace = box(.05, .52, .05, material(0xd97706));
+      brace.position.x = x; brace.rotation.z = x % 1.3 ? .65 : -.65; jib.add(brace);
+    }
+    jib.position.set(.45, 3.25, -.5);
     roof.add(mast, jib);
     roof.userData.jib = jib;
   } else {
@@ -106,6 +177,48 @@ function createRoof(open) {
     roof.add(antenna);
   }
   return roof;
+}
+
+function createElevator(open) {
+  const elevator = new THREE.Group();
+  const shaftMat = material(0x29435f, { transparent: true, opacity: .8 });
+  const height = Math.max(BASE, BASE + open * H);
+  for (const x of [-3.82, -2.78]) {
+    const rail = box(.1, height, .12, shaftMat); rail.position.set(x, height / 2, -2.15); elevator.add(rail);
+  }
+  const cab = box(.9, 1.65, .78, material(0x60a5fa, { emissive: 0x0b2447, shininess: 65 }));
+  cab.position.set(-3.3, 1.15, -2.12);
+  const doors = box(.72, 1.35, .025, material(0xdbeafe, { shininess: 85 }));
+  doors.position.set(0, 0, .405); cab.add(doors);
+  elevator.add(cab);
+  elevator.userData.cab = cab;
+  return elevator;
+}
+
+function createEnvironment() {
+  const env = new THREE.Group();
+  const road = box(50, .025, 8, material(0x455568));
+  road.position.set(0, .02, 9);
+  env.add(road);
+  for (let x = -22; x < 23; x += 3.8) {
+    const dash = box(1.9, .035, .16, material(0xf8d46a));
+    dash.position.set(x, .04, 9); env.add(dash);
+  }
+  const colors = [0x91a9ba, 0xb8c4ce, 0x7f9aab, 0xd0b99c];
+  for (let i = 0; i < 18; i++) {
+    const h = 2.5 + (i * 1.73 % 6);
+    const building = box(3 + (i % 3), h, 3.2, material(colors[i % colors.length]));
+    const side = i % 2 ? -1 : 1;
+    building.position.set(side * (10 + (i % 5) * 4.3), h / 2, -5 - Math.floor(i / 5) * 5);
+    env.add(building);
+  }
+  for (const x of [-7, -5.2, 6.1, 8]) {
+    const trunk = cylinder(.11, 1.05, material(0x7c4f2c), 8); trunk.position.set(x, .52, 4.2);
+    const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(.72, 1), material(0x39a866));
+    crown.position.set(x, 1.5, 4.2); crown.castShadow = true;
+    env.add(trunk, crown);
+  }
+  return env;
 }
 
 function overlayHtml(state, open) {
@@ -139,11 +252,16 @@ export function buildTower(container, state) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if ('toneMapping' in renderer) {
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+  }
   stage.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x9fd7f5);
-  scene.fog = new THREE.Fog(0x9fd7f5, 34, 75);
+  scene.background = new THREE.Color(0xaedcf3);
+  scene.fog = new THREE.Fog(0xaedcf3, 42, 88);
   const camera = new THREE.PerspectiveCamera(39, 1, .1, 100);
   scene.add(new THREE.HemisphereLight(0xe8f6ff, 0x64748b, 1.45));
   const sun = new THREE.DirectionalLight(0xfff3d6, 1.35);
@@ -154,9 +272,11 @@ export function buildTower(container, state) {
 
   const world = new THREE.Group();
   scene.add(world);
-  const ground = box(50, .4, 50, material(0x87a96b));
+  const ground = box(55, .4, 55, material(0x79a96b));
   ground.position.y = -.25;
-  world.add(ground, createLobby());
+  const environment = createEnvironment();
+  const elevator = createElevator(open);
+  world.add(ground, environment, createLobby(), elevator);
   const floors = new Map();
   FLOORS.slice(0, open).forEach((def, i) => {
     const floor = createFloor(def, i, state);
@@ -166,10 +286,10 @@ export function buildTower(container, state) {
   const roof = createRoof(open);
   world.add(roof);
 
-  const targetY = Math.max(3.5, open * H * .5);
+  const targetY = Math.max(3.2, BASE + open * H * .46);
   let yaw = -.58;
   let pitch = .24;
-  let distance = Math.max(18, 14 + open * 1.45);
+  let distance = Math.max(19, 16 + open * 1.55);
   let dragging = false;
   let px = 0;
   let py = 0;
@@ -193,7 +313,7 @@ export function buildTower(container, state) {
   stage.addEventListener('pointercancel', () => { pointers.clear(); dragging = false; });
   stage.addEventListener('wheel', (e) => { e.preventDefault(); distance = Math.max(12, Math.min(38, distance + e.deltaY * .012)); positionCamera(); }, { passive: false });
 
-  view = { root, stage, renderer, scene, camera, world, floors, roof, open, yaw, last: performance.now() };
+  view = { root, stage, renderer, scene, camera, world, floors, roof, elevator, open, yaw, last: performance.now() };
   resize();
   return root;
 }
@@ -234,8 +354,11 @@ export function updateTower(state) {
       group.userData.crew++;
     }
     group.userData.workers.forEach((worker, i) => {
-      worker.position.x += Math.sin(seconds * (1.05 + i * .04) + worker.userData.phase) * .0025;
-      worker.rotation.y = Math.sin(seconds + worker.userData.phase) * .25;
+      const stride = Math.sin(seconds * (1.4 + i * .05) + worker.userData.phase);
+      worker.position.x = worker.userData.baseX + stride * .34;
+      worker.position.y = .2 + Math.abs(stride) * .025;
+      worker.rotation.y = stride * .18;
+      worker.userData.legs.forEach((leg, legIndex) => { leg.rotation.x = stride * (legIndex ? -.38 : .38); });
     });
     const t = cycleTime(state, def);
     const pct = f.count ? Math.min(100, f.progress / t * 100) : 0;
@@ -279,6 +402,9 @@ export function popCoin(floorId, amount) {
 
 export function moveCab(floorId) {
   if (!view) return;
+  const index = FLOORS.findIndex((def) => def.id === floorId);
+  const cab = view.elevator?.userData.cab;
+  if (cab && index >= 0) cab.position.y = BASE + index * H + 1.05;
   const card = view.root.querySelector(`[data-floor3d="${floorId}"]`);
   card?.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(0)' }], { duration: 420 });
 }
