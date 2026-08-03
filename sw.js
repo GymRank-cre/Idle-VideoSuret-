@@ -9,6 +9,8 @@ const ASSETS = [
   './src/main.js',
   './src/ui.js',
   './src/tower.js',
+  './src/tower3d.js',
+  './src/models.js',
   './src/game.js',
   './src/state.js',
   './src/economy.js',

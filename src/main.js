@@ -2,7 +2,7 @@
 
 import * as G from './game.js';
 import { game } from './game.js';
-import { initUI, render, frame, toast, openModal, onCycle, refreshSheetManager } from './ui.js';
+import { initUI, render, frame, toast, openModal, onCycle, refreshSheetManager, enable3D } from './ui.js';
 import { fmt, money, duration, percent } from './format.js';
 
 const MAX_STEP = 0.25;      // pas maximum d'un tick, évite les sauts après un lag
@@ -97,6 +97,7 @@ function start() {
   const report = G.boot();
   initUI();
   wireEvents();
+  enable3D();
   showOfflineReport(report);
   last = performance.now();
   requestAnimationFrame(loop);

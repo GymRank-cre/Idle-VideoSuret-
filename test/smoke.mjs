@@ -34,8 +34,13 @@ const server = http.createServer((req, res) => {
 });
 await new Promise((resolve) => server.listen(PORT, resolve));
 const URL = `http://localhost:${PORT}/`;
+const URL_2D = URL + '?render=2d';
 
-const launchOptions = {};
+// Sans rendu matériel, un Chromium headless n'expose pas WebGL : on lui donne
+// le rasteriseur logiciel pour que l'étape « tour 3D » soit testable partout.
+const launchOptions = {
+  args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+};
 if (process.env.PLAYWRIGHT_CHROMIUM) launchOptions.executablePath = process.env.PLAYWRIGHT_CHROMIUM;
 const browser = await chromium.launch(launchOptions);
 const context = await browser.newContext({ viewport: { width: 400, height: 820 } });
@@ -60,7 +65,7 @@ const step = async (label, fn) => {
 
 const st = (fn) => page.evaluate(fn);
 
-await page.goto(URL, { waitUntil: 'networkidle' });
+await page.goto(URL_2D, { waitUntil: 'networkidle' });
 await page.waitForTimeout(400);
 
 await step('page chargée', () => page.title());
@@ -262,12 +267,38 @@ await step('revenus hors-ligne', async () => {
   });
   const page2 = await context.newPage();
   watch(page2, 'onglet B');
-  await page2.goto(URL, { waitUntil: 'networkidle' });
+  await page2.goto(URL_2D, { waitUntil: 'networkidle' });
   await page2.waitForTimeout(700);
   if (!(await page2.isVisible('#modal'))) throw new Error('rapport hors-ligne absent');
   const body = (await page2.textContent('#modal-body')).replace(/\s+/g, ' ').trim();
   await page2.close();
   return body.slice(0, 110);
+});
+
+await step('la tour 3D prend la main', async () => {
+  // Contexte neuf : la partie précédente a laissé une tour complète en
+  // sauvegarde et un autre onglet actif.
+  const ctx3 = await browser.newContext({ viewport: { width: 400, height: 820 } });
+  const p3 = await ctx3.newPage();
+  watch(p3, 'tour 3D');
+  await p3.goto(URL, { waitUntil: 'networkidle' });
+  await p3.waitForTimeout(1800);
+
+  const on = await p3.evaluate(() => !!document.querySelector('.t3d canvas'));
+  if (!on) { await ctx3.close(); throw new Error('canvas WebGL absent'); }
+
+  // le chantier reste cliquable : la boucle de jeu ne dépend pas du moteur
+  const before = await p3.evaluate(() => window.SURETE.game.state.floors.accueil.count);
+  await p3.click('.build3d');
+  await p3.waitForTimeout(400);
+  const after = await p3.evaluate(() => window.SURETE.game.state.floors.accueil.count);
+  if (after <= before) throw new Error('construction impossible en 3D');
+
+  const tags = await p3.$$eval('.t3d-tag', (els) => els.length);
+  if (tags < 1) throw new Error('aucune étiquette d\'étage');
+
+  await ctx3.close();
+  return `canvas actif, ${tags} étiquette(s), étage bâti`;
 });
 
 console.log(failures.length ? '\n' + failures.join('\n') : '\nAucune erreur console.');

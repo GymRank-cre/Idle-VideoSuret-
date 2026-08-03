@@ -37,22 +37,25 @@ Taper une pièce lance sa production ; le chevron ouvre le panneau de l'étage
 (effectif, paliers, recrutement, chef de service). Les gains jaillissent
 au-dessus de l'étage qui les produit.
 
-## Maquettes 3D en cours d'arbitrage
+## Rendu 3D
 
-Deux directions visuelles sont proposées pour remplacer la vue actuelle, sur les
-quatre premiers étages :
+La tour est rendue en **WebGL** (Three.js, embarqué dans `vendor/`) : bâtiment en
+volume dont la façade avant est ouverte, dalles teintées par métier, mobilier et
+personnel en 3D, ombres portées, cage d'ascenseur vitrée, chantier et grue au
+sommet. On fait pivoter la tour au doigt et on zoome à la pince ; taper un étage
+lance sa production, l'étiquette ouvre son panneau.
 
-| Maquette | Fichier | Technique |
-| --- | --- | --- |
-| A — vraie 3D | `demo/webgl.html` | WebGL via Three.js (`vendor/three.min.js`), caméra orbitale, ombres portées, personnel en volume |
-| B — isométrique | `demo/iso.html` | CSS 3D pur (`preserve-3d`), aucune dépendance, personnel en panneaux face caméra |
+Three.js n'est chargé qu'à la demande. Si la machine ne fait pas de WebGL — ou en
+ajoutant `?render=2d` à l'adresse — le jeu se rabat sur la **tour CSS** de
+`src/tower.js`, entièrement jouable : seul l'habillage change.
 
-Les prompts pour générer les modèles 3D de la maquette A sont dans
+Les modèles 3D sont pour l'instant des primitives. `src/models.js` décrit chaque
+pièce du décor avec le `.glb` attendu et sa cote en mètres : renseigner un chemin
+suffit à remplacer une primitive. Les prompts pour générer ces modèles sont dans
 [`docs/prompts-modeles-3d.md`](docs/prompts-modeles-3d.md).
 
-Les deux se manipulent : on fait pivoter la tour, on tape un étage pour lancer sa
-production. Elles n'utilisent pas encore le moteur de jeu — ce sont des maquettes
-d'aspect, avec des chiffres factices.
+Les deux maquettes d'origine restent consultables : `demo/webgl.html` (WebGL) et
+`demo/iso.html` (isométrique CSS, sans dépendance).
 
 ## Boucle de jeu
 
@@ -96,7 +99,9 @@ src/data.js           contenu : services, habillage des pièces, R&D, contrats, 
 src/state.js          état, sauvegarde locale, migrations
 src/economy.js        arithmétique : coûts, multiplicateurs, production, étoiles
 src/game.js           boucle logique et actions du joueur
-src/tower.js          l'immeuble en coupe : étages, personnel animé, ascenseur
+src/tower.js          repli CSS : l'immeuble en coupe, étages et personnel animés
+src/tower3d.js        la tour WebGL : scène, caméra orbitale, personnel en volume
+src/models.js         table des modèles .glb et chargement à la demande de Three.js
 src/ui.js             onglets, panneau d'étage, rafraîchissement par image
 src/main.js           démarrage, requestAnimationFrame, sauvegarde automatique
 sw.js / manifest.json installation PWA
