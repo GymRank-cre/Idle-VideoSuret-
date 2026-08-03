@@ -490,13 +490,18 @@ function project(x, y, z) {
   };
 }
 
+// Le bouton de chantier occupe le bas de l'écran : les étiquettes n'y descendent pas.
+const TAG_BOTTOM_GUARD = 96;
+
 function layoutTags(state) {
   if (!camera) return;
   const wBox = renderer.domElement.clientWidth;
+  const hBox = renderer.domElement.clientHeight;
 
   for (const f of floors.values()) {
     const p = project(-W / 2 - 0.6, f.y + 1.5, D / 2 + 0.4);
-    if (!p.visible) { f.tag.style.display = 'none'; continue; }
+    const inFrame = p.visible && p.y < hBox - TAG_BOTTOM_GUARD && p.y > 4;
+    if (!inFrame) { f.tag.style.display = 'none'; continue; }
     f.tag.style.display = '';
     const tw = f.tag.offsetWidth || 150;
     f.tag.style.left = Math.max(8, Math.min(wBox - tw - 8, p.x - tw)) + 'px';

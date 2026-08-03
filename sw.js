@@ -1,6 +1,6 @@
 // Service worker minimal : cache applicatif, réseau d'abord pour rester à jour.
 
-const CACHE = 'surete-tycoon-v1';
+const CACHE = 'surete-tycoon-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -8,8 +8,9 @@ const ASSETS = [
   './styles/main.css',
   './src/main.js',
   './src/ui.js',
-  './src/tower.js',
+  './src/tower-view.js',
   './src/tower3d.js',
+  './src/tower.js',
   './src/models.js',
   './src/game.js',
   './src/state.js',
@@ -18,6 +19,7 @@ const ASSETS = [
   './src/format.js',
   './assets/icon.svg',
   './assets/icon-maskable.svg',
+  './vendor/three.min.js',
 ];
 
 self.addEventListener('install', (event) => {

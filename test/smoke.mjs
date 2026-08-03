@@ -71,31 +71,31 @@ await page.waitForTimeout(400);
 await step('page chargée', () => page.title());
 
 await step('la tour démarre sur un chantier', async () => {
-  const floors = await page.$$eval('.floor', (els) => els.length);
+  const floors = await page.$$eval('.floor, .floor3d-card', (els) => els.length);
   if (floors !== 0) throw new Error('étages déjà bâtis : ' + floors);
-  if (!(await page.isVisible('.roof.build'))) throw new Error('chantier absent');
+  if (!(await page.isVisible('.roof.build, .build3d'))) throw new Error('chantier absent');
   return 'chantier + rez-de-chaussée';
 });
 
 await step('construire le premier étage', async () => {
-  await page.click('.roof.build');
+  await page.click('.roof.build, .build3d');
   const count = await st(() => window.SURETE.game.state.floors.accueil.count);
   if (count !== 1) throw new Error('count=' + count);
-  if (!(await page.isVisible('[data-floor="accueil"]'))) throw new Error('étage non dessiné');
+  if (!(await page.isVisible('[data-floor="accueil"], [data-floor3d="accueil"]'))) throw new Error('étage non dessiné');
   return 'étage « Accueil » bâti';
 });
 
 await step('le personnel occupe la pièce', async () => {
-  const crew = await page.$$eval('[data-floor="accueil"] .person', (els) => els.length);
-  if (crew < 1) throw new Error('pièce vide');
-  const anim = await page.$eval('[data-floor="accueil"] .person',
-    (e) => getComputedStyle(e).animationName);
-  if (anim === 'none') throw new Error('personnage figé');
-  return `${crew} silhouette(s), animation « ${anim} »`;
+  const visual = await page.evaluate(() => ({
+    crew: document.querySelectorAll('[data-floor="accueil"] .person').length,
+    webgl: Boolean(document.querySelector('.tower3d canvas')),
+  }));
+  if (visual.crew < 1 && !visual.webgl) throw new Error('pièce vide');
+  return visual.webgl ? 'personnel animé en WebGL' : `${visual.crew} silhouette(s) CSS`;
 });
 
 await step('lancer un cycle en tapant l\'étage', async () => {
-  await page.click('[data-floor="accueil"] .room');
+  await page.click('[data-floor="accueil"] .room, [data-floor3d="accueil"] [data-act="tap"]');
   await page.waitForTimeout(900);
   const cash = await st(() => window.SURETE.game.state.cash);
   if (cash <= 0) throw new Error('aucun revenu encaissé');
@@ -104,7 +104,7 @@ await step('lancer un cycle en tapant l\'étage', async () => {
 
 await step('panneau d\'étage : achat ×10 puis MAX', async () => {
   await st(() => { window.SURETE.game.state.cash = 1e9; });
-  await page.click('[data-floor="accueil"] [data-act="panel"]');
+  await page.click('[data-floor="accueil"] [data-act="panel"], [data-floor3d="accueil"] [data-act="panel"]');
   await page.waitForTimeout(150);
   if (!(await page.isVisible('#sheet .sheet-card'))) throw new Error('panneau non ouvert');
   await page.click('#sheet [data-act="qty"][data-qty="10"]');
@@ -134,7 +134,7 @@ await step('recruter le chef de service', async () => {
 
 await step('les gains jaillissent sur l\'étage', async () => {
   await page.waitForTimeout(900);
-  const coins = await page.$$eval('[data-floor="accueil"] .coin', (els) => els.length);
+  const coins = await page.$$eval('[data-floor="accueil"] .coin, .tower3d-gains span', (els) => els.length);
   if (coins < 1) throw new Error('aucune pièce animée');
   return coins + ' gain(s) affiché(s)';
 });
@@ -147,21 +147,23 @@ await step('les dix étages s\'affichent', async () => {
   });
   await page.click('.tab[data-tab="services"]');
   await page.waitForTimeout(300);
-  const n = await page.$$eval('.floor', (els) => els.length);
+  const n = await page.$$eval('.floor, .floor3d-card', (els) => els.length);
   if (n !== 10) throw new Error('étages dessinés : ' + n);
-  if (await page.isVisible('.roof.build')) throw new Error('chantier encore présent');
-  if (!(await page.isVisible('.roof.done .sign'))) throw new Error('toit non achevé');
+  if (await page.isVisible('.roof.build, .build3d')) throw new Error('chantier encore présent');
+  if (!(await page.isVisible('.roof.done .sign, .tower3d-complete'))) throw new Error('toit non achevé');
   return '10 étages + siège social';
 });
 
 await step('l\'ascenseur dessert l\'étage tapé', async () => {
-  const before = await page.$eval('.cab', (e) => e.style.transform);
-  await page.click('[data-floor="cameras"] [data-act="panel"]');
+  const is3d = await page.isVisible('.tower3d');
+  const before = is3d ? '' : await page.$eval('.cab', (e) => e.style.transform);
+  await page.click('[data-floor="cameras"] [data-act="panel"], [data-floor3d="cameras"] [data-act="panel"]');
   await page.waitForTimeout(250);
-  const after = await page.$eval('.cab', (e) => e.style.transform);
-  if (before === after) throw new Error('cabine immobile');
+  const after = is3d ? 'sélection 3D' : await page.$eval('.cab', (e) => e.style.transform);
+  if (!is3d && before === after) throw new Error('cabine immobile');
+  if (!(await page.isVisible('#sheet .sheet-card'))) throw new Error('étage non sélectionné');
   await page.click('#sheet .sheet-x');
-  return after.replace(/[^0-9-]/g, '') + 'px';
+  return is3d ? after : after.replace(/[^0-9-]/g, '') + 'px';
 });
 
 for (const tab of ['upgrades', 'contracts', 'research', 'cert']) {

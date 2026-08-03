@@ -1,4 +1,4 @@
-// Rendu DOM. L'onglet principal est la tour (voir tower.js) ; les autres
+// Rendu DOM. L'onglet principal est la tour (voir tower-view.js) ; les autres
 // onglets sont des listes reconstruites une fois par seconde. Les valeurs
 // « chaudes » (trésorerie, barres, minuteurs) sont rafraîchies à chaque image.
 
@@ -10,9 +10,7 @@ import {
   isUpgradeAvailable, isResearchAvailable,
 } from './economy.js';
 import { fmt, money, duration, multiplier, percent } from './format.js';
-import { buildTower, updateTower, updateBuildSlot, popCoin, moveCab, openFloors } from './tower.js';
-import * as T3 from './tower3d.js';
-import { loadThree, supportsWebGL } from './models.js';
+import * as tower from './tower-view.js';
 import * as G from './game.js';
 import { game } from './game.js';
 
@@ -23,7 +21,6 @@ const el = {};
 let refs = { costs: [], timers: [] };
 let sheet = null;   // { id, refs… } quand le panneau d'étage est ouvert
 let lastTop = -1;   // dernier étage accessible, pour recadrer après un chantier
-let use3D = false;  // la tour WebGL a pris la main sur la version CSS
 
 export function initUI() {
   el.view = document.getElementById('view');
@@ -71,7 +68,7 @@ function onClick(e) {
     case 'tap': {
       const f = game.state.floors[id];
       if (f.manager || f.running) { openSheet(id); redraw = false; }
-      else { redraw = G.runFloor(id); cab(id); }
+      else { redraw = G.runFloor(id); tower.moveCab(id); }
       break;
     }
     case 'panel':
@@ -116,15 +113,15 @@ export function render() {
     btn.classList.toggle('on', btn.dataset.tab === state.tab);
   }
 
-  el.view.classList.toggle('flat', state.tab === 'services' && use3D);
+  el.view.classList.toggle('flat', state.tab === 'services' && tower.is3D());
 
-  if (state.tab === 'services' && use3D) {
-    T3.buildTower(el.view, state);
-    T3.updateBuildSlot(state, el.view);
+  if (state.tab === 'services' && tower.is3D()) {
+    tower.buildTower(el.view, state);
+    tower.updateBuildSlot(state, el.view);
   } else if (state.tab === 'services') {
     const keep = el.view.scrollTop;
-    const open = openFloors(state);
-    buildTower(el.view, state);
+    const open = tower.openFloors(state);
+    tower.buildTower(el.view, state);
     // Un nouvel étage vient d'être construit : on remonte le montrer.
     el.view.scrollTop = open !== lastTop ? 0 : keep;
     lastTop = open;
@@ -148,40 +145,21 @@ export function render() {
 
 function openSheet(id) {
   buildSheet(id);
-  cab(id);
+  tower.moveCab(id);
 }
 
-/** Amène la cabine, quel que soit le moteur de rendu en place. */
-function cab(id) {
-  (use3D ? T3.moveCab : moveCab)(id);
-}
-
-/**
- * Tente de passer la tour en WebGL. Tant que Three.js n'est pas chargé — ou si
- * la machine n'en veut pas — la version CSS reste à l'écran : le jeu est
- * jouable dans les deux cas, seul l'habillage change.
- */
+/** Bascule la tour en WebGL si la machine le permet, puis redessine. */
 export function enable3D() {
-  // ?render=2d force la tour CSS : utile sur machine faible et pour les tests.
-  if (location.search.includes('render=2d')) return Promise.resolve(false);
-  if (!supportsWebGL()) return Promise.resolve(false);
-  return loadThree()
-    .then((THREE) => {
-      T3.init(THREE);
-      T3.setPickHandler((floorId) => {
-        const f = game.state.floors[floorId];
-        if (!f) return;
-        if (f.manager || f.running) openSheet(floorId);
-        else if (G.runFloor(floorId)) T3.moveCab(floorId);
-      });
-      use3D = true;
-      render();
-      return true;
-    })
-    .catch((err) => {
-      console.warn('Tour 3D indisponible, rendu CSS conservé', err);
-      return false;
-    });
+  tower.setPickHandler((floorId) => {
+    const f = game.state.floors[floorId];
+    if (!f) return;
+    if (f.manager || f.running) openSheet(floorId);
+    else if (G.runFloor(floorId)) tower.moveCab(floorId);
+  });
+  return tower.enable3D().then((on) => {
+    if (on) render();
+    return on;
+  });
 }
 
 function buildSheet(id) {
@@ -551,7 +529,7 @@ function confirmCertify() {
           if (G.certify()) {
             closeSheet();
             lastTop = -1;
-            if (use3D) T3.reframe();
+            tower.reframe();
             toast(`⭐ Certification obtenue : +${fmt(gain)} étoiles`, 'gold');
             render();
           }
@@ -571,12 +549,9 @@ export function frame() {
   el.rd.textContent = fmt(state.rd);
 
   updateBoost(state);
-  if (state.tab === 'services' && use3D) {
-    T3.updateTower(state);
-    T3.updateBuildSlot(state, el.view);
-  } else if (state.tab === 'services') {
-    updateTower(state);
-    updateBuildSlot(state, el.view);
+  if (state.tab === 'services') {
+    tower.updateTower(state);
+    tower.updateBuildSlot(state, el.view);
   }
   if (sheet) updateSheet(state);
   updateCosts(state);
@@ -587,7 +562,7 @@ export function frame() {
 /** Relaie un cycle payé vers la tour pour l'animation des gains. */
 export function onCycle(floorId, amount) {
   if (game.state.tab !== 'services') return;
-  (use3D ? T3.popCoin : popCoin)(floorId, amount);
+  tower.popCoin(floorId, amount);
 }
 
 /** Le panneau doit refléter un recrutement de chef de service. */
@@ -706,7 +681,7 @@ function openMenu() {
                   G.hardReset();
                   closeSheet();
                   lastTop = -1;
-                  if (use3D) T3.reframe();
+                  tower.reframe();
                   render();
                 },
               },

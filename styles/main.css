@@ -96,6 +96,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 /* ======================================================== LA TOUR ==== */
 
+
 .tower { position: relative; }
 
 .floors {
@@ -582,7 +583,10 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .t3d-tag.auto .st { color: var(--green); }
 
 .build3d {
-  position: absolute; transform: translate(0, -100%);
+  /* Action principale de l'écran : place fixe à portée de pouce, au-dessus de
+     la barre d'onglets qui est en position fixe et déborde sur la vue. */
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabs-h) + 14px + var(--safe-b));
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   background: repeating-linear-gradient(45deg, #fde68a 0 10px, #fbbf24 10px 20px);
   border: 3px solid var(--outline); border-radius: 14px; padding: 6px 12px;
@@ -610,12 +614,4 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
   0% { opacity: 0; transform: translate(-50%, -30%) scale(.8); }
   18% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
   100% { opacity: 0; transform: translate(-50%, -170%) scale(1); }
-}
-
-/* Le chantier est l'action principale de l'écran : il garde une place fixe,
-   à portée de pouce, au lieu de dériver avec la caméra. */
-.build3d {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  /* la barre d'onglets est fixe et déborde sur la vue : on passe au-dessus */
-  bottom: calc(var(--tabs-h) + 14px + var(--safe-b));
 }
