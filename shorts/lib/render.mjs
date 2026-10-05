@@ -159,7 +159,7 @@ export async function assemble({ timeline, duration, cacheDir, output, q }) {
     parts.push(`${last}[${k}:v]xfade=transition=${t.xfade}:duration=${(t.frames / FPS).toFixed(4)}:offset=${offset.toFixed(4)}[x${k}]`);
     last = `[x${k}]`;
   }
-  const grain = q.grain ? ',noise=alls=4:allf=t' : '';
+  const grain = q.grain ? ',noise=alls=3:allf=t' : '';
   parts.push(
     `${last}eq=contrast=1.05:saturation=1.12,unsharp=5:5:0.35,vignette=angle=PI/6${grain},` +
       `subtitles=captions.ass:fontsdir=${FONTS_DIR}[graded]`,
@@ -172,7 +172,7 @@ export async function assemble({ timeline, duration, cacheDir, output, q }) {
       '-filter_complex', parts.join(';'),
       '-map', '[v]', '-map', `${audioIdx}:a`,
       '-t', duration.toFixed(3), '-r', String(FPS),
-      '-c:v', 'libx264', '-preset', q.finalPreset, '-crf', String(q.crf), '-profile:v', 'high', '-pix_fmt', 'yuv420p',
+      '-c:v', 'libx264', '-preset', q.finalPreset, '-crf', String(q.crf), '-maxrate', '14M', '-bufsize', '28M', '-profile:v', 'high', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart',
       output,
     ],
