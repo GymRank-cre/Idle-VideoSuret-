@@ -1,0 +1,76 @@
+{
+  "series": "Histoires de sûreté",
+  "disclaimer": "Récit d'après des sources publiques.",
+  "episodes": [
+    {
+      "id": "01-louvre-2025",
+      "hook": "Le Louvre cambriolé en moins de dix minutes",
+      "script": "Dimanche 19 octobre 2025, il est neuf heures trente, le Louvre est ouvert au public. Quatre hommes arrivent avec un camion équipé d'une nacelle élévatrice. Ils montent jusqu'à une fenêtre de la galerie d'Apollon, découpent la vitre, et se servent. En moins de dix minutes, ils repartent avec des bijoux de la Couronne, estimés à près de quatre-vingt-dix millions d'euros. La leçon sûreté : une alarme ne protège que si l'intervention est plus rapide que l'intrusion. Le point faible n'était pas la porte, c'était la façade. Abonne-toi pour la prochaine histoire.",
+      "caption": "Louvre, octobre 2025 : la leçon sûreté d'un cambriolage en plein jour. D'après les informations publiées par la presse.",
+      "hashtags": ["#histoirevraie", "#surete", "#louvre", "#cambriolage", "#securite"]
+    },
+    {
+      "id": "02-anvers-2003",
+      "hook": "Le coffre impossible à ouvrir… et pourtant vidé",
+      "script": "Février 2003, Anvers. Le Centre du diamant abrite l'un des coffres les mieux protégés du monde : serrure à des millions de combinaisons, détecteurs de chaleur, de mouvement, de vibrations, champ magnétique. Pourtant, un week-end, plus d'une centaine de casiers sont vidés. Le cerveau de l'opération avait loué un bureau dans l'immeuble, en se faisant passer pour un marchand de diamants. Pendant des mois, personne ne s'est méfié. La leçon sûreté : la meilleure technologie ne sert à rien si on laisse entrer celui qui prépare le coup. Abonne-toi pour la suite.",
+      "caption": "Anvers 2003 : quand la menace est déjà dans le bâtiment. D'après des sources publiques.",
+      "hashtags": ["#histoirevraie", "#surete", "#braquage", "#diamant", "#securite"]
+    },
+    {
+      "id": "03-gardner-1990",
+      "hook": "Deux faux policiers, treize œuvres volées",
+      "script": "Boston, 18 mars 1990, une heure du matin. Deux hommes en uniforme de policier sonnent au musée Isabella Stewart Gardner. Ils disent répondre à un appel. L'agent de sécurité les laisse entrer, contre le règlement. En quatre-vingt-un minutes, ils repartent avec treize œuvres : Rembrandt, Vermeer, Manet. Plus de trente ans après, le casse n'est toujours pas résolu et les cadres sont toujours accrochés, vides. La leçon sûreté : un uniforme n'est pas une preuve d'identité. La procédure est là pour protéger les agents, même quand ça semble impoli. Abonne-toi.",
+      "caption": "Gardner 1990 : l'ingénierie sociale avant l'heure. Vérifier avant d'ouvrir, toujours.",
+      "hashtags": ["#histoirevraie", "#surete", "#truecrime", "#braquage", "#securite"]
+    },
+    {
+      "id": "04-joconde-1911",
+      "hook": "La Joconde a disparu et personne ne l'a remarqué",
+      "script": "Lundi 21 août 1911, le Louvre est fermé. Un ancien employé, Vincenzo Peruggia, s'est caché la veille dans un local. Il décroche la Joconde, la cache sous sa blouse, et sort tranquillement. Le lendemain, un peintre vient la voir et trouve un mur vide. Les gardiens pensaient que le tableau était parti chez le photographe. Il sera retrouvé deux ans plus tard à Florence. La leçon sûreté : celui qui connaît les lieux contourne tout. Et sans contrôle régulier, un vol peut passer inaperçu pendant des heures. Abonne-toi pour la suite.",
+      "caption": "La Joconde 1911 : le vol qui l'a rendue célèbre, et la leçon sûreté qui va avec.",
+      "hashtags": ["#histoirevraie", "#surete", "#joconde", "#louvre", "#histoire"]
+    },
+    {
+      "id": "05-target-2013",
+      "hook": "Quarante millions de cartes volées… par un frigoriste",
+      "script": "Fin 2013, l'enseigne américaine Target se fait voler les données d'environ quarante millions de cartes bancaires. Comment les pirates sont-ils entrés ? Pas par le site, ni par les caisses. Par les identifiants d'un prestataire de chauffage et de climatisation, qui avait un accès réseau pour son travail. De là, ils ont rebondi jusqu'aux systèmes de paiement. La leçon sûreté : tes prestataires sont ta surface d'attaque. Il faut limiter leurs accès au strict nécessaire, et séparer les réseaux. Abonne-toi pour la prochaine histoire.",
+      "caption": "Target 2013 : la faille est venue d'un prestataire. Segmenter, toujours.",
+      "hashtags": ["#cybersecurite", "#surete", "#histoirevraie", "#piratage", "#securite"]
+    },
+    {
+      "id": "06-casino-aquarium",
+      "hook": "Un casino piraté… par le thermomètre de son aquarium",
+      "script": "Dans le hall d'un casino nord-américain, il y a un aquarium. Pour surveiller la température de l'eau, le casino installe un thermomètre connecté. Un jour, des pirates passent par cet objet pour entrer dans le réseau. Ils se déplacent, trouvent une base de données de clients, et envoient environ dix gigaoctets vers l'extérieur. Le point d'entrée : un thermomètre à poissons. La leçon sûreté : chaque objet connecté est une porte d'entrée. Inventaire, mises à jour, réseau séparé. Abonne-toi pour la suite.",
+      "caption": "Le casino et l'aquarium : chaque objet connecté est une porte. Histoire rapportée publiquement.",
+      "hashtags": ["#cybersecurite", "#surete", "#iot", "#histoirevraie", "#securite"]
+    },
+    {
+      "id": "07-bangladesh-2016",
+      "hook": "Une faute d'orthographe a sauvé vingt millions de dollars",
+      "script": "Février 2016. Des pirates infiltrent la banque centrale du Bangladesh et envoient de fausses instructions de virement. Plus de quatre-vingts millions de dollars partent vers les Philippines. Une autre série d'ordres, de vingt millions, vise le Sri Lanka. Mais dans l'ordre, le mot fondation est mal écrit. Une banque intermédiaire s'étonne, pose des questions, et bloque le virement. La leçon sûreté : un contrôle humain attentif vaut parfois plus qu'un système. Il faut garder des yeux qui vérifient. Abonne-toi pour la prochaine histoire.",
+      "caption": "Bangladesh 2016 : une faute d'orthographe, vingt millions de dollars sauvés.",
+      "hashtags": ["#cybersecurite", "#surete", "#histoirevraie", "#banque", "#securite"]
+    },
+    {
+      "id": "08-spaggiari-1976",
+      "hook": "Le casse du siècle commence sous la ville",
+      "script": "Nice, juillet 1976. Un week-end, des hommes ont creusé un tunnel depuis les égouts jusqu'à la salle des coffres de la Société Générale. Ils ouvrent des centaines de coffres, et repartent avec un butin de plusieurs dizaines de millions de francs. Sur un mur, ils écrivent : sans armes, sans haine et sans violence. Leur chef, Albert Spaggiari, sera arrêté, puis s'évadera en sautant par la fenêtre d'un bureau de juge. La leçon sûreté : protège aussi ce qu'on ne regarde jamais, le dessous, le toit, les réseaux. Abonne-toi.",
+      "caption": "Nice 1976 : la menace est parfois là où personne ne regarde.",
+      "hashtags": ["#histoirevraie", "#surete", "#spaggiari", "#braquage", "#nice"]
+    },
+    {
+      "id": "09-stuxnet",
+      "hook": "Le virus qui a cassé des machines sans qu'on le voie",
+      "script": "Natanz, Iran. Des centrifugeuses tombent en panne, les unes après les autres, sans explication. En 2010, des experts découvrent pourquoi : un ver informatique, Stuxnet, modifie en secret leur vitesse de rotation, tout en affichant des valeurs normales aux opérateurs. Ces machines n'étaient pas connectées à internet. Le logiciel aurait été introduit par une clé USB. La leçon sûreté : un réseau isolé n'est pas un réseau protégé. Les supports amovibles, les prestataires et les mises à jour sont des portes. Abonne-toi pour la suite.",
+      "caption": "Stuxnet : l'isolement ne suffit pas. D'après des sources publiques.",
+      "hashtags": ["#cybersecurite", "#surete", "#stuxnet", "#histoirevraie", "#securite"]
+    },
+    {
+      "id": "10-notre-dame-2019",
+      "hook": "L'alarme a sonné à Notre-Dame, mais personne ne savait où",
+      "script": "Quinze avril 2019, dix-huit heures vingt. À Notre-Dame de Paris, l'alarme incendie se déclenche. Un agent de sécurité est envoyé vérifier, mais il se rend au mauvais endroit. Il ne voit pas de feu. Vingt-trois minutes plus tard, une seconde alarme retentit, et cette fois le feu est déjà bien installé dans les combles. D'après la presse, la lecture de l'alarme n'était pas évidente pour les équipes. La leçon sûreté : une détection incendie ne vaut que par la rapidité et la clarté de la réponse. Formation, procédures, exercices. Abonne-toi.",
+      "caption": "Notre-Dame 2019 : la détection ne suffit pas, il faut une réponse claire. D'après les informations publiées par la presse.",
+      "hashtags": ["#histoirevraie", "#surete", "#notredame", "#incendie", "#securite"]
+    }
+  ]
+}

@@ -4,3 +4,4 @@ node_modules/
 *.log
 .env
 shorts/out/
+shorts/episodes/*/cache/

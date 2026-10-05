@@ -1,0 +1,97 @@
+{
+  "id": "01-le-chat",
+  "title": "Le complice le plus inattendu",
+  "hook": "Le complice le plus inattendu",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "shots": [
+    {
+      "asset": "chat.webp", "cam": "punch", "focus": [0.5, 0.32],
+      "say": "Ce chat a aidé un cambrioleur à vider tout un entrepôt.",
+      "emphasis": ["chat", "cambrioleur"],
+      "sfx": [{ "name": "impact", "at": 0 }]
+    },
+    {
+      "asset": "chat.webp", "cam": "out", "focus": [0.5, 0.3],
+      "say": "Chaque nuit, Biscotte s'installe sur la même voiture, pile dans le champ de la caméra numéro quatre.",
+      "label": "Biscotte|Chat du quartier",
+      "sfx": [{ "name": "meow", "at": "mot:voiture" }]
+    },
+    {
+      "asset": "camera.webp", "in": "whip", "cam": "close", "focus": [0.46, 0.42], "zoom": [2.0, 2.25],
+      "say": "Et chaque nuit, la caméra détecte un mouvement… et déclenche l'alarme.",
+      "emphasis": ["alarme"],
+      "sfx": [{ "name": "beep", "at": "mot:détecte" }, { "name": "alarm", "at": "mot:alarme", "volume": 0.35 }]
+    },
+    {
+      "asset": "gardien.webp", "in": "whip-up", "cam": "in", "focus": [0.52, 0.26],
+      "say": "Au poste de garde, Gérard connaît la chanson : encore le chat.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": ["encore"]
+    },
+    {
+      "asset": "gardien.webp", "cam": "close", "focus": [0.48, 0.5], "zoom": [1.9, 2.05],
+      "say": "Deux heures. Trois heures. Quatre heures. Il ne se lève même plus.",
+      "sfx": [
+        { "name": "beep", "at": "mot:Deux" },
+        { "name": "beep", "at": "mot:Trois" },
+        { "name": "beep", "at": "mot:Quatre" },
+        { "name": "sip", "at": "mot:lève" }
+      ]
+    },
+    {
+      "asset": "cambrioleur.webp", "in": "flash", "autoSfx": false, "cam": "punch", "focus": [0.35, 0.22],
+      "say": "Sauf qu'une nuit… ce n'est pas le chat.",
+      "musicDrop": 1.8,
+      "emphasis": ["pas"],
+      "sfx": [{ "name": "scratch", "at": 0, "offset": -0.05 }, { "name": "impact", "at": "mot:pas" }]
+    },
+    {
+      "asset": "cambrioleur.webp", "cam": "down", "focus": [0.55, 0.5],
+      "say": "L'alarme sonne. Gérard soupire. Et le cambrioleur repart tranquillement, par la grande porte.",
+      "label": "Le cambrioleur|Visiteur du soir",
+      "sfx": [
+        { "name": "alarm", "at": 0, "volume": 0.3 },
+        { "name": "sigh", "at": "mot:soupire" },
+        { "name": "tiptoe", "at": "mot:repart" }
+      ]
+    },
+    {
+      "asset": "camera.webp", "in": "zoom", "cam": "close", "focus": [0.47, 0.44], "zoom": [2.1, 3.0],
+      "say": "La caméra avait tout filmé. Mais plus personne ne la regardait.",
+      "emphasis": ["personne"],
+      "sfx": [{ "name": "shutter", "at": 0.1 }]
+    },
+    {
+      "asset": "technicienne.webp", "in": "whip", "cam": "in", "focus": [0.6, 0.22],
+      "say": "Le lendemain, Inès, la technicienne, comprend tout de suite. Le problème, ce n'est pas le matériel. C'est la fatigue d'alarme.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": ["fatigue", "d'alarme"],
+      "sfx": [{ "name": "ding", "at": "mot:fatigue" }]
+    },
+    {
+      "asset": "technicienne.webp", "cam": "close", "focus": [0.66, 0.4], "zoom": [1.7, 1.85],
+      "say": "Trop de fausses alertes, et plus personne n'y croit.",
+      "emphasis": ["fausses"],
+      "sfx": [{ "name": "tap", "at": 0.15 }]
+    },
+    {
+      "asset": "technicienne.webp", "cam": "out", "focus": [0.6, 0.3],
+      "say": "Sa solution : des détecteurs qui font la différence entre un humain et un animal, une levée de doute vidéo, et chaque alarme traitée comme une vraie.",
+      "emphasis": ["humain", "animal", "vraie"],
+      "sfx": [{ "name": "tap", "at": "mot:levée" }, { "name": "ding", "at": "mot:vraie" }]
+    },
+    {
+      "asset": "chat.webp", "in": "whip", "cam": "in", "focus": [0.5, 0.3], "zoom": [1.05, 1.3],
+      "say": "Et Biscotte ? Il dort toujours sur la voiture. Abonne-toi pour la prochaine histoire de sûreté.",
+      "sfx": [{ "name": "purr", "at": 0.2 }, { "name": "meow", "at": "mot:Abonne" }]
+    }
+  ],
+  "caption": "Le complice le plus inattendu d'un cambriolage 🐈 Trop de fausses alertes, et plus personne ne réagit à la vraie : c'est la fatigue d'alarme. Tu l'as déjà vécu ?",
+  "hashtags": ["#surete", "#securite", "#agentdesecurite", "#alarme", "#videosurveillance", "#cambriolage", "#histoire", "#humour"]
+}

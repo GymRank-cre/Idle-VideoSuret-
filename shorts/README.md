@@ -1,39 +1,58 @@
-# Shorts « Astuces argent » (TikTok / Instagram Reels)
+# Shorts « Histoires de sûreté » (TikTok / Instagram Reels)
 
-Pipeline 100 % automatisé : texte → voix ElevenLabs → vidéo verticale 1080x1920 avec
-sous-titres mot à mot. Aucune dépendance npm, il faut seulement Node 18+ et `ffmpeg`.
+Les visuels (images ou clips) viennent de [modif.ai](https://modif.ai/fr/dashboard).
+Tout le reste est automatique : voix ElevenLabs, montage plan par plan calé sur la voix,
+mouvements de caméra, transitions, sous-titres animés, musique, bruitages, étalonnage, export.
 
-## Pourquoi cette niche
-
-Analyse vidIQ (France, 30 derniers jours, Reels + TikTok) : des comptes de 2K à 13K abonnés
-atteignent 0,8 à 2,4 M de vues avec des formats « liste d'astuces argent ». C'est aussi la
-niche où la valeur par vue est la plus haute (affiliation, sponsoring, RPM).
-Pistes de rechange : astuces ChatGPT/IA (très porteur mais demande des captures d'écran),
-psychologie en storytelling (le plus simple à automatiser).
-
-## Utilisation
+## Lancer un montage
 
 ```bash
-cp .env.example .env        # puis renseigner ELEVENLABS_API_KEY
-node shorts/build.mjs voices                      # trouver un voice_id français
-ELEVENLABS_VOICE_ID=... node shorts/build.mjs     # génère tous les épisodes
-node shorts/build.mjs --only 03-epargne-automatique
-node shorts/build.mjs --dry                       # test du rendu sans appeler l'API
+cp .env.example .env                          # renseigner ELEVENLABS_API_KEY
+node shorts/montage.mjs 01-le-chat --preview  # aperçu rapide 540x960
+node shorts/montage.mjs 01-le-chat            # export final 1080x1920, -14 LUFS
+node shorts/montage.mjs voices                # liste des voix disponibles
 ```
 
-Sorties dans `shorts/out/` (ignoré par git) : `<id>.mp4` et `<id>.json` (légende + hashtags).
+Sorties dans `shorts/out/` : `<id>.mp4`, `<id>.jpg` (couverture), `<id>.txt` (légende).
+Voix et musique sont mises en cache dans `episodes/<id>/cache/` : relancer un montage
+après une retouche ne consomme aucun crédit ElevenLabs tant que le texte ne change pas.
 
-## Contenu
+## Créer un épisode
 
-`shorts/content/episodes.json` : 10 épisodes. Chaque épisode a un `hook` (affiché 3 s),
-un `script` (texte lu), une `caption` et des `hashtags`. Structure d'un bon épisode :
-hook dans la première phrase, 25-35 s, une action concrète, un appel à enregistrer/partager.
+1. Générer les visuels sur modif.ai en 9:16 (768x1376 ou plus), même style cartoon.
+2. Les déposer dans `shorts/episodes/<id>/assets/` (`.webp`, `.png`, `.jpg`, `.mp4`).
+3. Écrire `shorts/episodes/<id>/episode.json` (voir `01-le-chat`) : une entrée par plan.
 
-Le contenu reste général et pédagogique : pas de promesse de gain, pas de trading ni de jeux
-d'argent, mention « pas un conseil financier » incrustée sur chaque vidéo. Relire chaque script
-avant publication, les règles et taux changent.
+| Champ d'un plan | Rôle |
+| --- | --- |
+| `asset` | visuel du plan (image ou vidéo) |
+| `say` | réplique lue pendant le plan ; le plan démarre sur son premier mot |
+| `cam` | `in`, `out`, `punch`, `close`, `up`, `down`, `left`, `right`, `hold` |
+| `focus` | point visé `[x, y]` entre 0 et 1 (visage, objet…) |
+| `zoom` | `[début, fin]` pour forcer l'amplitude du zoom |
+| `in` | transition d'entrée : `cut`, `whip`, `whip-up`, `flash`, `zoom`, `glitch`, `fade` |
+| `label` | étiquette de personnage `"Nom\|Rôle"` |
+| `emphasis` | mots affichés en rouge dans les sous-titres |
+| `sfx` | bruitages : `{ "name": "alarm", "at": "mot:alarme" }`, `at` en secondes ou sur un mot |
+| `musicDrop` | coupe la musique N secondes au début du plan (effet de chute) |
+
+Bruitages disponibles : voir `lib/sfx.mjs`. Un nouveau son se déclare dans `sfxLibrary`
+de l'épisode, il est généré une fois et conservé dans `shorts/audio/sfx/`.
+
+## Règles de montage appliquées
+
+- La coupe arrive 3 images avant le mot : l'image précède le son.
+- Jamais d'image figée : chaque plan bouge, avec un amorti.
+- Sous-titres 2-3 mots, mot prononcé en jaune, hors des zones masquées par l'interface TikTok.
+- Musique baissée automatiquement sous la voix (ducking), coupée sur les chutes.
+- Loudness normalisée à -14 LUFS, plafond -1,5 dBTP.
+
+## Banque d'histoires
+
+`scripts/histoires-vraies.json` : 10 récits d'affaires réelles (Louvre, Anvers, Gardner,
+Joconde, Target, Stuxnet, Notre-Dame…) prêts à être découpés en plans.
 
 ## Sécurité
 
-La clé ElevenLabs ne doit **jamais** être commitée : elle vit dans `.env` (ignoré) ou dans une
-variable d'environnement.
+La clé ElevenLabs ne doit **jamais** être commitée : elle vit dans `.env` (ignoré par git).
+Les polices Anton et Bangers sont sous licence OFL (`fonts/`).
