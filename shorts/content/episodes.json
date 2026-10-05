@@ -1,0 +1,75 @@
+{
+  "disclaimer": "Contenu informatif, pas un conseil financier.",
+  "episodes": [
+    {
+      "id": "01-abonnements",
+      "hook": "Tu paies des abonnements que tu n'utilises plus",
+      "script": "Tu paies des abonnements que tu n'utilises plus. Voilà comment les retrouver en cinq minutes. Un : ouvre ton relevé bancaire des trois derniers mois. Deux : surligne chaque prélèvement qui revient tous les mois. Trois : pour chacun, demande-toi si tu l'as utilisé cette semaine. Quatre : résilie ceux dont la réponse est non. Cinq : mets un rappel dans trois mois pour recommencer. Une dizaine d'euros par mois, c'est déjà plus d'une centaine d'euros par an qui te reviennent. Enregistre cette vidéo pour le faire ce soir.",
+      "caption": "Fais le tri dans tes abonnements ce soir. Enregistre pour ne pas oublier.",
+      "hashtags": ["#argent", "#economies", "#budget", "#astuce", "#financepersonnelle"]
+    },
+    {
+      "id": "02-50-30-20",
+      "hook": "La règle 50-30-20 pour ne plus finir le mois à découvert",
+      "script": "Tu finis tous les mois à découvert sans comprendre pourquoi ? Essaie la règle cinquante, trente, vingt. Cinquante pour cent de ton revenu pour l'essentiel : loyer, courses, transport. Trente pour cent pour tes envies : sorties, loisirs, abonnements. Et vingt pour cent pour ton épargne, mis de côté dès le jour de la paie. Si ce n'est pas possible tout de suite, commence à cinq pour cent. Ce qui compte, c'est d'avoir un cadre. Partage ça à quelqu'un qui en a besoin.",
+      "caption": "Un cadre simple pour ton budget. Adapte les pourcentages à ta situation.",
+      "hashtags": ["#budget", "#epargne", "#argent", "#financepersonnelle", "#astuce"]
+    },
+    {
+      "id": "03-epargne-automatique",
+      "hook": "Le secret des gens qui épargnent sans y penser",
+      "script": "Les gens qui épargnent le plus ne sont pas ceux qui gagnent le plus. Ils ont juste automatisé. Le jour de ta paie, programme un virement automatique vers ton compte d'épargne. Même vingt euros. Tu ne vois jamais cet argent passer sur ton compte courant, donc tu ne le dépenses pas. Ensuite, tu augmentes un peu chaque trimestre. Épargner, ce n'est pas de la volonté, c'est un réglage à faire une seule fois. Abonne-toi pour la suite de la série.",
+      "caption": "Un virement automatique, une seule fois, et c'est réglé.",
+      "hashtags": ["#epargne", "#argent", "#economiser", "#financepersonnelle", "#astuce"]
+    },
+    {
+      "id": "04-fonds-urgence",
+      "hook": "Combien d'argent faut-il vraiment avoir de côté ?",
+      "script": "Combien d'argent faut-il avoir de côté ? Avant d'investir quoi que ce soit, on te recommande de constituer un fonds d'urgence. L'objectif : l'équivalent de trois à six mois de dépenses courantes. Pas de ton salaire, de tes dépenses. Additionne ton loyer, tes courses, tes factures et tes transports, puis multiplie par trois. C'est ton premier palier. Cet argent reste disponible, sur un compte accessible, pour les coups durs : panne de voiture, perte d'emploi, frais imprévus. Enregistre pour calculer ton chiffre.",
+      "caption": "Calcule ton fonds d'urgence : dépenses mensuelles x 3 comme premier palier.",
+      "hashtags": ["#epargne", "#fondsurgence", "#argent", "#financepersonnelle", "#budget"]
+    },
+    {
+      "id": "05-frais-bancaires",
+      "hook": "Ta banque te prend des frais que tu ne vois pas",
+      "script": "Ta banque te prélève peut-être des frais que tu ne regardes jamais. Frais de tenue de compte, cotisation de carte, commissions d'intervention. Regarde ton dernier relevé annuel : tout est détaillé. Compare ensuite avec les offres des banques en ligne, souvent bien moins chères, parfois gratuites. Et si tu as eu des frais suite à un découvert, tu peux demander un geste commercial. Ça ne coûte qu'un appel. Partage à un ami qui n'a jamais vérifié.",
+      "caption": "Vérifie tes frais bancaires, compare et négocie.",
+      "hashtags": ["#banque", "#argent", "#economies", "#astuce", "#financepersonnelle"]
+    },
+    {
+      "id": "06-assurances",
+      "hook": "Change d'assurance en dix minutes et garde la différence",
+      "script": "Tu n'as pas comparé ton assurance depuis des années ? Tu paies probablement trop. Pour l'auto, l'habitation ou la mutuelle, la loi te permet de résilier à tout moment après la première année pour certains contrats. Prends ta dernière échéance, demande un devis en ligne avec exactement les mêmes garanties, et compare le prix. L'important, c'est de comparer à garanties égales, pas juste le tarif. Dix minutes de comparaison peuvent te faire économiser plusieurs centaines d'euros par an. Enregistre cette vidéo.",
+      "caption": "Compare à garanties égales avant de changer. Vérifie les conditions de ton contrat.",
+      "hashtags": ["#assurance", "#economies", "#argent", "#astuce", "#bonplan"]
+    },
+    {
+      "id": "07-courses",
+      "hook": "Trois réflexes qui baissent ta facture de courses",
+      "script": "Ta facture de courses explose ? Trois réflexes simples. Un : fais une liste et tiens-t'y, les achats impulsifs coûtent cher. Deux : compare le prix au kilo, pas le prix de l'emballage. Trois : ne fais jamais tes courses le ventre vide. Ajoute à ça les produits de la marque du magasin, souvent de qualité équivalente pour moins cher. Ces habitudes ne demandent aucun effort, et elles s'accumulent mois après mois. Commente ton astuce préférée.",
+      "caption": "Liste, prix au kilo, ventre plein. Simple et efficace.",
+      "hashtags": ["#courses", "#economies", "#budget", "#astuce", "#argent"]
+    },
+    {
+      "id": "08-24h",
+      "hook": "La règle des 24 heures contre les achats impulsifs",
+      "script": "Tu regrettes souvent tes achats ? Utilise la règle des vingt-quatre heures. Quand tu as envie de quelque chose qui n'est pas indispensable, mets-le dans ton panier et attends une journée. Si le lendemain tu en as toujours autant envie, achète-le sans culpabiliser. Sinon, tu viens d'économiser de l'argent. Pour les gros achats, passe à une semaine. Cette règle ne t'interdit rien, elle te laisse juste le temps de décider avec ta tête. Abonne-toi pour d'autres astuces.",
+      "caption": "Attends 24 h avant tout achat non essentiel. Tu verras la différence.",
+      "hashtags": ["#achatimpulsif", "#economies", "#budget", "#argent", "#astuce"]
+    },
+    {
+      "id": "09-interets-composes",
+      "hook": "Pourquoi commencer à épargner tôt change tout",
+      "script": "Pourquoi tout le monde te dit de commencer tôt ? À cause des intérêts composés. Tes intérêts rapportent eux-mêmes des intérêts, et plus le temps passe, plus l'effet s'accélère. Deux personnes qui épargnent la même somme chaque mois n'auront pas du tout le même résultat si l'une commence dix ans plus tôt. Le meilleur moment pour commencer, c'est maintenant, même avec un petit montant. Le temps travaille pour toi. Rappelle-toi que tout placement comporte des risques. Enregistre cette vidéo.",
+      "caption": "Commencer tôt, même petit. Tout placement comporte des risques de perte.",
+      "hashtags": ["#interetscomposes", "#epargne", "#investir", "#financepersonnelle", "#argent"]
+    },
+    {
+      "id": "10-erreurs",
+      "hook": "Cinq erreurs d'argent que presque tout le monde fait",
+      "script": "Cinq erreurs d'argent que presque tout le monde fait. Un : ne pas suivre ses dépenses. Deux : épargner seulement ce qu'il reste en fin de mois. Trois : garder tout son argent sur le compte courant. Quatre : ne jamais comparer ses contrats. Cinq : se comparer aux autres sur les réseaux. Corriger une seule de ces erreurs change déjà ta situation. Laquelle te parle le plus ? Dis-le en commentaire et abonne-toi.",
+      "caption": "Laquelle de ces erreurs as-tu déjà faite ? Réponds en commentaire.",
+      "hashtags": ["#erreurs", "#argent", "#financepersonnelle", "#epargne", "#budget"]
+    }
+  ]
+}
