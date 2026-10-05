@@ -1,6 +1,6 @@
 // Rendu vidéo et audio avec ffmpeg.
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { cpus } from 'node:os';
 import { FPS, TRANSITIONS } from './timeline.mjs';
 
@@ -12,6 +12,11 @@ export function ffmpeg(args, cwd) {
     const p = spawn('ffmpeg', ['-y', '-hide_banner', '-v', 'error', ...args], { cwd, stdio: ['ignore', 'inherit', 'inherit'] });
     p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg a échoué (code ${code})`))));
   });
+}
+
+function probeDuration(file) {
+  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' });
+  return parseFloat(r.stdout) || 0;
 }
 
 async function pool(tasks, size = Math.max(1, cpus().length - 1)) {
@@ -80,11 +85,18 @@ export async function renderShots(timeline, assetsDir, cacheDir, q) {
     const src = `${assetsDir}/${shot.asset}`;
     const out = `shot-${String(shot.k).padStart(2, '0')}.mp4`;
     const isVideo = VIDEO_EXT.test(shot.asset);
-    const prep = `crop='min(iw,ih*9/16)':'min(ih,iw*16/9)',scale=${SW}:${SH}:flags=lanczos`;
-    const vf = isVideo
-      ? `fps=${FPS},${prep},${zoompan(shot, q.W, q.H, true)}`
-      : `${prep},${zoompan(shot, q.W, q.H, false)}`;
-    const input = isVideo ? ['-stream_loop', '-1', '-i', src] : ['-i', src];
+    const crop = `crop='min(iw,ih*9/16)':'min(ih,iw*16/9)'`;
+    const prep = `${crop},scale=${SW}:${SH}:flags=lanczos`;
+    let vf = `${prep},${zoompan(shot, q.W, q.H, false)}`;
+    let input = ['-i', src];
+    if (isVideo) {
+      // Clip trop court pour le plan : lecture aller-retour (boomerang) plutôt qu'un saut au début.
+      const short = probeDuration(src) * FPS < shot.frames;
+      const pingpong = short ? `split[a][b];[b]reverse[r];[a][r]concat=n=2:v=1:a=0,loop=loop=-1:size=32767,` : '';
+      if (short) console.warn(`  ! ${shot.asset} plus court que le plan : boomerang`);
+      vf = `fps=${FPS},${crop},${pingpong}scale=${SW}:${SH}:flags=lanczos,${zoompan(shot, q.W, q.H, true)}`;
+      input = short ? ['-i', src] : ['-stream_loop', '-1', '-i', src];
+    }
     await ffmpeg([...input, '-vf', `${vf},setsar=1,format=yuv420p`, '-frames:v', String(shot.frames), '-r', String(FPS), '-an', '-c:v', 'libx264', '-preset', q.preset, '-crf', '12', out], cacheDir);
     shot.clip = out;
   });
