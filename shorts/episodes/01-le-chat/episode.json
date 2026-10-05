@@ -1,7 +1,7 @@
 {
   "id": "01-le-chat",
   "title": "Le complice le plus inattendu",
-  "hook": "Le complice le plus inattendu",
+  "hook": "Le complice|le plus inattendu",
   "disclaimer": "Histoire fictive inspirée de situations réelles.",
   "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
   "music": {

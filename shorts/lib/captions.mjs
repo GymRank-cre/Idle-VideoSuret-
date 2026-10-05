@@ -11,7 +11,7 @@ const WHITE = '&H00FFFFFF&';
 const CAPTION_Y = 1170;
 const LABEL_Y = 1370;
 const MAX_WORDS = 3;
-const MAX_CHARS = 16;
+const MAX_CHARS = 15;
 
 const stamp = (t) => {
   const c = Math.max(0, Math.round(t * 100));
@@ -86,10 +86,10 @@ export function buildAss(ep, timeline, duration) {
     '',
     '[V4+ Styles]',
     'Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding',
-    'Style: Cap,Anton,104,&H00FFFFFF,&H00FFFFFF,&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,8,5,5,110,170,0,1',
-    'Style: Hook,Bangers,96,&H00101010,&H00101010,&H0000D4FF,&H64000000,0,0,0,0,100,100,2,0,3,20,0,8,90,90,0,1',
-    'Style: Name,Bangers,64,&H00FFFFFF,&H00FFFFFF,&H00303BFF,&H00000000,0,0,0,0,100,100,2,0,3,12,0,4,0,0,0,1',
-    'Style: Role,Anton,36,&H00101010,&H00101010,&H00FFFFFF,&H00000000,0,0,0,0,100,100,1,0,3,8,0,4,0,0,0,1',
+    'Style: Cap,Anton,122,&H00FFFFFF,&H00FFFFFF,&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,8,5,5,110,170,0,1',
+    'Style: Hook,Bangers,128,&H00101010,&H00101010,&H0000D4FF,&H64000000,0,0,0,0,100,100,2,0,3,20,0,8,90,90,0,1',
+    'Style: Name,Bangers,92,&H00FFFFFF,&H00FFFFFF,&H00303BFF,&H00000000,0,0,0,0,100,100,2,0,3,12,0,4,0,0,0,1',
+    'Style: Role,Anton,46,&H00101010,&H00101010,&H00FFFFFF,&H00000000,0,0,0,0,100,100,1,0,3,8,0,4,0,0,0,1',
     'Style: Note,Anton,30,&H40FFFFFF,&H40FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,2,0,8,90,90,0,1',
     '',
     '[Events]',
@@ -99,7 +99,7 @@ export function buildAss(ep, timeline, duration) {
   const first = timeline[0];
   const hookEnd = Math.min(first.to / FPS + 0.2, 3.2);
   lines.push(
-    dialogue(2, 0, hookEnd, 'Hook', `{\\an8\\pos(540,290)\\frz-2.5\\fscx40\\fscy40\\t(0,120,\\fscx108\\fscy108)\\t(120,200,\\fscx100\\fscy100)\\fad(0,120)}${wrap(clean(ep.hook.toUpperCase()), 18)}`),
+    dialogue(2, 0, hookEnd, 'Hook', `{\\an8\\pos(540,215)\\frz-2.5\\fscx40\\fscy40\\t(0,120,\\fscx108\\fscy108)\\t(120,200,\\fscx100\\fscy100)\\fad(0,120)}${ep.hook.includes('|') ? clean(ep.hook.toUpperCase()).split('|').join('\\N') : wrap(clean(ep.hook.toUpperCase()), 12)}`),
   );
 
   for (const shot of timeline) {
@@ -110,7 +110,7 @@ export function buildAss(ep, timeline, duration) {
       const s = shot.from / FPS + 0.25;
       const e = Math.min(shot.to / FPS - 0.1, s + 2.6);
       lines.push(dialogue(3, s, e, 'Name', `{\\an4\\move(-600,${LABEL_Y},70,${LABEL_Y},0,220)\\frz2\\fad(0,150)}${name.toUpperCase()}`));
-      if (role) lines.push(dialogue(3, s + 0.12, e, 'Role', `{\\an4\\move(-600,${LABEL_Y + 78},84,${LABEL_Y + 78},0,240)\\fad(0,150)}${role.toUpperCase()}`));
+      if (role) lines.push(dialogue(3, s + 0.12, e, 'Role', `{\\an4\\move(-600,${LABEL_Y + 100},84,${LABEL_Y + 100},0,240)\\fad(0,150)}${role.toUpperCase()}`));
     }
   }
 
