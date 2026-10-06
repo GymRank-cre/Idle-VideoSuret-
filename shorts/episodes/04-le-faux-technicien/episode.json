@@ -3,7 +3,12 @@
   "title": "Le faux technicien",
   "hook": "Il a coupé l'alarme|avec un gilet orange",
   "disclaimer": "Histoire fictive inspirée de situations réelles.",
-  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
   "music": {
     "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
     "volume": 0.32
@@ -11,79 +16,240 @@
   "coverAt": 0.7,
   "shots": [
     {
-      "asset": "p01.mp4", "cam": "punch", "focus": [0.5, 0.35],
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Ce cambrioleur a coupé l'alarme d'un entrepôt… avec un simple gilet orange.",
-      "emphasis": ["gilet", "orange"],
-      "sfx": [{ "name": "impact", "at": 0 }]
+      "emphasis": [
+        "gilet",
+        "orange"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
     },
     {
-      "asset": "p02.mp4", "cam": "in", "focus": [0.5, 0.4],
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Vingt-deux heures. Il sonne au poste de garde, un porte-documents à la main.",
-      "emphasis": ["porte-documents"],
-      "sfx": [{ "name": "ding", "at": "mot:sonne" }]
+      "emphasis": [
+        "porte-documents"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:sonne"
+        }
+      ]
     },
     {
-      "asset": "p03.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.35],
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Bonsoir chef ! Maintenance de l'alarme, c'est urgent.",
       "label": "Le cambrioleur|Technicien d'un soir",
-      "emphasis": ["urgent"]
+      "emphasis": [
+        "urgent"
+      ]
     },
     {
-      "asset": "p04.mp4", "in": "whip-up", "cam": "in", "focus": [0.5, 0.3],
+      "asset": "p04.mp4",
+      "in": "whip-up",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.3
+      ],
       "say": "Gérard voit le gilet, le badge, le porte-documents. Ça a l'air sérieux. Il ouvre.",
       "label": "Gérard|Agent de sécurité",
-      "emphasis": ["sérieux"],
-      "sfx": [{ "name": "door", "at": "mot:ouvre" }]
+      "emphasis": [
+        "sérieux"
+      ],
+      "sfx": [
+        {
+          "name": "door",
+          "at": "mot:ouvre"
+        }
+      ]
     },
     {
-      "asset": "p05.mp4", "in": "zoom", "cam": "punch", "focus": [0.5, 0.45],
+      "asset": "p05.mp4",
+      "in": "zoom",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "Il va droit à la centrale d'alarme… et appuie sur un seul bouton.",
-      "emphasis": ["bouton"],
-      "sfx": [{ "name": "beep", "at": "mot:appuie" }]
+      "emphasis": [
+        "bouton"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:appuie"
+        }
+      ]
     },
     {
-      "asset": "p06.mp4", "in": "glitch", "cam": "in", "focus": [0.45, 0.42],
+      "asset": "p06.mp4",
+      "in": "glitch",
+      "cam": "in",
+      "focus": [
+        0.45,
+        0.42
+      ],
       "say": "La caméra le regarde faire. Elle n'y croit pas.",
-      "sfx": [{ "name": "shutter", "at": 0.1 }]
+      "sfx": [
+        {
+          "name": "shutter",
+          "at": 0.1
+        }
+      ]
     },
     {
-      "asset": "p07.mp4", "in": "whip", "cam": "punch", "focus": [0.5, 0.4],
+      "asset": "p07.mp4",
+      "in": "whip",
+      "cam": "punch",
+      "focus": [
+        0.45,
+        0.45
+      ],
       "say": "Deux heures plus tard, il revient. Cette fois, plus d'alarme pour le gêner.",
-      "emphasis": ["alarme"],
-      "sfx": [{ "name": "tiptoe", "at": "mot:revient" }]
+      "emphasis": [
+        "alarme"
+      ],
+      "sfx": [
+        {
+          "name": "tiptoe",
+          "at": "mot:revient"
+        }
+      ]
     },
     {
-      "asset": "p08.mp4", "cam": "in", "focus": [0.5, 0.45],
+      "asset": "p08.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "Biscotte, lui, l'avait trouvé louche dès le début.",
       "label": "Biscotte|Chat du quartier",
-      "sfx": [{ "name": "meow", "at": "mot:louche" }]
+      "sfx": [
+        {
+          "name": "meow",
+          "at": "mot:louche"
+        }
+      ]
     },
     {
-      "asset": "p09.mp4", "in": "flash", "autoSfx": false, "cam": "punch", "focus": [0.5, 0.3],
+      "asset": "p09.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.3
+      ],
       "say": "Le lendemain matin, une technicienne arrive pour la maintenance. La vraie.",
       "musicDrop": 1.4,
       "label": "Inès|La vraie technicienne",
-      "emphasis": ["vraie"],
-      "sfx": [{ "name": "scratch", "at": 0, "offset": -0.05 }, { "name": "impact", "at": "mot:vraie" }]
+      "emphasis": [
+        "vraie"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "impact",
+          "at": "mot:vraie"
+        }
+      ]
     },
     {
-      "asset": "p10.mp4", "cam": "in", "focus": [0.5, 0.35],
+      "asset": "p10.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "La leçon d'Inès : une intervention, ça se prévoit. Personne n'arrive à l'improviste.",
-      "emphasis": ["prévoit"],
-      "sfx": [{ "name": "tap", "at": "mot:intervention" }]
+      "emphasis": [
+        "prévoit"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:intervention"
+        }
+      ]
     },
     {
-      "asset": "p11.mp4", "cam": "out", "focus": [0.5, 0.4],
+      "asset": "p11.mp4",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Au moindre doute, on appelle l'entreprise avec le numéro qu'on connaît, pas celui qu'on vous donne. Et on accompagne, toujours.",
-      "emphasis": ["doute", "toujours"],
-      "sfx": [{ "name": "ding", "at": "mot:toujours" }]
+      "emphasis": [
+        "doute",
+        "toujours"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:toujours"
+        }
+      ]
     },
     {
-      "asset": "p12.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.5],
+      "asset": "p12.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.5
+      ],
       "say": "Et Gérard ? Il demande maintenant sa carte au facteur. Abonne-toi pour la suite.",
-      "sfx": [{ "name": "pop", "at": "mot:facteur" }, { "name": "purr", "at": "mot:Abonne" }]
+      "sfx": [
+        {
+          "name": "pop",
+          "at": "mot:facteur"
+        },
+        {
+          "name": "purr",
+          "at": "mot:Abonne"
+        }
+      ]
     }
   ],
   "caption": "Il a coupé l'alarme avec un gilet orange 🦺 Un faux technicien, c'est de l'ingénierie sociale : on vérifie toujours avant d'ouvrir. Tu aurais ouvert ?",
-  "hashtags": ["#surete", "#securite", "#agentdesecurite", "#ingenieriesociale", "#alarme", "#cambriolage", "#histoire", "#humour"]
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#agentdesecurite",
+    "#ingenieriesociale",
+    "#alarme",
+    "#cambriolage",
+    "#histoire",
+    "#humour"
+  ]
 }
