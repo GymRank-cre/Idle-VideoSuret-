@@ -3,7 +3,12 @@
   "title": "Il est entré grâce à la politesse",
   "hook": "Il est entré|grâce à la politesse",
   "disclaimer": "Histoire fictive inspirée de situations réelles.",
-  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
   "music": {
     "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
     "volume": 0.32
@@ -11,79 +16,241 @@
   "coverAt": 0.7,
   "shots": [
     {
-      "asset": "p01.png", "cam": "punch", "focus": [0.5, 0.35],
+      "asset": "p01.png",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Ce cambrioleur est entré dans un bâtiment ultra sécurisé… grâce à la politesse.",
-      "emphasis": ["politesse"],
-      "sfx": [{ "name": "impact", "at": 0 }]
+      "emphasis": [
+        "politesse"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
     },
     {
-      "asset": "p02.mp4", "cam": "out", "focus": [0.5, 0.45],
+      "asset": "p02.mp4",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "Badge obligatoire, caméra à l'entrée, porte qui se verrouille toute seule. Sur le papier, impossible d'entrer.",
-      "emphasis": ["impossible"],
-      "sfx": [{ "name": "beep", "at": "mot:Badge" }]
+      "emphasis": [
+        "impossible"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:Badge"
+        }
+      ]
     },
     {
-      "asset": "p03.mp4", "in": "whip", "cam": "in", "focus": [0.45, 0.4],
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.45,
+        0.4
+      ],
       "say": "Et pourtant, la caméra l'a vu passer. Tranquillement.",
-      "sfx": [{ "name": "shutter", "at": 0.1 }]
+      "sfx": [
+        {
+          "name": "shutter",
+          "at": 0.1
+        }
+      ]
     },
     {
-      "asset": "p04.mp4", "in": "whip-up", "cam": "in", "focus": [0.5, 0.4],
+      "asset": "p04.mp4",
+      "in": "whip-up",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Son astuce ? Les bras chargés de cartons, il attend juste devant la porte.",
       "label": "Le cambrioleur|Livreur d'un jour",
-      "emphasis": ["cartons"],
-      "sfx": [{ "name": "tiptoe", "at": "mot:attend" }]
+      "emphasis": [
+        "cartons"
+      ],
+      "sfx": [
+        {
+          "name": "tiptoe",
+          "at": "mot:attend"
+        }
+      ]
     },
     {
-      "asset": "p05.mp4", "cam": "in", "focus": [0.5, 0.35],
+      "asset": "p05.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Gérard arrive, passe son badge… et lui tient la porte. Normal, il a les mains prises.",
       "label": "Gérard|Agent de sécurité",
-      "emphasis": ["porte"],
-      "sfx": [{ "name": "beep", "at": "mot:badge" }, { "name": "door", "at": "mot:tient" }]
+      "emphasis": [
+        "porte"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:badge"
+        },
+        {
+          "name": "door",
+          "at": "mot:tient"
+        }
+      ]
     },
     {
-      "asset": "p06.mp4", "cam": "punch", "focus": [0.5, 0.35],
+      "asset": "p06.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Un merci, un sourire, et le voilà à l'intérieur.",
-      "emphasis": ["l'intérieur"],
-      "sfx": [{ "name": "pop", "at": "mot:sourire" }]
+      "emphasis": [
+        "l'intérieur"
+      ],
+      "sfx": [
+        {
+          "name": "pop",
+          "at": "mot:sourire"
+        }
+      ]
     },
     {
-      "asset": "p07.mp4", "in": "flash", "autoSfx": false, "cam": "punch", "focus": [0.5, 0.4],
+      "asset": "p07.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "cam": "hold",
+      "focus": [
+        0.4,
+        0.45
+      ],
       "say": "Dix minutes plus tard, il repart avec trois ordinateurs portables… cachés dans ses cartons.",
       "musicDrop": 1.6,
-      "emphasis": ["ordinateurs", "cartons"],
-      "sfx": [{ "name": "scratch", "at": 0, "offset": -0.05 }, { "name": "impact", "at": "mot:cachés" }]
+      "emphasis": [
+        "ordinateurs",
+        "cartons"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "impact",
+          "at": "mot:cachés"
+        }
+      ],
+      "speed": 0.75
     },
     {
-      "asset": "p08.mp4", "in": "zoom", "cam": "in", "focus": [0.5, 0.4],
+      "asset": "p08.mp4",
+      "in": "zoom",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Même Biscotte avait trouvé ça louche.",
       "label": "Biscotte|Chat du quartier",
-      "sfx": [{ "name": "meow", "at": "mot:louche" }]
+      "sfx": [
+        {
+          "name": "meow",
+          "at": "mot:louche"
+        }
+      ]
     },
     {
-      "asset": "p09.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.3],
+      "asset": "p09.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.3
+      ],
       "say": "Pour Inès, ce n'est pas une panne. C'est du talonnage : suivre quelqu'un qui a un badge pour entrer avec lui.",
       "label": "Inès|Technicienne sûreté",
-      "emphasis": ["talonnage"],
-      "sfx": [{ "name": "ding", "at": "mot:talonnage" }]
+      "emphasis": [
+        "talonnage"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:talonnage"
+        }
+      ]
     },
     {
-      "asset": "p10.mp4", "cam": "out", "focus": [0.5, 0.45],
+      "asset": "p10.mp4",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "La règle est simple : un badge, une personne. Un sas ou un tourniquet, et on ne tient jamais la porte à un inconnu.",
-      "emphasis": ["badge", "personne", "jamais"],
-      "sfx": [{ "name": "tap", "at": "mot:sas" }]
+      "emphasis": [
+        "badge",
+        "personne",
+        "jamais"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:sas"
+        }
+      ]
     },
     {
-      "asset": "p11.mp4", "cam": "in", "focus": [0.5, 0.35],
+      "asset": "p11.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.35
+      ],
       "say": "Même s'il a les bras chargés. On l'accompagne à l'accueil, poliment.",
-      "emphasis": ["poliment"]
+      "emphasis": [
+        "poliment"
+      ]
     },
     {
-      "asset": "p12.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.5],
+      "asset": "p12.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.5
+      ],
       "say": "Abonne-toi pour la prochaine histoire de sûreté.",
-      "sfx": [{ "name": "purr", "at": 0.1 }]
+      "sfx": [
+        {
+          "name": "purr",
+          "at": 0.1
+        }
+      ]
     }
   ],
   "caption": "Il est entré grâce à la politesse 🚪📦 Suivre quelqu'un qui a un badge pour entrer avec lui, ça s'appelle le talonnage. Toi aussi tu tiens la porte ?",
-  "hashtags": ["#surete", "#securite", "#controledacces", "#agentdesecurite", "#cambriolage", "#histoire", "#humour", "#bureau"]
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#controledacces",
+    "#agentdesecurite",
+    "#cambriolage",
+    "#histoire",
+    "#humour",
+    "#bureau"
+  ]
 }

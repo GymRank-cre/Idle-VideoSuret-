@@ -91,10 +91,12 @@ export async function renderShots(timeline, assetsDir, cacheDir, q) {
     let input = ['-i', src];
     if (isVideo) {
       // Clip trop court pour le plan : lecture aller-retour (boomerang) plutôt qu'un saut au début.
-      const short = probeDuration(src) * FPS < shot.frames;
+      // speed < 1 ralentit le clip (ex. 0.75) pour qu'une action tienne sur la durée du plan.
+      const speed = shot.speed || 1;
+      const short = (probeDuration(src) / speed) * FPS < shot.frames;
       const pingpong = short ? `split[a][b];[b]reverse[r];[a][r]concat=n=2:v=1:a=0,loop=loop=-1:size=32767,` : '';
       if (short) console.warn(`  ! ${shot.asset} plus court que le plan : boomerang`);
-      vf = `fps=${FPS},${crop},${pingpong}scale=${SW}:${SH}:flags=lanczos,${zoompan(shot, q.W, q.H, true)}`;
+      vf = `${speed !== 1 ? `setpts=PTS/${speed},` : ''}fps=${FPS},${crop},${pingpong}scale=${SW}:${SH}:flags=lanczos,${zoompan(shot, q.W, q.H, true)}`;
       input = short ? ['-i', src] : ['-stream_loop', '-1', '-i', src];
     }
     await ffmpeg([...input, '-vf', `${vf},setsar=1,format=yuv420p`, '-frames:v', String(shot.frames), '-r', String(FPS), '-an', '-c:v', 'libx264', '-preset', q.preset, '-crf', '12', out], cacheDir);
