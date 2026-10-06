@@ -31,12 +31,15 @@ function save(file, data) {
 }
 
 // Retourne l'alignement caractère par caractère ; l'audio est écrit dans `file`.
-export async function tts(text, voice, file) {
+// context : { previousText, nextText } pour garder une intonation continue entre phrases.
+export async function tts(text, voice, file, context = {}) {
   const meta = `${file}.json`;
   if (existsSync(file) && existsSync(meta)) return JSON.parse(readFileSync(meta, 'utf8'));
   const data = await post(`/text-to-speech/${voice.id}/with-timestamps`, {
     text,
     model_id: voice.model || 'eleven_multilingual_v2',
+    ...(context.previousText ? { previous_text: context.previousText } : {}),
+    ...(context.nextText ? { next_text: context.nextText } : {}),
     voice_settings: {
       stability: voice.stability ?? 0.4,
       similarity_boost: voice.similarity ?? 0.8,
