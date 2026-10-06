@@ -3,7 +3,12 @@
   "title": "Le mot de passe 1234",
   "hook": "Il a piraté la caméra|en 4 chiffres",
   "disclaimer": "Histoire fictive inspirée de situations réelles.",
-  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
   "music": {
     "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
     "volume": 0.32
@@ -11,81 +16,262 @@
   "coverAt": 0.7,
   "shots": [
     {
-      "asset": "p01.mp4", "cam": "punch", "focus": [0.5, 0.35],
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.45,
+        0.35
+      ],
       "say": "Ce cambrioleur a piraté une caméra de surveillance… avec un mot de passe de quatre chiffres.",
-      "emphasis": ["quatre", "chiffres"],
-      "sfx": [{ "name": "impact", "at": 0 }]
+      "emphasis": [
+        "quatre",
+        "chiffres"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
     },
     {
-      "asset": "p02.mp4", "cam": "in", "focus": [0.5, 0.45],
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "Il ne touche à rien. Il tape juste l'adresse de la caméra sur son téléphone.",
-      "emphasis": ["téléphone"],
-      "sfx": [{ "name": "tap", "at": "mot:tape" }]
+      "emphasis": [
+        "téléphone"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:tape"
+        }
+      ]
     },
     {
-      "asset": "p03.mp4", "in": "whip", "cam": "punch", "focus": [0.5, 0.5],
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.5
+      ],
       "say": "Identifiant : admin. Mot de passe : un, deux, trois, quatre.",
-      "emphasis": ["admin"],
-      "sfx": [{ "name": "beep", "at": "mot:un" }, { "name": "beep", "at": "mot:deux" }, { "name": "beep", "at": "mot:trois" }, { "name": "beep", "at": "mot:quatre" }]
+      "emphasis": [
+        "admin"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:un"
+        },
+        {
+          "name": "beep",
+          "at": "mot:deux"
+        },
+        {
+          "name": "beep",
+          "at": "mot:trois"
+        },
+        {
+          "name": "beep",
+          "at": "mot:quatre"
+        }
+      ]
     },
     {
-      "asset": "p04.mp4", "in": "flash", "autoSfx": false, "cam": "in", "focus": [0.45, 0.42],
+      "asset": "p04.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "cam": "in",
+      "focus": [
+        0.45,
+        0.42
+      ],
       "say": "Le mot de passe d'usine. Personne ne l'avait jamais changé.",
       "musicDrop": 1.2,
-      "emphasis": ["usine", "jamais"],
-      "sfx": [{ "name": "scratch", "at": 0, "offset": -0.05 }, { "name": "glitch", "at": "mot:usine" }]
+      "emphasis": [
+        "usine",
+        "jamais"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "glitch",
+          "at": "mot:usine"
+        }
+      ]
     },
     {
-      "asset": "p05.mp4", "in": "zoom", "cam": "in", "focus": [0.5, 0.4],
+      "asset": "p05.mp4",
+      "in": "zoom",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Maintenant, il voit tout ce que voit la caméra. En direct.",
-      "emphasis": ["direct"],
-      "sfx": [{ "name": "shutter", "at": 0.1 }]
+      "emphasis": [
+        "direct"
+      ],
+      "sfx": [
+        {
+          "name": "shutter",
+          "at": 0.1
+        }
+      ]
     },
     {
-      "asset": "p06.mp4", "in": "whip-up", "cam": "in", "focus": [0.5, 0.3],
+      "asset": "p06.mp4",
+      "in": "whip-up",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.3
+      ],
       "say": "Il sait quand Gérard fait sa ronde… et surtout quand il fait sa sieste.",
       "label": "Gérard|Agent de sécurité",
-      "emphasis": ["sieste"],
-      "sfx": [{ "name": "sigh", "at": "mot:sieste" }]
+      "emphasis": [
+        "sieste"
+      ],
+      "sfx": [
+        {
+          "name": "sigh",
+          "at": "mot:sieste"
+        }
+      ]
     },
     {
-      "asset": "p07.mp4", "in": "whip", "cam": "punch", "focus": [0.5, 0.4],
+      "asset": "p07.mp4",
+      "in": "whip",
+      "cam": "punch",
+      "focus": [
+        0.6,
+        0.45
+      ],
       "say": "Trois heures du matin. Gérard ronfle. Le cambrioleur entre tranquillement.",
       "label": "Le cambrioleur|Hacker du dimanche",
-      "emphasis": ["ronfle"],
-      "sfx": [{ "name": "tiptoe", "at": "mot:entre" }]
+      "emphasis": [
+        "ronfle"
+      ],
+      "sfx": [
+        {
+          "name": "tiptoe",
+          "at": "mot:entre"
+        }
+      ]
     },
     {
-      "asset": "p08.mp4", "cam": "in", "focus": [0.5, 0.45],
+      "asset": "p08.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
       "say": "Même Biscotte n'en revenait pas.",
       "label": "Biscotte|Chat du quartier",
-      "sfx": [{ "name": "meow", "at": "mot:revenait" }]
+      "sfx": [
+        {
+          "name": "meow",
+          "at": "mot:revenait"
+        }
+      ]
     },
     {
-      "asset": "p09.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.3],
+      "asset": "p09.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.3
+      ],
       "say": "Pour Inès, la faille n'est pas dans la caméra. Elle est dans sa configuration.",
       "label": "Inès|Technicienne sûreté",
-      "emphasis": ["configuration"],
-      "sfx": [{ "name": "ding", "at": "mot:configuration" }]
+      "emphasis": [
+        "configuration"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:configuration"
+        }
+      ]
     },
     {
-      "asset": "p10.mp4", "cam": "punch", "focus": [0.55, 0.45],
+      "asset": "p10.mp4",
+      "cam": "punch",
+      "focus": [
+        0.55,
+        0.45
+      ],
       "say": "Règle numéro un : on change toujours le mot de passe par défaut. Long, et unique.",
-      "emphasis": ["toujours", "défaut"],
-      "sfx": [{ "name": "tap", "at": "mot:change" }]
+      "emphasis": [
+        "toujours",
+        "défaut"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:change"
+        }
+      ]
     },
     {
-      "asset": "p11.mp4", "cam": "out", "focus": [0.5, 0.4],
+      "asset": "p11.mp4",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.4
+      ],
       "say": "Ensuite : mises à jour, et caméras sur un réseau séparé, pas accessible depuis internet.",
-      "emphasis": ["séparé"],
-      "sfx": [{ "name": "ding", "at": "mot:séparé" }]
+      "emphasis": [
+        "séparé"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:séparé"
+        }
+      ]
     },
     {
-      "asset": "p12.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.5],
+      "asset": "p12.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.5
+      ],
       "say": "Et Gérard ? Il a changé le sien. C'est le nom de son chat. Abonne-toi pour la suite.",
-      "sfx": [{ "name": "pop", "at": "mot:chat" }, { "name": "purr", "at": "mot:Abonne" }]
+      "sfx": [
+        {
+          "name": "pop",
+          "at": "mot:chat"
+        },
+        {
+          "name": "purr",
+          "at": "mot:Abonne"
+        }
+      ]
     }
   ],
   "caption": "Il a piraté la caméra avec 4 chiffres 🔐📹 Un mot de passe d'usine jamais changé, c'est une porte ouverte. Le tien, tu l'as changé ?",
-  "hashtags": ["#surete", "#cybersecurite", "#videosurveillance", "#motdepasse", "#agentdesecurite", "#histoire", "#humour", "#securite"]
+  "hashtags": [
+    "#surete",
+    "#cybersecurite",
+    "#videosurveillance",
+    "#motdepasse",
+    "#agentdesecurite",
+    "#histoire",
+    "#humour",
+    "#securite"
+  ]
 }
