@@ -1,0 +1,63 @@
+{
+  "id": "07-le-post-it",
+  "title": "Le post-it",
+  "hook": "Le code secret|le moins secret",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "parts": [
+    {
+      "asset": "partie1.mp4",
+      "voice": "partie1",
+      "voiceAt": 0.15,
+      "lines": [
+        { "say": "Gérard n'arrive jamais à retenir le code de la porte de service.", "label": "Gérard|Agent de sécurité", "emphasis": ["jamais"] },
+        { "say": "Trois essais, trois erreurs, tous les soirs.", "emphasis": ["erreurs"] },
+        { "say": "Alors il a eu une idée géniale : il l'a noté sur un post-it, juste à côté du clavier.", "emphasis": ["post-it"] },
+        { "say": "Cette nuit-là, quelqu'un d'autre a trouvé l'idée géniale aussi…", "emphasis": ["quelqu'un"] }
+      ]
+    },
+    {
+      "asset": "partie2.mp4",
+      "transition": { "type": "fadeblack", "duration": 0.4 },
+      "voice": "partie2",
+      "voiceAt": 0.46,
+      "lines": [
+        { "say": "Un code d'accès ne s'écrit jamais à côté du clavier.", "label": "Inès|Technicienne sûreté", "emphasis": ["jamais"] },
+        { "say": "On le garde en tête, on le change régulièrement, et on cache le clavier avec sa main quand on le tape.", "emphasis": ["main"] },
+        { "say": "Le lendemain, Gérard avait bien retenu la leçon. Il a juste trouvé une nouvelle cachette.", "emphasis": ["cachette"] },
+        { "say": "Abonne-toi pour la suite." }
+      ]
+    }
+  ],
+  "sfxLibrary": {
+    "keypad-ko": { "prompt": "door keypad access denied, three short low error buzzer beeps", "duration": 1.2, "volume": 0.55 },
+    "keypad": { "prompt": "four quick electronic keypad button press beeps", "duration": 1.2, "volume": 0.5 },
+    "keypad-ok": { "prompt": "door keypad access granted, rising two-tone chime then an electric lock click", "duration": 1.2, "volume": 0.6 },
+    "rip": { "prompt": "sticky note paper peeled off a wall sharply, quick paper rip", "duration": 0.7, "volume": 0.8 },
+    "marker": { "prompt": "felt tip marker squeaking while writing on a metal thermos", "duration": 1.5, "volume": 0.6 }
+  },
+  "sfx": [
+    { "name": "impact", "at": 0, "volume": 0.6 },
+    { "name": "keypad-ko", "at": 2.15 },
+    { "name": "pop", "at": 4.3 },
+    { "name": "scratch", "at": 9.45 },
+    { "name": "tiptoe", "at": 10.4 },
+    { "name": "keypad", "at": 12.2 },
+    { "name": "keypad-ok", "at": 13.6 },
+    { "name": "door", "at": 14.2 },
+    { "name": "whoosh", "at": 14.5 },
+    { "name": "rip", "at": 15.0 },
+    { "name": "keypad", "at": 17.9, "volume": 0.35 },
+    { "name": "ding", "at": 20.6, "volume": 0.4 },
+    { "name": "marker", "at": 22.8 },
+    { "name": "meow", "at": 27.3 }
+  ],
+  "musicDrops": [[9.45, 0.9]],
+  "caption": "Gérard a enfin trouvé comment ne plus oublier le code de la porte… le cambrioleur aussi. Et toi, tes codes, tu les notes où ?",
+  "hashtags": ["#surete", "#securite", "#controledacces", "#digicode", "#agentdesecurite", "#cartoon", "#histoire", "#humour"]
+}
