@@ -39,6 +39,30 @@ après une retouche ne consomme aucun crédit ElevenLabs tant que le texte ne ch
 Bruitages disponibles : voir `lib/sfx.mjs`. Un nouveau son se déclare dans `sfxLibrary`
 de l'épisode, il est généré une fois et conservé dans `shorts/audio/sfx/`.
 
+## Générer les visuels automatiquement avec Grok (API xAI)
+
+`grok.mjs` remplace la génération à la main (Higgsfield, Claude in Chrome) : il lit
+`episodes/<id>/visuels.json`, crée une image par plan à partir des personnages de
+`references/`, l'anime, puis télécharge `assets/pXX.png` et `assets/pXX.mp4`.
+
+```bash
+# .env : XAI_API_KEY=...   (clé créée sur https://console.x.ai, crédits API à part de l'abonnement Grok)
+node shorts/grok.mjs 04-le-faux-technicien --images   # 1. storyboard seul, à vérifier
+node shorts/grok.mjs 04-le-faux-technicien            # 2. animations (reprend où il s'est arrêté)
+node shorts/grok.mjs 04-le-faux-technicien --only p07 --force   # refaire un plan raté
+node shorts/grok.mjs 04-le-faux-technicien --montage  # animations puis montage final
+```
+
+- La durée de chaque clip est calculée d'après la voix déjà générée : on ne paie que les
+  secondes montées (4 à 15 s par plan).
+- Options : `--resolution 480p|720p|1080p` (720p par défaut), `--only p01,p02`, `--force`.
+- Un plan dont l'animation échoue garde son image fixe : le montage l'utilise automatiquement.
+- Coût indicatif (tarifs publics xAI, à vérifier) : environ 0,14 $ par seconde de vidéo en 720p
+  (0,08 $ en 480p), soit 7 à 10 $ par épisode de 12 plans en 720p, plus les images.
+
+`visuels.json` : une entrée par plan, `{ "id": "p01", "refs": ["cambrioleur"], "image": "…",
+"animate": "…" }`, et un `costume` facultatif décrit dans `costumes` (voir l'épisode 4).
+
 ## Règles de montage appliquées
 
 - La coupe arrive 3 images avant le mot : l'image précède le son.

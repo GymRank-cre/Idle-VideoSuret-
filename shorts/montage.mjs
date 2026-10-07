@@ -51,7 +51,13 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
 
   for (const s of ep.shots) {
-    if (!existsSync(join(epDir, 'assets', s.asset))) throw new Error(`Visuel manquant : assets/${s.asset}`);
+    if (existsSync(join(epDir, 'assets', s.asset))) continue;
+    // Animation absente : on retombe sur l'image fixe du même plan, animée par la caméra du montage.
+    const still = s.asset.replace(/\.(mp4|mov|webm)$/i, '.png');
+    if (still !== s.asset && existsSync(join(epDir, 'assets', still))) {
+      console.warn(`  ! ${s.asset} absent, image fixe ${still} utilisée`);
+      s.asset = still;
+    } else throw new Error(`Visuel manquant : assets/${s.asset}`);
   }
 
   console.log('1/6 Voix');
