@@ -63,6 +63,20 @@ node shorts/grok.mjs 04-le-faux-technicien --montage  # animations puis montage 
 `visuels.json` : une entrée par plan, `{ "id": "p01", "refs": ["cambrioleur"], "image": "…",
 "animate": "…" }`, et un `costume` facultatif décrit dans `costumes` (voir l'épisode 4).
 
+## Importer un épisode de l'automatisation Grok
+
+L'automatisation Grok (instructions à coller : `AUTOMATISATION-GROK.md`, avec les 6 images de
+`references/` jointes) produit chaque semaine le script, les 12 clips et un bloc JSON.
+Il suffit ensuite de son lien de partage :
+
+```bash
+node shorts/import-grok.mjs https://grok.com/share/<id> --montage
+```
+
+Les clips sont téléchargés dans `episodes/<id>/assets/`, `episode.json` est construit
+(mouvements de caméra, transitions, flash et coupure de musique sur le rebondissement,
+bruitages validés), puis la vidéo finale est rendue dans `shorts/out/`.
+
 ## Règles de montage appliquées
 
 - La coupe arrive 3 images avant le mot : l'image précède le son.
