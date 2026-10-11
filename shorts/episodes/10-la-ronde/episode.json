@@ -1,0 +1,181 @@
+{
+  "id": "10-la-ronde",
+  "title": "La ronde de deux heures",
+  "hook": "Il connaissait|ses horaires par cœur",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Le cambrioleur connaissait l'emploi du temps de Gérard mieux que lui.",
+      "emphasis": [
+        "mieux"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        },
+        {
+          "name": "tick",
+          "at": 0.3,
+          "volume": 0.35
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "left",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Chaque nuit, à deux heures pile, Gérard fait sa ronde. Même chemin, même lampe.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": [
+        "pile"
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Et à deux heures dix, toujours, pause café au poste de garde.",
+      "emphasis": [
+        "toujours"
+      ],
+      "sfx": [
+        {
+          "name": "sip",
+          "at": "mot:café"
+        }
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Caché derrière la grille, quelqu'un prenait des notes. Pendant trois semaines.",
+      "emphasis": [
+        "notes"
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "La quatrième, il est entré à deux heures onze.",
+      "emphasis": [
+        "onze"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "tiptoe",
+          "at": "mot:entré"
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Une ronde qu'on peut prévoir, c'est une ronde qu'on peut contourner.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "prévoir"
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "On change les horaires et le parcours chaque nuit, au hasard.",
+      "emphasis": [
+        "hasard"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:parcours"
+        }
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Gérard a compris : maintenant, sa pause café, c'est à deux heures douze. Abonne-toi pour la suite.",
+      "emphasis": [
+        "douze"
+      ],
+      "sfx": [
+        {
+          "name": "sip",
+          "at": "mot:douze"
+        },
+        {
+          "name": "meow",
+          "at": "mot:Abonne-toi",
+          "offset": -0.3
+        }
+      ]
+    }
+  ],
+  "caption": "Même heure, même chemin, même pause café… et quelqu'un prenait des notes ⏱️ Une ronde prévisible, c'est une ronde qu'on contourne. Tes habitudes, elles sont prévisibles ?",
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#agentdesecurite",
+    "#ronde",
+    "#gardiennage",
+    "#cambriolage",
+    "#histoire",
+    "#humour"
+  ]
+}
