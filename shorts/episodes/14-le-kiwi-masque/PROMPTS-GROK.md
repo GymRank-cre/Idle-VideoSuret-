@@ -1,39 +1,39 @@
-# Épisode 14 — « Le kiwi masqué » (version fruits IA, 2 × 15 s sur Grok)
+# Épisode 14 — « Le kiwi masqué » (fruits IA qui parlent français, 2 × 15 s sur Grok)
 
-Même série « Histoires de Sûreté », mais les personnages deviennent des fruits 3D réalistes.
-La voix off est faite au montage : Grok ne doit produire aucune voix.
+## Étape 1 : les 4 personnages (une image chacun, à garder comme références)
 
-## Étape 1 : les personnages (une seule fois, à garder comme références)
+Gérard la Poire :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, expressive cartoon eyes and mouth, small arms and legs, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. A chubby green-yellow pear security guard named Gérard: thick grey mustache, round glasses, tired but kind eyes, yellow hi-vis safety vest, holding a small metal thermos.
 
-Style commun à coller en début de chaque prompt :
-Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, expressive cartoon eyes and mouth, small arms and legs, full body, soft studio lighting, plain light grey background, vertical 9:16, no text.
+Le Kiwi masqué :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, expressive cartoon eyes and mouth, small arms and legs, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. A small fuzzy brown kiwi burglar: tiny black balaclava with eye holes, black-and-white striped sweater, black gloves, mischievous grin, sneaking on tiptoes.
 
-1. Gérard la Poire : A chubby green-yellow pear security guard: thick grey mustache, round glasses, tired but kind eyes, wearing a yellow hi-vis safety vest, holding a small metal thermos.
-2. Le Kiwi masqué : A small fuzzy brown kiwi fruit burglar: tiny black balaclava with eye holes, black-and-white striped sweater, black gloves, mischievous grin, sneaking on tiptoes.
-3. Inès la Fraise : A bright red strawberry security technician: green leafy top styled like a ponytail, confident smile, grey work jacket with reflective stripes, tool belt, holding a tablet.
-4. Biscotte la Clémentine : A plump lazy clementine slumped on the floor, half-closed green eyes, completely unimpressed expression, a single small leaf on top.
+Inès la Fraise :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, expressive cartoon eyes and mouth, small arms and legs, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. A bright red strawberry security technician named Inès: green leafy top styled like a ponytail, confident smile, grey work jacket with reflective stripes, tool belt, holding a tablet.
 
-## Étape 2 : partie 1 (0-15 s), avec les 4 images en référence
+Biscotte la Clémentine :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, expressive cartoon eyes and mouth, small arms, full body, soft studio lighting, plain light grey background, vertical 9:16, no text. A plump lazy clementine slumped on the floor, half-closed green eyes, completely unimpressed expression, a single small leaf on top.
 
-Vertical 9:16 video, 15 seconds. Hyper-realistic 3D animated fruit characters, Pixar-quality, glossy realistic textures, cinematic night lighting in a supermarket loading dock and store, cool blue shadows and warm orange lights. Use the attached reference images for the characters and keep them exactly identical. No on-screen text, no readable numbers. No voices, no dialogue, no music: characters never speak, only ambient sounds. Smooth expressive animation.
+## Étape 2 : partie 1 (joindre Gérard la Poire + le Kiwi masqué)
 
-Shot 1 (0-3 s): night, supermarket loading dock, a forklift drops a wooden crate full of kiwis; Gérard the pear guard yawns widely.
-Shot 2 (3-6 s): Gérard signs the delivery slip without even looking, gives a sleepy thumbs up.
-Shot 3 (6-10 s): close-up inside the crate: dozens of normal kiwis, and among them one kiwi wearing a tiny black balaclava and striped sweater, his eyes darting left and right, slow sly grin.
-Shot 4 (10-15 s): dark empty store, the masked kiwi pops out of the crate, tiptoes to the back door, pushes the bar and opens it; silhouettes of a gang of grapes waiting outside under a streetlight.
+Vertical 9:16 video, 15 seconds, 4 shots. Hyper-realistic 3D animated fruit characters, Pixar-quality render, glossy realistic fruit textures, cinematic lighting, night: a supermarket loading dock then the dark store, cool blue shadows and warm orange lights. Use the attached reference images and keep the characters exactly identical in every shot: Gérard the pear security guard (grey mustache, round glasses, yellow hi-vis vest) and the masked kiwi burglar (black balaclava, black-and-white striped sweater, black gloves).
+Dialogue: the characters speak French with a France accent and accurate lip sync, saying exactly the lines in quotes and nothing else. Gérard has a deep, slow, tired middle-aged male voice. The masked kiwi has a high-pitched, sneaky, whispering male voice. No narrator, no music, no subtitles, no on-screen text, ambient sounds only.
 
-## Étape 3 : partie 2 (15-30 s), en prolongation de la partie 1
+Shot 1 (0-3.5 s): a forklift drops a wooden crate full of kiwis on the loading dock; Gérard yawns widely, then says: « Encore une livraison… à cette heure-ci ? »
+Shot 2 (3.5-7 s): Gérard scribbles on the delivery slip without looking at it and gives a sleepy thumbs up, saying: « C'est bon, je signe, je signe ! »
+Shot 3 (7-11 s): close-up inside the crate: dozens of ordinary kiwis, and among them the masked kiwi, eyes darting left and right; he whispers to the camera with a sly grin: « Chut… je suis un kiwi comme les autres. »
+Shot 4 (11-15 s): in the dark empty store, the masked kiwi pops out of the crate, tiptoes to the back door, pushes the bar and opens it to a gang of grapes waiting under a streetlight, and whispers: « Les gars, c'est ouvert ! »
 
-Direct continuation of the previous video, same style, same characters exactly matching the references, vertical 9:16, 15 seconds. No on-screen text. No voices, no dialogue, no music: characters never speak, only ambient sounds.
+## Étape 3 : partie 2, en prolongation de la partie 1 (joindre Gérard + Inès la Fraise + Biscotte)
 
-Shot 1 (0-4 s): morning, the fruit aisle is completely empty; Gérard the pear stands frozen in shock, while Biscotte the clementine lies alone on the empty shelf and yawns.
-Shot 2 (4-8 s): Inès the strawberry technician opens a new delivery crate and inspects the fruits one by one with a flashlight, serious and focused.
-Shot 3 (8-12 s): Inès holds up a delivery slip and points at a planning board on the wall; Gérard nods eagerly.
-Shot 4 (12-15 s): Gérard now inspects every single grape of a bunch with a huge magnifying glass, very proud; Inès slowly facepalms.
+Direct continuation of the previous video: same style, same lighting quality, vertical 9:16, 15 seconds, 4 shots, now in the morning inside the supermarket. Use the attached reference images and keep the characters exactly identical: Gérard the pear security guard, Inès the strawberry security technician (green leafy ponytail, grey reflective jacket, tool belt, tablet) and Biscotte the lazy clementine.
+Dialogue: the characters speak French with a France accent and accurate lip sync, saying exactly the lines in quotes and nothing else. Gérard keeps the same deep, slow, tired middle-aged male voice as before. Inès has a clear, confident, energetic young female voice. Biscotte never speaks. No narrator, no music, no subtitles, no on-screen text, ambient sounds only.
 
-## Voix off (je la génère au montage)
+Shot 1 (0-3.5 s): the fruit aisle is completely empty; Biscotte lies alone on an empty shelf and yawns; Gérard freezes in shock and shouts: « Mais… ils sont où, mes fruits ?! »
+Shot 2 (3.5-7.5 s): Inès opens a new delivery crate and checks the fruits one by one with a flashlight, then looks at the camera and says: « Une livraison, on la vérifie avant de la rentrer. »
+Shot 3 (7.5-11 s): Inès points at a planning board on the wall while Gérard nods eagerly; she says: « Et la nuit, rien n'entre sans être prévu. »
+Shot 4 (11-15 s): Gérard inspects a bunch of grapes one grape at a time with a huge magnifying glass, very proud, and asks one grape suspiciously: « Toi… t'es un vrai raisin ? »; behind him Inès slowly facepalms.
 
-Partie 1 : Livraison de kiwis, onze heures du soir. / Gérard la Poire signe sans regarder. / Mais dans la cagette, un kiwi n'est pas comme les autres. / À trois heures, il ouvre la porte à toute sa bande.
-Partie 2 : Au matin, le rayon fruits est vide. / Une livraison, on la vérifie avant de la faire entrer. / Et la nuit, rien n'entre sans être prévu. / Depuis, Gérard vérifie tout. Vraiment tout. Abonne-toi pour la suite.
+## Montage (de mon côté)
 
-Accroche : « Le kiwi | n'était pas un kiwi »
+Accroche « LE KIWI / N'ÉTAIT PAS UN KIWI », sous-titres des répliques, musique en fond sous les voix, bruitages, « Abonne-toi pour la suite » à la fin.
