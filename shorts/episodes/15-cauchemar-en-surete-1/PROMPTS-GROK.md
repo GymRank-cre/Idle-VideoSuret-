@@ -19,16 +19,20 @@ Ce qui donne envie de regarder, plan par plan :
 
 ## Étape 1 : les personnages (une image chacun, à garder comme références)
 
-Le Kiwi masqué : reprendre l'image de l'épisode 14.
+Base commune : chaque personnage seul, en pied, de face, sur fond gris uni, sans texte. C'est ce qui
+permet à Grok de les garder identiques d'une vidéo à l'autre.
 
-Inès la Fraise (nouvelle version, à refaire : l'ancienne avait un corps humain) :
-Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, cute family-friendly design, expressive cartoon eyes and mouth, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Inès is a bright red strawberry security expert. Her whole body is one single large strawberry: the face is on the upper part of the strawberry, with small cartoon arms and short legs attached directly to it. She is not a human woman: no human torso, no neck, no chest, no waist, no human skin. Green leafy top styled like a ponytail, confident friendly smile, a small grey work vest with reflective stripes wrapped around the strawberry, tool belt, holding a tablet.
+Inès la Fraise (l'experte, la star de la série) :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture with tiny golden seeds, vibrant saturated colors, appealing cute proportions, big expressive eyes, full body, standing, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Inès is a bright red strawberry security expert. Her whole body is one single large strawberry that takes up almost all of her height: the face is on the upper part of the strawberry, with small cartoon arms and short legs attached directly to it, and small dark work boots. She is not a human woman: no human torso, no neck, no chest, no waist, no human skin, no hair. The green leafy top of the strawberry is styled like a perky ponytail. Confident, friendly, slightly mischievous smile, one eyebrow raised. A small grey work vest with reflective stripes wrapped around the strawberry, a tool belt, holding a tablet under one arm.
 
-Momo le Melon :
-Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, cute family-friendly design, expressive cartoon eyes and mouth, small arms and legs, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Momo is a big round cantaloupe melon with beige netted skin, the owner of a small fruit shop: kind and slightly clueless, big friendly smile, thick eyebrows, green-and-white striped grocer's apron, small flat cap.
+Momo le Melon (le commerçant attachant et naïf) :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, vibrant saturated colors, appealing cute proportions, big expressive eyes, full body, standing, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Momo is a big round cantaloupe melon with beige netted skin and a short stem on top, the owner of a small fruit shop: kind, cheerful and slightly clueless, huge friendly grin, thick bushy eyebrows, rosy cheeks, small cartoon arms and short legs, a green-and-white striped grocer's apron, a small flat cap, a pencil tucked behind where his ear would be.
 
-Abricot Lupin :
-Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, cute family-friendly design, expressive cartoon eyes and mouth, small arms and legs, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Abricot Lupin is an elegant apricot gentleman burglar with velvety orange skin: black top hat, round monocle, thin curled black mustache, black cape with red lining, white gloves, holding a cane, sly confident smile.
+Abricot Lupin (le gentleman cambrioleur, le mystère de la saison) :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, velvety orange apricot skin with a soft blush, vibrant saturated colors, appealing proportions, big expressive eyes, full body, standing, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. Abricot Lupin is an elegant apricot gentleman burglar: black top hat, round gold monocle, thin curled black mustache, black cape with a red silk lining, white gloves, a black cane with a silver handle, small cartoon arms and short legs, sly confident smile, one hand raised holding a small white calling card.
+
+Le Kiwi masqué (le petit cambrioleur maladroit, déjà vu dans l'épisode 14) :
+Hyper-realistic 3D animated fruit character, Pixar-quality render, glossy realistic fruit skin texture, vibrant colors, appealing cute proportions, big expressive eyes, full body, facing the camera, soft studio lighting, plain light grey background, vertical 9:16, no text. A small fuzzy brown kiwi burglar: tiny black balaclava with eye holes, black-and-white striped sweater, black gloves, mischievous grin, sneaking on tiptoes, small cartoon arms and short legs.
 
 ## Étape 2 : partie 1, l'arrivée (joindre Inès + Momo + le Kiwi masqué)
 
