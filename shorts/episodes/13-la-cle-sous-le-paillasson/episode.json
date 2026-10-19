@@ -1,0 +1,202 @@
+{
+  "id": "13-la-cle-sous-le-paillasson",
+  "title": "La clé sous le paillasson",
+  "hook": "La pire cachette|du monde",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "sfxLibrary": {
+    "keys": {
+      "prompt": "jingling bunch of keys picked up from the ground",
+      "duration": 1,
+      "volume": 0.6
+    }
+  },
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Tout le quartier connaissait la cachette de Gérard. Le cambrioleur aussi.",
+      "emphasis": [
+        "cachette"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        },
+        {
+          "name": "keys",
+          "at": "mot:cambrioleur"
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Pour ne jamais perdre ses clés, Gérard les cache sous son paillasson.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": [
+        "paillasson"
+      ],
+      "sfx": [
+        {
+          "name": "keys",
+          "at": "mot:cache"
+        }
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Pratique : il rentre chez lui sans même fouiller ses poches.",
+      "emphasis": [
+        "Pratique"
+      ],
+      "sfx": [
+        {
+          "name": "door",
+          "at": "mot:rentre"
+        }
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "in": "whip",
+      "cam": "left",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Le problème ? Sous le paillasson, c'est le premier endroit où regarde un cambrioleur.",
+      "emphasis": [
+        "premier"
+      ],
+      "sfx": [
+        {
+          "name": "tiptoe",
+          "at": 0.2
+        }
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Un soir, la porte s'est ouverte du premier coup.",
+      "emphasis": [
+        "premier"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "door",
+          "at": "mot:ouverte"
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Quand Gérard est rentré, il ne restait que le chat. Et encore.",
+      "emphasis": [
+        "chat"
+      ],
+      "sfx": [
+        {
+          "name": "meow",
+          "at": "mot:encore",
+          "offset": 0.3
+        }
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Une clé, ça ne se cache jamais dehors : on la confie à un voisin, ou on la met dans une boîte à code.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "jamais"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:boîte"
+        }
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Gérard a changé de cachette. Maintenant, c'est sous le pot de fleurs. Abonne-toi pour la suite.",
+      "emphasis": [
+        "fleurs"
+      ],
+      "sfx": [
+        {
+          "name": "sigh",
+          "at": "mot:Abonne-toi",
+          "offset": -0.4
+        }
+      ]
+    }
+  ],
+  "caption": "Sous le paillasson, c'est la première cachette que vérifie un cambrioleur 🔑 On confie sa clé à un voisin de confiance ou on la met dans une boîte à code. Avoue, toi aussi tu caches ta clé dehors ?",
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#cambriolage",
+    "#maison",
+    "#conseils",
+    "#astuce",
+    "#histoire",
+    "#humour"
+  ]
+}

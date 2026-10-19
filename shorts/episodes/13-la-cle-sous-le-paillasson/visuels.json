@@ -1,0 +1,70 @@
+{
+  "shots": [
+    {
+      "id": "p01",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, front door of a small cozy suburban house: the burglar crouches, lifting the doormat and holding up a key he just found, huge grin.",
+      "animate": "He lifts the doormat, picks up the key and grins."
+    },
+    {
+      "id": "p02",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Evening, front door of a small cozy house: Gérard slides a key under the doormat, very pleased with his idea, winking.",
+      "animate": "Gérard slides the key under the mat, pats it, stands up and winks."
+    },
+    {
+      "id": "p03",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Evening, Gérard coming home with a grocery bag, bending down and lifting the doormat to take the key, happy.",
+      "animate": "He lifts the mat, takes the key and opens the door with a satisfied smile."
+    },
+    {
+      "id": "p04",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, the burglar walks along a street of houses, lifting each doormat and checking under it with a flashlight, methodical.",
+      "animate": "He lifts one doormat, checks with his flashlight, puts it back and moves to the next door."
+    },
+    {
+      "id": "p05",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, the burglar opens the front door of the cozy house with the key on the first try, door swinging open, he tiptoes in.",
+      "animate": "He turns the key, the door swings open and he tiptoes inside."
+    },
+    {
+      "id": "p06",
+      "refs": [
+        "gardien",
+        "chat"
+      ],
+      "image": "Day, a completely empty living room with bare walls, Gérard in the doorway with his jaw dropped, Biscotte the fat orange tabby cat sitting alone in the middle of the floor.",
+      "animate": "Gérard's jaw drops and he looks around in shock; the cat yawns."
+    },
+    {
+      "id": "p07",
+      "refs": [
+        "technicienne"
+      ],
+      "image": "Day, in front of a house door, Inès shows a small black key lock box with a keypad mounted on the wall, confident smile.",
+      "animate": "Inès opens the key box, puts a key inside, closes it and smiles."
+    },
+    {
+      "id": "p08",
+      "refs": [
+        "gardien",
+        "technicienne"
+      ],
+      "image": "Day, front door: Gérard proudly hides the key under a flower pot next to the door, Inès behind him facepalming.",
+      "animate": "Gérard tucks the key under the flower pot and gives a thumbs up; Inès slowly facepalms."
+    }
+  ]
+}

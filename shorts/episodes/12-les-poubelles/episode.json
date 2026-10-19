@@ -1,0 +1,195 @@
+{
+  "id": "12-les-poubelles",
+  "title": "Les poubelles",
+  "hook": "Le plan du site|était à la poubelle",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "sfxLibrary": {
+    "shredder": {
+      "prompt": "office paper shredder running and shredding sheets of paper",
+      "duration": 2,
+      "volume": 0.55
+    },
+    "rustle": {
+      "prompt": "rummaging through papers and trash bags in a metal dumpster",
+      "duration": 2,
+      "volume": 0.55
+    }
+  },
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Le plan complet du site était en libre-service… dans la poubelle.",
+      "emphasis": [
+        "poubelle"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Gérard fait le ménage du bureau et jette tous ses vieux papiers à la benne.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": [
+        "benne"
+      ],
+      "sfx": [
+        {
+          "name": "rustle",
+          "at": "mot:jette"
+        }
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Des plans, des listes de codes, les horaires des rondes. Tout part.",
+      "emphasis": [
+        "codes"
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Cette nuit-là, quelqu'un fouille la benne. Et ce n'est pas Biscotte.",
+      "emphasis": [
+        "Biscotte"
+      ],
+      "sfx": [
+        {
+          "name": "rustle",
+          "at": 0.2
+        },
+        {
+          "name": "meow",
+          "at": "mot:Biscotte"
+        }
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Le cambrioleur a trouvé le mode d'emploi du site. Gratuitement.",
+      "emphasis": [
+        "Gratuitement"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Il n'a même pas eu besoin de chercher la porte.",
+      "emphasis": [
+        "porte"
+      ],
+      "sfx": [
+        {
+          "name": "door",
+          "at": "mot:porte"
+        }
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Un document sensible, ça ne se jette pas : ça passe au destructeur.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "destructeur"
+      ],
+      "sfx": [
+        {
+          "name": "shredder",
+          "at": "mot:destructeur"
+        }
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Gérard a compris. Il détruit maintenant tous ses papiers. Même sa liste de courses. Abonne-toi pour la suite.",
+      "emphasis": [
+        "courses"
+      ],
+      "sfx": [
+        {
+          "name": "shredder",
+          "at": "mot:détruit"
+        }
+      ]
+    }
+  ],
+  "caption": "Le plan du site, les codes, les horaires… tout était dans la benne 🗑️ Un document sensible, ça passe au destructeur, jamais à la poubelle. Et toi, tu jettes quoi au bureau ?",
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#confidentialite",
+    "#documents",
+    "#agentdesecurite",
+    "#cambriolage",
+    "#histoire",
+    "#humour"
+  ]
+}

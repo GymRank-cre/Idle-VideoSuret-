@@ -1,0 +1,68 @@
+{
+  "shots": [
+    {
+      "id": "p01",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Night, warehouse yard: Gérard stands at the gate control box with a phone to his ear, saluting proudly, while a small dark truck drives in through the opening sliding gate with its headlights on.",
+      "animate": "The gate slides open, the truck rolls in with its headlights on, Gérard salutes proudly with the phone at his ear."
+    },
+    {
+      "id": "p02",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Night, inside the guard booth: Gérard dozing in his chair, the old desk telephone ringing and jumping on the desk.",
+      "animate": "The phone rings and shakes on the desk, Gérard jolts awake and grabs the receiver."
+    },
+    {
+      "id": "p03",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Close-up of Gérard on the phone, standing at attention, sweating, very serious and impressed.",
+      "animate": "Gérard listens, nods quickly, straightens up and salutes while holding the phone."
+    },
+    {
+      "id": "p04",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Inside the guard booth, Gérard presses a big green button on the gate control panel, phone still in his other hand; through the window the yard gate is visible.",
+      "animate": "He presses the button firmly; outside the gate starts to slide open."
+    },
+    {
+      "id": "p05",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, the burglar sitting in a parked car talking on a phone, pinching his nose to disguise his voice, wearing a big fake grey mustache over his balaclava, comically serious.",
+      "animate": "He talks into the phone while pinching his nose, then covers the phone and giggles."
+    },
+    {
+      "id": "p06",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, a small delivery truck overloaded with boxes driving out through the warehouse gate, the burglar at the wheel waving cheerfully.",
+      "animate": "The truck drives out through the gate, the burglar waves goodbye, the boxes wobble."
+    },
+    {
+      "id": "p07",
+      "refs": [
+        "technicienne"
+      ],
+      "image": "Day, guard booth, Inès firmly hangs up a desk telephone with one hand and holds her tablet in the other, confident and serious.",
+      "animate": "Inès hangs up the phone firmly, then dials a number on her tablet with a confident nod."
+    },
+    {
+      "id": "p08",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Day, guard booth, Gérard on the phone looking very suspicious, eyes narrowed, holding the receiver at arm's length.",
+      "animate": "Gérard squints suspiciously at the receiver, hangs up, then crosses his arms proudly."
+    }
+  ]
+}
