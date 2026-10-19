@@ -1,0 +1,190 @@
+{
+  "id": "11-le-faux-patron",
+  "title": "Le faux patron",
+  "hook": "Il a ouvert le portail|au faux patron",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "sfxLibrary": {
+    "phone": {
+      "prompt": "old desk telephone ringing loudly, two rings",
+      "duration": 2,
+      "volume": 0.6
+    },
+    "truck": {
+      "prompt": "small delivery truck engine accelerating and driving away",
+      "duration": 2.5,
+      "volume": 0.5
+    }
+  },
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Un simple coup de fil a suffi pour lui faire ouvrir le portail en pleine nuit.",
+      "emphasis": [
+        "portail"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Trois heures du matin, le téléphone du poste sonne.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": [
+        "sonne"
+      ],
+      "sfx": [
+        {
+          "name": "phone",
+          "at": "mot:téléphone"
+        }
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.38
+      ],
+      "say": "Au bout du fil, une voix pressée : c'est le directeur, et c'est urgent.",
+      "emphasis": [
+        "directeur"
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Un camion doit entrer tout de suite. Gérard ouvre le portail sans poser de question.",
+      "emphasis": [
+        "question"
+      ],
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:ouvre"
+        },
+        {
+          "name": "door",
+          "at": "mot:portail"
+        }
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Sauf que le directeur, au téléphone, c'était lui.",
+      "emphasis": [
+        "lui"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Le camion est reparti plein à craquer.",
+      "emphasis": [
+        "plein"
+      ],
+      "sfx": [
+        {
+          "name": "truck",
+          "at": 0.1
+        }
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Une demande urgente par téléphone ? On raccroche, et on rappelle le numéro officiel.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "rappelle"
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Depuis, quand le vrai directeur appelle, Gérard lui demande de rappeler. Trois fois. Abonne-toi pour la suite.",
+      "emphasis": [
+        "Trois"
+      ],
+      "sfx": [
+        {
+          "name": "phone",
+          "at": "mot:appelle",
+          "volume": 0.4
+        }
+      ]
+    }
+  ],
+  "caption": "Une voix pressée, un faux directeur, et le portail s'ouvre 📞 L'urgence, c'est l'arme préférée des arnaqueurs : on raccroche et on rappelle le numéro officiel. Tu aurais ouvert ?",
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#arnaque",
+    "#fraude",
+    "#agentdesecurite",
+    "#cambriolage",
+    "#histoire",
+    "#humour"
+  ]
+}

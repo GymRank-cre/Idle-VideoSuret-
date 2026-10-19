@@ -1,0 +1,90 @@
+{
+  "id": "06-le-badge",
+  "title": "Le badge sur le tableau de bord",
+  "hook": "Le site était bouclé.|Le badge, non.",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "shots": [
+    {
+      "asset": "p01.mp4", "cam": "punch", "focus": [0.5, 0.45],
+      "say": "Cette nuit, le site était bouclé. Le badge de Gérard, lui, ne l'était pas.",
+      "emphasis": ["badge"],
+      "sfx": [{ "name": "impact", "at": 0 }]
+    },
+    {
+      "asset": "p02.mp4", "cam": "in", "focus": [0.45, 0.45],
+      "say": "Fin de ronde : il le pose sur le tableau de bord de sa voiture.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": ["tableau"],
+      "sfx": [{ "name": "tap", "at": "mot:pose" }]
+    },
+    {
+      "asset": "p03.mp4", "in": "whip", "cam": "in", "focus": [0.55, 0.4],
+      "say": "Deux minutes, Biscotte. Juste le temps d'aller au distributeur.",
+      "emphasis": ["minutes"]
+    },
+    {
+      "asset": "p04.mp4", "cam": "hold", "focus": [0.4, 0.5],
+      "say": "Biscotte, sur le capot, le regarde partir avec son thermos.",
+      "label": "Biscotte|Chat du quartier",
+      "sfx": [{ "name": "meow", "at": "mot:thermos" }]
+    },
+    {
+      "asset": "p05.mp4", "in": "flash", "autoSfx": false, "cam": "punch", "focus": [0.45, 0.4],
+      "say": "Le cambrioleur passe. Le badge est bien visible. La voiture n'est pas fermée.",
+      "label": "Le cambrioleur|Passant pas si innocent",
+      "musicDrop": 1.2,
+      "emphasis": ["visible"],
+      "sfx": [{ "name": "scratch", "at": 0, "offset": -0.05 }, { "name": "tiptoe", "at": "mot:voiture" }]
+    },
+    {
+      "asset": "p06.mp4", "cam": "in", "focus": [0.5, 0.4],
+      "say": "Un sourire, et le badge change de main.",
+      "emphasis": ["main"],
+      "sfx": [{ "name": "pop", "at": "mot:badge" }]
+    },
+    {
+      "asset": "p07.mp4", "in": "zoom", "cam": "in", "focus": [0.45, 0.4],
+      "say": "Caméra 4 a tout vu. Mais le poste de garde, lui, est vide.",
+      "emphasis": ["vide"],
+      "sfx": [{ "name": "shutter", "at": 0.1 }]
+    },
+    {
+      "asset": "p08.mp4", "in": "whip", "cam": "punch", "focus": [0.45, 0.45],
+      "say": "Porte de service. Le badge bipe. La porte s'ouvre.",
+      "emphasis": ["bipe"],
+      "sfx": [{ "name": "beep", "at": "mot:bipe" }, { "name": "door", "at": "mot:ouvre" }]
+    },
+    {
+      "asset": "p09.mp4", "cam": "in", "focus": [0.5, 0.45],
+      "say": "Pour le système, c'est Gérard qui entre. Personne ne s'inquiète.",
+      "emphasis": ["Gérard"]
+    },
+    {
+      "asset": "p10.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.35],
+      "say": "Pour Inès, c'est simple : un badge, c'est une clé du site. Sur soi, ou au coffre. Jamais sur le tableau de bord.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": ["clé", "jamais"],
+      "sfx": [{ "name": "ding", "at": "mot:clé" }]
+    },
+    {
+      "asset": "p11.mp4", "cam": "punch", "focus": [0.5, 0.45],
+      "say": "Gérard revient. Thermos plein. Tableau de bord vide.",
+      "emphasis": ["vide"],
+      "sfx": [{ "name": "sigh", "at": "mot:vide" }]
+    },
+    {
+      "asset": "p12.mp4", "in": "whip", "cam": "in", "focus": [0.5, 0.5],
+      "say": "Et si un badge disparaît, on le signale tout de suite pour qu'il soit désactivé. Abonne-toi pour la suite.",
+      "emphasis": ["désactivé"],
+      "sfx": [{ "name": "ding", "at": "mot:désactivé" }, { "name": "purr", "at": "mot:Abonne" }]
+    }
+  ],
+  "caption": "Le site était bouclé. Le badge, non 🪪🚗 Un badge laissé dans une voiture, c'est une clé du site : sur soi ou au coffre, et on signale tout de suite un badge perdu. Tu laisses le tien où ?",
+  "hashtags": ["#surete", "#securite", "#controledacces", "#badge", "#agentdesecurite", "#cambriolage", "#histoire", "#humour"]
+}

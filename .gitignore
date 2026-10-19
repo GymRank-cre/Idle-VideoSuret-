@@ -2,3 +2,7 @@ node_modules/
 .DS_Store
 .vercel
 *.log
+.env
+shorts/out/
+shorts/episodes/*/cache/
+shorts/revoix/cache/

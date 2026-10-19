@@ -1,0 +1,20 @@
+{
+  "name": "le-renard-ep2",
+  "video": "../out/le-renard-ep2-fluide-fin.mp4",
+  "transcript": "le-renard-ep2.transcription.json",
+  "output": "../out/le-renard-ep2-voix.mp4",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "deadpan comedic late night suspense music, soft pizzicato, muted upright bass, light ticking percussion, security camera night shift vibe, instrumental only, no vocals",
+    "volume": 0.28
+  },
+  "fix": {
+    "0": "Trois heures quatorze.",
+    "6": "Gérard dort depuis vingt-deux heures."
+  }
+}

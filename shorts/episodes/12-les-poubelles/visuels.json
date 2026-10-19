@@ -1,0 +1,70 @@
+{
+  "shots": [
+    {
+      "id": "p01",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, alley behind a warehouse: the burglar stands inside a big open dumpster holding up a large blue site blueprint with a triumphant grin, papers flying around him.",
+      "animate": "He unfolds the blueprint, grins widely, papers flutter around him."
+    },
+    {
+      "id": "p02",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Day, Gérard happily carries a huge pile of old papers and binders out of the office toward a big dumpster.",
+      "animate": "Gérard waddles with the pile, dumps it into the dumpster and dusts off his hands."
+    },
+    {
+      "id": "p03",
+      "refs": [
+        "gardien"
+      ],
+      "image": "Close-up from inside a dumpster looking up: papers falling in, a blue site blueprint, a list, a schedule with colored blocks, Gérard's face above smiling. No readable text.",
+      "animate": "The papers tumble down into the dumpster one after another."
+    },
+    {
+      "id": "p04",
+      "refs": [
+        "cambrioleur",
+        "chat"
+      ],
+      "image": "Night, alley: the burglar's legs stick out of the dumpster as he digs inside, Biscotte the fat orange tabby cat sitting on the dumpster lid, watching unimpressed.",
+      "animate": "The burglar digs, legs kicking, papers fly out; the cat watches and flicks its tail."
+    },
+    {
+      "id": "p05",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, the burglar sits on the edge of the dumpster reading the blue blueprint with a flashlight, eyes sparkling, rubbing his chin.",
+      "animate": "He traces a path on the blueprint with his finger, his eyes widen, he smiles slyly."
+    },
+    {
+      "id": "p06",
+      "refs": [
+        "cambrioleur"
+      ],
+      "image": "Night, the burglar walks confidently toward a side door of the warehouse, reading the unfolded blueprint like a tourist with a map.",
+      "animate": "He walks confidently while checking the map, then opens the side door and slips in."
+    },
+    {
+      "id": "p07",
+      "refs": [
+        "technicienne"
+      ],
+      "image": "Day, office: Inès feeds papers into a paper shredder, thin strips falling out into the bin, confident nod.",
+      "animate": "Inès feeds the papers into the shredder, strips pour out, she nods with satisfaction."
+    },
+    {
+      "id": "p08",
+      "refs": [
+        "gardien",
+        "technicienne"
+      ],
+      "image": "Day, office: Gérard enthusiastically shredding a tiny shopping list and a birthday card, Inès standing behind him with a raised eyebrow.",
+      "animate": "Gérard happily shreds paper after paper; Inès raises an eyebrow and shakes her head."
+    }
+  ]
+}

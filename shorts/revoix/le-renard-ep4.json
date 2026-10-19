@@ -1,0 +1,21 @@
+{
+  "name": "le-renard-ep4",
+  "video": "../out/le-renard-ep4-fluide-fin.mp4",
+  "transcript": "le-renard-ep4.transcription.json",
+  "output": "../out/le-renard-ep4-voix.mp4",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "deadpan comedic late night suspense music, soft pizzicato, muted upright bass, light ticking percussion, security camera night shift vibe, instrumental only, no vocals",
+    "volume": 0.28
+  },
+  "fix": {
+    "0": "Trois heures vingt.",
+    "2": "Sam est passée cet après-midi.",
+    "8": "Le renard est parti, mais il a laissé un mot : « Je reviens pas seul. »"
+  }
+}

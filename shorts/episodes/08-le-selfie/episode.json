@@ -1,0 +1,175 @@
+{
+  "id": "08-le-selfie",
+  "title": "Le selfie",
+  "hook": "Un selfie|a tout fait cambrioler",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Un seul selfie a suffi pour cambrioler tout l'entrepôt.",
+      "emphasis": [
+        "selfie"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.38
+      ],
+      "say": "Gérard voulait juste fêter ses dix ans de service.",
+      "label": "Gérard|Agent de sécurité",
+      "sfx": [
+        {
+          "name": "shutter",
+          "at": "mot:fêter"
+        }
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Il a posté la photo, tout sourire, avec son badge bien visible sur le gilet.",
+      "emphasis": [
+        "badge"
+      ],
+      "sfx": [
+        {
+          "name": "pop",
+          "at": "mot:posté"
+        }
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "cam": "hold",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Et derrière lui, au mur : le planning des rondes et le boîtier des clés.",
+      "emphasis": [
+        "planning"
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Le cambrioleur, lui, a simplement zoomé.",
+      "emphasis": [
+        "zoomé"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Un faux badge, les bonnes heures… il est entré comme chez lui.",
+      "sfx": [
+        {
+          "name": "beep",
+          "at": "mot:badge"
+        },
+        {
+          "name": "door",
+          "at": "mot:entré"
+        }
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Au travail, on ne poste jamais une photo où l'on voit un badge, un écran ou un planning.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "jamais"
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.4
+      ],
+      "say": "Depuis, Gérard ne poste plus que des selfies avec Biscotte. Abonne-toi pour la suite.",
+      "emphasis": [
+        "Biscotte"
+      ],
+      "sfx": [
+        {
+          "name": "shutter",
+          "at": "mot:selfies"
+        },
+        {
+          "name": "meow",
+          "at": "mot:Abonne-toi",
+          "offset": -0.3
+        }
+      ]
+    }
+  ],
+  "caption": "Un selfie au travail, et tout le site est ouvert 📸 Badge, écran, planning : ce qu'on voit derrière toi peut servir à quelqu'un d'autre. Tu as déjà posté une photo du boulot ?",
+  "hashtags": [
+    "#surete",
+    "#securite",
+    "#reseauxsociaux",
+    "#selfie",
+    "#agentdesecurite",
+    "#cambriolage",
+    "#histoire",
+    "#humour"
+  ]
+}

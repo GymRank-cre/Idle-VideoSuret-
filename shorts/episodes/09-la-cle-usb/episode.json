@@ -1,0 +1,187 @@
+{
+  "id": "09-la-cle-usb",
+  "title": "La clé USB",
+  "hook": "Une clé USB|a tout éteint",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voice": {
+    "id": "Xgb3SR8idOHy8scGICeJ",
+    "stability": 0.4,
+    "style": 0.4,
+    "speed": 1.05
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.32
+  },
+  "coverAt": 0.7,
+  "shots": [
+    {
+      "asset": "p01.mp4",
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Il a éteint toutes les caméras du site avec une simple clé USB.",
+      "emphasis": [
+        "caméras"
+      ],
+      "sfx": [
+        {
+          "name": "impact",
+          "at": 0
+        },
+        {
+          "name": "glitch",
+          "at": "mot:éteint"
+        }
+      ]
+    },
+    {
+      "asset": "p02.mp4",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "say": "Ce matin-là, Gérard trouve une jolie clé rouge sur le parking.",
+      "label": "Gérard|Agent de sécurité",
+      "emphasis": [
+        "rouge"
+      ],
+      "sfx": [
+        {
+          "name": "ding",
+          "at": "mot:clé"
+        }
+      ]
+    },
+    {
+      "asset": "p03.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Pour savoir à qui elle appartient, il la branche sur l'ordinateur des caméras.",
+      "emphasis": [
+        "branche"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:branche"
+        }
+      ]
+    },
+    {
+      "asset": "p04.mp4",
+      "in": "flash",
+      "autoSfx": false,
+      "musicDrop": 1.2,
+      "cam": "punch",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "Une seconde plus tard, les écrans s'éteignent un par un.",
+      "emphasis": [
+        "s'éteignent"
+      ],
+      "sfx": [
+        {
+          "name": "scratch",
+          "at": 0,
+          "offset": -0.05
+        },
+        {
+          "name": "glitch",
+          "at": "mot:s'éteignent"
+        }
+      ]
+    },
+    {
+      "asset": "p05.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.45
+      ],
+      "say": "La clé, c'est le cambrioleur qui l'avait laissée là. Exprès.",
+      "emphasis": [
+        "Exprès"
+      ],
+      "sfx": [
+        {
+          "name": "tiptoe",
+          "at": 0.2
+        }
+      ]
+    },
+    {
+      "asset": "p06.mp4",
+      "in": "zoom",
+      "cam": "out",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Une clé trouvée, on ne la branche jamais : on la donne au service informatique.",
+      "label": "Inès|Technicienne sûreté",
+      "emphasis": [
+        "jamais"
+      ]
+    },
+    {
+      "asset": "p07.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "say": "Et sur l'ordinateur des caméras, on bloque les ports USB.",
+      "emphasis": [
+        "bloque"
+      ],
+      "sfx": [
+        {
+          "name": "tap",
+          "at": "mot:bloque"
+        }
+      ]
+    },
+    {
+      "asset": "p08.mp4",
+      "in": "whip",
+      "cam": "in",
+      "focus": [
+        0.5,
+        0.42
+      ],
+      "say": "Le lendemain, Gérard a trouvé un sandwich sur le parking. Il l'a apporté à Inès. Abonne-toi pour la suite.",
+      "emphasis": [
+        "sandwich"
+      ],
+      "sfx": [
+        {
+          "name": "sigh",
+          "at": "mot:Inès"
+        }
+      ]
+    }
+  ],
+  "caption": "Une clé trouvée sur le parking, et toutes les caméras s'éteignent 🔌 Une clé USB inconnue, on ne la branche jamais : on la remet au service informatique. Tu l'aurais branchée, toi ?",
+  "hashtags": [
+    "#surete",
+    "#cybersecurite",
+    "#cleusb",
+    "#videosurveillance",
+    "#agentdesecurite",
+    "#piratage",
+    "#histoire",
+    "#humour"
+  ]
+}

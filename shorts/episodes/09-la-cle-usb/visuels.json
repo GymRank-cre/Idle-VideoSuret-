@@ -1,0 +1,12 @@
+{
+  "shots": [
+    { "id": "p01", "refs": ["gardien", "camera"], "image": "Night, CCTV monitoring room: a wall of security monitors going black one after another, Gérard at the desk with his mouth wide open in shock, a red USB stick plugged into the computer.", "animate": "The monitors switch off one after another, Gérard's jaw drops and he grabs his head with both hands. Static camera." },
+    { "id": "p02", "refs": ["gardien"], "image": "Morning in a company parking lot, Gérard bends down and picks up a shiny red USB stick from the asphalt, curious and delighted.", "animate": "He picks up the USB stick, turns it in his fingers, looks around and pockets it with a smile. Static camera." },
+    { "id": "p03", "refs": ["gardien"], "image": "Monitoring room, Gérard plugs a red USB stick into the computer under the wall of CCTV monitors showing camera views, curious face.", "animate": "He plugs the USB stick in, leans toward the screen with curiosity. Static camera." },
+    { "id": "p04", "refs": ["camera"], "image": "Close-up of Caméra 4, the white dome security camera with a red eye, mounted on a brick wall at night, its red eye glowing.", "animate": "The red eye flickers, glitches and goes completely dark. Static camera." },
+    { "id": "p05", "refs": ["cambrioleur"], "image": "Night, the burglar slips through the open gate of a warehouse yard on tiptoe, grinning, flashlight in hand, dark dead security cameras on the wall behind him.", "animate": "He sneaks through the gate on tiptoe, glances up at the dark cameras and grins. Static camera." },
+    { "id": "p06", "refs": ["technicienne"], "image": "Day, monitoring room, Inès holds a red USB stick between two fingers at arm's length with a serious, unimpressed expression, like dangerous evidence.", "animate": "Inès raises the USB stick and slowly shakes her head, unimpressed. Static camera." },
+    { "id": "p07", "refs": ["technicienne"], "image": "Inès pushes small plastic port blockers into the USB ports of the monitoring computer, confident, CCTV monitors working again in the background.", "animate": "She pushes the blockers into the ports one by one and dusts off her hands. Static camera." },
+    { "id": "p08", "refs": ["gardien", "technicienne"], "image": "Parking lot by day, Gérard proudly hands Inès a sandwich he found on the ground, holding it with kitchen tongs; Inès facepalms.", "animate": "Gérard offers the sandwich with the tongs, proud; Inès slowly brings her palm to her face. Static camera." }
+  ]
+}

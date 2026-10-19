@@ -1,0 +1,68 @@
+{
+  "notes": "Description des visuels pour shorts/grok.mjs. Les références sont les fichiers de shorts/references/ (sans extension).",
+  "costumes": {
+    "deguisement": "the burglar keeps his black balaclava and black and white striped sweater, but wears a bright orange high-visibility work vest over it, a fake badge clipped on the vest, and carries a clipboard"
+  },
+  "shots": [
+    {
+      "id": "p01", "refs": ["cambrioleur"], "costume": "deguisement",
+      "image": "the burglar in his technician disguise standing proudly in front of a warehouse at night, mischievous buck-toothed grin, thumbs up",
+      "animate": "the burglar adjusts his orange vest proudly and gives a sly wink"
+    },
+    {
+      "id": "p02", "refs": ["cambrioleur"], "costume": "deguisement",
+      "image": "the disguised burglar pressing the buzzer of a small glass guard booth at night, trying to look professional, streetlight above",
+      "animate": "he presses the buzzer twice and straightens up with a fake serious face"
+    },
+    {
+      "id": "p03", "refs": ["cambrioleur"], "costume": "deguisement",
+      "image": "close-up of the disguised burglar holding up his clipboard with a big fake friendly smile, as if talking to someone through a window, warm light from the booth on his face",
+      "animate": "he talks enthusiastically, tapping his clipboard and pointing at his fake badge"
+    },
+    {
+      "id": "p04", "refs": ["gardien", "cambrioleur"], "costume": "deguisement",
+      "image": "the chubby mustached security guard with neon yellow vest inside his booth, looking at the disguised burglar through the glass, nodding convinced, his hand on the door handle opening the door",
+      "animate": "the guard nods slowly, convinced, and opens the door with a welcoming gesture"
+    },
+    {
+      "id": "p05", "refs": ["cambrioleur"], "costume": "deguisement",
+      "image": "the disguised burglar in a dim technical room in front of a wall-mounted alarm control panel with glowing red lights, his gloved finger about to press one big button, sneaky grin",
+      "animate": "his finger presses the big button, all the panel lights switch from red to off one by one"
+    },
+    {
+      "id": "p06", "refs": ["camera"],
+      "image": "the white dome security camera mounted in a dim corridor, its red lens eye wide open in disbelief, staring down at the scene, tiny sweat drop on the dome",
+      "animate": "the camera's eye blinks twice in disbelief and slowly shakes as if saying no"
+    },
+    {
+      "id": "p07", "refs": ["cambrioleur"],
+      "image": "the burglar in his usual outfit (black balaclava, striped sweater, no vest) tiptoeing inside a dark warehouse at night with a flashlight and a money bag, the alarm panel on the wall completely dark",
+      "animate": "he tiptoes with exaggerated sneaky cartoon steps, flashlight beam sweeping"
+    },
+    {
+      "id": "p08", "refs": ["chat"],
+      "image": "the fat orange tabby cat sitting on a dark parked car hood at night, narrowed suspicious eyes, one eyebrow raised, judging someone off-screen",
+      "animate": "the cat narrows its eyes, flicks its tail and slowly shakes its head"
+    },
+    {
+      "id": "p09", "refs": ["technicienne"],
+      "image": "early morning, the female security technician arriving at the warehouse gate holding her rugged tablet, surprised puzzled expression, sunrise sky",
+      "animate": "she stops, raises an eyebrow and looks around puzzled, ponytail moving in the wind"
+    },
+    {
+      "id": "p10", "refs": ["technicienne", "gardien"],
+      "image": "the technician showing her tablet to the embarrassed chubby security guard, the tablet displays a calendar with one highlighted appointment, the guard scratching his head",
+      "animate": "she taps the highlighted appointment on her tablet, the guard scratches his head embarrassed"
+    },
+    {
+      "id": "p11", "refs": ["technicienne", "gardien"],
+      "image": "the technician holding a phone to her ear and pointing at an official company card pinned on the booth wall, the guard listening and nodding seriously, morning light",
+      "animate": "she talks on the phone while pointing at the card, the guard nods seriously"
+    },
+    {
+      "id": "p12", "refs": ["gardien", "chat"],
+      "image": "the chubby mustached security guard at his booth window very seriously inspecting the ID card of a confused mail carrier holding letters, the fat orange cat sitting on the counter looking smug, daytime",
+      "animate": "the guard squints at the ID card with exaggerated suspicion, the cat slowly blinks smugly"
+    }
+  ]
+}
