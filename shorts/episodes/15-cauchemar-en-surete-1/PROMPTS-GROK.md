@@ -72,6 +72,16 @@ Shot 4 (11-15 s): across the street, under a streetlamp in the fog, Abricot Lupi
 
 [coller les règles]
 
+## Voix ElevenLabs de la série (modèle eleven_v3, à garder pour toute la saison)
+
+| Personnage | Voix | voice_id |
+|---|---|---|
+| Inès la Fraise | Adina, jeune et joyeuse | FvmvwvObRqIHojkEGh5N |
+| Momo le Melon | Troy, héros de dessin animé | 4TfTGcPwoefWe878B0rm |
+| Abricot Lupin | François Louis, grave et posé | UBXZKOKbt62aLQHhc1Jm |
+| Le Kiwi masqué | Anatole (comme l'épisode 14) | Jrq4GqCKqYpigdQsZRkP |
+| Présentateur | Yann, ton d'émission télé | nr2EGJNe96rzn9FRlTId |
+
 ## Montage (de mon côté)
 
 - Titre d'ouverture : « CAUCHEMAR EN SÛRETÉ » puis « ÉPISODE 1 : AU BON MELON ».
