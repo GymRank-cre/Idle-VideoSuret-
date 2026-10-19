@@ -23,6 +23,8 @@ const args = process.argv.slice(2);
 const preview = args.includes('--preview');
 const id = args.find((a) => !a.startsWith('--'));
 const LEAD = 3;
+const FIT_MIN = 0.8; // ralentissement maximal d'une réplique calée sur l'image
+const FIT_MAX = 1.3; // accélération maximale : au-delà, la voix devient caricaturale
 
 const QUALITY = preview
   ? { W: 540, H: 960, preset: 'veryfast', crf: 23, grain: '' }
@@ -50,11 +52,16 @@ async function main() {
 
   // Début de chaque partie sur la timeline finale (les transitions se chevauchent).
   let t = 0;
+  // Une partie peut n'être qu'un extrait d'une vidéo ("trim": [début, fin]), par exemple pour
+  // une ouverture façon bande-annonce. La transition "cut" est une coupe franche.
   const parts = ep.parts.map((p, i) => {
     const file = join(epDir, 'assets', p.asset);
     if (!existsSync(file)) throw new Error(`Visuel manquant : assets/${p.asset}`);
-    const len = probe(file);
-    const trans = i > 0 ? p.transition || { type: 'fadeblack', duration: 0.4 } : null;
+    // Durée arrondie à l'image inférieure, moins une image : une transition qui déborde de la
+    // fin réelle de la partie précédente, même d'une fraction d'image, coupe tout le reste.
+    const len = Math.floor((p.trim ? p.trim[1] - p.trim[0] : probe(file)) * FPS - 1) / FPS;
+    let trans = i > 0 ? p.transition || { type: 'fadeblack', duration: 0.4 } : null;
+    if (trans?.type === 'cut') trans = { type: 'fade', duration: 1 / FPS };
     const start = i > 0 ? t - trans.duration : 0;
     t = start + len;
     return { ...p, file, len, start, trans };
@@ -63,21 +70,25 @@ async function main() {
 
   console.log('1/5 Voix');
   const lines = [];
-  const clips = []; // pistes de voix posées sur la timeline : { file, at }
+  const clips = []; // pistes de voix posées sur la timeline : { file, at, a0, a1, tempo }
   const isTag = (w) => /^\[[^\]]*\]$/.test(w.text);
   for (const [i, p] of parts.entries()) {
     if (!p.voice) {
       // Dialogue : une voix par personnage (ep.voices), chaque réplique posée à `at` secondes de la partie.
-      for (const l of p.lines) {
+      // Avec `until`, la réplique est accélérée ou ralentie pour tenir entre `at` et `until`
+      // (le temps où le personnage parle à l'image), ce qui garde les lèvres synchronisées.
+      for (const l of p.lines || []) {
         const voice = ep.voices[l.who];
         const spoken = `${l.tag ? `${l.tag} ` : ''}${l.say}`;
         const file = join(cacheDir, `ligne-${hash({ spoken, voice })}.mp3`);
         const at = p.start + l.at;
-        const words = wordsFromAlignment(await tts(spoken, voice, file))
-          .filter((w) => !isTag(w))
-          .map((w) => ({ ...w, start: w.start + at, end: w.end + at }));
+        const spokenWords = wordsFromAlignment(await tts(spoken, voice, file)).filter((w) => !isTag(w));
+        const a0 = l.until ? Math.max(0, spokenWords[0].start - 0.03) : 0;
+        const a1 = l.until ? spokenWords[spokenWords.length - 1].end + 0.08 : null;
+        const tempo = l.until ? Math.min(FIT_MAX, Math.max(FIT_MIN, (a1 - a0) / (l.until - l.at))) : 1;
+        const words = spokenWords.map((w) => ({ ...w, start: at + (w.start - a0) / tempo, end: at + (w.end - a0) / tempo }));
         lines.push({ ...l, words });
-        clips.push({ file, at });
+        clips.push({ file, at, a0, a1, tempo });
       }
       continue;
     }
@@ -108,7 +119,8 @@ async function main() {
   const voiceArgs = clips.flatMap((c) => ['-i', c.file]);
   const delays = clips.map((c, i) => {
     const ms = Math.round(c.at * 1000);
-    return `[${i}:a]aresample=48000,aformat=channel_layouts=mono,adelay=${ms}[v${i}]`;
+    const fit = c.a1 ? `atrim=${c.a0.toFixed(3)}:${c.a1.toFixed(3)},asetpts=PTS-STARTPTS,atempo=${c.tempo.toFixed(3)},` : '';
+    return `[${i}:a]${fit}aresample=48000,aformat=channel_layouts=mono,adelay=${ms}[v${i}]`;
   });
   await ffmpeg(
     [...voiceArgs, '-filter_complex', `${delays.join(';')};${clips.map((_, i) => `[v${i}]`).join('')}amix=inputs=${clips.length}:normalize=0:duration=longest,asetpts=N/SR/TB[out]`, '-map', '[out]', '-c:a', 'pcm_s16le', 'voice.wav'],
@@ -116,7 +128,10 @@ async function main() {
   );
 
   const lib = await ensureSfx((ep.sfx || []).map((c) => c.name), ep.sfxLibrary);
-  const cues = (ep.sfx || []).map((c) => ({ file: lib[c.name].file, time: c.at, volume: c.volume ?? lib[c.name].volume }));
+  // Repères en secondes depuis le début de la vidéo, ou depuis le début de la partie `part`.
+  const atPart = (at, part) => (part === undefined ? 0 : parts[part].start) + at;
+  const cues = (ep.sfx || []).map((c) => ({ file: lib[c.name].file, time: atPart(c.at, c.part), volume: c.volume ?? lib[c.name].volume }));
+  const drops = (ep.musicDrops || []).map(([at, len, part]) => [atPart(at, part), len]);
   let bed = null;
   if (ep.music?.prompt) {
     const seconds = Math.ceil(duration) + 2;
@@ -124,12 +139,12 @@ async function main() {
     await music(ep.music.prompt, seconds, file);
     bed = { file, volume: ep.music.volume };
   }
-  await mixAudio({ voice: 'voice.wav', music: bed, cues, drops: ep.musicDrops || [], duration, cacheDir });
+  await mixAudio({ voice: 'voice.wav', music: bed, cues, drops, duration, cacheDir });
 
   console.log(`4/5 Image (${QUALITY.W}x${QUALITY.H})`);
   const { W, H } = QUALITY;
   const chains = parts.map(
-    (p, i) => `[${i}:v:0]fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},setsar=1,format=yuv420p${i === parts.length - 1 && ep.tail ? `,tpad=stop_mode=clone:stop_duration=${ep.tail}` : ''}[p${i}]`,
+    (p, i) => `[${i}:v:0]${p.trim ? `trim=start=${p.trim[0]}:end=${p.trim[1]},setpts=PTS-STARTPTS,` : ''}fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},setsar=1,format=yuv420p${i === parts.length - 1 && ep.tail ? `,tpad=stop_mode=clone:stop_duration=${ep.tail}` : ''}[p${i}]`,
   );
   let last = '[p0]';
   for (let i = 1; i < parts.length; i++) {
@@ -138,8 +153,10 @@ async function main() {
     last = `[x${i}]`;
   }
   const barIdx = parts.length + 1;
+  // "grade": "clean" garde l'image IA telle quelle (ni grain, ni netteté forcée, ni vignette).
+  const grade = ep.grade === 'clean' ? 'eq=saturation=1.05' : `eq=contrast=1.05:saturation=1.12,unsharp=5:5:0.45,vignette=angle=PI/6${QUALITY.grain}`;
   chains.push(
-    `${last}eq=contrast=1.05:saturation=1.12,unsharp=5:5:0.45,vignette=angle=PI/6${QUALITY.grain},subtitles=captions.ass:fontsdir=${FONTS_DIR}[graded]`,
+    `${last}${grade},subtitles=captions.ass:fontsdir=${FONTS_DIR}[graded]`,
     `[graded][${barIdx}:v]overlay=x='-w+w*t/${duration.toFixed(3)}':y=0:shortest=1,format=yuv420p[v]`,
   );
 

@@ -1,0 +1,103 @@
+{
+  "id": "15-cauchemar-en-surete-1",
+  "title": "Cauchemar en sûreté — Au Bon Melon",
+  "hook": "Cauchemar|en sûreté",
+  "disclaimer": "Histoire fictive · Vidéo générée par IA",
+  "grade": "clean",
+  "voices": {
+    "ines": { "id": "FvmvwvObRqIHojkEGh5N", "model": "eleven_v3", "stability": 0.5 },
+    "momo": { "id": "4TfTGcPwoefWe878B0rm", "model": "eleven_v3", "stability": 0.5 },
+    "lupin": { "id": "UBXZKOKbt62aLQHhc1Jm", "model": "eleven_v3", "stability": 0.5 },
+    "kiwi": { "id": "Jrq4GqCKqYpigdQsZRkP", "model": "eleven_v3", "stability": 0.5 },
+    "presentateur": { "id": "nr2EGJNe96rzn9FRlTId", "model": "eleven_v3", "stability": 0.5 }
+  },
+  "music": {
+    "prompt": "upbeat quirky comedic reality TV makeover show music, pizzicato strings, playful brass stabs, bouncy percussion, light comedic suspense, instrumental only, no vocals, steady tempo around 110 bpm",
+    "volume": 0.2
+  },
+  "coverAt": 4.8,
+  "tail": 2.6,
+  "parts": [
+    {
+      "asset": "partie2.mp4",
+      "trim": [3.0, 3.75],
+      "lines": [
+        { "who": "presentateur", "at": 0.05, "until": 2.2, "tag": "[dramatic]", "say": "Cette semaine… dans Cauchemar en sûreté !" }
+      ]
+    },
+    { "asset": "partie2.mp4", "trim": [12.5, 13.3], "transition": { "type": "cut" } },
+    { "asset": "partie4.mp4", "trim": [3.9, 4.7], "transition": { "type": "cut" } },
+    {
+      "asset": "partie1.mp4",
+      "transition": { "type": "cut" },
+      "lines": [
+        { "who": "momo", "at": 0.6, "until": 2.74, "tag": "[crying]", "say": "Trois cambriolages… en un mois !", "label": "Momo le Melon|Primeur cambriolé", "emphasis": ["cambriolages"] },
+        { "who": "ines", "at": 4.04, "until": 5.72, "tag": "[confident]", "say": "Bonjour Momo. Montrez-moi tout.", "label": "Inès la Fraise|Experte en sûreté", "emphasis": ["tout"] },
+        { "who": "ines", "at": 7.34, "until": 8.7, "tag": "[puzzled]", "say": "Elle filme quoi, votre caméra ?", "emphasis": ["caméra"] },
+        { "who": "momo", "at": 11.46, "until": 12.86, "tag": "[proudly]", "say": "Le plafond. Il est joli, non ?", "emphasis": ["plafond"] }
+      ]
+    },
+    {
+      "asset": "partie2.mp4",
+      "transition": { "type": "cut" },
+      "lines": [
+        { "who": "momo", "at": 0.68, "until": 2.64, "tag": "[innocently]", "say": "Elle sonnait tout le temps, j'ai débranché !", "emphasis": ["débranché"] },
+        { "who": "ines", "at": 4.1, "until": 5.84, "tag": "[coughs]", "say": "Et les images… vous les regardez ?", "emphasis": ["images"] },
+        { "who": "momo", "at": 7.08, "until": 9.14, "tag": "[confused]", "say": "Euh… c'est quoi, les images ?", "emphasis": ["images"] },
+        { "who": "ines", "at": 10.28, "until": 13.54, "tag": "[shouting]", "say": "Momo… ici, c'est open bar pour les voleurs !", "emphasis": ["voleurs"] }
+      ]
+    },
+    {
+      "asset": "partie3.mp4",
+      "transition": { "type": "fadewhite", "duration": 0.25 },
+      "lines": [
+        { "who": "ines", "at": 0.94, "until": 2.98, "tag": "[cheerfully]", "say": "Une caméra, ça filme les entrées.", "emphasis": ["entrées"] },
+        { "who": "ines", "at": 4.08, "until": 6.62, "say": "Une alarme qui sonne trop, on la répare.", "emphasis": ["répare"] },
+        { "who": "ines", "at": 8.42, "until": 10.52, "say": "Et les images, on les regarde.", "emphasis": ["regarde"] },
+        { "who": "momo", "at": 12.32, "until": 13.46, "tag": "[happy]", "say": "Merci Inès !" }
+      ]
+    },
+    {
+      "asset": "partie4.mp4",
+      "transition": { "type": "fadeblack", "duration": 0.4 },
+      "lines": [
+        { "who": "kiwi", "at": 0.96, "until": 2.46, "tag": "[whispers]", "say": "Allez… comme d'habitude.", "label": "Le Kiwi masqué|Cambrioleur" },
+        { "who": "kiwi", "at": 4.1, "until": 5.14, "tag": "[panicked]", "say": "Aïe aïe aïe !" },
+        { "who": "momo", "at": 7.78, "until": 8.62, "tag": "[triumphant]", "say": "Je te vois, toi !", "emphasis": ["vois"] },
+        { "who": "lupin", "at": 11.48, "until": 13.52, "tag": "[mysteriously]", "say": "Joli travail, la fraise… À très bientôt.", "label": "Abricot Lupin|Gentleman cambrioleur", "emphasis": ["bientôt"] },
+        { "who": "presentateur", "at": 14.1, "tag": "[intrigued]", "say": "Qui est Abricot Lupin ? Abonne-toi pour la suite !", "emphasis": ["Lupin"] }
+      ]
+    }
+  ],
+  "sfxLibrary": {
+    "glass": { "prompt": "broken glass shards crunching under a broom being swept on a sidewalk", "duration": 1.5, "volume": 0.45 },
+    "poof": { "prompt": "big comedic dusty explosion poof, cloud of dust bursting, cartoon", "duration": 1.2, "volume": 0.75 },
+    "sparkle": { "prompt": "magical cartoon sparkle twinkle, bright and short", "duration": 1, "volume": 0.55 },
+    "boing": { "prompt": "cartoon spring boing jump, comedic", "duration": 0.8, "volume": 0.6 },
+    "thwip": { "prompt": "playing card flicked through the air with a sharp thwip then a small thunk into wood", "duration": 0.8, "volume": 0.6 }
+  },
+  "sfx": [
+    { "name": "impact", "part": 0, "at": 0.0, "volume": 0.55 },
+    { "name": "whoosh", "part": 1, "at": 0.0 },
+    { "name": "boing", "part": 2, "at": 0.1 },
+    { "name": "glass", "part": 3, "at": 0.0 },
+    { "name": "whoosh", "part": 3, "at": 3.3 },
+    { "name": "scratch", "part": 3, "at": 13.2, "volume": 0.55 },
+    { "name": "pop", "part": 4, "at": 0.3 },
+    { "name": "poof", "part": 4, "at": 2.9 },
+    { "name": "scratch", "part": 4, "at": 9.3, "volume": 0.55 },
+    { "name": "impact", "part": 4, "at": 10.1, "volume": 0.55 },
+    { "name": "shutter", "part": 5, "at": 2.8 },
+    { "name": "ding", "part": 5, "at": 7.0 },
+    { "name": "sparkle", "part": 5, "at": 10.3 },
+    { "name": "tiptoe", "part": 6, "at": 0.0, "volume": 0.5 },
+    { "name": "alarm", "part": 6, "at": 3.0, "volume": 0.45 },
+    { "name": "boing", "part": 6, "at": 3.9 },
+    { "name": "beep", "part": 6, "at": 6.9 },
+    { "name": "thwip", "part": 6, "at": 12.6 },
+    { "name": "poof", "part": 6, "at": 13.9, "volume": 0.5 }
+  ],
+  "musicDrops": [[10.1, 3.6, 4], [0.0, 3.0, 6]],
+  "caption": "Momo s'est fait cambrioler 3 fois en un mois… Inès la Fraise débarque 🍓 Vous avez repéré le kiwi dans la boutique ? 👀 Et qui est cet abricot au chapeau ?! Dites-le en commentaire 👇",
+  "hashtags": ["#cauchemarensurete", "#fruitsia", "#ia", "#surete", "#securite", "#alarme", "#videosurveillance", "#humour"]
+}
