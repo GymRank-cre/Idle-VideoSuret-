@@ -1,0 +1,58 @@
+{
+  "id": "14-le-kiwi-masque",
+  "title": "Le kiwi masqué",
+  "hook": "Le kiwi|n'était pas un kiwi",
+  "disclaimer": "Histoire fictive inspirée de situations réelles.",
+  "voices": {
+    "gerard": { "id": "iMij959nvbX8f2SxyrvX", "model": "eleven_v3", "stability": 0.5 },
+    "kiwi": { "id": "Jrq4GqCKqYpigdQsZRkP", "model": "eleven_v3", "stability": 0.5 },
+    "ines": { "id": "FvmvwvObRqIHojkEGh5N", "model": "eleven_v3", "stability": 0.5 },
+    "narrateur": { "id": "Xgb3SR8idOHy8scGICeJ", "stability": 0.4, "style": 0.4, "speed": 1.05 }
+  },
+  "music": {
+    "prompt": "playful sneaky cartoon heist music, pizzicato strings, muted trumpet, brushed jazzy drums, comedic suspense, instrumental only, no vocals, steady tempo around 100 bpm",
+    "volume": 0.22
+  },
+  "coverAt": 7.5,
+  "tail": 1.0,
+  "parts": [
+    {
+      "asset": "partie1.mp4",
+      "lines": [
+        { "who": "gerard", "at": 0.2, "tag": "[yawns]", "say": "Encore une livraison… à cette heure-ci ?", "label": "Gérard la Poire|Agent de sécurité", "emphasis": ["livraison"] },
+        { "who": "gerard", "at": 4.1, "say": "C'est bon, je signe, je signe !", "emphasis": ["signe"] },
+        { "who": "kiwi", "at": 6.3, "tag": "[whispers]", "say": "Chut… je suis un kiwi comme les autres.", "label": "Le Kiwi masqué|Cambrioleur", "emphasis": ["kiwi"] },
+        { "who": "kiwi", "at": 13.0, "tag": "[whispers]", "say": "Les gars, c'est ouvert !", "emphasis": ["ouvert"] }
+      ]
+    },
+    {
+      "asset": "partie2.mp4",
+      "transition": { "type": "fadeblack", "duration": 0.3 },
+      "lines": [
+        { "who": "gerard", "at": 0.3, "tag": "[shouting]", "say": "Mais… ils sont où, mes kiwis ?!", "emphasis": ["kiwis"] },
+        { "who": "ines", "at": 4.8, "say": "Une livraison, on la vérifie avant de la rentrer.", "label": "Inès la Fraise|Technicienne sûreté", "emphasis": ["vérifie"] },
+        { "who": "ines", "at": 8.6, "say": "Et la nuit, rien n'entre sans être prévu.", "emphasis": ["prévu"] },
+        { "who": "gerard", "at": 11.3, "say": "Toi… t'es un vrai raisin ?", "emphasis": ["raisin"] },
+        { "who": "narrateur", "at": 14.0, "say": "Abonne-toi pour la suite." }
+      ]
+    }
+  ],
+  "sfxLibrary": {
+    "forklift": { "prompt": "forklift reversing beep then a heavy wooden crate dropped on concrete", "duration": 2, "volume": 0.45 },
+    "scribble": { "prompt": "pen quickly scribbling a signature on paper", "duration": 1, "volume": 0.6 }
+  },
+  "sfx": [
+    { "name": "forklift", "at": 0 },
+    { "name": "scribble", "at": 4.0 },
+    { "name": "scratch", "at": 6.0 },
+    { "name": "tiptoe", "at": 10.4 },
+    { "name": "door", "at": 13.2 },
+    { "name": "whoosh", "at": 14.55 },
+    { "name": "impact", "at": 14.9, "volume": 0.5 },
+    { "name": "ding", "at": 19.5, "volume": 0.4 },
+    { "name": "pop", "at": 25.9 }
+  ],
+  "musicDrops": [[6.0, 1.0]],
+  "caption": "Gérard a signé la livraison sans regarder… et un kiwi pas comme les autres est entré 🥝 Une livraison, on la vérifie avant de la faire entrer. Tu l'aurais repéré, toi ?",
+  "hashtags": ["#fruitsia", "#ia", "#surete", "#securite", "#kiwi", "#cambriolage", "#histoire", "#humour"]
+}

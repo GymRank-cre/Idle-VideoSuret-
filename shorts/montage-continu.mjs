@@ -59,11 +59,29 @@ async function main() {
     t = start + len;
     return { ...p, file, len, start, trans };
   });
-  const duration = t;
+  const duration = t + (ep.tail || 0);
 
   console.log('1/5 Voix');
   const lines = [];
+  const clips = []; // pistes de voix posées sur la timeline : { file, at }
+  const isTag = (w) => /^\[[^\]]*\]$/.test(w.text);
   for (const [i, p] of parts.entries()) {
+    if (!p.voice) {
+      // Dialogue : une voix par personnage (ep.voices), chaque réplique posée à `at` secondes de la partie.
+      for (const l of p.lines) {
+        const voice = ep.voices[l.who];
+        const spoken = `${l.tag ? `${l.tag} ` : ''}${l.say}`;
+        const file = join(cacheDir, `ligne-${hash({ spoken, voice })}.mp3`);
+        const at = p.start + l.at;
+        const words = wordsFromAlignment(await tts(spoken, voice, file))
+          .filter((w) => !isTag(w))
+          .map((w) => ({ ...w, start: w.start + at, end: w.end + at }));
+        lines.push({ ...l, words });
+        clips.push({ file, at });
+      }
+      continue;
+    }
+    clips.push({ file: join(cacheDir, `${p.voice}.mp3`), at: p.start + p.voiceAt });
     const text = p.lines.map((l) => l.say).join(' ');
     const prev = parts[i - 1]?.lines.map((l) => l.say).join(' ');
     const next = parts[i + 1]?.lines.map((l) => l.say).join(' ');
@@ -87,13 +105,13 @@ async function main() {
   writeFileSync(join(cacheDir, 'captions.ass'), buildAss(ep, timeline, duration));
 
   console.log('3/5 Bruitages et musique');
-  const voiceArgs = parts.flatMap((p) => ['-i', `${p.voice}.mp3`]);
-  const delays = parts.map((p, i) => {
-    const ms = Math.round((p.start + p.voiceAt) * 1000);
+  const voiceArgs = clips.flatMap((c) => ['-i', c.file]);
+  const delays = clips.map((c, i) => {
+    const ms = Math.round(c.at * 1000);
     return `[${i}:a]aresample=48000,aformat=channel_layouts=mono,adelay=${ms}[v${i}]`;
   });
   await ffmpeg(
-    [...voiceArgs, '-filter_complex', `${delays.join(';')};${parts.map((_, i) => `[v${i}]`).join('')}amix=inputs=${parts.length}:normalize=0:duration=longest,asetpts=N/SR/TB[out]`, '-map', '[out]', '-c:a', 'pcm_s16le', 'voice.wav'],
+    [...voiceArgs, '-filter_complex', `${delays.join(';')};${clips.map((_, i) => `[v${i}]`).join('')}amix=inputs=${clips.length}:normalize=0:duration=longest,asetpts=N/SR/TB[out]`, '-map', '[out]', '-c:a', 'pcm_s16le', 'voice.wav'],
     cacheDir,
   );
 
@@ -111,7 +129,7 @@ async function main() {
   console.log(`4/5 Image (${QUALITY.W}x${QUALITY.H})`);
   const { W, H } = QUALITY;
   const chains = parts.map(
-    (p, i) => `[${i}:v:0]fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},setsar=1,format=yuv420p[p${i}]`,
+    (p, i) => `[${i}:v:0]fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},setsar=1,format=yuv420p${i === parts.length - 1 && ep.tail ? `,tpad=stop_mode=clone:stop_duration=${ep.tail}` : ''}[p${i}]`,
   );
   let last = '[p0]';
   for (let i = 1; i < parts.length; i++) {
