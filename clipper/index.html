@@ -244,6 +244,11 @@ async function poll(id){
     await new Promise(r=>setTimeout(r,1000));
   }
 }
+function blobUrl(b64){
+  const bin=atob(b64),u=new Uint8Array(bin.length);
+  for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
+  return URL.createObjectURL(new Blob([u],{type:"video/mp4"}));
+}
 function render(j,demo){
   const r=$("result");
   if(!j.clips.length){progress(1,"Aucun moment assez fort trouvé dans cette vidéo.");return}
@@ -259,7 +264,9 @@ function render(j,demo){
         ${demo?"":`<a class="dl" href="${API}${esc(c.video)}?download=1">Télécharger</a>`}
       </div>
     </article>`).join("");
-  r.querySelectorAll("video").forEach(v=>v.addEventListener("error",()=>{
+  r.querySelectorAll("video").forEach((v,i)=>v.addEventListener("error",()=>{
+    const d=j.clips[i].videoData;                      // repli : vidéo embarquée dans la page (aperçu hébergé)
+    if(d&&!v.dataset.retry){v.dataset.retry="1";v.src=blobUrl(d);return}
     if(v.nextElementSibling&&v.nextElementSibling.className==="vnote")return;
     v.insertAdjacentHTML("afterend",'<p class="vnote">La vidéo n\'a pas pu se charger ici.</p>');
   }));
