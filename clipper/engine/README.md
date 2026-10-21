@@ -19,7 +19,9 @@ clipengine serve                                       # puis http://localhost:8
 
 - Premier lancement : le modèle de transcription se télécharge (`--model small` par défaut ; `large-v3` est plus
   précis et bien plus lent sans carte graphique).
-- Titres, accroches, légendes et avis éditorial par Claude : définir `ANTHROPIC_API_KEY` avant `clipengine serve`.
+- Titres, accroches, légendes et avis éditorial par Claude : définir `ANTHROPIC_API_KEY` avant `clipengine serve`,
+  puis `clipengine check-llm` (un petit appel réel : dit si la clé marche, et pourquoi sinon). La page du projet indique
+  si le choix a été revu par Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, réseau).
   Sans clé, tout fonctionne avec le score du moteur et des textes générés sans IA.
 - Lien YouTube refusé avec « Sign in to confirm you're not a bot » (cas d'un serveur ou d'un VPN) : exporter les cookies
   du navigateur au format Netscape et lancer avec `CLIPENGINE_COOKIES=/chemin/cookies.txt`. Depuis une connexion
@@ -118,18 +120,48 @@ Whisper `small` sur processeur, 5 clips chacune :
 Ces essais ont fait corriger : la ponctuation parasite de Whisper (clips qui démarraient au milieu d'une phrase),
 les coupes sur « and » ou « the », l'accroche posée sur le visage, les titres coupés en « … », le volume sous la cible.
 
+Une interview française (Framasoft, 21 min en 720p, une personne à l'image, licence CC BY-SA), même chaîne, 5 clips :
+
+- Whisper rend toute élision et tout trait d'union comme un mot à part (7 % des mots : « c » + « 'est »,
+  « self » + « -sustaining ») : les sous-titres affichaient « C 'EST ». Ils sont recollés (`transcribe.glue_tokens`) ;
+  les contractions anglaises (« you'll ») ne produisent plus de hashtags (#youll).
+- Après l'encodage AAC, un clip dépassait 0 dBFS (+0,7 à +0,8) alors que `loudnorm` visait −1,5 : un limiteur suit maintenant
+  `loudnorm` ; sur les 5 clips : −14,0 / −14,2 LUFS, crête −1,4 / −1,5 dBFS.
+- Accroches sur deux lignes équilibrées, nombres (« 800 000 ») et ponctuation haute (« : », « ? ») jamais séparés.
+- Visage détecté partout, accroche posée sous le menton (jamais sur le visage), accents et apostrophes corrects.
+
+### L'avis de Claude, essayé une fois
+
+Il n'y avait pas de clé dans l'environnement d'essai : **l'appel HTTP n'a pas été exécuté**. Pour savoir ce que vaut
+l'avis, un agent Claude (modèle Sonnet) a reçu le prompt exact que le moteur envoie (consigne + 20 extraits distincts de
+l'interview française) et a répondu comme demandé ; sa réponse a été passée dans `rerank` et `propose`.
+
+- Format : 20 réponses sur 20 exploitables. Notes réparties de 6 à 87, là où le score du moteur reste entre 60 et 87.
+- Choix : 3 clips sur 5 changent. Écartés : une présentation de parcours, un passage technique confus, un témoignage flou
+  (notes Claude 6, 32, 29). Retenus : « 98,2 % de dons », « 800 000 utilisateurs / le Google du Libre », « les quatre
+  libertés du logiciel libre ». Jugement de l'auteur de ce moteur, à confirmer par le tien.
+- Textes : tous les chiffres des titres, accroches et légendes se retrouvent dans la parole ; les légendes de deux clips,
+  relues mot à mot contre la transcription, ne disent rien d'inventé ; les accroches sont réécrites
+  (« Sans dons, on arrête ») au lieu de répéter la première phrase.
+- Défaut du moteur trouvé grâce à cet essai : une variante d'un moment noté 5/100 pouvait repasser devant avec le seul
+  score du moteur. Seuls les moments dont Claude a lu le texte exact peuvent maintenant passer devant.
+- Limites : une vidéo, un seul passage, un agent de session et non l'API ; la calibration des notes de Claude n'est pas
+  vérifiée sur des vidéos qui ont marché.
+
 ## Limites connues
 
 - **Le choix des moments est un score heuristique** : il trouve des passages complets et cohérents, il ne comprend pas
-  le sujet. Il peut retenir une longue question de l'animateur ou une transition (« time for just a couple more
-  questions »). L'avis de Claude est censé le corriger : **jamais testé avec un vrai modèle**.
+  le sujet. Il peut retenir une longue question de l'animateur, une présentation de parcours ou une transition. L'avis
+  de Claude corrige cela dans l'essai ci-dessus, mais **l'appel à l'API elle-même n'a jamais été exécuté ici**.
 - Sans modèle de langage, titre et accroche sont des phrases du clip (la plus courte et entière), pas des textes
   rédigés pour accrocher. En gros plan, l'accroche est omise plutôt que posée sur le visage (la carte du clip le dit).
 - Le locuteur actif est deviné par le mouvement de la bouche, pas par la voix : un locuteur hors champ ou une personne
   très agitée peut tromper la détection.
 - Pas calibré sur des vidéos qui ont marché : la note est un avis sur le contenu, pas une prévision de vues.
 - Une source 1080p recadrée en 9:16 est agrandie ×1,78 (une source 480p, ×4) : pour plus de netteté, fournir du 4K.
-- Non testés ici : appel réel à l'API Anthropic ; téléchargement YouTube depuis une connexion personnelle (depuis ce
-  serveur : refusé par le contrôle anti-robot, message clair) ; parole française réelle (essais en anglais) ; lecture
-  des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
+- Noms propres mal reconnus (« Framasoft » devient « Framasov », « Sramasoft »…) : Whisper `small` ne connaît pas le
+  vocabulaire ; `large-v3` fait mieux, plus lentement.
+- Non testés ici : appel réel à l'API Anthropic (`clipengine check-llm` le fait en une commande dès qu'une clé existe) ;
+  téléchargement YouTube depuis une connexion personnelle (depuis ce serveur : refusé par le contrôle anti-robot,
+  message clair) ; lecture des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
 - Pas de publication automatique ni de statistiques TikTok, pas de génération vidéo/image : voir `../ANALYSE-MOQI.md`.

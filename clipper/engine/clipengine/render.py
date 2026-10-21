@@ -15,6 +15,9 @@ from .styles import Style, ass_filter
 
 
 LOUD_I, LOUD_TP, LOUD_LRA = -14.0, -1.5, 11.0       # niveau des plateformes de vidéo courte
+# loudnorm tient la crête à −1,5 dBTP, mais l'encodage AAC la fait ressortir jusqu'à +0,8 dBFS sur une voix relevée
+# (mesuré sur une interview) : un limiteur court après loudnorm évite l'écrêtage à la lecture.
+LIMITER = "alimiter=limit=0.84:attack=3:release=40:level=disabled"
 
 
 def measure_loudness(src: str | Path, start: float, dur: float) -> dict | None:
@@ -127,7 +130,7 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
     if has_audio:
         af = f"afade=t=in:d=0.04,afade=t=out:st={max(dur - 0.08, 0):.3f}:d=0.08"
         if cfg.loudnorm:
-            af = loudnorm_filter(measure_loudness(src, start, dur)) + "," + af
+            af = f"{loudnorm_filter(measure_loudness(src, start, dur))},{LIMITER},{af}"
         enc_cmd += ["-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(src), "-map", "0:v", "-map", "1:a:0",
                     "-af", af, "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
     enc_cmd += ["-vf", vf, "-c:v", "libx264", "-preset", cfg.preset, "-crf", str(cfg.crf),

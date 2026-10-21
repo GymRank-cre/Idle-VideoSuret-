@@ -60,12 +60,30 @@ def wrap(text: str, width: int) -> str:
     return "\\N".join(lines)
 
 
+def _balance(lines: list[str], font: str, em: float, max_w: float) -> list[str]:
+    """Deux lignes de largeur voisine plutôt qu'une longue et un mot orphelin (« …par » / « mois »)."""
+    if len(lines) != 2:
+        return lines
+    toks = " ".join(lines).split(" ")
+    best, best_w = lines, max(text_width(l, font, em) for l in lines)
+    for k in range(1, len(toks)):
+        a, b = " ".join(toks[:k]), " ".join(toks[k:])
+        w = max(text_width(a, font, em), text_width(b, font, em))
+        if w < best_w - 1e-6 and w <= max_w:
+            best, best_w = [a, b], w
+    return best
+
+
 def wrap_px(text: str, font: str, em: float, max_w: float, max_lines: int = 3) -> tuple[list[str], float]:
-    """Coupe le texte en lignes tenant dans `max_w` px ; réduit la taille si trois lignes ne suffisent pas."""
+    """Coupe le texte en lignes tenant dans `max_w` px ; réduit la taille si trois lignes ne suffisent pas.
+
+    Un nombre (« 800 000 », « 98,2 % ») et la ponctuation haute (« : », « ? ») restent collés au mot voisin ;
+    deux lignes sont équilibrées."""
+    text = re.sub(r"(?<=\d) (?=\d{3}\b)|(?<=\S) (?=[:;!?»%€])|(?<=«) ", "\u00a0", text)   # insécables
     for shrink in (1.0, 0.92, 0.85, 0.78, 0.7, 0.62, 0.55):
         e = em * shrink
         lines, cur = [], ""
-        for w in text.split():
+        for w in text.split(" "):
             trial = f"{cur} {w}".strip()
             if cur and text_width(trial, font, e) > max_w:
                 lines.append(cur)
@@ -75,7 +93,7 @@ def wrap_px(text: str, font: str, em: float, max_w: float, max_lines: int = 3) -
         if cur:
             lines.append(cur)
         if len(lines) <= max_lines and all(text_width(l, font, e) <= max_w for l in lines):
-            return lines, e
+            return _balance(lines, font, e, max_w), e
     return lines, em * 0.55
 
 

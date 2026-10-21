@@ -113,9 +113,11 @@ def check_speech(tr: Transcript, info: MediaInfo) -> None:
                         "gameplay sans commentaire).")
 
 
-def find_moments(tr: Transcript, prof: AudioProfile, cfg: Config, log: Log = print
+def find_moments(tr: Transcript, prof: AudioProfile, cfg: Config, log: Log = print, llm_call=None
                  ) -> tuple[list[Candidate], int, dict]:
-    """Moments classés (meilleur d'abord) et nombre à fabriquer d'office ; le reste est en réserve."""
+    """Moments classés (meilleur d'abord) et nombre à fabriquer d'office ; le reste est en réserve.
+
+    `llm_call(cfg, prompt) -> str` remplace l'appel HTTP à l'API (essais, autre fournisseur) ; sans lui, clé requise."""
     sents = build_sentences(tr.words)
     if cfg.mode == "full":
         parts = split_full(sents, prof, cfg)
@@ -126,14 +128,23 @@ def find_moments(tr: Transcript, prof: AudioProfile, cfg: Config, log: Log = pri
     cands = make_candidates(sents, prof, cfg)
     log(f"• {len(sents)} phrases, {len(cands)} candidats")
     score_candidates(cands, sents, prof, cfg)
-    if cfg.llm != "none" and llm.available(cfg):
-        log(f"• avis éditorial ({cfg.llm_model})…")
-        llm.rerank(cands, cfg)
-    elif cfg.llm == "claude":
-        log("  ANTHROPIC_API_KEY absente : score heuristique seul")
+    stats = {"sentences": len(sents), "candidates": len(cands), "llm": "off"}
+    if cfg.llm != "none":
+        if llm_call is not None or llm.available(cfg):
+            log(f"• avis éditorial ({cfg.llm_model})…")
+            errors: list[str] = []
+            llm.rerank(cands, cfg, on_error=errors.append, **({"call": llm_call} if llm_call is not None else {}))
+            stats["llm"] = "error" if errors else "ok"
+            if errors:
+                stats["llm_error"] = errors[0]
+                log(f"  avis de Claude indisponible : {errors[0]} — score du moteur seul")
+        else:
+            stats["llm"] = "nokey"
+            if cfg.llm == "claude":
+                log("  ANTHROPIC_API_KEY absente : score heuristique seul")
     ranked, n_auto = propose(cands, cfg)
     log(f"• {len(ranked)} moments retenus dont {n_auto} à fabriquer d'office")
-    return ranked, n_auto, {"sentences": len(sents), "candidates": len(cands)}
+    return ranked, n_auto, stats
 
 
 def finalize_kit(c: Candidate) -> Candidate:
@@ -210,7 +221,7 @@ def render_candidate(source: Path, info: MediaInfo, tr: Transcript, prof: AudioP
 
 def run(source: str | Path, out_dir: str | Path, cfg: Config | None = None,
         transcript_path: str | Path | None = None, render: bool = True,
-        log: Log = print) -> list[ClipResult]:
+        log: Log = print, llm_call=None) -> list[ClipResult]:
     cfg = cfg or Config()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -229,7 +240,7 @@ def run(source: str | Path, out_dir: str | Path, cfg: Config | None = None,
     tr, prof = transcribe_source(source, work, cfg, transcript_path, log)
     tr = clip_transcript(tr, info.duration)
     check_speech(tr, info)
-    ranked, n_auto, _ = find_moments(tr, prof, cfg, log)
+    ranked, n_auto, _ = find_moments(tr, prof, cfg, log, llm_call)
     chosen = sorted(ranked[:n_auto], key=lambda c: c.start)
     log(f"• {len(chosen)} clips retenus")
 

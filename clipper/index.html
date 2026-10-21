@@ -340,6 +340,8 @@ function upload(file, meta, onProgress) {
 }
 
 // ───────────────────────────────────────────────────────────── Bibliothèque
+const llmNote = st => !st ? "" : st.llm === "ok" ? "choix revu par Claude" : st.llm === "error" ? "Claude indisponible : " + (st.llm_error || "erreur") + " (score du moteur seul)"
+  : st.llm === "nokey" ? "sans clé Claude : score du moteur seul" : "";
 const isActive = p => p.status === "queued" || p.status === "analyzing" || p.rendering > 0;
 function libraryGrid(list) {
   const g = h("div", { class: "lib" });
@@ -423,7 +425,7 @@ async function viewProject(pid) {
     proj = p;
     titleEl.textContent = p.title || "Sans titre";
     const done = p.proposals.filter(x => x.state === "done").length;
-    infoEl.textContent = p.status === "ready" ? [p.info.duration ? fmt(p.info.duration) : "", p.language ? p.language.toUpperCase() : "", `${p.proposals.length} moments`, `${done} clips prêts`].filter(Boolean).join(" · ")
+    infoEl.textContent = p.status === "ready" ? [p.info.duration ? fmt(p.info.duration) : "", p.language ? p.language.toUpperCase() : "", `${p.proposals.length} moments`, `${done} clips prêts`, llmNote(p.stats)].filter(Boolean).join(" · ")
       : p.status === "error" ? "" : "Analyse en cours";
     zip.hidden = !done || S.demo;
     analysis.replaceChildren();

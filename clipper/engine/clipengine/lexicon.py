@@ -7,6 +7,9 @@ me te se ce cet cette ces mon ma mes ton ta tes son sa ses notre votre leur leur
 avec sans est sont suis es été être avoir a ai as ont avait fait faire plus pas ne n c j m t s qu très aussi comme si
 the a an and or but so of to in on at by for with from is are was were be been have has had do does did not no it this
 that these those i you he she we they me him her us them my your his its our their as if then than also very just
+it's that's there's here's he's she's what's let's who's i'm i've i'll i'd you're you've you'll you'd we're we've we'll
+we'd they're they've they'll they'd don't doesn't didn't can't couldn't won't wouldn't shouldn't isn't aren't wasn't
+weren't haven't hasn't hadn't
 """.split())
 
 # Mots qui accrochent / créent de la tension, de la surprise ou de l'émotion.
@@ -59,8 +62,22 @@ FILLER_PHRASES = ["en fait", "du coup", "tu vois", "you know", "i mean", "sort o
 TERMINAL = ".?!…"
 
 
+_ELIDED = re.compile(r"^(?:c|d|j|l|m|n|s|t|qu|jusqu|lorsqu|puisqu|quoiqu|presqu|quelqu)'(?=\w)")
+
+
 def tokens(text: str) -> list[str]:
-    return re.findall(r"[\w']+", text.lower(), re.UNICODE)
+    """Mots en minuscules ; l'élision française est séparée (c'est -> c, est), les autres apostrophes restent
+    (don't, you'll : mots-outils anglais, voir STOP)."""
+    out: list[str] = []
+    for t in re.findall(r"[\w']+", text.lower().replace("’", "'"), re.UNICODE):
+        t = t.strip("'")
+        m = _ELIDED.match(t)
+        if m:
+            out.append(t[:m.end() - 1])
+            t = t[m.end():]
+        if t:
+            out.append(t)
+    return out
 
 
 def content_tokens(text: str) -> list[str]:

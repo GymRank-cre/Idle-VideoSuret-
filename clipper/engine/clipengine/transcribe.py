@@ -30,7 +30,29 @@ class Transcript:
             for w in d["words"]
             if str(w["text"]).strip()
         ]
-        return cls(d.get("language", "fr"), _fix_timings(words))
+        return cls(d.get("language", "fr"), _fix_timings(glue_tokens(words)))     # aussi pour les anciens fichiers
+
+
+# faster-whisper rend l'apostrophe française et le trait d'union comme un jeton à part, collé au mot SUIVANT :
+# « c » + « 'est », « self » + « -sustaining », « C'est » + « -à » + « -dire ». Affiché tel quel, cela donne « C 'EST »
+# et « SELF -SUSTAINING » dans les sous-titres (et fausse le comptage des mots).
+ELISIONS = {"c", "d", "j", "l", "m", "n", "s", "t", "qu", "jusqu", "lorsqu", "puisqu", "quoiqu", "presqu", "quelqu",
+            "aujourd"}
+
+
+def glue_tokens(words: list[Word]) -> list[Word]:
+    """Recolle « c » + « 'est » en « c'est » et « self » + « -sustaining » en « self-sustaining »."""
+    out: list[Word] = []
+    for w in words:
+        if out and len(w.text) > 1:
+            p = out[-1]
+            elided = w.text[0] in "'’" and re.split(r"['’]", p.text.lower())[-1] in ELISIONS      # aussi « qu'aujourd » + « 'hui »
+            hyphenated = w.text[0] == "-" and p.text[-1:].isalnum()
+            if elided or hyphenated:
+                out[-1] = Word(p.text + w.text, p.start, max(w.end, p.end), min(p.prob, w.prob))
+                continue
+        out.append(w)
+    return out
 
 
 def _fix_timings(words: list[Word]) -> list[Word]:
@@ -78,7 +100,7 @@ def transcribe(audio_path: str | Path, model: str = "large-v3", language: str | 
             t = w.word.strip()
             if t:
                 words.append(Word(t, float(w.start), float(w.end), float(w.probability)))
-    return Transcript(info.language, _fix_timings(words))
+    return Transcript(info.language, _fix_timings(glue_tokens(words)))
 
 
 _SRT_TIME = re.compile(r"(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)")

@@ -13,6 +13,11 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "serve":
         from .server import serve_main
         return serve_main(argv[1:])
+    if argv and argv[0] == "check-llm":
+        from . import llm
+        ok, msg = llm.check(Config())
+        print(("✓ " if ok else "✗ ") + msg)
+        return 0 if ok else 1
     p = argparse.ArgumentParser(prog="clipengine", description="Vidéo longue -> clips verticaux sous-titrés")
     p.add_argument("source", help="fichier vidéo ou URL (YouTube…)")
     p.add_argument("-o", "--out", default="out", help="dossier de sortie")

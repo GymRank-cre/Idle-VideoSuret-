@@ -105,6 +105,27 @@ def test_edge_words_without_screen_time_are_not_captioned():
     assert [w.text for w in clip_words(ws, 0.3, 9.6)] == ["avant", "separation.", "the", "a"]
 
 
+# ----------------------------------------------------------------------------- mots collés par Whisper
+
+def test_french_elisions_and_hyphens_are_glued_back():
+    from clipengine.transcribe import Transcript
+    raw = ["C", "'est", "-à", "-dire", "qu", "'on", "self", "-sustaining", "20", "-25", "États", "-Unis,", "non,", "-x",
+           "it", "'s", "qu", "'aujourd", "'hui"]
+    tr = Transcript.from_json({"language": "fr", "words": [{"text": t, "start": i * 0.2, "end": i * 0.2 + 0.15, "prob": 0.9}
+                                                          for i, t in enumerate(raw)]})
+    assert [w.text for w in tr.words] == ["C'est-à-dire", "qu'on", "self-sustaining", "20-25", "États-Unis,", "non,", "-x",
+                                          "it", "'s", "qu'aujourd'hui"]
+    assert tr.words[0].start == 0 and abs(tr.words[0].end - (3 * 0.2 + 0.15)) < 1e-6
+
+
+def test_tokens_split_french_elisions_and_contractions_never_become_hashtags():
+    from clipengine import lexicon as L
+    assert L.tokens("C’est l'esprit qu'on a aujourd'hui") == ["c", "est", "l", "esprit", "qu", "on", "a", "aujourd'hui"]
+    tags = kit.hashtags("you'll we're we'll weather breakfast weather breakfast garments weather launch launch", 5)
+    assert tags[:2] == ["#weather", "#launch"] or "#weather" in tags
+    assert not {"#youll", "#were", "#well"} & set(tags)
+
+
 # ----------------------------------------------------------------------------- accroche
 
 def test_pick_hook_takes_a_whole_short_sentence_or_nothing():
@@ -151,6 +172,19 @@ def test_build_ass_moves_the_hook_off_the_face_zone():
     moved, _ = hook_top(build_ass(ws, 0.0, 6.0, cfg, "Pourquoi personne ne vous le dit", avoid=(0.05, 0.40)))
     assert moved > 0.40 and moved > free                       # posée sous la tête
     assert "Hook" not in build_ass(ws, 0.0, 6.0, cfg, "Pourquoi personne ne vous le dit", avoid=(0.0, 1.0)).split("[Events]")[1]
+
+
+def test_hook_wraps_in_balanced_lines_with_numbers_and_high_punctuation_kept_together():
+    from clipengine.captions import wrap_px
+    from clipengine.styles import SAFE_LEFT
+    max_w = 1080 - 2 * SAFE_LEFT - 32
+    lines, _ = wrap_px("800 000 utilisateurs par mois", "poppins-b", 62, max_w, max_lines=2)
+    assert len(lines) == 2 and all(len(l.split(" ")) >= 2 for l in lines)            # pas de mot orphelin
+    assert lines[0].startswith("800\u00a0000")
+    lines, _ = wrap_px("Logiciels privateurs : pas la solution", "poppins-b", 62, max_w, max_lines=2)
+    assert not any(l.startswith(":") for l in lines) and any(l.endswith("\u00a0:") or ":" in l for l in lines)
+    lines, _ = wrap_px("Sans dons, on arrête", "poppins-b", 62, max_w, max_lines=2)
+    assert lines == ["Sans dons, on arrête"]
 
 
 # ----------------------------------------------------------------------------- zone des visages
@@ -271,3 +305,21 @@ def test_rendered_hook_never_covers_the_face(tmp_path, face_img):
     x, y, w, h, _ = max(faces, key=lambda f: f[2] * f[3])
     # les sous-titres sont identiques dans les deux rendus : la différence est l'accroche seule
     assert rows.min() >= y + h - 0.05 * h or rows.max() <= y + 0.05 * h, (rows.min(), rows.max(), y, h)
+
+
+@pytest.mark.slow
+def test_rendered_audio_is_at_the_target_level_and_does_not_clip(tmp_path, media):
+    from clipengine.audio import compute_profile
+    from clipengine.media import probe
+    from clipengine.models import Candidate
+    from clipengine.pipeline import render_candidate
+    from clipengine.transcribe import Transcript
+    src = media["pan"]
+    tr = Transcript("fr", [Word(w, 0.4 + i * 0.35, 0.4 + i * 0.35 + 0.3) for i, w in enumerate("une phrase de test".split())])
+    r = render_candidate(src, probe(src), tr, compute_profile(src), Candidate(start=2.0, end=14.0, lo=0, hi=0, text="x"),
+                         tmp_path, "c", Config(preset="ultrafast"))
+    out = subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-i", str(r.video), "-af", "ebur128=peak=true", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    lufs = float(re.findall(r"I:\s+(-?[\d.]+) LUFS", out)[-1])
+    peak = float(re.findall(r"Peak:\s+(-?[\d.]+) dBFS", out)[-1])
+    assert abs(lufs + 14.0) < 1.5 and peak <= -1.0, (lufs, peak)
