@@ -8,14 +8,16 @@
 <title>Clipo · Clips automatiques pour TikTok, Reels et Shorts</title>
 <meta name="description" content="Colle une vidéo YouTube : Clipo en fait des clips verticaux sous-titrés. Génère aussi des vidéos et des images à partir d'une idée.">
 <style>
-:root{--bg:#09090b;--panel:#131316;--line:#26262c;--text:#f4f4f5;--mute:#a1a1aa;--accent:#a78bfa;--accent2:#f472b6;--ok:#4ade80}
-@media (prefers-color-scheme:light){:root:not([data-force-dark]){--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777}}
+:root{--bg:#09090b;--panel:#131316;--line:#26262c;--text:#f4f4f5;--mute:#a1a1aa;--accent:#a78bfa;--accent2:#f472b6;--ok:#4ade80;--err:#f87171;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--err:#dc2626;color-scheme:light}}
+:root[data-theme="light"]{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--err:#dc2626;color-scheme:light}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 .wrap{max-width:1080px;margin:0 auto;padding:0 16px}
-header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--bg);pointer-events:none}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 nav{display:flex;align-items:center;gap:20px;height:60px}
 .logo{font-weight:800;font-size:20px;letter-spacing:-.02em;margin-right:auto}
 .logo b{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -42,7 +44,7 @@ h1{font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.03em;margin:
 .prog{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
 .stage{display:flex;justify-content:space-between;color:var(--mute);font-size:14px;margin-top:8px}
-.err{color:#f87171;margin-top:10px;font-size:14px}
+.err{color:var(--err);margin-top:10px;font-size:14px}
 .banner{max-width:640px;margin:14px auto 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;color:var(--mute);font-size:14px;display:none}
 .banner.on{display:block}.banner code{color:var(--text)}
 .result{max-width:1040px;margin:28px auto 0;display:none;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,290px));justify-content:center;text-align:left}
@@ -57,6 +59,9 @@ h1{font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.03em;margin:
 .why{color:var(--mute);font-size:13px;margin:8px 0;list-style:none;padding:0}
 .dl{display:block;text-align:center;padding:9px;border-radius:10px;margin-top:8px;font-size:14px;font-weight:600;border:1px solid var(--line)}
 .dl:hover{border-color:var(--accent)}
+.linkbtn{border:0;background:none;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer;padding:0}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:1px 8px;margin-bottom:8px}
+.vnote{color:var(--mute);font-size:13px;margin:8px 0 0;padding:0 14px}
 .soon{max-width:640px;margin:20px auto 0;color:var(--mute);display:none}
 .soon.on{display:block}
 section{padding:72px 0}
@@ -66,7 +71,7 @@ h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;line-height:1.15;margin:
 .card .n{color:var(--accent);font-weight:800}
 .card p{color:var(--mute);margin-top:6px}
 .coach{display:grid;gap:32px;grid-template-columns:1fr 1fr;align-items:center}
-@media(max-width:760px){.coach{grid-template-columns:1fr}.result{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.coach{grid-template-columns:1fr}}
 .phone{max-width:280px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:18px}
 .bar{height:8px;border-radius:4px;background:var(--line);margin:10px 0;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:var(--accent2)}
 .tip{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
@@ -165,7 +170,7 @@ footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-si
 </div></section>
 </main>
 
-<footer><div class="wrap">© Clipo — onglet Clips branché sur le moteur clipengine.</div></footer>
+<footer><div class="wrap">© Clipo — maquette. Textes et tarif indicatifs, à écrire avant toute mise en ligne publique.</div></footer>
 
 <script>
 const MODES={
@@ -178,11 +183,22 @@ const $=id=>document.getElementById(id);
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let mode="clips", busy=false, apiOk=null;
 
+// Résultat d'exemple : un vrai clip produit par le moteur à partir d'une vidéo de test (voix simulée).
+const DEMO={status:"done",demo:true,clips:[{index:1,title:"Pourquoi personne ne vous dit la vérité sur le sommeil ?",score:86,start:0,duration:15.9,
+  reasons:["accroche forte dès la première phrase","un seul sujet du début à la fin","⚠ voix monotone"],layouts:["track"],
+  video:"demo/exemple.mp4",poster:"demo/exemple.jpg"}]};
+
+function syncFile(){$("filelabel").style.display=(mode==="clips"&&apiOk)?"":"none"}
 async function checkApi(){
-  try{const r=await fetch(API+"/api/health",{cache:"no-store"});apiOk=r.ok}catch{apiOk=false}
+  try{const r=await fetch(API+"/api/health",{cache:"no-store"});const d=await r.json();apiOk=r.ok&&d.ok===true}catch{apiOk=false}
   const b=$("banner");
   if(apiOk){b.classList.remove("on")}
-  else{b.innerHTML="Moteur non connecté. Lance <code>clipengine serve</code> (dossier <code>clipper/engine</code>) puis ouvre <code>http://localhost:8080</code>.";b.classList.add("on")}
+  else{
+    b.innerHTML='Aperçu sans moteur : pour générer de vrais clips, lance <code>clipengine serve</code> sur un ordinateur puis ouvre <code>http://localhost:8080</code>. <button type="button" class="linkbtn" id="demo">Voir un exemple de résultat</button>';
+    b.classList.add("on");
+    $("demo").onclick=()=>render(DEMO,true);
+  }
+  syncFile();
 }
 checkApi();
 
@@ -192,7 +208,7 @@ document.querySelectorAll(".tabs button").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b===t));
   $("title").textContent=m.h;$("subtitle").textContent=m.s;
   $("input").placeholder=m.ph;$("input").type=m.type;$("input").value="";$("go").textContent=m.b;
-  $("filelabel").style.display=mode==="clips"?"":"none";
+  syncFile();
   $("soon").classList.toggle("on",mode!=="clips");
   $("result").className="result";$("status").classList.remove("on");
 });
@@ -212,7 +228,7 @@ async function start(body,headers,url){
   $("result").className="result";
   setBusy(true);progress(0.01,"Envoi…");
   try{
-    if(!apiOk){await checkApi();if(!apiOk)throw new Error("Moteur non connecté.")}
+    if(!apiOk){await checkApi();if(!apiOk)throw new Error("Moteur non connecté : cet aperçu ne génère pas de clips.")}
     const job=await jsonOrThrow(await fetch(url,{method:"POST",body,headers}));
     await poll(job.id);
   }catch(e){progress(0,"Échec",e.message)}
@@ -228,22 +244,27 @@ async function poll(id){
     await new Promise(r=>setTimeout(r,1000));
   }
 }
-function render(j){
+function render(j,demo){
   const r=$("result");
   if(!j.clips.length){progress(1,"Aucun moment assez fort trouvé dans cette vidéo.");return}
   r.innerHTML=j.clips.map(c=>`
     <article class="clip">
-      <video src="${API}${esc(c.video)}" controls playsinline preload="metadata"></video>
+      <video src="${demo?"":API}${esc(c.video)}" ${c.poster?`poster="${esc(c.poster)}"`:""} controls playsinline preload="metadata"></video>
       <div class="in">
+        ${demo?'<span class="tag">Exemple · vidéo de test</span>':""}
         <h3>${esc(c.title)}</h3>
         <div class="meta"><span class="score">${c.score}</span><span>${Math.round(c.duration)} s</span><span>à ${Math.floor(c.start/60)}:${String(Math.floor(c.start%60)).padStart(2,"0")}</span></div>
         <ul class="why">${(c.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
         ${c.why?`<p class="why">${esc(c.why)}</p>`:""}
-        <a class="dl" href="${API}${esc(c.video)}?download=1">Télécharger</a>
+        ${demo?"":`<a class="dl" href="${API}${esc(c.video)}?download=1">Télécharger</a>`}
       </div>
     </article>`).join("");
+  r.querySelectorAll("video").forEach(v=>v.addEventListener("error",()=>{
+    if(v.nextElementSibling&&v.nextElementSibling.className==="vnote")return;
+    v.insertAdjacentHTML("afterend",'<p class="vnote">La vidéo n\'a pas pu se charger ici.</p>');
+  }));
   r.classList.add("on");
-  progress(1,`${j.clips.length} clip${j.clips.length>1?"s":""} prêt${j.clips.length>1?"s":""}`);
+  progress(1,demo?"Exemple de résultat : un clip produit par le moteur à partir d'une vidéo de test.":`${j.clips.length} clip${j.clips.length>1?"s":""} prêt${j.clips.length>1?"s":""}`);
   r.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
