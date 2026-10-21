@@ -13,6 +13,7 @@ from .select import distinct_pool
 API_URL = "https://api.anthropic.com"        # fixé : ANTHROPIC_BASE_URL peut désigner la passerelle d'un autre outil
 MAX_TOKENS = 16000                           # la réflexion (activée d'office sur les modèles 5.x) compte dans ce plafond
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
+LAST_CALL: dict = {}                         # dernier appel réussi : modèle, jetons, repli de sécurité accepté ou non
 
 SYSTEM = """Tu es monteur en chef de contenus courts verticaux (TikTok, Reels, Shorts).
 On te donne des extraits d'une vidéo longue. Pour chacun, juge s'il fonctionnerait SEUL comme short :
@@ -21,6 +22,8 @@ On te donne des extraits d'une vidéo longue. Pour chacun, juge s'il fonctionner
 - valeur : punchline, opinion tranchée, info surprenante, histoire forte, conseil concret, chiffre choc ;
 - chute : la fin conclut ou fait réagir.
 Pénalise les intros molles, remerciements, transitions et digressions.
+Titre, accroche et légende restent fidèles à ce qui est dit : n'invente ni chiffre ni fait, n'exagère pas, ne prête pas
+à la personne une opinion plus tranchée que la sienne (« peut-être moins jolies » ne devient pas « moches »).
 Réponds UNIQUEMENT par un tableau JSON, un objet par extrait :
 {"id": <int>, "score": <0-100>, "title": "<titre court, 60 car. max, dans la langue de l'extrait>",
  "hook": "<texte d'accroche à afficher en haut, 6 mots max>", "why": "<une phrase>",
@@ -82,16 +85,29 @@ def _call(cfg: Config, user: str, retries: int = 2, max_tokens: int = MAX_TOKENS
                                  base_url=os.environ.get("CLIPENGINE_LLM_URL", API_URL))
     args = {"model": cfg.llm_model, "max_tokens": max_tokens, "system": SYSTEM,
             "messages": [{"role": "user", "content": user}]}
+    fallbacks = True
     try:
         try:   # repli côté serveur si les filtres de sécurité refusent : Anthropic choisit le modèle de secours
             resp = client.beta.messages.create(**args, betas=[FALLBACK_BETA], fallbacks="default")
         except anthropic.BadRequestError as e:
             if not re.search(r"fallback|beta", str(e), re.I):
                 raise
+            fallbacks = False
             resp = client.messages.create(**args)             # modèle ou compte sans repli serveur : appel simple
     except anthropic.AnthropicError as e:
         raise LLMError(explain_error(e, cfg.llm_model)) from e
+    LAST_CALL.update(model=resp.model, input_tokens=resp.usage.input_tokens, output_tokens=resp.usage.output_tokens,
+                     fallbacks=fallbacks)
     return _text(resp)
+
+
+def usage_note() -> str:
+    """Ce que le dernier appel a consommé, pour que la dépense ne soit jamais une surprise."""
+    if not LAST_CALL:
+        return ""
+    n = lambda v: f"{v:,}".replace(",", " ")
+    return (f"{LAST_CALL['model']} : {n(LAST_CALL['input_tokens'])} jetons envoyés, {n(LAST_CALL['output_tokens'])} reçus"
+            f" (réflexion comprise) ; repli de sécurité {'actif' if LAST_CALL['fallbacks'] else 'indisponible'}")
 
 
 def check(cfg: Config | None = None) -> tuple[bool, str]:
@@ -107,7 +123,7 @@ def check(cfg: Config | None = None) -> tuple[bool, str]:
         return False, str(e)
     if not rows:
         return False, "l'API répond, mais pas par le tableau JSON attendu"
-    return True, f"{cfg.llm_model} répond (note donnée à l'extrait d'essai : {rows[0].get('score')})"
+    return True, f"{cfg.llm_model} répond (note donnée à l'extrait d'essai : {rows[0].get('score')}) — {usage_note()}"
 
 
 def parse_json_array(text: str) -> list[dict]:

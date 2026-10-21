@@ -135,6 +135,8 @@ def find_moments(tr: Transcript, prof: AudioProfile, cfg: Config, log: Log = pri
             errors: list[str] = []
             llm.rerank(cands, cfg, on_error=errors.append, **({"call": llm_call} if llm_call is not None else {}))
             stats["llm"] = "error" if errors else "ok"
+            if not errors and llm_call is None and llm.usage_note():
+                log(f"  {llm.usage_note()}")
             if errors:
                 stats["llm_error"] = errors[0]
                 log(f"  avis de Claude indisponible : {errors[0]} — score du moteur seul")

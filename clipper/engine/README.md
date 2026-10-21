@@ -140,32 +140,33 @@ Une interview française (Framasoft, 21 min en 720p, une personne à l'image, li
 - Accroches sur deux lignes équilibrées, nombres (« 800 000 ») et ponctuation haute (« : », « ? ») jamais séparés.
 - Visage détecté partout, accroche posée sous le menton (jamais sur le visage), accents et apostrophes corrects.
 
-### L'avis de Claude, essayé une fois
+### L'avis de Claude, avec le vrai appel (Claude Opus 5.5)
 
-Il n'y avait pas de clé dans l'environnement d'essai : **l'appel à l'API n'a pas été exécuté**. Pour savoir ce que vaut
-l'avis, un agent Claude (modèle Sonnet, pas l'Opus 5.5 que le moteur appelle maintenant par défaut) a reçu le prompt
-exact que le moteur envoie (consigne + 20 extraits distincts de l'interview française) et a répondu comme demandé ;
-sa réponse a été passée dans `rerank` et `propose`. Côté appel, la requête que le SDK envoie (modèle, plafond, repli de
-sécurité, en-têtes) et la lecture des erreurs sont vérifiées contre un faux serveur local, pas contre l'API réelle.
+Deux étapes. D'abord sans clé : un agent Claude (modèle Sonnet) a répondu au prompt exact du moteur sur 20 extraits de
+l'interview française, et sa réponse a été passée dans `rerank` et `propose` (choix : 3 clips sur 5 changent par rapport au
+score du moteur seul ; notes de 6 à 87 là où le moteur reste entre 60 et 87). Ensuite avec une vraie clé, par le
+chemin complet du moteur (SDK, repli de sécurité, `claude-opus-5-5`) :
 
-- Format : 20 réponses sur 20 exploitables. Notes réparties de 6 à 87, là où le score du moteur reste entre 60 et 87.
-- Choix : 3 clips sur 5 changent. Écartés : une présentation de parcours, un passage technique confus, un témoignage flou
-  (notes Claude 6, 32, 29). Retenus : « 98,2 % de dons », « 800 000 utilisateurs / le Google du Libre », « les quatre
-  libertés du logiciel libre ». Jugement de l'auteur de ce moteur, à confirmer par le tien.
-- Textes : tous les chiffres des titres, accroches et légendes se retrouvent dans la parole ; les légendes de deux clips,
-  relues mot à mot contre la transcription, ne disent rien d'inventé ; les accroches sont réécrites
-  (« Sans dons, on arrête ») au lieu de répéter la première phrase.
-- Défaut du moteur trouvé grâce à cet essai : une variante d'un moment noté 5/100 pouvait repasser devant avec le seul
-  score du moteur. Seuls les moments dont Claude a lu le texte exact peuvent maintenant passer devant.
-- Limites : une vidéo, un seul passage, un agent de session et non l'API ; la calibration des notes de Claude n'est pas
-  vérifiée sur des vidéos qui ont marché.
+- `clipengine check-llm` : l'API répond, le repli de sécurité (bêta `server-side-fallback-2026-07-01`) est accepté.
+- Une vidéo entière (21 min, 20 extraits) : **5 311 jetons envoyés, 4 384 reçus** (réflexion comprise) ≈ 0,11 $ au tarif
+  Opus 5.5 (4 $ / 20 $ le million) ; 192 s au total avec le rendu de 5 clips.
+- Choix : « 98,2 % de dons », « un trafic multiplié par 16 pendant le confinement », « le Google du Libre », l'analogie
+  supermarché / AMAP, « interfaces moins jolies mais moins énergivores ». Trois de ces cinq moments sont ceux de l'essai
+  Sonnet ; relancé après un changement de consigne, le choix est identique (mêmes 5 moments).
+- Textes : titres, accroches (« ×16 en une semaine », « Si personne ne donne, on arrête ») et légendes sont écrits comme
+  on les publierait ; tous les chiffres se retrouvent dans la parole. Un titre allait plus loin que la personne (« les
+  logiciels libres sont moches… et c'est voulu » pour « des interfaces peut-être moins jolies ») : la consigne exige
+  maintenant la fidélité, et le même passage devient « Moins jolies, mais moins énergivores ». **Relire avant de publier.**
+- Défaut du moteur trouvé en chemin : une variante d'un moment noté 5/100 pouvait repasser devant avec le seul score du
+  moteur. Seuls les moments dont Claude a lu le texte exact peuvent maintenant passer devant.
+- Limites : une vidéo, quelques appels ; la calibration des notes de Claude n'est pas vérifiée sur des vidéos qui ont
+  marché.
 
 ## Limites connues
 
 - **Le choix des moments est un score heuristique** : il trouve des passages complets et cohérents, il ne comprend pas
   le sujet. Il peut retenir une longue question de l'animateur, une présentation de parcours ou une transition. L'avis
-  de Claude corrige cela dans l'essai ci-dessus, mais **l'appel à l'API elle-même n'a jamais été exécuté ici**
-  (`clipengine check-llm` le fait en une commande dès qu'une clé existe).
+  de Claude corrige cela dans l'essai ci-dessus (une vidéo : à confirmer sur d'autres).
 - Sans modèle de langage, titre et accroche sont des phrases du clip (la plus courte et entière), pas des textes
   rédigés pour accrocher. En gros plan, l'accroche est omise plutôt que posée sur le visage (la carte du clip le dit).
 - Le locuteur actif est deviné par le mouvement de la bouche, pas par la voix : un locuteur hors champ ou une personne
@@ -174,7 +175,6 @@ sécurité, en-têtes) et la lecture des erreurs sont vérifiées contre un faux
 - Une source 1080p recadrée en 9:16 est agrandie ×1,78 (une source 480p, ×4) : pour plus de netteté, fournir du 4K.
 - Noms propres mal reconnus (« Framasoft » devient « Framasov », « Sramasoft »…) : Whisper `small` ne connaît pas le
   vocabulaire ; `large-v3` fait mieux, plus lentement.
-- Non testés ici : appel réel à l'API Anthropic (`clipengine check-llm` le fait en une commande dès qu'une clé existe) ;
-  téléchargement YouTube depuis une connexion personnelle (depuis ce serveur : refusé par le contrôle anti-robot,
+- Non testés ici : téléchargement YouTube depuis une connexion personnelle (depuis ce serveur : refusé par le contrôle anti-robot,
   message clair) ; lecture des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
 - Pas de publication automatique ni de statistiques TikTok, pas de génération vidéo/image : voir `../ANALYSE-MOQI.md`.
