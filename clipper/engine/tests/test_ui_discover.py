@@ -1,5 +1,8 @@
 """Onglet Découvrir dans un vrai navigateur : sans clé, tendances et filtres, chaînes suivies, bouton Clipper."""
 import base64
+import functools
+import http.server
+import json
 import os
 import re
 import shutil
@@ -137,5 +140,67 @@ def test_discover_fits_a_phone_screen(page, live, yt, monkeypatch):
         page.set_viewport_size({"width": width, "height": 800})
         page.goto(base + "/#decouvrir"); page.wait_for_selector(".vc")
         assert not page.evaluate("document.documentElement.scrollWidth > window.innerWidth"), width
-        assert page.locator("a[data-nav=decouvrir]").is_visible() or page.evaluate("document.querySelector('.bar nav').scrollWidth > 0")
+        # les quatre onglets du menu tiennent en entier sur l'écran, sans défilement à deviner
+        edges = page.evaluate("[...document.querySelectorAll('.bar nav a')].map(a => { const r = a.getBoundingClientRect(); return [r.left, r.right]; })")
+        assert len(edges) == 4 and all(0 <= l and r <= width for l, r in edges), (width, edges)
     assert page.errors == []
+
+
+SNAPSHOT = {
+    "taken": 1792000000, "filters": "France, en français, vidéos de moins de 3 jours et d'au moins 10 min",
+    "videos": [
+        {"id": "a1", "url": "https://www.youtube.com/watch?v=a1", "title": "Le grand débat sur l'énergie", "channel": "Chaîne A",
+         "thumbnail": "https://i.ytimg.com/vi/a1/mqdefault.jpg", "duration": 1500, "age_hours": 9.0, "views": 420000, "views_per_hour": 46667, "language": "fr"},
+        {"id": "a2", "url": "https://www.youtube.com/watch?v=a2", "title": "Une conférence plus ancienne", "channel": "Chaîne B",
+         "thumbnail": "https://i.ytimg.com/vi/a2/mqdefault.jpg", "duration": 2700, "age_hours": 24 * 100, "views": 5200, "views_per_hour": 2, "language": "fr"},
+        {"id": "a3", "url": "https://www.youtube.com/watch?v=a3", "title": "Un vieux classique", "channel": "Chaîne C",
+         "thumbnail": "https://i.ytimg.com/vi/a3/mqdefault.jpg", "duration": 800, "age_hours": 24 * 5192, "views": 114, "views_per_hour": 0, "language": "fr"},
+    ],
+}
+
+
+@pytest.fixture()
+def static_site(tmp_path):
+    """index.html et demo/ servis comme un site statique, sans moteur : l'aperçu en ligne."""
+    site = tmp_path / "site"
+    shutil.copytree(CLIPPER / "demo", site / "demo")
+    shutil.copy(CLIPPER / "index.html", site / "index.html")
+    quiet = type("Quiet", (http.server.SimpleHTTPRequestHandler,), {"log_message": lambda *a, **k: None})
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(quiet, directory=str(site)))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    yield site, f"http://127.0.0.1:{srv.server_address[1]}"
+    srv.shutdown()
+    srv.server_close()
+
+
+def test_preview_lists_a_dated_snapshot_of_the_real_list(page, static_site):
+    site, base = static_site
+    (site / "demo" / "decouvrir.json").write_text(json.dumps(SNAPSHOT), encoding="utf-8")
+    page.goto(base + "/#decouvrir"); page.wait_for_selector(".vc")
+    txt = page.inner_text("#app")
+    assert "Liste réelle, relevée le" in txt and "au moins 10 min" in txt and "Aperçu sans moteur" in txt
+    assert page.evaluate("[...document.querySelectorAll('.vc h3')].map(e => e.textContent)") == \
+        ["Le grand débat sur l'énergie", "Une conférence plus ancienne", "Un vieux classique"]
+    cards = page.evaluate("[...document.querySelectorAll('.vc')].map(e => e.innerText)")
+    assert "il y a 9 h" in cards[0] and "420 k vues" in cards[0] and "≈ 47 k vues/h" in cards[0]
+    assert "il y a 3 mois" in cards[1] and "il y a 14 ans" in cards[2]                 # pas « il y a 5192 j »
+    assert page.locator(".vc .dur").first.inner_text() == "25:00"
+    page.locator(".vc button", has_text="Clipper").first.click()
+    assert "Disponible avec le moteur" in page.inner_text("#toast")                      # l'aperçu ne lance rien
+    assert page.evaluate("document.querySelectorAll('.seg').length") == 0               # pas de filtres factices
+    assert not page.evaluate("document.documentElement.scrollWidth > window.innerWidth")
+    assert page.errors == []
+
+
+def test_preview_without_a_snapshot_explains_what_the_tab_needs(page, static_site):
+    _, base = static_site
+    page.goto(base + "/#decouvrir"); page.wait_for_selector("#app .empty")
+    assert "YOUTUBE_API_KEY" in page.inner_text("#app .empty") and page.locator(".vc").count() == 0
+    assert page.errors == []
+
+
+def test_a_broken_snapshot_falls_back_to_the_explanation(page, static_site):
+    site, base = static_site
+    (site / "demo" / "decouvrir.json").write_text("{pas du json", encoding="utf-8")
+    page.goto(base + "/#decouvrir"); page.wait_for_selector("#app .empty")
+    assert page.locator(".vc").count() == 0 and page.errors == []

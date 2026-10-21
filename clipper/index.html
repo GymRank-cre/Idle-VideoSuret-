@@ -134,7 +134,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}.prog i{transition:none}html{scroll-behavior:auto}}
 @media(max-width:820px){.edit{grid-template-columns:1fr}.edit .side{position:static;max-width:300px}.bar{gap:10px}.engine span{display:none}}
-@media(max-width:480px){.bar nav a{padding:6px 8px;font-size:13px}.logo{font-size:17px}}
+@media(max-width:480px){.bar{flex-wrap:wrap;height:auto;gap:0 10px;padding-block:8px 6px}.logo{order:1;font-size:17px}.engine{order:2;margin-left:auto}.bar nav{order:3;flex:1 0 100%;margin-right:0;justify-content:space-between}.bar nav a{padding:6px 8px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -362,7 +362,8 @@ function upload(file, meta, onProgress) {
 // ───────────────────────────────────────────────────────────── Découvrir : tendances et nouveautés des chaînes suivies
 const CATS = [["talk", "Parole : actualités, blogs, sciences (conseillé)"], ["0", "Toutes (surtout du jeu vidéo)"], ["25", "Actualités"], ["22", "Blogs"], ["28", "Science et tech"],
               ["24", "Divertissement"], ["20", "Jeux vidéo"], ["17", "Sport"], ["23", "Humour"], ["1", "Films"], ["2", "Autos"]];
-const ago = hrs => hrs < 1 ? "il y a moins d'1 h" : hrs < 48 ? `il y a ${Math.round(hrs)} h` : `il y a ${Math.round(hrs / 24)} j`;
+const ago = hrs => hrs < 1 ? "il y a moins d'1 h" : hrs < 48 ? `il y a ${Math.round(hrs)} h` : hrs < 24 * 45 ? `il y a ${Math.round(hrs / 24)} j`
+  : hrs < 24 * 700 ? `il y a ${Math.round(hrs / 24 / 30)} mois` : `il y a ${Math.round(hrs / 24 / 365)} ans`;
 const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 
 async function clipVideo(v, btn) {
@@ -395,12 +396,27 @@ function discoverSetup() {
       h("li", {}, "Restreins la clé à « YouTube Data API v3 » (Restreindre la clé)."),
       h("li", {}, "Lance le moteur avec la clé dans l'environnement : ", h("code", {}, "YOUTUBE_API_KEY=… clipengine serve"), " (jamais dans un message ni dans un fichier du dépôt).")));
 }
+// Aperçu sans moteur : si demo/decouvrir.json existe (un relevé réel de la liste), on l'affiche, daté ; sinon une explication.
+async function discoverSnapshot(app, gap, tok) {
+  let snap = null;
+  try { const r = await fetch("demo/decouvrir.json"); snap = r.ok ? await r.json() : null; } catch {}
+  if (current.token !== tok) return;
+  if (!snap || !Array.isArray(snap.videos) || !snap.videos.length) {
+    app.append(gap(), h("div", { class: "empty" }, "Cet onglet demande le moteur et une clé YouTube gratuite (YOUTUBE_API_KEY) : dans l'aperçu, il n'y a rien à lister."));
+    return;
+  }
+  const when = new Date(snap.taken * 1000).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  app.append(gap(), h("div", { class: "panel" }, h("h2", {}, "Liste réelle, relevée le " + when),
+    h("p", { class: "muted", style: "margin-top:6px;font-size:14px" }, `${snap.filters}. Les âges et les vues sont ceux du relevé. Avec le moteur, la liste se met à jour, les filtres jouent, « Mes chaînes » suit les chaînes de ton choix et « Clipper » lance l'analyse.`)),
+    h("p", { class: "muted", style: "font-size:13px;margin:14px 0" }, "Classées par vues par heure : celles qui montent d'abord."),
+    h("div", { class: "grid vgrid" }, snap.videos.map(videoCard)));
+}
 async function viewDiscover(app) {
   app.append(h("h1", { style: "font-size:30px" }, "Découvrir"),
     h("p", { class: "lead" }, "Les vidéos longues qui montent sur YouTube en France et les nouveautés des chaînes que tu suis. Un clic lance l'analyse."));
   const gap = () => h("div", { style: "height:18px" });
-  if (S.demo) { app.append(gap(), h("div", { class: "empty" }, "Cet onglet demande le moteur et une clé YouTube gratuite (YOUTUBE_API_KEY) : dans l'aperçu, il n'y a rien à lister.")); return; }
   const tok = current.token;
+  if (S.demo) return discoverSnapshot(app, gap, tok);
   const { enabled } = await API.get("/api/discover/status");
   if (current.token !== tok) return;
   if (!enabled) { app.append(gap(), discoverSetup()); return; }
