@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: clipengine
+Version: 0.1.0
+Summary: Moteur de clipping automatique : long format -> clips verticaux sous-titrés
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.26
+Requires-Dist: opencv-python-headless>=4.9
+Provides-Extra: asr
+Requires-Dist: faster-whisper>=1.0; extra == "asr"
+Provides-Extra: download
+Requires-Dist: yt-dlp; extra == "download"
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"

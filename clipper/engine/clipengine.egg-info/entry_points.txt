@@ -1,0 +1,2 @@
+[console_scripts]
+clipengine = clipengine.cli:main
