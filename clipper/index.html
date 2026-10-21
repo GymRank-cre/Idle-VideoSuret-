@@ -775,8 +775,9 @@ function viewEngine(app) {
       h("ol", { class: "steps-list" },
         h("li", {}, "Une fois : installe le moteur et ffmpeg (le README du dossier ", cmd("clipper/engine"), " donne les commandes)."),
         h("li", {}, "Lance-le en autorisant cette page : ", cmd(`clipengine serve --allow-origin ${here}`), ". Il affiche un jeton : copie-le ci-dessus."),
-        h("li", {}, "Ouvre-le sur Internet avec un tunnel, par exemple ", cmd("cloudflared tunnel --url http://localhost:8080"), ". Il affiche une adresse en https : colle-la ci-dessus."),
-        h("li", {}, "Tant que ces deux commandes tournent, cette page, depuis n'importe quel appareil, pilote ton moteur. L'adresse du tunnel change à chaque lancement : refais l'étape 3 quand elle change."),
+        h("li", {}, "Sur ce même ordinateur, l'adresse du moteur est ", cmd("http://localhost:8080"), "."),
+        h("li", {}, "Depuis un autre appareil (téléphone), ouvre-le sur Internet avec un tunnel, par exemple ", cmd("cloudflared tunnel --url http://localhost:8080"),
+          " : il affiche une adresse en https, à coller ci-dessus. Elle change à chaque lancement du tunnel."),
         h("li", {}, "Les téléchargements YouTube passent mieux depuis ton ordinateur que depuis un serveur loué : YouTube bloque beaucoup d'adresses de serveurs."))));
 }
 

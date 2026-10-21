@@ -117,9 +117,10 @@ clipengine serve --allow-origin https://clipo-rho.vercel.app   # affiche un jeto
 cloudflared tunnel --url http://localhost:8080                 # une adresse https publique vers ton moteur
 ```
 
-Puis, sur la page : **Moteur** → coller l'adresse du tunnel et le jeton → *Tester et enregistrer*. L'adresse et le jeton
-restent dans le navigateur de chaque appareil ; il faut recommencer l'étape du tunnel quand son adresse change (un tunnel
-nommé, avec un nom de domaine, garde la même).
+Puis, sur la page : **Moteur** → coller l'adresse et le jeton → *Tester et enregistrer*. Sur le même ordinateur que le
+moteur, l'adresse est simplement `http://localhost:8080` (le tunnel ne sert qu'à joindre le moteur depuis un autre
+appareil, un téléphone par exemple). L'adresse et le jeton restent dans le navigateur de chaque appareil ; l'adresse
+d'un tunnel rapide change à chaque lancement (un tunnel nommé, avec un nom de domaine, garde la même).
 
 - Le jeton ferme l'API et les fichiers (`Authorization: Bearer …`) ; la page elle-même reste publique, elle n'a rien de
   secret. `--allow-origin` prend l'adresse exacte de la page (pas de joker) ; il demande un jeton. Variables : `CLIPENGINE_TOKEN`

@@ -172,8 +172,12 @@ def test_cors_only_for_the_allowed_page(remote):
     assert s == 204 and h["Access-Control-Allow-Origin"] == PAGE and h["Vary"] == "Origin"
     assert "Authorization" in h["Access-Control-Allow-Headers"] and "X-Options" in h["Access-Control-Allow-Headers"]
     assert "POST" in h["Access-Control-Allow-Methods"] and "DELETE" in h["Access-Control-Allow-Methods"]
-    s, _, h = call(base + "/api/projects", headers={**pre, "Origin": "https://autre-site.example"}, method="OPTIONS")
+    assert "Access-Control-Allow-Private-Network" not in h                               # seulement si le navigateur le demande
+    s, _, h = call(base + "/api/projects", headers={**pre, "Access-Control-Request-Private-Network": "true"}, method="OPTIONS")
+    assert h["Access-Control-Allow-Private-Network"] == "true"                           # page publique -> moteur sur localhost
+    s, _, h = call(base + "/api/projects", headers={**pre, "Origin": "https://autre-site.example", "Access-Control-Request-Private-Network": "true"}, method="OPTIONS")
     assert s == 204 and "Access-Control-Allow-Origin" not in h and "Access-Control-Allow-Methods" not in h
+    assert "Access-Control-Allow-Private-Network" not in h
     s, _, h = call(base + "/api/projects", headers={**pre, "Origin": PAGE + ".autre.example"}, method="OPTIONS")
     assert "Access-Control-Allow-Origin" not in h                                        # pas de correspondance partielle
     s, _, h = call(base + "/api/projects", headers={**BEARER, "Origin": PAGE.upper().replace("HTTPS", "https")})

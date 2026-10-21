@@ -160,6 +160,8 @@ def make_handler(app: App):
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Options")
                 self.send_header("Access-Control-Max-Age", "600")
+                if self.headers.get("Access-Control-Request-Private-Network", "").lower() == "true":
+                    self.send_header("Access-Control-Allow-Private-Network", "true")   # page publique -> moteur sur ce même ordinateur
             else:
                 self.send_header("Allow", "GET, POST, DELETE, OPTIONS")
             self.send_header("Content-Length", "0")
