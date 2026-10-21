@@ -13,7 +13,8 @@ class Config:
     max_clips: int = 8
     reserve: int = 6                  # propositions supplémentaires gardées « en réserve »
     mode: str = "best"                # best = meilleurs moments | full = toute la vidéo en parties
-    min_score: float = 38.0
+    min_score: float = 50.0           # seuil pour fabriquer un clip d'office
+    reserve_min_score: float = 30.0   # seuil pour figurer en réserve (fabricable sur demande)
     max_overlap: float = 0.0          # part de chevauchement tolérée entre deux clips
     max_similarity: float = 0.55      # similarité lexicale max entre deux clips retenus
     pad_before: float = 0.20

@@ -21,15 +21,16 @@ def _sim(a: Counter, b: Counter) -> float:
     return num / (sqrt(sum(v * v for v in a.values())) * sqrt(sum(v * v for v in b.values())) + 1e-9)
 
 
-def select_ranked(cands: list[Candidate], cfg: Config, limit: int) -> list[Candidate]:
+def select_ranked(cands: list[Candidate], cfg: Config, limit: int, min_score: float | None = None) -> list[Candidate]:
     """Glouton par score décroissant ; ordre de sortie = rang (meilleur d'abord).
 
     Un recouvrement ou une redite (même sujet) avec un clip déjà retenu est écarté.
     """
+    thr = cfg.min_score if min_score is None else min_score
     chosen: list[Candidate] = []
     bags: list[Counter] = []
     for c in sorted(cands, key=lambda x: x.score, reverse=True):
-        if c.score < cfg.min_score or len(chosen) >= limit:
+        if c.score < thr or len(chosen) >= limit:
             break
         bag = Counter(L.content_tokens(c.text))
         if any(_overlap(c, o) > cfg.max_overlap for o in chosen):
@@ -42,14 +43,23 @@ def select_ranked(cands: list[Candidate], cfg: Config, limit: int) -> list[Candi
 
 
 def select(cands: list[Candidate], cfg: Config) -> list[Candidate]:
-    """Les `max_clips` meilleurs, dans l'ordre chronologique."""
+    """Les `max_clips` meilleurs au-dessus du seuil, dans l'ordre chronologique."""
     return sorted(select_ranked(cands, cfg, cfg.max_clips), key=lambda x: x.start)
 
 
 def propose(cands: list[Candidate], cfg: Config) -> tuple[list[Candidate], int]:
-    """Propositions classées : les `max_clips` premières sont fabriquées d'office, les suivantes restent en réserve."""
-    ranked = select_ranked(cands, cfg, cfg.max_clips + cfg.reserve)
-    return ranked, min(cfg.max_clips, len(ranked))
+    """Moments classés et nombre à fabriquer d'office.
+
+    Mieux vaut peu de clips solides que beaucoup de clips mous : seuls les moments au-dessus de `min_score` (dans la
+    limite de `max_clips`) sont fabriqués d'office ; les suivants, jusqu'à `reserve_min_score`, restent en réserve.
+    """
+    ranked = select_ranked(cands, cfg, cfg.max_clips + cfg.reserve, min(cfg.min_score, cfg.reserve_min_score))
+    n_auto = 0
+    for c in ranked[:cfg.max_clips]:
+        if c.score < cfg.min_score:
+            break
+        n_auto += 1
+    return ranked, n_auto
 
 
 def distinct_pool(cands: list[Candidate], k: int, max_overlap: float = 0.2) -> list[Candidate]:

@@ -6,7 +6,7 @@ import re
 import subprocess
 import time
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Callable
 
@@ -19,7 +19,7 @@ from .captions import build_ass, default_title
 from .config import Config
 from .errors import UserError
 from .media import MediaInfo, check_info, fetch, probe
-from .models import Candidate
+from .models import Candidate, Word
 from .reframe import plan_camera
 from .render import render_clip
 from .scoring import breakdown, label_for, score_candidates
@@ -87,6 +87,12 @@ def transcribe_source(source: Path, work: Path, cfg: Config, transcript_path: st
     tr_path.write_text(json.dumps(tr.to_json(), ensure_ascii=False), encoding="utf-8")
     log(f"  {len(tr.words)} mots, langue {tr.language}")
     return tr, prof
+
+
+def clip_transcript(tr: Transcript, duration: float) -> Transcript:
+    """Retire les mots au-delà de la fin réelle de la vidéo (queues d'hallucination de Whisper, transcription importée)."""
+    words = [Word(w.text, w.start, min(w.end, duration), w.prob) for w in tr.words if w.start < duration - 0.05]
+    return Transcript(tr.language, words)
 
 
 def check_speech(tr: Transcript, info: MediaInfo) -> None:
@@ -166,6 +172,10 @@ def render_candidate(source: Path, info: MediaInfo, tr: Transcript, prof: AudioP
                      ) -> Rendered:
     """Analyse des visages, plan de caméra, sous-titres, rendu, vignette d'un seul moment."""
     st = style or get_style(cfg.style)
+    if c.end > info.duration:                                   # jamais au-delà de la fin réelle de la vidéo
+        c = replace(c, end=info.duration)
+    if c.end - c.start < 3:
+        raise UserError("Ce moment se situe en dehors de la vidéo.")
     out_dir.mkdir(parents=True, exist_ok=True)
     prog = on_progress or (lambda f: None)
     words = [w for w in tr.words if w.end > c.start and w.start < c.end]
@@ -207,6 +217,7 @@ def run(source: str | Path, out_dir: str | Path, cfg: Config | None = None,
     log(f"• source : {info.width}x{info.height} @ {info.fps:.0f} fps, {info.duration / 60:.1f} min")
 
     tr, prof = transcribe_source(source, work, cfg, transcript_path, log)
+    tr = clip_transcript(tr, info.duration)
     check_speech(tr, info)
     ranked, n_auto, _ = find_moments(tr, prof, cfg, log)
     chosen = sorted(ranked[:n_auto], key=lambda c: c.start)

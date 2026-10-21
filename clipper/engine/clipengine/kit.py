@@ -8,10 +8,18 @@ from . import lexicon as L
 
 _MIN_LEN = 4
 
+# mots fréquents mais sans valeur comme hashtag, en plus des mots vides généraux
+_HASHTAG_STOP = set("""
+pourquoi comment quand personne rien tout tous toute toutes très alors encore déjà jamais toujours voici voilà chose
+choses parce depuis pendant après avant peut peuvent faut dit disent cela quoi comme ainsi bien même mais donc car
+leur leurs notre votre mes tes ses moi toi lui eux elles ils elle nous vous cette ces cet celui celle ceux
+really just like going what with that this have been will would could should there their about because
+""".split())
+
 
 def keywords(text: str, n: int = 4) -> list[str]:
     """Mots porteurs de sens les plus fréquents (formes entières, pour en faire des hashtags)."""
-    toks = [t for t in L.tokens(text) if len(t) >= _MIN_LEN and t not in L.STOP and t not in L.FILLERS
+    toks = [t for t in L.tokens(text) if len(t) >= _MIN_LEN and t not in L.STOP and t not in L.FILLERS and t not in _HASHTAG_STOP
             and not t.isdigit()]
     freq = Counter(toks)
     ranked = sorted(freq, key=lambda t: (-freq[t], -len(t), t))

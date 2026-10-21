@@ -5,287 +5,600 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#09090b">
 <link rel="icon" href="data:,">
-<title>Clipo · Clips automatiques pour TikTok, Reels et Shorts</title>
-<meta name="description" content="Colle une vidéo YouTube : Clipo en fait des clips verticaux sous-titrés. Génère aussi des vidéos et des images à partir d'une idée.">
+<title>Clipo · Studio de clips</title>
 <style>
-:root{--bg:#09090b;--panel:#131316;--line:#26262c;--text:#f4f4f5;--mute:#a1a1aa;--accent:#a78bfa;--accent2:#f472b6;--ok:#4ade80;--err:#f87171;color-scheme:dark}
-@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--err:#dc2626;color-scheme:light}}
-:root[data-theme="light"]{--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--err:#dc2626;color-scheme:light}
+/* Studio de clips : sombre par défaut, clair selon le système, forçable via data-theme. */
+:root{--bg:#09090b;--panel:#131316;--panel2:#1b1b20;--line:#2a2a31;--text:#f4f4f5;--mute:#a1a1aa;--accent:#a78bfa;--accent2:#f472b6;--ok:#4ade80;--warn:#fbbf24;--err:#f87171;--media:#000;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#fafafa;--panel:#fff;--panel2:#f4f4f6;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--warn:#b45309;--err:#dc2626;color-scheme:light}}
+:root[data-theme="light"]{--bg:#fafafa;--panel:#fff;--panel2:#f4f4f6;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777;--ok:#16a34a;--warn:#b45309;--err:#dc2626;color-scheme:light}
 *{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg);pointer-events:none}
 a{color:inherit;text-decoration:none}
-.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:11;background:var(--bg);pointer-events:none}
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-nav{display:flex;align-items:center;gap:20px;height:60px}
-.logo{font-weight:800;font-size:20px;letter-spacing:-.02em;margin-right:auto}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:18px;height:56px}
+.logo{font-weight:800;font-size:19px;letter-spacing:-.02em}
 .logo b{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-nav a.l{color:var(--mute);font-size:14px}nav a.l:hover{color:var(--text)}
-.badge{font-size:11px;padding:2px 7px;border-radius:99px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
-.btn{display:inline-block;border:0;cursor:pointer;font:inherit;font-weight:600;padding:11px 20px;border-radius:12px;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.btn.ghost{background:none;border:1px solid var(--line);color:var(--text)}
-.btn:hover{filter:brightness(1.1)}
-@media(max-width:720px){nav a.l{display:none}}
-.hero{padding:64px 0 32px;text-align:center}
-.eyebrow{color:var(--accent);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
-h1{font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.03em;margin:12px auto;max-width:15em}
-.sub{color:var(--mute);max-width:36em;margin:0 auto 28px;font-size:18px}
-.tabs{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:14px;margin-bottom:20px;background:var(--panel)}
-.tabs button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:8px 18px;border-radius:10px;cursor:pointer}
-.tabs button[aria-selected=true]{background:var(--bg);color:var(--text)}
-.box{max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;gap:10px}
-.box input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;padding:8px 10px}
-.hint{color:var(--mute);font-size:13px;margin-top:12px}
-.file{display:inline-block;margin-top:10px;color:var(--mute);font-size:14px;cursor:pointer;text-decoration:underline}
-.file:hover{color:var(--text)}
-.status{max-width:640px;margin:20px auto 0;display:none;text-align:left}
-.status.on{display:block}
+.bar nav{display:flex;gap:4px;margin-right:auto}
+.bar nav a{padding:6px 12px;border-radius:9px;color:var(--mute);font-weight:600;font-size:14px;white-space:nowrap}
+.bar nav a[aria-current=page]{background:var(--panel2);color:var(--text)}
+.bar nav a:hover{color:var(--text)}
+.count{font-size:11px;background:var(--accent);color:#fff;border-radius:99px;padding:0 6px;margin-left:5px}
+.engine{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);white-space:nowrap}
+.engine i{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.engine.on i{background:var(--ok)}
+main{padding-block:28px 64px}
+h1{font-size:clamp(26px,4.4vw,40px);line-height:1.1;letter-spacing:-.03em;max-width:18em}
+h2{font-size:20px;letter-spacing:-.01em}
+.lead{color:var(--mute);max-width:40em;margin-top:10px}
+.muted{color:var(--mute)}
+.banner{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 14px;color:var(--mute);font-size:14px;margin-bottom:20px}
+.banner code{color:var(--text);background:var(--panel2);padding:1px 6px;border-radius:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;cursor:pointer;font-weight:600;padding:10px 18px;border-radius:11px;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.btn:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.55;cursor:default;filter:none}
+.btn.sec{background:none;border:1px solid var(--line);color:var(--text)}
+.btn.sec:hover{border-color:var(--accent)}
+.btn.sm{padding:6px 12px;font-size:13px;border-radius:9px}
+.btn.danger{background:none;border:1px solid var(--line);color:var(--err)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label,.lbl{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
+input[type=url],input[type=text],select{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-width:0;width:100%}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;border:1px solid var(--line);border-radius:11px;padding:3px;background:var(--panel2);align-self:flex-start}
+.seg button{border:0;background:none;color:var(--mute);font-weight:600;font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--bg);color:var(--text);box-shadow:0 0 0 1px var(--line)}
+.seg button[disabled]{opacity:.45;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.row>.grow{flex:1;min-width:220px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,max-content));gap:16px 28px;margin-top:18px}
+.drop{margin-top:14px;border:1.5px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--mute);cursor:pointer;font-size:14px}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--text)}
+details.adv{margin-top:16px}
+details.adv>summary{cursor:pointer;color:var(--mute);font-weight:600;font-size:14px}
+details.adv .opts{margin-top:12px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.check input{accent-color:var(--accent);width:16px;height:16px}
 .prog{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
-.stage{display:flex;justify-content:space-between;color:var(--mute);font-size:14px;margin-top:8px}
-.err{color:var(--err);margin-top:10px;font-size:14px}
-.banner{max-width:640px;margin:14px auto 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;color:var(--mute);font-size:14px;display:none}
-.banner.on{display:block}.banner code{color:var(--text)}
-.result{max-width:1040px;margin:28px auto 0;display:none;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,290px));justify-content:center;text-align:left}
-.result.on{display:grid}
-.result{scroll-margin-top:80px}
-.clip{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.clip video{display:block;width:100%;aspect-ratio:9/16;background:#000}
-.clip .in{padding:12px 14px}
-.clip h3{font-size:15px;line-height:1.3;margin-bottom:6px}
-.meta{display:flex;gap:8px;align-items:center;color:var(--mute);font-size:13px;flex-wrap:wrap}
-.score{font-weight:700;color:#fff;background:var(--accent);border-radius:99px;padding:1px 9px}
-.why{color:var(--mute);font-size:13px;margin:8px 0;list-style:none;padding:0}
-.dl{display:block;text-align:center;padding:9px;border-radius:10px;margin-top:8px;font-size:14px;font-weight:600;border:1px solid var(--line)}
-.dl:hover{border-color:var(--accent)}
-.linkbtn{border:0;background:none;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer;padding:0}
-.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:1px 8px;margin-bottom:8px}
-.vnote{color:var(--mute);font-size:13px;margin:8px 0 0;padding:0 14px}
-.soon{max-width:640px;margin:20px auto 0;color:var(--mute);display:none}
-.soon.on{display:block}
-section{padding:72px 0}
-h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;line-height:1.15;margin:8px 0 12px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:32px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
-.card .n{color:var(--accent);font-weight:800}
-.card p{color:var(--mute);margin-top:6px}
-.coach{display:grid;gap:32px;grid-template-columns:1fr 1fr;align-items:center}
-@media(max-width:760px){.coach{grid-template-columns:1fr}}
-.phone{max-width:280px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:18px}
-.bar{height:8px;border-radius:4px;background:var(--line);margin:10px 0;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:var(--accent2)}
-.tip{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
-.price{text-align:center}
-.amount{font-size:64px;font-weight:800;letter-spacing:-.03em}
-.price ul{list-style:none;padding:0;max-width:380px;margin:20px auto;text-align:left}
-.price li{padding:6px 0;color:var(--mute)}.price li::before{content:"✓ ";color:var(--ok);font-weight:800}
-details{border-bottom:1px solid var(--line);padding:16px 0}
-summary{cursor:pointer;font-weight:600}
-details p{color:var(--mute);margin-top:8px}
-footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-size:14px;text-align:center}
+.err{color:var(--err);font-size:14px}
+.sect{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:32px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.pc{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.media{position:relative;display:block;aspect-ratio:9/16;background:var(--media);overflow:hidden}
+.media video,.media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;text-align:center;background:linear-gradient(160deg,var(--panel2),var(--bg));color:var(--mute);font-size:14px}
+.ph b{color:var(--text);font-size:26px;letter-spacing:-.02em}
+.ph .prog{width:70%}
+.pc-body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.pc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.score{font-weight:800;font-size:13px;color:#fff;border-radius:99px;padding:1px 9px;background:var(--accent)}
+.lab-Excellent{background:#16a34a}.lab-Fort{background:var(--accent)}.lab-Correct{background:#b45309}.lab-Faible{background:#71717a}
+.pc h3{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.hook{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+.pc details{border-top:1px solid var(--line);padding-top:8px}
+.pc summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--mute)}
+.pc details[open] summary{color:var(--text)}
+.bars{list-style:none;padding:0;margin-top:8px;display:grid;gap:5px}
+.bars li{display:grid;grid-template-columns:104px 1fr 28px;gap:8px;align-items:center;font-size:12px;color:var(--mute)}
+.bars .t{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bars .t i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.bars .n{text-align:right;font-variant-numeric:tabular-nums}
+.notes{margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--mute)}
+.kit{display:grid;gap:8px;margin-top:8px;font-size:13px}
+.kit p{background:var(--panel2);border-radius:9px;padding:8px 10px;overflow-wrap:anywhere}
+.tags{color:var(--accent)}
+.snippet{margin-top:8px;font-size:12px;color:var(--mute);max-height:140px;overflow:auto;overflow-wrap:anywhere}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.vnote{font-size:12px;color:var(--mute);padding:6px 14px 0}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.lib .media{aspect-ratio:16/10}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:13px}
+.steps span{padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--mute)}
+.steps span.on{border-color:var(--accent);color:var(--text)}
+.steps span.done{color:var(--ok)}
+.edit{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;align-items:start}
+.edit .side{position:sticky;top:calc(72px + env(safe-area-inset-top,0px));display:grid;gap:10px}
+.edit .shot{aspect-ratio:9/16;border-radius:16px;border:1px solid var(--line);background:var(--panel2);position:relative;overflow:hidden}
+.edit .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.groups{display:grid;gap:20px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel2);border-radius:11px;padding:8px 12px;cursor:pointer;text-align:left;min-width:130px}
+.chip[aria-pressed=true]{border-color:var(--accent);background:var(--bg)}
+.chip b{display:block;font-size:14px}.chip span{font-size:12px;color:var(--mute)}
+.sw{display:flex;gap:6px;flex-wrap:wrap}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw button[aria-pressed=true]{border-color:var(--text);box-shadow:0 0 0 2px var(--bg) inset}
+input[type=range]{accent-color:var(--accent);width:100%}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:grid;gap:8px;pointer-events:none}
+#toast div{background:var(--text);color:var(--bg);border-radius:10px;padding:9px 14px;font-size:14px;font-weight:600;box-shadow:0 6px 24px #0006}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:36px 18px;text-align:center;color:var(--mute)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.prog i{transition:none}html{scroll-behavior:auto}}
+@media(max-width:820px){.edit{grid-template-columns:1fr}.edit .side{position:static;max-width:300px}.bar{gap:10px}.engine span{display:none}}
+@media(max-width:480px){.bar nav a{padding:6px 8px;font-size:13px}.logo{font-size:17px}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><nav>
-  <a class="logo" href="#">Clip<b>o</b></a>
-  <a class="l" href="#coach">Coach<span class="badge">Nouveau</span></a>
-  <a class="l" href="#how">Comment ça marche</a>
-  <a class="l" href="#prix">Tarifs</a>
-  <a class="l" href="#faq">Aide</a>
-  <a class="btn" href="#top">Essayer gratuit</a>
-</nav></div></header>
-
-<main id="top">
-<div class="wrap hero">
-  <p class="eyebrow">Pour TikTok, Reels et Shorts</p>
-  <h1 id="title">Colle une vidéo YouTube. Clipo en fait des clips.</h1>
-  <p class="sub" id="subtitle">Les moments forts, à la verticale, sous-titrés. Rien à monter.</p>
-
-  <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-mode="clips">Clips</button>
-    <button role="tab" aria-selected="false" data-mode="video">Vidéo</button>
-    <button role="tab" aria-selected="false" data-mode="image">Image</button>
-  </div>
-
-  <form class="box" id="form">
-    <input id="input" required placeholder="https://youtube.com/watch?v=…" aria-label="Entrée">
-    <button class="btn" id="go">Générer mes clips</button>
-  </form>
-  <p class="hint">Premier essai offert · sans carte bancaire</p>
-  <label class="file" id="filelabel">ou envoie un fichier vidéo<input type="file" id="file" accept="video/*,.mkv" hidden></label>
-  <div class="banner" id="banner"></div>
-  <div class="status" id="status">
-    <div class="prog"><i id="bar"></i></div>
-    <div class="stage"><span id="stage">Envoi…</span><span id="pct">0 %</span></div>
-    <div class="err" id="err"></div>
-  </div>
-  <p class="soon" id="soon">La génération de vidéos et d'images n'est pas encore branchée : seul l'onglet « Clips » est actif.</p>
-  <div class="result" id="result"></div>
-</div>
-
-<section id="how"><div class="wrap">
-  <p class="eyebrow">Comment ça marche</p>
-  <h2>Tu colles ou tu écris. Clipo fait le reste.</h2>
-  <div class="grid">
-    <div class="card"><span class="n">Clips</span><p>Colle un lien. Clipo repère les moments qui tiennent, recadre sur la personne qui parle et incruste les sous-titres.</p></div>
-    <div class="card"><span class="n">Vidéo</span><p>Écris une idée. Clipo lit ta phrase, fabrique la vidéo et lui met le son.</p></div>
-    <div class="card"><span class="n">Image</span><p>Décris l'image. Clipo compose la scène et te la rend aux bons formats.</p></div>
-  </div>
-</div></section>
-
-<section id="coach"><div class="wrap coach">
-  <div>
-    <p class="eyebrow">Nouveau · Coach</p>
-    <h2>Il analyse ton compte. Il te dit quoi poster.</h2>
-    <p class="sub" style="margin:0 0 20px">Il regarde chaque vidéo, trouve où les gens décrochent, écrit tes prochaines idées et peut les publier à ta place.</p>
-    <a class="btn ghost" href="#top">Analyser mon compte</a>
-  </div>
-  <div class="phone">
-    <strong>Ta vidéo de mardi</strong>
-    <div class="bar"><i></i></div>
-    <small style="color:var(--mute)">4 viewers sur 10 partent à 0:03</small>
-    <div class="tip">Ta phrase forte arrive trop tard. Dis-la en premier.</div>
-  </div>
-</div></section>
-
-<section id="prix"><div class="wrap price">
-  <p class="eyebrow">Le prix</p>
-  <h2>Un prix clair, sans piège.</h2>
-  <div class="amount">0,99 €</div>
-  <ul>
-    <li>Clips, vidéo, image et Coach compris</li>
-    <li>Fichiers sans filigrane, en HD</li>
-    <li>Sous-titres animés et recadrage automatique</li>
-    <li>Tout se télécharge, prêt à poster</li>
-  </ul>
-  <a class="btn" href="#top">Voir les formules</a>
-  <p class="hint">Sans engagement.</p>
-</div></section>
-
-<section id="faq"><div class="wrap" style="max-width:720px">
-  <h2>Questions fréquentes</h2>
-  <details><summary>Quelles vidéos puis-je utiliser ?</summary><p>Celles dont tu détiens les droits : tes podcasts, lives, interviews, talks.</p></details>
-  <details><summary>Les clips sont-ils recadrés automatiquement ?</summary><p>Oui, en 9:16, centrés sur la personne qui parle.</p></details>
-  <details><summary>Puis-je annuler ?</summary><p>À tout moment, sans engagement.</p></details>
-</div></section>
-</main>
-
-<footer><div class="wrap">© Clipo — maquette. Textes et tarif indicatifs, à écrire avant toute mise en ligne publique.</div></footer>
+<header class="top"><div class="wrap bar">
+  <a class="logo" href="#studio" data-go="studio">Clip<b>o</b></a>
+  <nav aria-label="Navigation">
+    <a href="#studio" data-go="studio" data-nav="studio">Studio</a>
+    <a href="#biblio" data-go="biblio" data-nav="biblio">Bibliothèque<span class="count" id="count" hidden></span></a>
+    <a href="#style" data-go="style" data-nav="style">Mon style</a>
+  </nav>
+  <span class="engine" id="engine" title="État du moteur"><i></i><span>Moteur</span></span>
+</div></header>
+<main class="wrap" id="app" aria-live="polite"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p class="wrap">Cette page a besoin de JavaScript.</p></noscript>
 
 <script>
-const MODES={
-  clips:{h:"Colle une vidéo YouTube. Clipo en fait des clips.",s:"Les moments forts, à la verticale, sous-titrés. Rien à monter.",ph:"https://youtube.com/watch?v=…",b:"Générer mes clips",type:"url"},
-  video:{h:"Écris une idée. Clipo en fait une vidéo.",s:"Décris la scène. Clipo crée la vidéo avec le son, en vertical ou en horizontal.",ph:"Une astronaute atterrit sur un toit, la ville en feu derrière elle",b:"Générer la vidéo",type:"text"},
-  image:{h:"Écris une idée. Clipo en fait une image.",s:"Miniature, visuel de post, décor : décris l'image, tu la récupères aux bons formats.",ph:"Un loup en néon dans une ruelle sous la pluie",b:"Générer l'image",type:"text"}
-};
-const API=""; // même origine que la page (clipengine serve)
-const $=id=>document.getElementById(id);
-const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let mode="clips", busy=false, apiOk=null;
+(() => {
+"use strict";
 
-// Résultat d'exemple : un vrai clip produit par le moteur à partir d'une vidéo de test (voix simulée).
-const DEMO={status:"done",demo:true,clips:[{index:1,title:"Pourquoi personne ne vous dit la vérité sur le sommeil ?",score:86,start:0,duration:15.9,
-  reasons:["accroche forte dès la première phrase","un seul sujet du début à la fin","⚠ voix monotone"],layouts:["track"],
-  video:"demo/exemple.mp4",poster:"demo/exemple.jpg"}]};
-
-function syncFile(){$("filelabel").style.display=(mode==="clips"&&apiOk)?"":"none"}
-async function checkApi(){
-  try{const r=await fetch(API+"/api/health",{cache:"no-store"});const d=await r.json();apiOk=r.ok&&d.ok===true}catch{apiOk=false}
-  const b=$("banner");
-  if(apiOk){b.classList.remove("on")}
-  else{
-    b.innerHTML='Aperçu sans moteur : pour générer de vrais clips, lance <code>clipengine serve</code> sur un ordinateur puis ouvre <code>http://localhost:8080</code>. <button type="button" class="linkbtn" id="demo">Voir un exemple de résultat</button>';
-    b.classList.add("on");
-    $("demo").onclick=()=>render(DEMO,true);
+// ───────────────────────────────────────────────────────────── utilitaires
+const $ = (s, r = document) => r.querySelector(s);
+const h = (tag, attrs, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
   }
-  syncFile();
-}
-checkApi();
+  for (const kid of kids.flat(2)) { if (kid == null || kid === false) continue; e.append(kid.nodeType ? kid : document.createTextNode(String(kid))); }
+  return e;
+};
+const fmt = t => { t = Math.max(0, Math.round(t)); const s = t % 60, m = Math.floor(t / 60) % 60, hh = Math.floor(t / 3600);
+  return hh ? `${hh}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`; };
+const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem("clipo." + k)); return v ?? d; } catch { return d; } },
+                set(k, v) { try { localStorage.setItem("clipo." + k, JSON.stringify(v)); } catch {} } };
+const toast = msg => { const t = h("div", {}, msg); $("#toast").append(t); setTimeout(() => t.remove(), 3200); };
 
-document.querySelectorAll(".tabs button").forEach(t=>t.onclick=()=>{
-  if(busy)return;
-  mode=t.dataset.mode;const m=MODES[mode];
-  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b===t));
-  $("title").textContent=m.h;$("subtitle").textContent=m.s;
-  $("input").placeholder=m.ph;$("input").type=m.type;$("input").value="";$("go").textContent=m.b;
-  syncFile();
-  $("soon").classList.toggle("on",mode!=="clips");
-  $("result").className="result";$("status").classList.remove("on");
-});
+// ───────────────────────────────────────────────────────────── API (moteur) et mode aperçu (exemple)
+const S = { apiOk: false, demo: false, demoProject: null, demoCatalog: null, catalog: null, settings: null, timers: [] };
+const J = async r => { let d = null; try { d = await r.json(); } catch {} if (!r.ok) throw new Error((d && d.error) || ("Erreur " + r.status)); return d; };
+const API = {
+  get: p => fetch(p, { cache: "no-store" }).then(J),
+  post: (p, b) => fetch(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b ?? {}) }).then(J),
+  del: p => fetch(p, { method: "DELETE" }).then(J),
+};
+const needEngine = () => { if (S.demo) { toast("Disponible avec le moteur (aperçu : données d'exemple)."); return true; } return false; };
+const media = (pid, name) => S.demo ? "demo/" + name : `/files/${pid}/${encodeURIComponent(name)}`;
+const DATA = {
+  projects: async () => S.demo ? { projects: [demoSummary()] } : API.get("/api/projects"),
+  project: async id => S.demo ? JSON.parse(JSON.stringify(S.demoProject)) : API.get("/api/projects/" + id),
+  catalog: async () => S.catalog || (S.catalog = S.demo ? S.demoCatalog : await API.get("/api/styles")),
+  settings: async () => S.settings || (S.settings = S.demo ? { style: S.demoCatalog.presets[0].style, defaults: {} } : await API.get("/api/settings")),
+};
+function demoSummary() {
+  const p = S.demoProject, done = p.proposals.filter(x => x.state === "done");
+  return { id: "demo", title: p.title, created: p.created, status: p.status, stage: p.stage, progress: 1, error: "", duration: p.info.duration,
+           language: p.language, proposals: p.proposals.length, done: done.length, rendering: p.proposals.filter(x => x.state === "rendering").length,
+           best: Math.max(...p.proposals.map(x => x.score)), poster: done[0] ? "demo/" + done[0].poster : "" };
+}
 
-function setBusy(v){busy=v;$("go").disabled=v;$("file").disabled=v;$("go").style.opacity=v?.6:1}
-function progress(p,stage,err){
-  $("status").classList.add("on");
-  $("bar").style.width=Math.round(p*100)+"%";$("pct").textContent=Math.round(p*100)+" %";
-  $("stage").textContent=stage;$("err").textContent=err||"";
+// ───────────────────────────────────────────────────────────── navigation
+let current = { token: null, destroy() {} };
+const clearTimers = () => { S.timers.forEach(clearTimeout); S.timers = []; };
+function go(token) { if (location.hash.slice(1) !== token) { try { location.hash = token; } catch {} } route(token); }
+function route(forced) {
+  const token = forced || location.hash.slice(1) || "studio";
+  if (token === current.token && !forced) return;
+  current.destroy(); clearTimers(); current = { token, destroy() {} };
+  const app = $("#app"); app.replaceChildren();
+  if (S.demo) app.append(demoBanner());
+  const base = token.startsWith("p-") ? "biblio" : token;
+  document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === base ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  const v = token === "biblio" ? viewLibrary : token === "style" ? viewStyle : token.startsWith("p-") ? () => viewProject(token.slice(2)) : viewStudio;
+  Promise.resolve(v(app)).catch(e => app.append(h("p", { class: "err" }, e.message)));
+  window.scrollTo(0, 0);
 }
-async function jsonOrThrow(r){
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(d.error||("Erreur "+r.status));
-  return d;
+document.addEventListener("click", e => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); go(a.dataset.go); } });
+window.addEventListener("hashchange", () => route());
+function demoBanner() {
+  return h("div", { class: "banner" }, "Aperçu sans moteur : ce que tu vois est un exemple produit par le moteur sur une vidéo de test. Pour analyser tes propres vidéos, lance ",
+           h("code", {}, "clipengine serve"), " sur un ordinateur puis ouvre ", h("code", {}, "http://localhost:8080"), ".");
 }
-async function start(body,headers,url){
-  $("result").className="result";
-  setBusy(true);progress(0.01,"Envoi…");
-  try{
-    if(!apiOk){await checkApi();if(!apiOk)throw new Error("Moteur non connecté : cet aperçu ne génère pas de clips.")}
-    const job=await jsonOrThrow(await fetch(url,{method:"POST",body,headers}));
-    await poll(job.id);
-  }catch(e){progress(0,"Échec",e.message)}
-  finally{setBusy(false)}
+function setEngine() { const e = $("#engine"); e.classList.toggle("on", S.apiOk); $("span", e).textContent = S.apiOk ? "Moteur connecté" : "Aperçu"; e.title = S.apiOk ? "Le moteur répond" : "Pas de moteur : données d'exemple"; }
+async function refreshCount() {
+  try { const n = (await DATA.projects()).projects.length, c = $("#count"); c.hidden = !n; c.textContent = n; } catch {}
 }
-async function poll(id){
-  for(;;){
-    const j=await jsonOrThrow(await fetch(`${API}/api/jobs/${id}`,{cache:"no-store"}));
-    const wait=j.status==="queued"&&j.queue>1?` (${j.queue-1} avant toi)`:"";
-    if(j.status==="error"){progress(0,"Échec",j.error||"Erreur inconnue");return}
-    progress(j.progress,j.stage+wait);
-    if(j.status==="done"){render(j);return}
-    await new Promise(r=>setTimeout(r,1000));
+
+// ───────────────────────────────────────────────────────────── composants
+function seg(options, value, onChange, opts = {}) {
+  const box = h("div", { class: "seg", role: "group", "aria-label": opts.label || null });
+  const btns = options.map(([v, label]) => h("button", { type: "button", "aria-pressed": String(v === value), onclick: () => {
+    if (box.dataset.disabled) return; value = v; btns.forEach((b, i) => b.setAttribute("aria-pressed", String(options[i][0] === v))); onChange(v); } }, label));
+  box.append(...btns);
+  box.set = v => { value = v; btns.forEach((b, i) => b.setAttribute("aria-pressed", String(options[i][0] === v))); };
+  box.disable = d => { box.dataset.disabled = d ? "1" : ""; btns.forEach(b => b.disabled = !!d); };
+  return box;
+}
+function field(label, ...ctl) { return h("div", { class: "field" }, h("span", { class: "lbl" }, label), ...ctl); }
+function swatches(colors, value, onChange) {
+  const box = h("div", { class: "sw" });
+  const bs = colors.map(c => h("button", { type: "button", style: `background:${c}`, "aria-label": c, "aria-pressed": String(c.toUpperCase() === String(value).toUpperCase()),
+    onclick: () => { box.set(c); onChange(c); } }));
+  box.append(...bs);
+  box.set = v => bs.forEach((b, i) => b.setAttribute("aria-pressed", String(colors[i].toUpperCase() === String(v).toUpperCase())));
+  return box;
+}
+function check(label, value, onChange) {
+  const i = h("input", { type: "checkbox" }); i.checked = !!value; i.addEventListener("change", () => onChange(i.checked));
+  const l = h("label", { class: "check" }, i, label); l.set = v => i.checked = !!v; return l;
+}
+async function copy(text, btn) {
+  const done = () => { const o = btn.textContent; btn.textContent = "Copié"; setTimeout(() => btn.textContent = o, 1400); };
+  try { await navigator.clipboard.writeText(text); done(); return; } catch {}
+  const t = h("textarea", { style: "position:fixed;opacity:0" }, text); document.body.append(t); t.select();
+  try { document.execCommand("copy"); done(); } catch { toast("Copie impossible : sélectionne le texte à la main."); } t.remove();
+}
+const blobFromB64 = b64 => { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return URL.createObjectURL(new Blob([u], { type: "video/mp4" })); };
+
+// ───────────────────────────────────────────────────────────── Studio : nouvelle vidéo
+const DUR = { "30 s": { min_dur: 18, max_dur: 42, target_dur: 30 }, "1 min": { min_dur: 40, max_dur: 75, target_dur: 58 },
+              "1:30": { min_dur: 60, max_dur: 110, target_dur: 85 }, "2 min": { min_dur: 85, max_dur: 140, target_dur: 110 } };
+const DEFAULTS = { clips: 5, dur: "1 min", mode: "best", style: "podcast", layout: "auto", captions: true, hook: true, lang: "", llm: "auto", reserve: 6 };
+
+async function viewStudio(app) {
+  const cat = await DATA.catalog(); const st = { ...DEFAULTS, ...store.get("studio", {}) };
+  if (!cat.presets.some(p => p.id === st.style) && st.style !== "mine") st.style = "podcast";
+  const save = () => store.set("studio", st);
+  const url = h("input", { type: "url", id: "url", placeholder: "https://youtube.com/watch?v=…", autocomplete: "off", spellcheck: "false" });
+  const go1 = h("button", { class: "btn", type: "submit" }, "Analyser");
+  const status = h("div", { hidden: true, style: "margin-top:16px" });
+  const bar = h("i"), stageEl = h("span"), pctEl = h("span"), errEl = h("div", { class: "err" });
+  status.append(h("div", { class: "prog", role: "progressbar" }, bar), h("div", { class: "row", style: "justify-content:space-between;margin-top:6px;font-size:13px;color:var(--mute)" }, stageEl, pctEl), errEl);
+  const fileIn = h("input", { type: "file", accept: "video/*,.mkv", hidden: true });
+  const drop = h("div", { class: "drop", tabindex: "0", role: "button" }, "Ou dépose un fichier vidéo ici (MP4, MOV, MKV, WEBM, AVI)");
+
+  const countSeg = seg([[3, "3"], [5, "5"], [8, "8"], [12, "12"]], st.clips, v => { st.clips = v; save(); }, { label: "Nombre de clips" });
+  const durSeg = seg(Object.keys(DUR).map(k => [k, k]), st.dur, v => { st.dur = v; save(); }, { label: "Durée des clips" });
+  const modeSeg = seg([["best", "Meilleurs moments"], ["full", "Toute la vidéo"]], st.mode, v => { st.mode = v; countSeg.disable(v === "full"); save(); }, { label: "Mode" });
+  countSeg.disable(st.mode === "full");
+  const styleSel = h("select", { "aria-label": "Style des sous-titres", onchange: e => { st.style = e.target.value; save(); } },
+    cat.presets.map(p => h("option", { value: p.id }, `${p.label} — ${p.hint}`)), h("option", { value: "mine" }, "Mon style enregistré"));
+  styleSel.value = st.style;
+  const sel = (key, list, label) => { const s = h("select", { "aria-label": label, onchange: e => { st[key] = e.target.value; save(); } }, list.map(([v, l]) => h("option", { value: v }, l))); s.value = String(st[key]); return s; };
+  const layoutSel = sel("layout", [["auto", "Automatique"], ["track", "Suivre celui qui parle"], ["fit", "Plan entier sur fond"], ["split", "Deux personnes empilées"]], "Mise en page");
+  const langSel = sel("lang", [["", "Détection automatique"], ["fr", "Français"], ["en", "Anglais"], ["es", "Espagnol"], ["de", "Allemand"], ["it", "Italien"], ["pt", "Portugais"]], "Langue");
+  const llmSel = sel("llm", [["auto", "Oui, si une clé est configurée"], ["none", "Non, score du moteur seul"]], "Avis de Claude");
+  const resSel = h("select", { "aria-label": "Moments en réserve", onchange: e => { st.reserve = +e.target.value; save(); } }, [0, 3, 6, 10].map(n => h("option", { value: n }, n ? `${n} moments en réserve` : "Aucune réserve")));
+  resSel.value = String(st.reserve);
+
+  const form = h("form", { class: "panel", novalidate: true },
+    h("div", { class: "row" }, h("div", { class: "field grow" }, h("label", { class: "lbl", for: "url" }, "Lien de la vidéo"), url), go1),
+    drop, fileIn,
+    h("div", { class: "opts" }, field("Clips", countSeg), field("Durée", durSeg), field("Mode", modeSeg), field("Style", styleSel)),
+    h("details", { class: "adv" }, h("summary", {}, "Réglages avancés"),
+      h("div", { class: "opts" }, field("Mise en page", layoutSel), field("Langue", langSel), field("Avis de Claude", llmSel), field("En réserve", resSel),
+        check("Sous-titres animés", st.captions, v => { st.captions = v; save(); }), check("Accroche en haut du clip", st.hook, v => { st.hook = v; save(); }))),
+    status);
+
+  const options = () => ({ max_clips: st.clips, reserve: st.reserve, mode: st.mode, layout: st.layout, captions: st.captions, title_overlay: st.hook,
+                           llm: st.llm, ...(st.lang ? { language: st.lang } : {}), ...DUR[st.dur] });
+  const styleArg = async () => st.style === "mine" ? (await DATA.settings()).style : st.style;
+  const show = (p, stage, err) => { status.hidden = false; bar.style.width = Math.round(p * 100) + "%"; pctEl.textContent = Math.round(p * 100) + " %"; stageEl.textContent = stage; errEl.className = "err"; errEl.textContent = err || ""; };
+  let busy = false;
+  const setBusy = b => { busy = b; go1.disabled = b; };
+
+  async function launch(file, force) {
+    if (busy) return;
+    if (S.demo) { show(0, "Moteur non connecté", "Cet aperçu n'analyse pas de vidéo : ouvre le projet d'exemple dans la Bibliothèque."); return; }
+    const link = url.value.trim();
+    if (!file && !link) { show(0, "", "Colle un lien ou dépose un fichier."); return; }
+    setBusy(true); show(0.01, file ? "Envoi du fichier…" : "Vérification du lien…");
+    try {
+      const style = await styleArg();
+      const res = file ? await upload(file, { options: options(), style }, f => show(f, "Envoi du fichier…"))
+                       : await API.post("/api/projects", { url: link, options: options(), style, force: !!force });
+      if (res.duplicate) {
+        show(1, "Cette vidéo a déjà été analysée.");
+        errEl.className = "muted";
+        errEl.replaceChildren("Elle est déjà dans ta bibliothèque. ", h("a", { href: "#p-" + res.project.id, "data-go": "p-" + res.project.id, style: "text-decoration:underline" }, "Ouvrir"), " · ",
+          h("button", { type: "button", class: "btn sec sm", onclick: () => launch(null, true) }, "Analyser à nouveau"));
+      } else go("p-" + res.project.id);
+    } catch (e) { show(0, "Échec", e.message); } finally { setBusy(false); }
   }
+  form.addEventListener("submit", e => { e.preventDefault(); launch(null); });
+  drop.addEventListener("click", () => fileIn.click());
+  drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileIn.click(); } });
+  fileIn.addEventListener("change", () => { if (fileIn.files[0]) launch(fileIn.files[0]); fileIn.value = ""; });
+  ["dragover", "dragenter"].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(n => drop.addEventListener(n, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) launch(f); });
+
+  app.append(h("h1", {}, "Une vidéo longue, des clips prêts à publier."),
+             h("p", { class: "lead" }, "Colle un lien ou dépose un fichier : les meilleurs moments sont repérés, recadrés sur la personne qui parle et sous-titrés. Chaque clip reçoit sa note, le détail de cette note et sa légende."),
+             h("div", { style: "height:22px" }), form);
+  const recent = h("div"); app.append(recent);
+  try {
+    const list = (await DATA.projects()).projects.slice(0, 4);
+    if (list.length) recent.append(h("div", { class: "sect" }, h("h2", {}, "Récents"), h("a", { href: "#biblio", "data-go": "biblio", class: "muted" }, "Tout voir")), libraryGrid(list));
+  } catch {}
 }
-function blobUrl(b64){
-  const bin=atob(b64),u=new Uint8Array(bin.length);
-  for(let k=0;k<bin.length;k++)u[k]=bin.charCodeAt(k);
-  return URL.createObjectURL(new Blob([u],{type:"video/mp4"}));
-}
-function render(j,demo){
-  const r=$("result");
-  if(!j.clips.length){progress(1,"Aucun moment assez fort trouvé dans cette vidéo.");return}
-  r.innerHTML=j.clips.map(c=>`
-    <article class="clip">
-      <video src="${demo?"":API}${esc(c.video)}" ${c.poster?`poster="${esc(c.poster)}"`:""} controls playsinline preload="metadata"></video>
-      <div class="in">
-        ${demo?'<span class="tag">Exemple · vidéo de test</span>':""}
-        <h3>${esc(c.title)}</h3>
-        <div class="meta"><span class="score">${c.score}</span><span>${Math.round(c.duration)} s</span><span>à ${Math.floor(c.start/60)}:${String(Math.floor(c.start%60)).padStart(2,"0")}</span></div>
-        <ul class="why">${(c.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
-        ${c.why?`<p class="why">${esc(c.why)}</p>`:""}
-        ${demo?"":`<a class="dl" href="${API}${esc(c.video)}?download=1">Télécharger</a>`}
-      </div>
-    </article>`).join("");
-  r.querySelectorAll("video").forEach((v,i)=>v.addEventListener("error",()=>{
-    const d=j.clips[i].videoData;                      // repli : vidéo embarquée dans la page (aperçu hébergé)
-    if(d&&!v.dataset.retry){v.dataset.retry="1";v.src=blobUrl(d);return}
-    if(v.nextElementSibling&&v.nextElementSibling.className==="vnote")return;
-    v.insertAdjacentHTML("afterend",'<p class="vnote">La vidéo n\'a pas pu se charger ici.</p>');
-  }));
-  r.classList.add("on");
-  progress(1,demo?"Exemple de résultat : un clip produit par le moteur à partir d'une vidéo de test.":`${j.clips.length} clip${j.clips.length>1?"s":""} prêt${j.clips.length>1?"s":""}`);
-  r.scrollIntoView({behavior:"smooth",block:"start"});
+function upload(file, meta, onProgress) {
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", "/api/projects?filename=" + encodeURIComponent(file.name));
+    x.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    x.setRequestHeader("X-Options", JSON.stringify(meta).replace(/[\u007f-￿]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0")));
+    x.upload.onprogress = e => e.lengthComputable && onProgress(e.loaded / e.total);
+    x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch {} x.status < 300 ? resolve(d) : reject(new Error(d.error || "Erreur " + x.status)); };
+    x.onerror = () => reject(new Error("Connexion interrompue pendant l'envoi."));
+    x.send(file);
+  });
 }
 
-$("form").onsubmit=e=>{
-  e.preventDefault();
-  if(busy)return;
-  if(mode!=="clips"){$("soon").classList.add("on");return}
-  start(JSON.stringify({url:$("input").value.trim()}),{"Content-Type":"application/json"},API+"/api/jobs");
-};
-$("file").onchange=e=>{
-  const f=e.target.files[0];if(!f||busy)return;
-  start(f,{"Content-Type":f.type||"video/mp4"},API+"/api/jobs?filename="+encodeURIComponent(f.name));
-  e.target.value="";
-};
+// ───────────────────────────────────────────────────────────── Bibliothèque
+const isActive = p => p.status === "queued" || p.status === "analyzing" || p.rendering > 0;
+function libraryGrid(list) {
+  const g = h("div", { class: "lib" });
+  for (const p of list) g.append(libCard(p));
+  return g;
+}
+function libCard(p) {
+  const poster = p.poster ? h("img", { src: p.poster, alt: "", loading: "lazy" })
+    : h("div", { class: "ph" }, p.status === "error" ? "Échec" : isActive(p) ? h("span", { class: "spin" }) : "Aucun clip");
+  const meta = p.status === "error" ? h("p", { class: "err" }, p.error)
+    : p.status === "ready" ? h("p", { class: "muted", style: "font-size:13px" }, `${p.done}/${p.proposals} clips · meilleure note ${p.best}${p.duration ? " · " + fmt(p.duration) : ""}${p.rendering ? " · rendu en cours" : ""}`)
+    : h("div", {}, h("div", { class: "prog" }, h("i", { style: `width:${Math.round(p.progress * 100)}%` })), h("p", { class: "muted", style: "font-size:13px;margin-top:4px" }, p.stage));
+  const del = h("button", { type: "button", class: "btn danger sm" }, "Supprimer");
+  del.addEventListener("click", () => {
+    if (del.dataset.arm) { if (needEngine()) return; API.del("/api/projects/" + p.id).then(() => { toast("Projet supprimé"); route(current.token); refreshCount(); }).catch(err => toast(err.message)); return; }
+    del.dataset.arm = "1"; del.textContent = "Confirmer ?"; setTimeout(() => { delete del.dataset.arm; del.textContent = "Supprimer"; }, 4000);
+  });
+  return h("article", { class: "pc" }, h("a", { class: "media", href: "#p-" + p.id, "data-go": "p-" + p.id, "aria-label": "Ouvrir " + (p.title || "le projet") }, poster),
+    h("div", { class: "pc-body" }, h("h3", {}, p.title || "Sans titre"), meta,
+      h("div", { class: "acts" }, h("a", { class: "btn sec sm", href: "#p-" + p.id, "data-go": "p-" + p.id }, "Ouvrir"), del)));
+}
+async function viewLibrary(app) {
+  const wrap = h("div"); app.append(h("div", { class: "sect", style: "margin-top:0" }, h("h1", { style: "font-size:30px" }, "Bibliothèque")), wrap);
+  const tok = current.token;
+  async function load() {
+    if (current.token !== tok) return;
+    const { projects } = await DATA.projects();
+    wrap.replaceChildren(projects.length ? libraryGrid(projects) : h("div", { class: "empty" }, "Aucun projet pour l'instant. ", h("a", { href: "#studio", "data-go": "studio", style: "text-decoration:underline" }, "Analyse une vidéo")));
+    refreshCount();
+    if (projects.some(isActive)) S.timers.push(setTimeout(() => load().catch(() => {}), 2500));
+  }
+  await load();
+}
+
+// ───────────────────────────────────────────────────────────── Projet : moments, clips, réserve
+const STEPS = [["Téléchargement", /Téléchargement/], ["Son", /son/i], ["Transcription", /Transcription/], ["Moments", /moments|Avis/i]];
+
+async function viewProject(pid) {
+  const app = $("#app"), tok = current.token;
+  let proj = await DATA.project(pid);
+  const cat = await DATA.catalog(), settings = await DATA.settings();
+  const head = h("div"), body = h("div");
+  app.append(head, body);
+  const cards = new Map();
+  let styleChoice = (proj.style && proj.style.name) || "podcast"; if (!cat.presets.some(p => p.id === styleChoice)) styleChoice = "mine";
+  const grids = { clips: h("div", { class: "grid" }), reserve: h("div", { class: "grid" }) };
+  const resTitle = h("h2", {});
+  const sections = { clips: h("div", { class: "sect" }, h("h2", {}, "Clips")), reserve: h("div", { class: "sect" }, resTitle, h("span", { class: "muted", style: "font-size:13px" }, "Fabrique-les d'un clic")) };
+  const analysis = h("div"), titleEl = h("h1", { style: "font-size:28px;overflow-wrap:anywhere" }), infoEl = h("p", { class: "muted", style: "margin-top:4px;font-size:14px" });
+  const actions = h("div", { class: "row", style: "margin-top:14px" });
+  head.append(h("a", { href: "#biblio", "data-go": "biblio", class: "muted", style: "font-size:14px" }, "← Bibliothèque"), h("div", { style: "height:8px" }), titleEl, infoEl, actions, analysis);
+  body.append(sections.clips, grids.clips, sections.reserve, grids.reserve);
+
+  const styleSel = h("select", { "aria-label": "Style des prochains rendus", style: "width:auto", onchange: async e => {
+    styleChoice = e.target.value;
+    if (S.demo) return needEngine();
+    try { await API.post(`/api/projects/${pid}/style`, { style: styleChoice === "mine" ? settings.style : cat.presets.find(p => p.id === styleChoice).style }); toast("Style du projet : " + e.target.selectedOptions[0].textContent.split(" — ")[0]); } catch (err) { toast(err.message); } } },
+    cat.presets.map(p => h("option", { value: p.id }, `${p.label} — ${p.hint}`)), h("option", { value: "mine" }, "Mon style enregistré"));
+  styleSel.value = styleChoice;
+  const zip = h("a", { class: "btn sec sm", href: `/api/projects/${pid}/zip`, hidden: true }, "Tout télécharger (zip)");
+  const del = h("button", { type: "button", class: "btn danger sm" }, "Supprimer le projet");
+  del.addEventListener("click", () => {
+    if (del.dataset.arm) { if (needEngine()) return; API.del("/api/projects/" + pid).then(() => { toast("Projet supprimé"); go("biblio"); }).catch(err => toast(err.message)); return; }
+    del.dataset.arm = "1"; del.textContent = "Confirmer la suppression ?"; setTimeout(() => { delete del.dataset.arm; del.textContent = "Supprimer le projet"; }, 4000);
+  });
+  actions.append(h("div", { class: "field", style: "flex-direction:row;align-items:center;gap:8px" }, h("span", { class: "lbl" }, "Style"), styleSel), zip, del);
+
+  async function render(id) {
+    if (needEngine()) return;
+    try { await API.post(`/api/projects/${pid}/render`, { ids: [id], style: styleChoice === "mine" ? settings.style : styleChoice }); kick(); } catch (e) { toast(e.message); }
+  }
+  const ctx = { pid, render };
+
+  function place(card, section) {
+    const grid = grids[section];
+    if (card.el.parentNode === grid) return;
+    const next = [...grid.children].find(c => +c.dataset.rank > card.rank);
+    grid.insertBefore(card.el, next || null);
+  }
+  function update(p) {
+    proj = p;
+    titleEl.textContent = p.title || "Sans titre";
+    const done = p.proposals.filter(x => x.state === "done").length;
+    infoEl.textContent = p.status === "ready" ? [p.info.duration ? fmt(p.info.duration) : "", p.language ? p.language.toUpperCase() : "", `${p.proposals.length} moments`, `${done} clips prêts`].filter(Boolean).join(" · ")
+      : p.status === "error" ? "" : "Analyse en cours";
+    zip.hidden = !done || S.demo;
+    analysis.replaceChildren();
+    if (p.status === "queued" || p.status === "analyzing") {
+      const idx = STEPS.findIndex(([, re]) => re.test(p.stage));
+      analysis.append(h("div", { class: "panel", style: "margin-top:18px" },
+        h("div", { class: "prog", role: "progressbar", "aria-valuenow": Math.round(p.progress * 100) }, h("i", { style: `width:${Math.round(p.progress * 100)}%` })),
+        h("p", { style: "margin-top:8px" }, p.stage, p.ahead > 0 ? h("span", { class: "muted" }, ` · ${p.ahead} tâche${p.ahead > 1 ? "s" : ""} avant celle-ci`) : null),
+        h("div", { class: "steps" }, STEPS.map(([n], i) => h("span", { class: idx === i ? "on" : idx > i ? "done" : "" }, (idx > i ? "✓ " : "") + n)))));
+    } else if (p.status === "error") {
+      analysis.append(h("div", { class: "panel", style: "margin-top:18px" }, h("p", { class: "err" }, p.error || "Échec de l'analyse."),
+        h("div", { class: "acts", style: "margin-top:10px" }, h("button", { type: "button", class: "btn sm", onclick: async () => { if (needEngine()) return; try { await API.post(`/api/projects/${pid}/retry`, {}); kick(); } catch (e) { toast(e.message); } } }, "Réessayer"))));
+    } else if (!p.proposals.length) {
+      analysis.append(h("div", { class: "empty", style: "margin-top:18px" }, "Aucun moment assez fort dans cette vidéo : mieux vaut peu de clips solides que beaucoup de clips mous."));
+    } else if (p.proposals.every(x => x.state === "reserve")) {
+      analysis.append(h("div", { class: "banner", style: "margin:18px 0 0" }, "Aucun moment n'a été jugé assez fort pour être fabriqué d'office. Les meilleurs sont en réserve : fabrique ceux qui te plaisent."));
+    }
+    const ids = new Set(p.proposals.map(x => x.id));
+    for (const [id, c] of cards) if (!ids.has(id)) { c.el.remove(); cards.delete(id); }
+    for (const x of p.proposals) {
+      let c = cards.get(x.id);
+      if (!c) { c = proposalCard(x, ctx); cards.set(x.id, c); }
+      c.update(x);
+      place(c, x.state === "reserve" ? "reserve" : "clips");
+    }
+    const nRes = p.proposals.filter(x => x.state === "reserve").length;
+    sections.clips.hidden = grids.clips.hidden = !grids.clips.children.length;
+    sections.reserve.hidden = grids.reserve.hidden = !nRes;
+    resTitle.textContent = `En réserve (${nRes})`;
+  }
+  const active = p => p.status === "queued" || p.status === "analyzing" || p.proposals.some(x => x.state === "queued" || x.state === "rendering");
+  let timer = null;
+  async function tick() {
+    timer = null;
+    if (current.token !== tok || S.demo) return;
+    try { update(await DATA.project(pid)); } catch (e) { if (/introuvable|inconnu/i.test(e.message)) { go("biblio"); return; } }
+    if (current.token === tok && active(proj)) timer = setTimeout(tick, 1200);
+  }
+  function kick() { if (!timer && !S.demo) timer = setTimeout(tick, 150); }
+  current.destroy = () => { if (timer) clearTimeout(timer); timer = null; };
+  update(proj);
+  refreshCount();
+  if (active(proj) && !S.demo) timer = setTimeout(tick, 1200);
+}
+
+function proposalCard(x0, ctx) {
+  const el = h("article", { class: "pc", "data-id": x0.id, "data-rank": x0.rank });
+  const mediaBox = h("div", { class: "media" }), note = h("div"), actsBox = h("div", { class: "acts" });
+  let key = "", videoEl = null, barEl = null, pctEl = null;
+
+  const when = `${fmt(x0.start)} → ${fmt(x0.end)} · ${Math.round(x0.duration)} s`;
+  const why = h("details", {}, h("summary", {}, "Pourquoi cette note"),
+    h("ul", { class: "bars" }, x0.breakdown.map(b => h("li", { title: `Poids dans la note : ${Math.round(b.weight * 100)} %` }, h("span", {}, b.label), h("span", { class: "t" }, h("i", { style: `width:${Math.round(b.value * 100)}%` })), h("span", { class: "n" }, Math.round(b.value * 100))))),
+    x0.why ? h("p", { class: "snippet" }, x0.why) : null,
+    x0.reasons.length ? h("ul", { class: "notes" }, x0.reasons.map(r => h("li", {}, r))) : null);
+  const full = [x0.caption, ...x0.hashtags].filter(Boolean).join(" ");
+  const kit = h("details", {}, h("summary", {}, "Titre, légende, hashtags"),
+    h("div", { class: "kit" }, h("p", {}, x0.title), h("p", {}, x0.caption, x0.hashtags.length ? [" ", h("span", { class: "tags" }, x0.hashtags.join(" "))] : null),
+      h("div", { class: "acts" }, h("button", { type: "button", class: "btn sec sm", onclick: e => copy(x0.title, e.currentTarget) }, "Copier le titre"),
+        h("button", { type: "button", class: "btn sec sm", onclick: e => copy(full, e.currentTarget) }, "Copier la légende"))));
+  const text = h("details", {}, h("summary", {}, "Texte du moment"), h("p", { class: "snippet" }, x0.text));
+  el.append(mediaBox, note, h("div", { class: "pc-body" },
+    h("div", { class: "pc-top" }, h("span", { class: "score lab-" + x0.label, title: "Avis sur le contenu : ne prédit ni vues ni abonnés" }, x0.score), h("span", {}, x0.label), h("span", {}, "· " + when)),
+    h("h3", {}, x0.title), x0.hook ? h("p", { class: "hook" }, "Accroche : " + x0.hook) : null, why, kit, text, actsBox));
+
+  function buildMedia(x) {
+    mediaBox.replaceChildren(); actsBox.replaceChildren(); note.replaceChildren(); videoEl = barEl = pctEl = null;
+    if (x.state === "done" && x.video) {
+      const src = media(ctx.pid, x.video);
+      videoEl = h("video", { src, controls: true, playsinline: true, preload: "metadata", poster: x.poster ? media(ctx.pid, x.poster) : null });
+      videoEl.addEventListener("error", () => {
+        const b64 = window.__DEMO_VIDEO_DATA__ && window.__DEMO_VIDEO_DATA__["demo/" + x.video];
+        if (b64 && !videoEl.dataset.retry) { videoEl.dataset.retry = "1"; videoEl.src = blobFromB64(b64); return; }
+        if (!note.firstChild) note.append(h("p", { class: "vnote" }, "La vidéo n'a pas pu se charger ici."));
+      });
+      mediaBox.append(videoEl);
+      if (!S.demo) actsBox.append(h("a", { class: "btn sec sm", href: src + "?download=1" }, "Télécharger"));
+      actsBox.append(h("button", { type: "button", class: "btn sec sm", onclick: () => ctx.render(x.id) }, "Refaire avec le style choisi"));
+    } else if (x.state === "queued" || x.state === "rendering") {
+      barEl = h("i"); pctEl = h("span");
+      mediaBox.append(h("div", { class: "ph" }, h("span", { class: "spin" }), pctEl, h("div", { class: "prog" }, barEl)));
+    } else if (x.state === "error") {
+      mediaBox.append(h("div", { class: "ph" }, h("span", { class: "err" }, x.error || "Échec du rendu")));
+      actsBox.append(h("button", { type: "button", class: "btn sm", onclick: () => ctx.render(x.id) }, "Réessayer"));
+    } else {
+      mediaBox.append(h("div", { class: "ph" }, h("b", {}, x.score), h("span", {}, `${x.label} · ${when}`), h("span", {}, "En réserve")));
+      actsBox.append(h("button", { type: "button", class: "btn sm", onclick: () => ctx.render(x.id) }, "Fabriquer ce clip"));
+    }
+  }
+  function update(x) {
+    const k = [x.state, x.video, x.poster].join("|");
+    if (k !== key) { key = k; buildMedia(x); }
+    if (barEl) { const p = x.state === "queued" ? 0 : x.progress; barEl.style.width = Math.round(p * 100) + "%"; pctEl.textContent = x.state === "queued" ? "En file d'attente" : `Rendu ${Math.round(p * 100)} %`; }
+  }
+  return { el, rank: x0.rank, update };
+}
+
+// ───────────────────────────────────────────────────────────── Mon style
+async function viewStyle(app) {
+  const cat = await DATA.catalog(), settings = await DATA.settings();
+  let st = { ...settings.style };
+  const img = h("img", { alt: "Aperçu du style", hidden: true }), shot = h("div", { class: "shot" }, img);
+  const wait = h("span", { class: "spin", style: "position:absolute;top:50%;left:50%;margin:-7px 0 0 -7px" }); shot.append(wait);
+  const note = h("p", { class: "muted", style: "font-size:12px" });
+  let seq = 0, tmr = null, lastUrl = null;
+  function preview() {
+    clearTimeout(tmr);
+    tmr = setTimeout(async () => {
+      const my = ++seq;
+      if (S.demo) {
+        const pack = cat.presets.find(p => p.id === st.name);
+        img.src = "demo/styles/" + (pack ? pack.id : "podcast") + ".jpg"; img.hidden = false; wait.hidden = true;
+        note.textContent = "Aperçu sans moteur : image du pack. L'aperçu exact de chaque réglage demande le moteur."; return;
+      }
+      wait.hidden = false;
+      try {
+        const r = await fetch("/api/style-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ style: st }) });
+        if (!r.ok) throw new Error((await r.json()).error || "Aperçu impossible");
+        const b = await r.blob(); if (my !== seq) return;
+        const u = URL.createObjectURL(b); img.src = u; img.hidden = false; if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = u;
+        note.textContent = "Rendu réel du moteur : mêmes polices et mêmes zones sûres que le clip final.";
+      } catch (e) { note.textContent = e.message; } finally { if (my === seq) wait.hidden = true; }
+    }, 220);
+  }
+  const ctl = {};
+  const set = (k, v) => { st[k] = v; preview(); };
+  const sizeOut = h("span", { class: "muted" }, st.size);
+  const sync = () => { for (const [k, c] of Object.entries(ctl)) c.set(st[k]); sizeOut.textContent = st.size; };
+  const packs = h("div", { class: "chips" }, cat.presets.map(p => h("button", { type: "button", class: "chip", "aria-pressed": String(p.id === st.name), onclick: e => {
+    st = { ...p.style, signature: st.signature, signature_where: st.signature_where };
+    packs.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", "false")); e.currentTarget.setAttribute("aria-pressed", "true"); sync(); preview(); } },
+    h("b", {}, p.label), h("span", {}, p.hint))));
+  const font = h("select", { "aria-label": "Police", onchange: e => set("font", e.target.value) }, cat.fonts.map(f => h("option", { value: f.id }, f.label))); font.value = st.font; font.set = v => font.value = v; ctl.font = font;
+  const size = h("input", { type: "range", min: 50, max: 140, step: 2, value: st.size, "aria-label": "Taille", oninput: e => { sizeOut.textContent = e.target.value; set("size", +e.target.value); } }); size.set = v => size.value = v; ctl.size = size;
+  const sw = k => (ctl[k] = swatches(cat.colors, st[k], v => set(k, v)));
+  const sg = (k, opts, label) => (ctl[k] = seg(opts, st[k], v => set(k, v), { label }));
+  const ck = (k, label) => (ctl[k] = check(label, st[k], v => set(k, v)));
+  const sig = h("input", { type: "text", maxlength: 30, placeholder: "@ton.compte", value: st.signature, "aria-label": "Signature", oninput: e => set("signature", e.target.value) }); sig.set = v => sig.value = v; ctl.signature = sig;
+
+  const save = h("button", { type: "button", class: "btn", onclick: async () => {
+    if (needEngine()) return;
+    try { S.settings = await API.post("/api/settings", { style: st }); toast("Style enregistré : il s'applique aux prochaines analyses."); } catch (e) { toast(e.message); } } }, "Enregistrer comme style par défaut");
+  const form = h("div", { class: "groups" },
+    field("Packs", packs),
+    h("div", { class: "row", style: "gap:24px" }, field("Police", font), field("Taille", h("div", { class: "row", style: "gap:8px;align-items:center;flex-wrap:nowrap" }, size, sizeOut))),
+    h("div", { class: "row", style: "gap:24px" }, field("Texte", sw("color")), field("Mot prononcé", sw("highlight")), field("Chiffres et mots forts", sw("emphasis"))),
+    h("div", { class: "row", style: "gap:24px" }, field("Fond du texte", sg("bg", [["outline", "Contour"], ["shadow", "Ombre"], ["box", "Boîte"], ["pill", "Pastille"]], "Fond")), field("Couleur du fond", sw("bg_color"))),
+    h("div", { class: "row", style: "gap:24px" }, field("Position", sg("position", [["haut", "Haut"], ["centre", "Centre"], ["bas", "Bas"]], "Position")),
+      field("Mots par ligne", sg("words", [[1, "1"], [2, "2"], [3, "3"], [4, "4"], [5, "5"]], "Mots par ligne")), field("Apparition", sg("anim", [["none", "Aucune"], ["fade", "Fondu"], ["pop", "Pop"]], "Apparition"))),
+    h("div", { class: "row", style: "gap:24px" }, ck("upper", "Majuscules"), ck("emphasis_on", "Chiffres et mots forts en couleur"), ck("progress_bar", "Barre de progression")),
+    h("div", { class: "row", style: "gap:24px" }, ck("hook_on", "Accroche en haut"), field("Où", sg("hook_where", [["haut", "Haut"], ["centre", "Centre"]], "Position de l'accroche")),
+      field("Durée", sg("hook_seconds", [[3, "3 s"], [5, "5 s"], [0, "Tout le clip"]], "Durée de l'accroche")), field("Fond de l'accroche", sw("hook_bg"))),
+    h("div", { class: "row", style: "gap:24px" }, field("Signature", sig), field("Où", sg("signature_where", [["haut", "Haut"], ["bas", "Bas"]], "Position de la signature"))),
+    h("div", { class: "row", style: "gap:24px" }, field("Plan entier (sans visage)", sg("fit_bg", [["blur", "Flou"], ["color", "Uni"], ["mirror", "Miroir"]], "Fond du plan entier")), field("Couleur du fond uni", sw("fit_color"))),
+    h("div", { class: "row" }, save));
+  app.append(h("h1", { style: "font-size:30px" }, "Mon style"), h("p", { class: "lead" }, "Les sous-titres restent dans la zone lisible de TikTok : jamais sous les boutons de droite ni sur la légende. L'aperçu est le vrai rendu du moteur."),
+    h("div", { style: "height:20px" }), h("div", { class: "edit" }, form, h("div", { class: "side" }, shot, note)));
+  preview();
+}
+
+// ───────────────────────────────────────────────────────────── démarrage
+(async function boot() {
+  try { const d = await API.get("/api/health"); S.apiOk = d.ok === true; } catch { S.apiOk = false; }
+  if (!S.apiOk) {
+    try {
+      const [p, c] = await Promise.all([fetch("demo/projet.json").then(J), fetch("demo/styles.json").then(J)]);
+      S.demoProject = p; S.demoCatalog = c; S.demo = true;
+    } catch { S.demo = false; }
+  }
+  setEngine();
+  if (!S.apiOk && !S.demo) { $("#app").append(h("div", { class: "banner" }, "Moteur non connecté. Lance ", h("code", {}, "clipengine serve"), " puis ouvre ", h("code", {}, "http://localhost:8080"), ".")); return; }
+  refreshCount();
+  route();
+})();
+})();
 </script>
 </body>
 </html>

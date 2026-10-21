@@ -23,7 +23,7 @@ from .config import Config
 from .errors import UserError
 from .media import MediaInfo, check_info, check_url, fetch, probe, video_key
 from .models import Candidate
-from .pipeline import (check_speech, finalize_kit, find_moments, proposal_dict, render_candidate, slug,
+from .pipeline import (check_speech, clip_transcript, finalize_kit, find_moments, proposal_dict, render_candidate, slug,
                        transcribe_source)
 from .styles import PRESETS, Style, get_style
 from .transcribe import load_transcript
@@ -355,6 +355,7 @@ class Projects:
             self._set(p, info=info.to_dict())
             self._save(p)
             tr, prof = transcribe_source(src, d / "work", cfg, None, lambda m: self._log(p, m))
+            tr = clip_transcript(tr, info.duration)
             try:
                 check_speech(tr, info)
             except UserError:
@@ -390,7 +391,7 @@ class Projects:
         d = self.dir(pid)
         src = next(d.glob("source.*"))
         info = MediaInfo(**p["info"])
-        tr = load_transcript(d / "work" / "transcript.json")
+        tr = clip_transcript(load_transcript(d / "work" / "transcript.json"), info.duration)
         prof = AudioProfile.load(d / "work" / "audio_profile.npy")
         with self._lock:
             if len(self._ctx) >= 2:

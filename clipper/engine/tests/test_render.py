@@ -1,3 +1,5 @@
+import subprocess
+
 import numpy as np
 import pytest
 
@@ -35,3 +37,32 @@ def test_fit_background_variants_differ():
     fh = int(round(360 * 540 / 640)); y = (960 - fh) // 2
     near_edge = mir[y - 4:y].astype(float).mean(); fg_edge = mir[y:y + 4].astype(float).mean()
     assert near_edge < fg_edge                                       # assombri (0,55) mais de même teinte
+
+
+from conftest import make_words, TEXT  # noqa: E402
+
+
+@pytest.mark.slow
+def test_render_never_goes_past_the_end_and_encoder_errors_are_readable(tmp_path, media):
+    from clipengine import face
+    from clipengine.audio import compute_profile
+    from clipengine.config import Config
+    from clipengine.errors import UserError
+    from clipengine.media import probe
+    from clipengine.models import Candidate
+    from clipengine.pipeline import render_candidate
+    from clipengine.transcribe import Transcript
+    src = media["pan"]
+    info = probe(src)                                                  # 24 s
+    tr = Transcript("fr", make_words(TEXT[:30], wps=3.4))
+    prof = compute_profile(src)
+    cfg = Config(preset="ultrafast")
+    c = Candidate(start=8.0, end=31.0, lo=0, hi=0, text="x", title="t", hook="h")      # dépasse la fin de la vidéo
+    r = render_candidate(src, info, tr, prof, c, tmp_path, "c", cfg)
+    out = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+                                str(r.video)], capture_output=True, check=True, text=True).stdout)
+    assert abs(out - (info.duration - 8.0)) < 0.3
+    with pytest.raises(RuntimeError, match="(?i)preset"):
+        render_candidate(src, info, tr, prof, c, tmp_path, "bad", Config(preset="nope"))
+    with pytest.raises(UserError, match="en dehors"):
+        render_candidate(src, info, tr, prof, Candidate(start=30, end=40, lo=0, hi=0, text="x"), tmp_path, "z", cfg)

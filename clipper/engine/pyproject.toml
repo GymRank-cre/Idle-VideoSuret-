@@ -9,6 +9,7 @@ dependencies = ["numpy>=1.26", "opencv-python-headless>=4.9", "pillow>=10"]
 asr = ["faster-whisper>=1.0"]
 download = ["yt-dlp"]
 dev = ["pytest"]
+ui = ["playwright"]
 
 [project.scripts]
 clipengine = "clipengine.cli:main"

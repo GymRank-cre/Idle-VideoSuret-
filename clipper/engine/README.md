@@ -1,64 +1,109 @@
 # clipengine
 
-Moteur de clipping : une vidéo longue (podcast, interview, live) devient des clips verticaux 1080×1920,
-recadrés sur la personne qui parle, sous-titrés mot à mot, avec le son normalisé.
+Studio de clips pour un usage personnel : une vidéo longue (podcast, interview, live, cours) devient des clips
+verticaux 1080×1920, recadrés sur la personne qui parle, sous-titrés mot à mot, avec le son normalisé. Chaque clip
+reçoit une note détaillée et son kit de publication (titre, légende, hashtags).
+
+L'analyse de moqi.fr qui a guidé ce travail est dans [`../ANALYSE-MOQI.md`](../ANALYSE-MOQI.md).
+
+## Lancer
+
+Prérequis : Python 3.10+, `ffmpeg` (avec libass et x264).
 
 ```bash
-pip install -e '.[asr,download,dev]'
-clipengine https://youtube.com/watch?v=… -o out --max-clips 8
-clipengine episode.mp4 -o out --transcript episode.srt --llm none     # sans Whisper ni LLM
-clipengine episode.mp4 -o out --no-render                             # classement des moments seulement
+cd clipper/engine
+python -m venv .venv && source .venv/bin/activate     # Windows : .venv\Scripts\activate
+pip install -e '.[asr,download]'
+clipengine serve                                       # puis http://localhost:8080
 ```
 
-Sortie : `01-titre.mp4`, `01-titre.json` (score, raisons, titre, texte), `01-titre.ass`, `report.json`.
-Prérequis système : `ffmpeg` avec libass et x264. Variable optionnelle : `ANTHROPIC_API_KEY`.
+- Premier lancement : le modèle de transcription se télécharge (`--model small` par défaut ; `large-v3` est plus
+  précis et bien plus lent sans carte graphique).
+- Titres, accroches, légendes et avis éditorial par Claude : définir `ANTHROPIC_API_KEY` avant `clipengine serve`.
+  Sans clé, tout fonctionne avec le score du moteur et des textes générés sans IA.
+- En ligne de commande, sans page : `clipengine https://youtube.com/watch?v=… -o out --max-clips 8`,
+  `clipengine episode.mp4 --transcript episode.srt --llm none`, `--no-render` pour le classement seul,
+  `--style sport`, `--mode full`.
 
-## Page + API
-```bash
-clipengine serve --port 8080 [--model small] [--preset veryfast]
-# puis http://localhost:8080  (sert ../index.html ; l'onglet « Clips » appelle l'API)
-```
-| Route | Rôle |
+## La page
+
+| Écran | Ce qu'il fait |
 |---|---|
-| `POST /api/jobs` JSON `{"url", "options"}` | lance un job depuis une URL (http/https uniquement) |
-| `POST /api/jobs?filename=x.mp4` corps binaire, en-tête `X-Options` | lance un job depuis un fichier (≤ 2 Go, `CLIPENGINE_MAX_UPLOAD`) |
-| `GET /api/jobs/<id>` | `status` (queued/running/done/error), `stage`, `progress`, `clips[]` |
-| `GET /files/<id>/<clip>.mp4[?download=1]` | clip, requêtes Range gérées (lecture/seek) |
+| **Studio** | Lien ou fichier, nombre de clips, durée (30 s à 2 min), mode (meilleurs moments / toute la vidéo), style. Réglages avancés : mise en page, langue, avis de Claude, taille de la réserve. |
+| **Projet** | Progression de l'analyse, puis clips rendus au fil de l'eau. Chaque carte : lecteur, note + étiquette, **détail de la note** (9 critères), titre / légende / hashtags à copier, texte du moment, télécharger, refaire avec un autre style. Les moments **en réserve** se fabriquent d'un clic. Export zip avec `publication.txt`. |
+| **Bibliothèque** | Tous les projets, leur avancement, suppression. Une vidéo déjà analysée est reconnue (liens `youtu.be`, `shorts`, `m.youtube` = même vidéo). |
+| **Mon style** | 6 packs, 7 polices libres, couleurs, fond (contour, ombre, boîte, pastille), position, mots par ligne, apparition, accroche, signature, fond du plan entier. L'aperçu est le **rendu réel** du moteur. |
 
-Un job à la fois (le rendu occupe tous les cœurs), les autres attendent en file. Options acceptées, bornées :
-`max_clips`, `min_dur`, `max_dur`, `layout`, `captions`. Les jobs sont purgés après 24 h.
-Le serveur n'a **ni authentification ni limite de débit** : à placer derrière un proxy/auth avant toute exposition publique.
+Sans moteur (page ouverte depuis un hébergement statique), la page passe en **aperçu** avec un projet d'exemple produit
+par le moteur (`demo/`).
 
-## Pipeline
+## Fonctionnement
 
 | Étape | Module | Ce qui est fait |
 |---|---|---|
-| Ingestion | `media` | ffprobe (rotation comprise) ; yt-dlp pour les URL |
-| Parole | `transcribe` | faster-whisper mot à mot + VAD ; import `.json` ou `.srt` possible |
-| Audio | `audio` | énergie en dB par pas de 50 ms, décodage en flux (3 h = mémoire constante) |
-| Candidats | `candidates` | phrases entières, toutes les fenêtres 18–60 s, frontières de sujet (TextTiling), coupe au point le plus silencieux |
-| Notation | `scoring` | 9 critères : accroche, chute, débit, expressivité vocale, mots forts, densité, durée, cohésion, bords |
-| Redondance | `select` | glouton par score, sans chevauchement ni doublon de sujet |
-| Éditorial | `llm` | Claude note les meilleurs candidats, propose titre et accroche ; mélange 50/50 avec l'heuristique |
+| Source | `media` | ffprobe (rotation comprise), yt-dlp (YouTube, Twitch, Vimeo…), refus clairs : direct en cours, playlist, > 4 h, < 20 s, sans piste audio |
+| Parole | `transcribe` | faster-whisper mot à mot + VAD ; import `.json` ou `.srt` ; transcription bornée à la durée réelle de la vidéo |
+| Audio | `audio` | énergie en dB par pas de 50 ms, en flux (3 h = mémoire constante) |
+| Moments | `candidates` | phrases entières, toutes les fenêtres de durée voulue, frontières de sujet (TextTiling), coupe au point le plus silencieux ; mode « toute la vidéo » : parties successives coupées sur fin de phrase |
+| Note | `scoring` | 9 critères : accroche, chute, rythme, voix expressive, mots forts, densité, durée, un seul sujet, coupes propres. Étiquette Excellent / Fort / Correct / Faible |
+| Tri | `select` | meilleurs d'abord, sans recouvrement ni redite ; fabriqués d'office au-dessus de `min_score`, en réserve jusqu'à `reserve_min_score` |
+| Avis | `llm` | Claude note des moments **distincts**, propose titre, accroche, légende, hashtags ; mélange 50/50 avec le score du moteur |
 | Visages | `face` | YuNet (repli Haar), suivi, locuteur actif par mouvement de la bouche, détection de plans |
-| Caméra | `reframe` | zone morte, médian anti-fausses détections, lissage avec anticipation, coupe franche si le saut est grand |
-| Mise en page | `reframe` | `track` (suivi), `fit` (plan entier sur fond flou), `split` (deux locuteurs éloignés, empilés) |
-| Rendu | `captions`, `render` | ASS karaoké (3 mots, surbrillance + pop), bandeau d'accroche, barre de progression, loudnorm −14 LUFS |
+| Caméra | `reframe` | zone morte, filtre médian, lissage avec anticipation, coupe franche si le saut est grand ; cadrage de groupe, suivi, plan entier ou deux personnes empilées |
+| Rendu | `captions`, `render`, `styles` | ASS karaoké, zone sûre TikTok, accroche, signature, fonds du plan entier, loudnorm −14 LUFS |
+| Projets | `projects` | état sur disque, file unique, reprise après redémarrage, rendu à la demande |
+
+Polices : Poppins, Anton, Bebas Neue, Bangers, DM Serif Display, Varela Round, sous licence SIL OFL
+(`clipengine/fonts/OFL-*.txt`). Elles sont embarquées : le rendu ne dépend pas des polices de la machine.
+
+## API
+
+| Route | Rôle |
+|---|---|
+| `GET /api/projects` · `POST /api/projects` | liste · création (JSON `{url, options, style, force}` ou corps vidéo + `?filename=`) |
+| `GET /api/projects/<id>` · `DELETE` | détail (moments, clips, progression) · suppression |
+| `POST /api/projects/<id>/render` | `{ids, style}` fabrique ou refait des clips |
+| `POST /api/projects/<id>/retry` · `/style` | relance l'analyse · style par défaut du projet |
+| `GET /api/projects/<id>/zip` | clips + `publication.txt` |
+| `GET/POST /api/settings` · `GET /api/styles` | réglages par défaut · packs, polices, couleurs |
+| `POST /api/style-preview` | PNG rendu par libass pour un style |
+| `GET /files/<id>/<clip>` | mp4 / jpg / ass, requêtes Range gérées |
+
+Un projet à la fois travaille (le rendu occupe tous les cœurs) ; le reste attend en file.
+
+## Sécurité
+
+- `CLIPENGINE_PASSWORD` active un mot de passe (Basic) sur tout, page comprise.
+- Sans mot de passe, le serveur n'accepte que les hôtes locaux (contre le DNS rebinding) et **refuse d'écouter hors de
+  cet ordinateur** (`--host 0.0.0.0` exige un mot de passe, ou `--insecure`).
+- Les liens doivent être http(s) vers une **adresse publique** : boucle locale, réseaux privés et métadonnées cloud sont
+  refusés (le serveur télécharge ce lien pour vous).
+- Toute requête JSON ou tout dépôt doit avoir un type de contenu « non simple » : un formulaire ou un `fetch` simple
+  venu d'un autre site est refusé.
+- Le code source et les données des projets ne sont jamais servis.
+- Limites connues : un lien qui redirige vers une adresse interne n'est pas vérifié après redirection ; pas de limite
+  de débit ; le mot de passe circule en clair sans HTTPS (à placer derrière un proxy TLS si exposé).
 
 ## Réglages utiles (`Config`)
-`min_dur` / `max_dur` / `target_dur`, `max_clips`, `min_score`, `layout`, `zoom` (>1 = plan plus serré),
-`cam_smooth` (nervosité de la caméra), `dead_zone`, `caption_*`, `highlight_color`, `crf`, `preset`.
+
+`min_score`, `reserve_min_score`, `max_clips`, `reserve`, `min_dur` / `max_dur` / `target_dur`, `mode`, `layout`,
+`zoom`, `group_frame`, `cam_smooth`, `dead_zone`, `style`, `captions`, `title_overlay`, `crf`, `preset`.
 
 ## Tests
+
 ```bash
-pytest -q                 # 40 tests, dont 9 de bout en bout (vidéo synthétique, ~50 s)
-pytest -q -m "not slow"   # logique seule, < 1 s
+pytest -q                 # ≈ 100 tests, dont des rendus réels et 3 parcours dans un navigateur (≈ 1 min 30)
+pytest -q -m "not slow"   # logique seule, quelques secondes
 ```
 
+Les tests du navigateur demandent `pip install -e '.[ui]'` et un Chromium (ignorés sinon). Les tests de zone sûre rendent réellement chaque pack avec libass et mesurent la position des pixels.
+
 ## Limites connues
-- Le choix du locuteur repose sur le mouvement de la bouche, pas sur la voix : un locuteur hors champ
-  ou une personne qui bouge beaucoup peut tromper la détection.
-- Pas de diarisation audio ni de lecture sur les lèvres ; avec un seul visage c'est sans effet.
-- Le score heuristique est un filtre ; le jugement éditorial fin vient de l'étape LLM.
-- La source 1080p recadrée en 9:16 est agrandie ×1,78 : pour une meilleure netteté, fournir du 4K.
-- Chemins non testés ici : téléchargement yt-dlp, appel réel à l'API Anthropic, transcription de vraie parole.
+
+- Le locuteur actif est deviné par le mouvement de la bouche, pas par la voix : un locuteur hors champ ou une personne
+  très agitée peut tromper la détection.
+- Le score est un filtre heuristique non calibré sur des vidéos qui ont marché ; l'avis de Claude est facultatif.
+- Une source 1080p recadrée en 9:16 est agrandie ×1,78 : pour plus de netteté, fournir du 4K.
+- Non testés ici : téléchargement yt-dlp depuis YouTube, appel réel à l'API Anthropic, transcription de vraie parole,
+  lecture des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
+- Pas de publication automatique ni de statistiques TikTok, pas de génération vidéo/image : voir `../ANALYSE-MOQI.md`.

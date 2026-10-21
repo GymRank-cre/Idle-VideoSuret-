@@ -162,3 +162,32 @@ def test_pages_have_at_most_three_words(words):
 def test_default_title():
     assert default_title("Pourquoi ? Parce que.") == "Pourquoi ?"
     assert len(default_title("mot " * 60)) <= 60
+
+
+def test_clip_transcript_drops_words_past_the_real_end():
+    from clipengine.pipeline import clip_transcript
+    tr = Transcript("fr", [Word("a", 0, 1), Word("b", 9.5, 10.4), Word("fantôme", 10.2, 11), Word("c", 12, 13)])
+    out = clip_transcript(tr, 10.0)
+    assert [w.text for w in out.words] == ["a", "b"] and out.words[-1].end == 10.0
+
+
+def test_propose_only_fabricates_solid_moments_and_keeps_weaker_ones_in_reserve():
+    from clipengine.select import propose
+    mk = lambda i, sc: Candidate(i * 100, i * 100 + 30, 0, 0, text=f"sujet{i} " * 5 + f"mot{i}unique" * 3, score=sc)
+    cands = [mk(i, sc) for i, sc in enumerate([80, 60, 45, 35, 20])]
+    ranked, n_auto = propose(cands, Config(min_score=50, reserve_min_score=30, max_clips=4, reserve=3, max_similarity=1.1))
+    assert [round(c.score) for c in ranked] == [80, 60, 45, 35] and n_auto == 2      # 20 est écarté, 45 et 35 en réserve
+    ranked, n_auto = propose(cands, Config(min_score=90, reserve_min_score=30, max_clips=4, reserve=3, max_similarity=1.1))
+    assert n_auto == 0 and len(ranked) == 4                                          # rien d'assez fort : tout en réserve
+    ranked, n_auto = propose(cands, Config(min_score=0, max_clips=2, reserve=1, max_similarity=1.1))
+    assert n_auto == 2 and len(ranked) == 3
+
+
+def test_hashtags_keep_subject_words_not_filler():
+    from clipengine import kit
+    text = ("Pourquoi personne ne vous dit la vérité sur le sommeil ? Parce que la plupart des gens dorment mal, "
+            "et le sommeil se dégrade. Le sommeil est une chose essentielle, le sommeil profond surtout.")
+    tags = kit.hashtags(text, 4)
+    assert tags[0] == "#sommeil" and "#pourquoi" not in tags and "#personne" not in tags and "#chose" not in tags
+    assert all(t.startswith("#") and len(t) > 3 for t in tags) and len(set(tags)) == len(tags)
+    assert kit.caption("x " * 100).endswith("…") and len(kit.caption("x " * 100)) <= 112

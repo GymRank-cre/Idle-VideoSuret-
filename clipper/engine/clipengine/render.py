@@ -103,6 +103,7 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
     assert dec.stdout is not None and enc.stdin is not None
     last = None
     written = 0
+    broken = False
     try:
         for n in range(nframes):
             buf = dec.stdout.read(fbytes)
@@ -118,12 +119,17 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
         while last is not None and written < nframes:
             enc.stdin.write(last.tobytes())
             written += 1
+    except BrokenPipeError:
+        broken = True                        # l'encodeur s'est arrêté : son message d'erreur dit pourquoi
     finally:
-        enc.stdin.close()
+        try:
+            enc.stdin.close()
+        except BrokenPipeError:
+            broken = True
         dec.stdout.close()
         dec.kill(); dec.wait()
         err = enc.stderr.read().decode(errors="replace") if enc.stderr else ""
         rc = enc.wait()
-    if rc != 0:
+    if rc != 0 or broken:
         raise RuntimeError(f"ffmpeg a échoué ({rc}) : {err[-800:]}")
     return out
