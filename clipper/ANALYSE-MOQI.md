@@ -30,6 +30,7 @@ longues qui montent sur YouTube France), API et connecteur pour Claude, affiliat
 | Chiffres et mots qui portent la chute en couleur | Lecture plus facile | Repris. Mots douteux masqués plutôt qu'affichés faux. |
 | Titre + légende + hashtags par clip | Prêt à publier | Repris (Claude si une clé est configurée, sinon heuristique), avec boutons « copier » et export zip + `publication.txt`. |
 | Avis d'une IA sur les moments | Meilleur tri | Amélioré : l'avis porte sur des moments **distincts** (sinon les 14 premiers candidats sont des variantes du même passage). |
+| « Vidéo du jour » (vidéos longues qui montent sur YouTube France) | Trouver quoi clipper | Repris dans l'onglet **Découvrir** : classement par vues par heure (API YouTube Data, clé gratuite), filtres d'âge, de durée et de catégorie. Amélioré : « Mes chaînes » (nouveautés des chaînes dont tu as l'accord), un clic pour clipper avec les réglages du Studio. |
 | Connecteur Claude (MCP) | Piloter l'outil en une phrase | **Pas fait** (voir plus bas). |
 
 ## Ce que je n'ai pas repris, et pourquoi
@@ -39,7 +40,6 @@ longues qui montent sur YouTube France), API et connecteur pour Claude, affiliat
   Sans accès je ne peux ni les construire ni les tester. À reprendre quand tu auras une application TikTok, ou via un outil
   de planification qui expose une API.
 - **Vidéo IA / Image IA** : demandent un fournisseur de génération et une clé ; aucun n'est branché à ce serveur.
-- **Vidéo du jour** : demande l'API YouTube Data (clé). Et Moqi précise lui-même de ne clipper que les chaînes qui
   l'autorisent : clipper la vidéo d'un autre est ta responsabilité.
 - **Traduction des sous-titres** : possible via Claude, non faite (le minutage mot à mot ne survit pas à une traduction
   sans choix de conception).

@@ -24,7 +24,8 @@ button,select,input{font:inherit;color:inherit}
 .bar{display:flex;align-items:center;gap:18px;height:56px}
 .logo{font-weight:800;font-size:19px;letter-spacing:-.02em}
 .logo b{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.bar nav{display:flex;gap:4px;margin-right:auto}
+.bar nav{display:flex;gap:4px;margin-right:auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+.bar nav::-webkit-scrollbar{display:none}
 .bar nav a{padding:6px 12px;border-radius:9px;color:var(--mute);font-weight:600;font-size:14px;white-space:nowrap}
 .bar nav a[aria-current=page]{background:var(--panel2);color:var(--text)}
 .bar nav a:hover{color:var(--text)}
@@ -99,6 +100,16 @@ details.adv .opts{margin-top:12px}
 .vnote{font-size:12px;color:var(--mute);padding:6px 14px 0}
 .lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
 .lib .media{aspect-ratio:16/10}
+.vgrid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.vc .thumb{position:relative;display:block;aspect-ratio:16/9;background:var(--media);overflow:hidden}
+.vc .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vc .dur{position:absolute;right:6px;bottom:6px;background:#000c;color:#fff;font-size:12px;font-weight:700;border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums}
+.vc .badge{position:absolute;left:6px;top:6px;background:var(--accent);color:#fff;font-size:11px;font-weight:800;border-radius:99px;padding:1px 8px}
+.chan{display:flex;align-items:center;gap:10px;margin:28px 0 12px}
+.chan img{width:32px;height:32px;border-radius:50%;background:var(--panel2)}
+.chan h2{font-size:17px;overflow-wrap:anywhere}
+.steps-list{margin:12px 0 0;padding-left:20px;display:grid;gap:8px;color:var(--mute);font-size:14px}
+.steps-list code{color:var(--text);background:var(--panel2);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;font-size:13px}
 .steps span{padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--mute)}
 .steps span.on{border-color:var(--accent);color:var(--text)}
@@ -131,6 +142,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
   <a class="logo" href="#studio" data-go="studio">Clip<b>o</b></a>
   <nav aria-label="Navigation">
     <a href="#studio" data-go="studio" data-nav="studio">Studio</a>
+    <a href="#decouvrir" data-go="decouvrir" data-nav="decouvrir">Découvrir</a>
     <a href="#biblio" data-go="biblio" data-nav="biblio">Bibliothèque<span class="count" id="count" hidden></span></a>
     <a href="#style" data-go="style" data-nav="style">Mon style</a>
   </nav>
@@ -198,7 +210,8 @@ function route(forced) {
   if (S.demo) app.append(demoBanner());
   const base = token.startsWith("p-") ? "biblio" : token;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === base ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
-  const v = token === "biblio" ? viewLibrary : token === "style" ? viewStyle : token.startsWith("p-") ? () => viewProject(token.slice(2)) : viewStudio;
+  const v = token === "biblio" ? viewLibrary : token === "style" ? viewStyle : token === "decouvrir" ? viewDiscover
+    : token.startsWith("p-") ? () => viewProject(token.slice(2)) : viewStudio;
   Promise.resolve(v(app)).catch(e => app.append(h("p", { class: "err" }, e.message)));
   window.scrollTo(0, 0);
 }
@@ -248,6 +261,14 @@ const blobFromB64 = b64 => { const bin = atob(b64), u = new Uint8Array(bin.lengt
 const DUR = { "30 s": { min_dur: 18, max_dur: 42, target_dur: 30 }, "1 min": { min_dur: 40, max_dur: 75, target_dur: 58 },
               "1:30": { min_dur: 60, max_dur: 110, target_dur: 85 }, "2 min": { min_dur: 85, max_dur: 140, target_dur: 110 } };
 const DEFAULTS = { clips: 5, dur: "1 min", mode: "best", style: "podcast", layout: "auto", captions: true, hook: true, lang: "", llm: "auto", reserve: 6 };
+const buildOptions = st => ({ max_clips: st.clips, reserve: st.reserve, mode: st.mode, layout: st.layout, captions: st.captions, title_overlay: st.hook,
+                              llm: st.llm, ...(st.lang ? { language: st.lang } : {}), ...DUR[st.dur] });
+// Réglages du Studio (durée, style, mise en page…) réutilisés quand on lance une analyse depuis « Découvrir ».
+async function studioArgs() {
+  const st = { ...DEFAULTS, ...store.get("studio", {}) }, cat = await DATA.catalog();
+  if (!cat.presets.some(p => p.id === st.style) && st.style !== "mine") st.style = "podcast";
+  return { options: buildOptions(st), style: st.style === "mine" ? (await DATA.settings()).style : st.style };
+}
 
 async function viewStudio(app) {
   const cat = await DATA.catalog(); const st = { ...DEFAULTS, ...store.get("studio", {}) };
@@ -284,8 +305,7 @@ async function viewStudio(app) {
         check("Sous-titres animés", st.captions, v => { st.captions = v; save(); }), check("Accroche en haut du clip", st.hook, v => { st.hook = v; save(); }))),
     status);
 
-  const options = () => ({ max_clips: st.clips, reserve: st.reserve, mode: st.mode, layout: st.layout, captions: st.captions, title_overlay: st.hook,
-                           llm: st.llm, ...(st.lang ? { language: st.lang } : {}), ...DUR[st.dur] });
+  const options = () => buildOptions(st);
   const styleArg = async () => st.style === "mine" ? (await DATA.settings()).style : st.style;
   const show = (p, stage, err) => { status.hidden = false; bar.style.width = Math.round(p * 100) + "%"; pctEl.textContent = Math.round(p * 100) + " %"; stageEl.textContent = stage; errEl.className = "err"; errEl.textContent = err || ""; };
   let busy = false;
@@ -337,6 +357,105 @@ function upload(file, meta, onProgress) {
     x.onerror = () => reject(new Error("Connexion interrompue pendant l'envoi."));
     x.send(file);
   });
+}
+
+// ───────────────────────────────────────────────────────────── Découvrir : tendances et nouveautés des chaînes suivies
+const CATS = [["0", "Toutes"], ["24", "Divertissement"], ["25", "Actualités"], ["27", "Éducation"], ["28", "Science et tech"], ["20", "Jeux vidéo"], ["22", "Blogs"], ["23", "Humour"], ["17", "Sport"]];
+const ago = hrs => hrs < 1 ? "il y a moins d'1 h" : hrs < 48 ? `il y a ${Math.round(hrs)} h` : `il y a ${Math.round(hrs / 24)} j`;
+const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
+
+async function clipVideo(v, btn) {
+  if (needEngine()) return;
+  btn.disabled = true; btn.textContent = "Envoi…";
+  try {
+    const { options, style } = await studioArgs();
+    const res = await API.post("/api/projects", { url: v.url, options, style });
+    toast(res.duplicate ? "Cette vidéo était déjà analysée." : "Analyse lancée.");
+    go("p-" + res.project.id);
+  } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = "Clipper"; }
+}
+function videoCard(v) {
+  const btn = h("button", { type: "button", class: "btn sm" }, "Clipper");
+  btn.addEventListener("click", () => clipVideo(v, btn));
+  return h("article", { class: "pc vc" },
+    h("a", { class: "thumb", href: v.url, target: "_blank", rel: "noopener noreferrer", "aria-label": "Voir sur YouTube : " + v.title },
+      h("img", { src: v.thumbnail, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }), h("span", { class: "dur" }, fmt(v.duration)), v.new ? h("span", { class: "badge" }, "Nouveau") : null),
+    h("div", { class: "pc-body" }, h("h3", {}, v.title),
+      h("p", { class: "muted", style: "font-size:13px" }, v.channel),
+      h("p", { class: "muted", style: "font-size:13px" }, `${ago(v.age_hours)} · ${kfmt(v.views)} vues` + (v.views_per_hour >= 100 ? ` · ≈ ${kfmt(v.views_per_hour)} vues/h` : "")),
+      h("div", { class: "acts" }, btn)));
+}
+function discoverSetup() {
+  return h("div", { class: "panel" }, h("h2", {}, "Il manque la clé YouTube"),
+    h("p", { class: "muted", style: "margin-top:6px" }, "Cet onglet liste les vidéos par l'API YouTube Data : gratuite, 10 000 unités par jour (une visite en coûte quelques-unes)."),
+    h("ol", { class: "steps-list" },
+      h("li", {}, "Sur ", h("a", { href: "https://console.cloud.google.com/apis/library/youtube.googleapis.com", target: "_blank", rel: "noopener noreferrer", style: "text-decoration:underline" }, "console.cloud.google.com"),
+        " : crée un projet, active « YouTube Data API v3 », puis Identifiants → Créer des identifiants → Clé API."),
+      h("li", {}, "Restreins la clé à « YouTube Data API v3 » (Restreindre la clé)."),
+      h("li", {}, "Lance le moteur avec la clé dans l'environnement : ", h("code", {}, "YOUTUBE_API_KEY=… clipengine serve"), " (jamais dans un message ni dans un fichier du dépôt).")));
+}
+async function viewDiscover(app) {
+  app.append(h("h1", { style: "font-size:30px" }, "Découvrir"),
+    h("p", { class: "lead" }, "Les vidéos longues qui montent sur YouTube en France et les nouveautés des chaînes que tu suis. Un clic lance l'analyse."));
+  const gap = () => h("div", { style: "height:18px" });
+  if (S.demo) { app.append(gap(), h("div", { class: "empty" }, "Cet onglet demande le moteur et une clé YouTube gratuite (YOUTUBE_API_KEY) : dans l'aperçu, il n'y a rien à lister.")); return; }
+  const tok = current.token;
+  const { enabled } = await API.get("/api/discover/status");
+  if (current.token !== tok) return;
+  if (!enabled) { app.append(gap(), discoverSetup()); return; }
+
+  const st = { tab: "trend", days: 3, min: 10, cat: "0", ...store.get("disc", {}) };
+  const save = () => store.set("disc", st);
+  const body = h("div");
+  let seq = 0;
+  const tabs = seg([["trend", "Tendances France"], ["mine", "Mes chaînes"]], st.tab, v => { st.tab = v; save(); show(false); }, { label: "Liste" });
+  const refresh = h("button", { type: "button", class: "btn sec sm", onclick: () => show(true) }, "Actualiser");
+  app.append(gap(), h("div", { class: "row", style: "justify-content:space-between;align-items:center" }, tabs, refresh),
+    h("p", { class: "muted", style: "font-size:13px;margin-top:14px" }, "Clipper la vidéo d'un autre créateur demande son accord : « Mes chaînes » sert à suivre celles dont tu l'as."), body);
+
+  async function show(fresh) {
+    const mine = ++seq;
+    body.replaceChildren(h("p", { class: "muted", style: "margin-top:18px" }, h("span", { class: "spin" }), " Chargement…"));
+    try {
+      const view = st.tab === "mine" ? await mineView(fresh) : await trendView(fresh);
+      if (mine === seq && current.token === tok) body.replaceChildren(view);
+    } catch (e) { if (mine === seq && current.token === tok) body.replaceChildren(h("p", { class: "err", style: "margin-top:18px" }, e.message)); }
+  }
+  async function trendView(fresh) {
+    const daysSeg = seg([[1, "24 h"], [3, "3 jours"], [7, "7 jours"]], st.days, v => { st.days = v; save(); show(false); }, { label: "Âge maximal" });
+    const minSeg = seg([[5, "≥ 5 min"], [10, "≥ 10 min"], [20, "≥ 20 min"]], st.min, v => { st.min = v; save(); show(false); }, { label: "Durée minimale" });
+    const catSel = h("select", { "aria-label": "Catégorie", style: "width:auto", onchange: e => { st.cat = e.target.value; save(); show(false); } }, CATS.map(([v, l]) => h("option", { value: v }, l)));
+    catSel.value = st.cat;
+    const { videos } = await API.get(`/api/discover/trending?days=${st.days}&min=${st.min}&category=${st.cat}${fresh ? "&fresh=1" : ""}`);
+    return h("div", {}, h("div", { class: "opts", style: "margin:16px 0 6px" }, field("Parue depuis", daysSeg), field("Durée", minSeg), field("Catégorie", catSel)),
+      h("p", { class: "muted", style: "font-size:13px;margin-bottom:14px" }, "Classées par vues par heure : celles qui montent d'abord."),
+      videos.length ? h("div", { class: "grid vgrid" }, videos.map(videoCard)) : h("div", { class: "empty" }, "Aucune vidéo longue ne correspond : élargis l'âge ou baisse la durée minimale."));
+  }
+  async function mineView(fresh) {
+    const input = h("input", { type: "text", placeholder: "@nom, adresse de la chaîne ou identifiant UC…", autocomplete: "off", spellcheck: "false", "aria-label": "Chaîne à suivre" });
+    const add = h("button", { class: "btn", type: "submit" }, "Suivre"), err = h("div", { class: "err", style: "margin-top:6px" });
+    const form = h("form", { novalidate: true, style: "margin:16px 0 4px" }, h("div", { class: "row" }, h("div", { class: "field grow" }, input), add), err);
+    form.addEventListener("submit", async e => {
+      e.preventDefault(); err.textContent = ""; const q = input.value.trim(); if (!q) return; add.disabled = true;
+      try { const r = await API.post("/api/discover/channels", { query: q }); toast("Chaîne suivie : " + r.channel.title); show(true); } catch (x) { err.textContent = x.message; add.disabled = false; }
+    });
+    const { channels } = await API.get("/api/discover/channels" + (fresh ? "?fresh=1" : ""));
+    const seen = h("button", { type: "button", class: "btn sec sm", onclick: async () => { try { await API.post("/api/discover/seen", {}); show(false); } catch (x) { toast(x.message); } } }, "Tout marquer comme vu");
+    const blocks = channels.map(c => {
+      const del = h("button", { type: "button", class: "btn danger sm" }, "Ne plus suivre");
+      del.addEventListener("click", () => {
+        if (del.dataset.arm) { API.del("/api/discover/channels/" + c.id).then(() => show(false)).catch(x => toast(x.message)); return; }
+        del.dataset.arm = "1"; del.textContent = "Confirmer ?"; setTimeout(() => { delete del.dataset.arm; del.textContent = "Ne plus suivre"; }, 4000);
+      });
+      return h("section", {}, h("div", { class: "chan" }, c.thumbnail ? h("img", { src: c.thumbnail, alt: "", referrerpolicy: "no-referrer" }) : null, h("h2", {}, c.title),
+          c.new ? h("span", { class: "count" }, `${c.new} nouvelle${c.new > 1 ? "s" : ""}`) : null, h("span", { style: "margin-left:auto" }, del)),
+        c.error ? h("p", { class: "err" }, c.error) : c.videos.length ? h("div", { class: "grid vgrid" }, c.videos.map(videoCard))
+          : h("p", { class: "muted", style: "font-size:14px" }, "Aucune vidéo longue récente."));
+    });
+    return h("div", {}, form, channels.some(c => c.new) ? h("div", { class: "row", style: "margin-top:8px" }, seen) : null,
+      blocks.length ? blocks : h("div", { class: "empty", style: "margin-top:18px" }, "Aucune chaîne suivie. Colle l'adresse d'une chaîne dont tu as l'accord de clipper les vidéos."));
+  }
+  await show(false);
 }
 
 // ───────────────────────────────────────────────────────────── Bibliothèque

@@ -19,32 +19,68 @@ clipengine serve                                       # puis http://localhost:8
 
 - Premier lancement : le modèle de transcription se télécharge (`--model small` par défaut ; `large-v3` est plus
   précis et bien plus lent sans carte graphique).
-- Titres, accroches, légendes et avis éditorial par Claude (extra `llm`, SDK officiel `anthropic`) :
-  1. créer un compte sur [platform.claude.com](https://platform.claude.com) (la Console de l'API ; ce n'est pas
-     l'abonnement claude.ai) et y ajouter un petit crédit (facturation à l'usage) ;
-  2. page **API keys** (`platform.claude.com/settings/keys`) → **Create key** ; la **limiter à un seul espace de
-     travail** (Default), sans quoi l'API réclame un en-tête d'espace en plus ; copier la clé (`sk-ant-…`), elle ne
-     s'affiche qu'une fois ;
-  3. la définir avant `clipengine serve` : `export ANTHROPIC_API_KEY=sk-ant-…` (Windows : `setx`) ;
-  4. `clipengine check-llm` : un petit appel réel qui dit si la clé marche, et pourquoi sinon.
-
-  Un appel par vidéo (≈ 12 000 caractères envoyés, 20 extraits), modèle `claude-opus-5-5` par défaut (réglage
-  `llm_model` ; `claude-sonnet-5-5` coûte moitié moins). Estimation : de l'ordre de 10 à 20 centimes par vidéo, la
-  réflexion du modèle comptant dans la sortie ; la Console affiche la dépense réelle. La page du projet indique si le
-  choix a été revu par Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, réseau, refus de sécurité).
-  Sans clé, tout fonctionne avec le score du moteur et des textes générés sans IA.
-- Lien YouTube refusé avec « Sign in to confirm you're not a bot » (cas d'un serveur ou d'un VPN) : exporter les cookies
-  du navigateur au format Netscape et lancer avec `CLIPENGINE_COOKIES=/chemin/cookies.txt`. Depuis une connexion
-  personnelle, je n'ai pas pu tester : seul un serveur était disponible.
+- Les clés (toutes facultatives) sont décrites plus bas : sans elles, tout fonctionne avec le score du moteur et des
+  textes générés sans IA ; avec elles, Claude revoit le choix des moments et écrit les textes, et l'onglet Découvrir
+  liste les vidéos qui montent.
 - En ligne de commande, sans page : `clipengine https://youtube.com/watch?v=… -o out --max-clips 8`,
   `clipengine episode.mp4 --transcript episode.srt --llm none`, `--no-render` pour le classement seul,
   `--style sport`, `--mode full`.
+
+## Les clés, une par une
+
+Elles se définissent comme **variables d'environnement** avant `clipengine serve`. Sur ton ordinateur :
+`export NOM=valeur` (Windows : `setx NOM valeur`, puis rouvrir le terminal). Dans une session cloud : menu de
+l'environnement (barre de titre de la session) → **Modifier** → variable d'environnement ; une **nouvelle session** la
+prend en compte. Une clé ne se colle jamais dans un message, un fichier du dépôt ou une capture d'écran : si elle a fuité,
+la supprimer et en créer une autre.
+
+| Variable | Sert à | Coût | Vérifier |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | choix des moments revu par Claude, titres, accroches, légendes | à l'usage, ≈ 0,11 $ par vidéo | `clipengine check-llm` |
+| `YOUTUBE_API_KEY` | onglet Découvrir (tendances, nouveautés des chaînes) | gratuit, 10 000 unités par jour | `clipengine check-youtube` |
+
+### 1. Claude (`ANTHROPIC_API_KEY`)
+
+1. Créer un compte sur [platform.claude.com](https://platform.claude.com) : c'est la Console de l'API, distincte de
+   l'abonnement claude.ai (qui ne donne pas de clé).
+2. Y ajouter un petit crédit (facturation à l'usage) : quelques dollars suffisent pour commencer.
+3. Page **API keys** ([platform.claude.com/settings/keys](https://platform.claude.com/settings/keys)) → **Create key** :
+   un nom, une expiration, **Linked account** = toi, et la **limiter à un seul espace de travail** (Default) — sinon l'API
+   réclame un en-tête d'espace en plus et refuse la requête.
+4. Copier la clé (`sk-ant-…`) tout de suite : elle ne s'affiche qu'une fois.
+5. La définir (`ANTHROPIC_API_KEY`), puis `clipengine check-llm`.
+
+Un appel par vidéo (≈ 12 000 caractères envoyés, 20 extraits), modèle `claude-opus-5-5` par défaut (réglage `llm_model` ;
+`claude-sonnet-5-5` coûte moitié moins). Mesuré : 5 311 jetons envoyés et 4 384 reçus, soit environ 0,11 $ ; la Console
+affiche la dépense réelle et permet de fixer une limite mensuelle. La page du projet indique si le choix a été revu par
+Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, réseau, refus de sécurité).
+
+### 2. YouTube Data API (`YOUTUBE_API_KEY`)
+
+1. Se connecter avec un compte Google sur [console.cloud.google.com](https://console.cloud.google.com).
+2. Sélecteur de projet → **Nouveau projet** (nom libre, par exemple « clipo ») → **Créer**, puis le sélectionner.
+3. [Bibliothèque d'API](https://console.cloud.google.com/apis/library) → chercher **YouTube Data API v3** → **Activer**.
+4. [Identifiants](https://console.cloud.google.com/apis/credentials) → **Créer des identifiants** → **Clé API** ; la copier.
+5. **Restreindre la clé** → restrictions d'API → **YouTube Data API v3** → enregistrer : volée, elle ne sert à rien d'autre.
+6. La définir (`YOUTUBE_API_KEY`), puis `clipengine check-youtube`.
+
+Quota gratuit : 10 000 unités par jour ; une visite de l'onglet en coûte de 5 à 30 (réponses gardées 15 minutes, bouton
+**Actualiser** pour interroger à nouveau). La documentation de Google ne mentionne aucune facturation pour cette API ; si
+la console en demande une, s'arrêter là. Sans clé, l'onglet explique la marche à suivre.
+
+### Réglages voisins (pas des clés d'API)
+
+- `CLIPENGINE_PASSWORD` : mot de passe de tout le serveur, **obligatoire** pour l'ouvrir hors de cet ordinateur.
+- `CLIPENGINE_COOKIES=/chemin/cookies.txt` : cookies du navigateur au format Netscape (extension de navigateur du type
+  « Get cookies.txt »), pour les liens YouTube refusés avec « Sign in to confirm you're not a bot » (serveur, VPN).
+  Ce fichier donne accès à ton compte : le garder hors du dépôt.
 
 ## La page
 
 | Écran | Ce qu'il fait |
 |---|---|
 | **Studio** | Lien ou fichier, nombre de clips, durée (30 s à 2 min), mode (meilleurs moments / toute la vidéo), style. Réglages avancés : mise en page, langue, avis de Claude, taille de la réserve. |
+| **Découvrir** | Les vidéos longues qui montent sur YouTube en France (classées par vues par heure ; âge, durée et catégorie au choix) et les nouveautés des chaînes que tu suis. **Clipper** lance l'analyse avec les réglages du Studio. Demande une clé YouTube gratuite (`YOUTUBE_API_KEY`). |
 | **Projet** | Progression de l'analyse, puis clips rendus au fil de l'eau. Chaque carte : lecteur, note + étiquette, **détail de la note** (9 critères), titre / légende / hashtags à copier, texte du moment, télécharger, refaire avec un autre style. Les moments **en réserve** se fabriquent d'un clic. Export zip avec `publication.txt`. |
 | **Bibliothèque** | Tous les projets, leur avancement, suppression. Une vidéo déjà analysée est reconnue (liens `youtu.be`, `shorts`, `m.youtube` = même vidéo). |
 | **Mon style** | 6 packs, 7 polices libres, couleurs, fond (contour, ombre, boîte, pastille), position, mots par ligne, apparition, accroche, signature, fond du plan entier. L'aperçu est le **rendu réel** du moteur. |
@@ -80,6 +116,8 @@ Polices : Poppins, Anton, Bebas Neue, Bangers, DM Serif Display, Varela Round, s
 | `POST /api/projects/<id>/render` | `{ids, style}` fabrique ou refait des clips |
 | `POST /api/projects/<id>/retry` · `/style` | relance l'analyse · style par défaut du projet |
 | `GET /api/projects/<id>/zip` | clips + `publication.txt` |
+| `GET /api/discover/status` · `/trending?days=3&min=10&category=0&region=FR` · `/channels` | clé YouTube définie ? · vidéos qui montent · chaînes suivies et leurs dernières vidéos longues |
+| `POST /api/discover/channels` `{query}` · `DELETE /api/discover/channels/<UC…>` · `POST /api/discover/seen` | suivre (`@nom`, adresse ou `UC…`) · ne plus suivre · marquer comme vu |
 | `GET/POST /api/settings` · `GET /api/styles` | réglages par défaut · packs, polices, couleurs |
 | `POST /api/style-preview` | PNG rendu par libass pour un style |
 | `GET /files/<id>/<clip>` | mp4 / jpg / ass, requêtes Range gérées |
@@ -107,7 +145,7 @@ Un projet à la fois travaille (le rendu occupe tous les cœurs) ; le reste atte
 ## Tests
 
 ```bash
-pytest -q                 # ≈ 120 tests, dont des rendus réels et 3 parcours dans un navigateur (≈ 2 min)
+pytest -q                 # ≈ 150 tests, dont des rendus réels et 7 parcours dans un navigateur (≈ 2 min 10)
 pytest -q -m "not slow"   # logique seule, quelques secondes
 ```
 
@@ -177,4 +215,7 @@ chemin complet du moteur (SDK, repli de sécurité, `claude-opus-5-5`) :
   vocabulaire ; `large-v3` fait mieux, plus lentement.
 - Non testés ici : téléchargement YouTube depuis une connexion personnelle (depuis ce serveur : refusé par le contrôle anti-robot,
   message clair) ; lecture des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
+- **Découvrir** : essayé contre un faux serveur YouTube (requêtes, quota, erreurs, interface), jamais avec la vraie API.
+  « Vues par heure » est un indicateur de ce qui monte, pas une prévision. Le moteur ne vérifie pas que tu as le droit
+  de clipper une vidéo : pour celle d'un autre créateur, c'est son accord qu'il faut (d'où « Mes chaînes »).
 - Pas de publication automatique ni de statistiques TikTok, pas de génération vidéo/image : voir `../ANALYSE-MOQI.md`.

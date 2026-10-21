@@ -12,6 +12,12 @@
     GET    /api/settings    POST /api/settings   {"style": {...}, "defaults": {...}}
     GET    /api/styles                        packs, polices, couleurs
     POST   /api/style-preview                 {"style": {...}} -> PNG rendu par libass
+    GET    /api/discover/status               {"enabled"} : la clé YouTube (YOUTUBE_API_KEY) est-elle définie ?
+    GET    /api/discover/trending             ?days=3&min=10&category=0&region=FR&fresh=1  vidéos qui montent
+    GET    /api/discover/channels             chaînes suivies et leurs dernières vidéos longues
+    POST   /api/discover/channels             {"query": "@nom" | adresse | UC…}  suit une chaîne
+    DELETE /api/discover/channels/<UC…>       ne suit plus cette chaîne
+    POST   /api/discover/seen                 marque les nouveautés comme vues
     GET    /files/<id>/<fichier>              mp4 / jpg / ass (requêtes Range gérées)
     GET    /...                               pages statiques du dossier --web
 
@@ -38,6 +44,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
+from .discover import Discover
 from .errors import UserError
 from .projects import ID_RE, Projects
 from .styles import Style, catalog, preview_png
@@ -53,6 +60,7 @@ class App:
         self.web_dir = Path(web_dir).resolve()
         self.password = password or None
         self.projects = projects or Projects(Path(data_dir), base_cfg)
+        self.discover = Discover(self.projects.root)
         self.incoming = self.projects.root / "_incoming"
         self.incoming.mkdir(exist_ok=True)
         for old in self.incoming.iterdir():                 # dépôts interrompus d'une session précédente
@@ -216,6 +224,8 @@ def make_handler(app: App):
                 return self._json(200, P.settings())
             if p == "/api/styles":
                 return self._json(200, catalog())
+            if p.startswith("/api/discover/"):
+                return self._discover(p, parse_qs(u.query))
             if m := re.fullmatch(r"/api/projects/([0-9a-f]{16})", p):
                 d = P.public(m.group(1))
                 return self._json(200, d) if d else self._err(404, "projet inconnu")
@@ -237,6 +247,29 @@ def make_handler(app: App):
             if parts[:1] == ("engine",) or app.projects.root in target.parents or target == app.projects.root:
                 return self._err(404, "introuvable")                    # ni code source ni données des projets
             self._file(target)
+
+        def _discover(self, p: str, q: dict) -> None:
+            D = app.discover
+
+            def num(name: str, default: float, lo: float, hi: float) -> float:
+                try:
+                    return min(hi, max(lo, float(q.get(name, [default])[0])))
+                except ValueError:
+                    return default
+
+            fresh = q.get("fresh", ["0"])[0] == "1"
+            try:
+                if p == "/api/discover/status":
+                    return self._json(200, {"enabled": D.enabled()})
+                if p == "/api/discover/trending":
+                    vids = D.trending(region=q.get("region", ["FR"])[0].upper(), category=q.get("category", ["0"])[0],
+                                      days=num("days", 3, 0.5, 14), min_min=num("min", 10, 1, 180), fresh=fresh)
+                    return self._json(200, {"videos": vids})
+                if p == "/api/discover/channels":
+                    return self._json(200, {"channels": D.channels(min_min=num("min", 8, 1, 180), fresh=fresh)})
+            except UserError as e:
+                return self._err(400, str(e))
+            return self._err(404, "introuvable")
 
         def _zip(self, pid: str) -> None:
             proj = app.projects.public(pid)
@@ -271,7 +304,10 @@ def make_handler(app: App):
         def do_DELETE(self):
             if not self._guard():
                 return
-            m = re.fullmatch(r"/api/projects/([0-9a-f]{16})", urlparse(self.path).path)
+            path = urlparse(self.path).path
+            if m := re.fullmatch(r"/api/discover/channels/(UC[\w-]{22})", path):
+                return self._json(200, {"ok": True}) if app.discover.remove_channel(m.group(1)) else self._err(404, "chaîne inconnue")
+            m = re.fullmatch(r"/api/projects/([0-9a-f]{16})", path)
             if not m:
                 return self._err(404, "introuvable")
             return self._json(200, {"ok": True}) if app.projects.delete(m.group(1)) else self._err(404, "projet inconnu")
@@ -296,6 +332,15 @@ def make_handler(app: App):
                 if p == "/api/settings":
                     b = self._body_json()
                     return None if b is None else self._json(200, P.save_settings(b))
+                if p == "/api/discover/channels":
+                    b = self._body_json()
+                    return None if b is None else self._json(200, {"channel": app.discover.add_channel(str(b.get("query", "")))})
+                if p == "/api/discover/seen":
+                    b = self._body_json()
+                    if b is None:
+                        return None
+                    app.discover.mark_seen()
+                    return self._json(200, {"ok": True})
                 m = re.fullmatch(r"/api/projects/([0-9a-f]{16})/(render|retry|style)", p)
                 if m:
                     pid, action = m.groups()

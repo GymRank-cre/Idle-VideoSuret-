@@ -18,6 +18,11 @@ def main(argv: list[str] | None = None) -> int:
         ok, msg = llm.check(Config())
         print(("✓ " if ok else "✗ ") + msg)
         return 0 if ok else 1
+    if argv and argv[0] == "check-youtube":
+        from . import discover
+        ok, msg = discover.check()
+        print(("✓ " if ok else "✗ ") + msg)
+        return 0 if ok else 1
     p = argparse.ArgumentParser(prog="clipengine", description="Vidéo longue -> clips verticaux sous-titrés")
     p.add_argument("source", help="fichier vidéo ou URL (YouTube…)")
     p.add_argument("-o", "--out", default="out", help="dossier de sortie")
