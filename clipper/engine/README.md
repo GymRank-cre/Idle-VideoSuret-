@@ -96,7 +96,7 @@ pytest -q                 # ≈ 100 tests, dont des rendus réels et 3 parcours 
 pytest -q -m "not slow"   # logique seule, quelques secondes
 ```
 
-Les tests du navigateur demandent `pip install -e '.[ui]'` et un Chromium (ignorés sinon). Les tests de zone sûre rendent réellement chaque pack avec libass et mesurent la position des pixels.
+Pour tout lancer : `pip install -e '.[dev,ui]'` ; les tests du navigateur demandent aussi un Chromium (ignorés sinon). Les tests de zone sûre rendent réellement chaque pack avec libass et mesurent la position des pixels.
 
 ## Limites connues
 
