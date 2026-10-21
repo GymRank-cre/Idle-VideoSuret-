@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -35,7 +36,9 @@ class ClipResult:
 
 
 def _slug(s: str, n: int = 40) -> str:
-    s = re.sub(r"[^\w]+", "-", s.lower(), flags=re.UNICODE).strip("-")
+    """Nom de fichier ASCII (sans accents) : sûr pour les URL, les disques et les téléchargements."""
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+    s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
     return s[:n].rstrip("-") or "clip"
 
 

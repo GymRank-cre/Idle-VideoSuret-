@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#09090b">
+<link rel="icon" href="data:,">
 <title>Clipo · Clips automatiques pour TikTok, Reels et Shorts</title>
 <meta name="description" content="Colle une vidéo YouTube : Clipo en fait des clips verticaux sous-titrés. Génère aussi des vidéos et des images à partir d'une idée.">
 <style>
@@ -34,14 +35,30 @@ h1{font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.03em;margin:
 .box{max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;gap:10px}
 .box input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;padding:8px 10px}
 .hint{color:var(--mute);font-size:13px;margin-top:12px}
-.result{max-width:640px;margin:20px auto 0;display:none;gap:12px;grid-template-columns:repeat(3,1fr)}
+.file{display:inline-block;margin-top:10px;color:var(--mute);font-size:14px;cursor:pointer;text-decoration:underline}
+.file:hover{color:var(--text)}
+.status{max-width:640px;margin:20px auto 0;display:none;text-align:left}
+.status.on{display:block}
+.prog{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+.stage{display:flex;justify-content:space-between;color:var(--mute);font-size:14px;margin-top:8px}
+.err{color:#f87171;margin-top:10px;font-size:14px}
+.banner{max-width:640px;margin:14px auto 0;padding:10px 14px;border:1px solid var(--line);border-radius:12px;color:var(--mute);font-size:14px;display:none}
+.banner.on{display:block}.banner code{color:var(--text)}
+.result{max-width:1040px;margin:28px auto 0;display:none;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,290px));justify-content:center;text-align:left}
 .result.on{display:grid}
-.clip{aspect-ratio:9/16;border-radius:14px;border:1px solid var(--line);position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding:10px;text-align:center;font-weight:800;font-size:15px;text-shadow:0 2px 6px #000;color:#fff}
-.clip:nth-child(1){background:linear-gradient(160deg,#4c1d95,#be185d)}
-.clip:nth-child(2){background:linear-gradient(160deg,#0e7490,#4338ca)}
-.clip:nth-child(3){background:linear-gradient(160deg,#b45309,#be123c)}
-.clip small{position:absolute;top:8px;left:8px;background:#000a;border-radius:6px;padding:1px 6px;font-weight:600;font-size:11px}
-.spin{display:none;color:var(--mute);margin-top:16px}.spin.on{display:block}
+.result{scroll-margin-top:80px}
+.clip{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.clip video{display:block;width:100%;aspect-ratio:9/16;background:#000}
+.clip .in{padding:12px 14px}
+.clip h3{font-size:15px;line-height:1.3;margin-bottom:6px}
+.meta{display:flex;gap:8px;align-items:center;color:var(--mute);font-size:13px;flex-wrap:wrap}
+.score{font-weight:700;color:#fff;background:var(--accent);border-radius:99px;padding:1px 9px}
+.why{color:var(--mute);font-size:13px;margin:8px 0;list-style:none;padding:0}
+.dl{display:block;text-align:center;padding:9px;border-radius:10px;margin-top:8px;font-size:14px;font-weight:600;border:1px solid var(--line)}
+.dl:hover{border-color:var(--accent)}
+.soon{max-width:640px;margin:20px auto 0;color:var(--mute);display:none}
+.soon.on{display:block}
 section{padding:72px 0}
 h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;line-height:1.15;margin:8px 0 12px}
 .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:32px}
@@ -90,7 +107,14 @@ footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-si
     <button class="btn" id="go">Générer mes clips</button>
   </form>
   <p class="hint">Premier essai offert · sans carte bancaire</p>
-  <p class="spin" id="spin">Analyse en cours…</p>
+  <label class="file" id="filelabel">ou envoie un fichier vidéo<input type="file" id="file" accept="video/*,.mkv" hidden></label>
+  <div class="banner" id="banner"></div>
+  <div class="status" id="status">
+    <div class="prog"><i id="bar"></i></div>
+    <div class="stage"><span id="stage">Envoi…</span><span id="pct">0 %</span></div>
+    <div class="err" id="err"></div>
+  </div>
+  <p class="soon" id="soon">La génération de vidéos et d'images n'est pas encore branchée : seul l'onglet « Clips » est actif.</p>
   <div class="result" id="result"></div>
 </div>
 
@@ -141,7 +165,7 @@ footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-si
 </div></section>
 </main>
 
-<footer><div class="wrap">© Clipo — maquette front-end. Aucune génération réelle : le moteur reste à brancher.</div></footer>
+<footer><div class="wrap">© Clipo — onglet Clips branché sur le moteur clipengine.</div></footer>
 
 <script>
 const MODES={
@@ -149,25 +173,90 @@ const MODES={
   video:{h:"Écris une idée. Clipo en fait une vidéo.",s:"Décris la scène. Clipo crée la vidéo avec le son, en vertical ou en horizontal.",ph:"Une astronaute atterrit sur un toit, la ville en feu derrière elle",b:"Générer la vidéo",type:"text"},
   image:{h:"Écris une idée. Clipo en fait une image.",s:"Miniature, visuel de post, décor : décris l'image, tu la récupères aux bons formats.",ph:"Un loup en néon dans une ruelle sous la pluie",b:"Générer l'image",type:"text"}
 };
-let mode="clips";
+const API=""; // même origine que la page (clipengine serve)
 const $=id=>document.getElementById(id);
+const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let mode="clips", busy=false, apiOk=null;
+
+async function checkApi(){
+  try{const r=await fetch(API+"/api/health",{cache:"no-store"});apiOk=r.ok}catch{apiOk=false}
+  const b=$("banner");
+  if(apiOk){b.classList.remove("on")}
+  else{b.innerHTML="Moteur non connecté. Lance <code>clipengine serve</code> (dossier <code>clipper/engine</code>) puis ouvre <code>http://localhost:8080</code>.";b.classList.add("on")}
+}
+checkApi();
+
 document.querySelectorAll(".tabs button").forEach(t=>t.onclick=()=>{
+  if(busy)return;
   mode=t.dataset.mode;const m=MODES[mode];
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b===t));
   $("title").textContent=m.h;$("subtitle").textContent=m.s;
   $("input").placeholder=m.ph;$("input").type=m.type;$("input").value="";$("go").textContent=m.b;
-  $("result").className="result";
+  $("filelabel").style.display=mode==="clips"?"":"none";
+  $("soon").classList.toggle("on",mode!=="clips");
+  $("result").className="result";$("status").classList.remove("on");
 });
+
+function setBusy(v){busy=v;$("go").disabled=v;$("file").disabled=v;$("go").style.opacity=v?.6:1}
+function progress(p,stage,err){
+  $("status").classList.add("on");
+  $("bar").style.width=Math.round(p*100)+"%";$("pct").textContent=Math.round(p*100)+" %";
+  $("stage").textContent=stage;$("err").textContent=err||"";
+}
+async function jsonOrThrow(r){
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||("Erreur "+r.status));
+  return d;
+}
+async function start(body,headers,url){
+  $("result").className="result";
+  setBusy(true);progress(0.01,"Envoi…");
+  try{
+    if(!apiOk){await checkApi();if(!apiOk)throw new Error("Moteur non connecté.")}
+    const job=await jsonOrThrow(await fetch(url,{method:"POST",body,headers}));
+    await poll(job.id);
+  }catch(e){progress(0,"Échec",e.message)}
+  finally{setBusy(false)}
+}
+async function poll(id){
+  for(;;){
+    const j=await jsonOrThrow(await fetch(`${API}/api/jobs/${id}`,{cache:"no-store"}));
+    const wait=j.status==="queued"&&j.queue>1?` (${j.queue-1} avant toi)`:"";
+    if(j.status==="error"){progress(0,"Échec",j.error||"Erreur inconnue");return}
+    progress(j.progress,j.stage+wait);
+    if(j.status==="done"){render(j);return}
+    await new Promise(r=>setTimeout(r,1000));
+  }
+}
+function render(j){
+  const r=$("result");
+  if(!j.clips.length){progress(1,"Aucun moment assez fort trouvé dans cette vidéo.");return}
+  r.innerHTML=j.clips.map(c=>`
+    <article class="clip">
+      <video src="${API}${esc(c.video)}" controls playsinline preload="metadata"></video>
+      <div class="in">
+        <h3>${esc(c.title)}</h3>
+        <div class="meta"><span class="score">${c.score}</span><span>${Math.round(c.duration)} s</span><span>à ${Math.floor(c.start/60)}:${String(Math.floor(c.start%60)).padStart(2,"0")}</span></div>
+        <ul class="why">${(c.reasons||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+        ${c.why?`<p class="why">${esc(c.why)}</p>`:""}
+        <a class="dl" href="${API}${esc(c.video)}?download=1">Télécharger</a>
+      </div>
+    </article>`).join("");
+  r.classList.add("on");
+  progress(1,`${j.clips.length} clip${j.clips.length>1?"s":""} prêt${j.clips.length>1?"s":""}`);
+  r.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
 $("form").onsubmit=e=>{
   e.preventDefault();
-  const r=$("result");r.className="result";$("spin").classList.add("on");
-  setTimeout(()=>{
-    $("spin").classList.remove("on");
-    const n=mode==="clips"?3:1;
-    r.style.gridTemplateColumns=n===1?"minmax(0,220px)":"";r.style.justifyContent="center";
-    r.innerHTML=Array.from({length:n},(_,i)=>`<div class="clip"><small>${mode==="clips"?"0:"+(20+i*7)+" s":mode==="video"?"0:08 s":"1080×1920"}</small>${mode==="clips"?["« La vraie raison… »","« Personne ne le dit »","« Voilà le piège »"][i]:"Aperçu de démonstration"}</div>`).join("");
-    r.classList.add("on");
-  },1400);
+  if(busy)return;
+  if(mode!=="clips"){$("soon").classList.add("on");return}
+  start(JSON.stringify({url:$("input").value.trim()}),{"Content-Type":"application/json"},API+"/api/jobs");
+};
+$("file").onchange=e=>{
+  const f=e.target.files[0];if(!f||busy)return;
+  start(f,{"Content-Type":f.type||"video/mp4"},API+"/api/jobs?filename="+encodeURIComponent(f.name));
+  e.target.value="";
 };
 </script>
 </body>

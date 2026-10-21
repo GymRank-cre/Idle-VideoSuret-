@@ -13,6 +13,22 @@ clipengine episode.mp4 -o out --no-render                             # classeme
 Sortie : `01-titre.mp4`, `01-titre.json` (score, raisons, titre, texte), `01-titre.ass`, `report.json`.
 Prérequis système : `ffmpeg` avec libass et x264. Variable optionnelle : `ANTHROPIC_API_KEY`.
 
+## Page + API
+```bash
+clipengine serve --port 8080 [--model small] [--preset veryfast]
+# puis http://localhost:8080  (sert ../index.html ; l'onglet « Clips » appelle l'API)
+```
+| Route | Rôle |
+|---|---|
+| `POST /api/jobs` JSON `{"url", "options"}` | lance un job depuis une URL (http/https uniquement) |
+| `POST /api/jobs?filename=x.mp4` corps binaire, en-tête `X-Options` | lance un job depuis un fichier (≤ 2 Go, `CLIPENGINE_MAX_UPLOAD`) |
+| `GET /api/jobs/<id>` | `status` (queued/running/done/error), `stage`, `progress`, `clips[]` |
+| `GET /files/<id>/<clip>.mp4[?download=1]` | clip, requêtes Range gérées (lecture/seek) |
+
+Un job à la fois (le rendu occupe tous les cœurs), les autres attendent en file. Options acceptées, bornées :
+`max_clips`, `min_dur`, `max_dur`, `layout`, `captions`. Les jobs sont purgés après 24 h.
+Le serveur n'a **ni authentification ni limite de débit** : à placer derrière un proxy/auth avant toute exposition publique.
+
 ## Pipeline
 
 | Étape | Module | Ce qui est fait |
@@ -35,7 +51,7 @@ Prérequis système : `ffmpeg` avec libass et x264. Variable optionnelle : `ANTH
 
 ## Tests
 ```bash
-pytest -q                 # 36 tests, dont 5 de bout en bout (vidéo synthétique, ~40 s)
+pytest -q                 # 40 tests, dont 9 de bout en bout (vidéo synthétique, ~50 s)
 pytest -q -m "not slow"   # logique seule, < 1 s
 ```
 

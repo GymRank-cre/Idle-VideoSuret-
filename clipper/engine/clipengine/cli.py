@@ -9,6 +9,10 @@ from .pipeline import run
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] == "serve":
+        from .server import serve_main
+        return serve_main(argv[1:])
     p = argparse.ArgumentParser(prog="clipengine", description="Vidéo longue -> clips verticaux sous-titrés")
     p.add_argument("source", help="fichier vidéo ou URL (YouTube…)")
     p.add_argument("-o", "--out", default="out", help="dossier de sortie")
