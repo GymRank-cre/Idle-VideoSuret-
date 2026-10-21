@@ -20,7 +20,7 @@ from .config import Config
 from .errors import UserError
 from .media import MediaInfo, check_info, fetch, probe
 from .models import Candidate, Word
-from .reframe import plan_camera
+from .reframe import face_zone, plan_camera
 from .render import render_clip
 from .scoring import breakdown, label_for, score_candidates
 from .select import propose
@@ -38,6 +38,7 @@ class Rendered:
     poster: Path | None
     layouts: list[str] = field(default_factory=list)
     face_backend: str = ""
+    hook_shown: bool | None = None          # None : pas d'accroche demandée ; False : pas de place sans couvrir un visage
 
 
 @dataclass
@@ -95,6 +96,15 @@ def clip_transcript(tr: Transcript, duration: float) -> Transcript:
     return Transcript(tr.language, words)
 
 
+def clip_words(words: list[Word], start: float, end: float, min_presence: float = 0.12) -> list[Word]:
+    """Mots affichables dans [start, end] : un mot entamé par le bord doit y être resté assez longtemps pour être lu.
+
+    Sans cela, le mot d'après (souvent mal daté par Whisper) clignote une image à la fin du clip.
+    """
+    return [w for w in words
+            if (w.start >= start and w.end <= end) or min(w.end, end) - max(w.start, start) >= min_presence]
+
+
 def check_speech(tr: Transcript, info: MediaInfo) -> None:
     """Le moteur travaille à partir de ce qui est dit : sans voix audible, on le dit plutôt que de rendre du vide."""
     spoken = sum(w.end - w.start for w in tr.words)
@@ -126,17 +136,12 @@ def find_moments(tr: Transcript, prof: AudioProfile, cfg: Config, log: Log = pri
     return ranked, n_auto, {"sentences": len(sents), "candidates": len(cands)}
 
 
-def hook_text(title: str, n: int = 7) -> str:
-    w = title.split()
-    return title if len(w) <= n else " ".join(w[:n]).rstrip(",;:") + "…"
-
-
 def finalize_kit(c: Candidate) -> Candidate:
     """Kit de publication : titre, accroche, légende, hashtags (LLM si disponible, sinon heuristique)."""
-    if not c.title:
-        c.title = default_title(c.text)
     if not c.hook:
-        c.hook = hook_text(c.title)
+        c.hook = kit.pick_hook(c.text)           # peut rester vide : pas d'accroche plutôt qu'une accroche tronquée
+    if not c.title:                               # une phrase entière du clip (plus longue permise qu'à l'écran), sinon coupe propre
+        c.title = c.hook or kit.pick_hook(c.text, max_words=18, max_chars=92) or default_title(c.text)
     if not c.caption:
         c.caption = kit.caption(c.title)
     if not c.hashtags:
@@ -154,7 +159,7 @@ def proposal_dict(c: Candidate, pid: int, rank: int, auto: bool) -> dict:
         "title": c.title, "hook": c.hook, "caption": c.caption, "hashtags": c.hashtags, "why": c.why,
         "reasons": c.reasons, "breakdown": breakdown(c.features), "text": c.text,
         "state": "queued" if auto else "reserve", "progress": 0.0,
-        "video": "", "poster": "", "layouts": [], "style": "", "error": "",
+        "video": "", "poster": "", "layouts": [], "style": "", "error": "", "hook_shown": None,
     }
 
 
@@ -178,7 +183,7 @@ def render_candidate(source: Path, info: MediaInfo, tr: Transcript, prof: AudioP
         raise UserError("Ce moment se situe en dehors de la vidéo.")
     out_dir.mkdir(parents=True, exist_ok=True)
     prog = on_progress or (lambda f: None)
-    words = [w for w in tr.words if w.end > c.start and w.start < c.end]
+    words = clip_words(tr.words, c.start, c.end)
     prog(0.03)
     sample_t = c.start + np.arange(int(c.duration * cfg.sample_fps)) / cfg.sample_fps
     speech = prof.at(sample_t) > prof.speech_threshold
@@ -187,13 +192,18 @@ def render_candidate(source: Path, info: MediaInfo, tr: Transcript, prof: AudioP
     plan = plan_camera(tl, info.width, info.height, c.duration, cfg)
     prog(0.15)
     ass_path = out_dir / f"{stem}.ass"
-    ass_path.write_text(build_ass(words, c.start, c.end, cfg, c.hook if cfg.title_overlay else "", st),
-                        encoding="utf-8")
+    hook = c.hook if cfg.title_overlay else ""
+    zone = None
+    if hook and st.hook_on:                                      # l'accroche ne se pose jamais sur un visage
+        zone = face_zone(tl, plan, 0.0, min(st.hook_seconds, c.duration) if st.hook_seconds > 0 else c.duration)
+    ass = build_ass(words, c.start, c.end, cfg, hook, st, avoid=zone)
+    ass_path.write_text(ass, encoding="utf-8")
+    hook_shown = any(l.startswith("Dialogue:") and ",Hook," in l for l in ass.splitlines()) if hook and st.hook_on else None
     video = render_clip(source, c.start, c.end, plan, ass_path, out_dir / f"{stem}.mp4", cfg, info.has_audio, st,
                         on_progress=lambda f: prog(0.15 + 0.82 * f))
     poster = make_poster(video, out_dir / f"{stem}.jpg", min(1.2, c.duration / 2))
     prog(1.0)
-    return Rendered(video, ass_path, poster, [s.layout for s in plan.shots], tl.backend)
+    return Rendered(video, ass_path, poster, [s.layout for s in plan.shots], tl.backend, hook_shown)
 
 
 # ----------------------------------------------------------------------------- exécution complète (CLI)

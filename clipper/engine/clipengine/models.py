@@ -14,6 +14,7 @@ class Word:
 @dataclass
 class Sentence:
     words: list[Word]
+    soft_end: bool = False            # coupée de force (phrase trop longue) et non sur une vraie fin de phrase
 
     @property
     def start(self) -> float:

@@ -487,7 +487,7 @@ function proposalCard(x0, ctx) {
   const text = h("details", {}, h("summary", {}, "Texte du moment"), h("p", { class: "snippet" }, x0.text));
   el.append(mediaBox, note, h("div", { class: "pc-body" },
     h("div", { class: "pc-top" }, h("span", { class: "score lab-" + x0.label, title: "Avis sur le contenu : ne prédit ni vues ni abonnés" }, x0.score), h("span", {}, x0.label), h("span", {}, "· " + when)),
-    h("h3", {}, x0.title), x0.hook ? h("p", { class: "hook" }, "Accroche : " + x0.hook) : null, why, kit, text, actsBox));
+    h("h3", {}, x0.title), x0.hook ? h("p", { class: "hook" }, "Accroche : " + x0.hook + (x0.hook_shown === false ? " — non incrustée : pas de place sans cacher le visage" : "")) : null, why, kit, text, actsBox));
 
   function buildMedia(x) {
     mediaBox.replaceChildren(); actsBox.replaceChildren(); note.replaceChildren(); videoEl = barEl = pctEl = null;

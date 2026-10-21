@@ -431,7 +431,7 @@ class Projects:
                 for name in old - new - {""}:
                     (d / "clips" / name).unlink(missing_ok=True)
                 pr.update(state="done", progress=1.0, video=r.video.name, poster=r.poster.name if r.poster else "",
-                          layouts=sorted(set(r.layouts)), style=style.name, error="")
+                          layouts=sorted(set(r.layouts)), style=style.name, error="", hook_shown=r.hook_shown)
                 self._save(p)
         except UserError as e:
             with self._lock:

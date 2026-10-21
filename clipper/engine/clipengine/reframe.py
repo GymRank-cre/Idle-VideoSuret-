@@ -242,3 +242,37 @@ def frame_params(plan: CameraPlan, t: float):
                            cw, ch, plan.src_w, plan.src_h)
         boxes.append((x0, y0, cw, ch))
     return "split", tuple(boxes)
+
+
+def face_zone(tl: Timeline, plan: CameraPlan, t0: float, t1: float) -> tuple[float, float] | None:
+    """Bande verticale occupée par les têtes dans l'image finale pendant [t0, t1], en fractions de la hauteur.
+
+    None : aucun visage vu. (0, 1) : mise en page « deux personnes empilées », où rien ne peut se poser sans couvrir
+    un visage. Sert à ne pas poser l'accroche par-dessus un visage.
+    """
+    top, bottom = 1.0, 0.0
+    seen = False
+    for k, t in enumerate(tl.t):
+        if t < t0 or t > t1:
+            continue
+        layout, boxes = frame_params(plan, float(t))
+        if layout == "split":
+            return (0.0, 1.0)
+        faces = [(tr["cx"][k], tr["cy"][k], tr["size"][k]) for tr in tl.tracks.values() if not np.isnan(tr["cx"][k])]
+        if not faces:
+            continue
+        big = max(f[2] for f in faces)
+        for cx, cy, size in faces:
+            if size < 0.4 * big:
+                continue
+            if layout == "track":
+                x0, y0, cw, ch = boxes
+                a, b = (cy - 0.78 * size - y0) / ch, (cy + 0.62 * size - y0) / ch
+            else:                                    # plan entier centré sur un fond
+                s = min(plan.out_w / plan.src_w, plan.out_h / plan.src_h)
+                off = (plan.out_h - plan.src_h * s) / 2
+                a, b = (off + (cy - 0.78 * size) * s) / plan.out_h, (off + (cy + 0.62 * size) * s) / plan.out_h
+            top, bottom, seen = min(top, a), max(bottom, b), True
+    if not seen:
+        return None
+    return (max(0.0, top), min(1.0, bottom))

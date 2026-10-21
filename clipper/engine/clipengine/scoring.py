@@ -34,7 +34,7 @@ LABELS = {
     "novelty": ("propos dense, peu de remplissage", "beaucoup de remplissage"),
     "duration": ("durée idéale", "durée peu adaptée au format"),
     "cohesion": ("un seul sujet du début à la fin", "plusieurs sujets mélangés"),
-    "edges": ("démarre et finit sur un changement de sujet", "coupe au milieu d'une idée"),
+    "edges": ("démarre et finit sur un changement de sujet", "coupé au milieu d'un même sujet"),
 }
 
 
@@ -168,6 +168,19 @@ def score_candidates(cands: list[Candidate], sents: list[Sentence], prof: AudioP
         }
         # mélanger deux sujets ruine un clip quelles que soient ses autres qualités : effet multiplicatif
         score = sum(WEIGHTS[k] * v for k, v in f.items()) * (0.6 + 0.4 * f["cohesion"]) * 100 / 0.82
+        # autonomie des bords : un clip qui démarre ou finit au milieu d'une idée est gêné quelles que soient ses qualités
+        first, last = ss[0], ss[-1]
+        first_tok = L.tokens(first.text)[:1]
+        last_tok = L.tokens(last.text)[-1:]
+        start_soft = c.lo > 0 and sents[c.lo - 1].soft_end
+        start_dangling = (bool(first_tok) and first_tok[0] in L.DANGLING) or first.words[0].text[:1].islower()
+        end_soft = last.soft_end
+        end_dangling = (bool(last_tok) and last_tok[0] in L.DANGLING_END and last.words[-1].text[-1] not in L.TERMINAL)
+        gate = (0.90 if start_soft else 1.0) * (0.90 if end_soft else 1.0) * (0.85 if start_dangling else 1.0) \
+            * (0.80 if end_dangling else 1.0)
+        score *= gate
+        f["start_clean"] = 0.0 if (start_soft or start_dangling) else 1.0
+        f["end_clean"] = 0.0 if (end_soft or end_dangling) else 1.0
         penalty = 0.0
         if longest_gap > 1.4:
             penalty += min(12.0, (longest_gap - 1.4) * 6)      # temps mort au milieu
@@ -185,6 +198,10 @@ def explain(f: dict[str, float], penalty: float = 0.0) -> list[str]:
     good = [LABELS[k][0] for k in ranked if f[k] >= 0.6][:2]
     bad = [LABELS[k][1] for k in sorted(WEIGHTS, key=lambda k: f[k]) if f[k] < 0.35][:1]
     out = good + ["⚠ " + b for b in bad]
+    if f.get("start_clean", 1.0) < 1.0:
+        out.append("⚠ commence au milieu d'une idée")
+    if f.get("end_clean", 1.0) < 1.0:
+        out.append("⚠ s'arrête au milieu d'une idée")
     if penalty > 0:
         out.append("⚠ temps mort au milieu")
     return out

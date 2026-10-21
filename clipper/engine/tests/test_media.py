@@ -58,3 +58,16 @@ def test_check_info_rules():
         check_info(MediaInfo(1920, 1080, 30, 5 * 3600, True))
     with pytest.raises(UserError, match="piste audio"):
         check_info(MediaInfo(1920, 1080, 30, 600, False))
+
+
+def test_download_errors_are_explained_not_misattributed():
+    from clipengine.media import explain_download_error as ex
+    bot = ("ERROR: [youtube] lxGfvKYYs1U: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies "
+           "for the authentication.")
+    assert "anti-robot" in ex(bot) and "CLIPENGINE_COOKIES" in ex(bot) and "limite d'âge" not in ex(bot)
+    assert "limite d'âge" in ex("ERROR: Sign in to confirm your age. This video may be inappropriate for some users.")
+    assert "privée" in ex("ERROR: Private video. Sign in if you've been granted access to this video")
+    assert "pays" in ex("ERROR: The uploader has not made this video available in your country")
+    assert "n'existe plus" in ex("ERROR: Video unavailable. This video has been removed by the uploader")
+    out = ex("ERROR: something about a message and a page")           # « age » dans « message » ou « page » : pas de faux positif
+    assert out.startswith("Téléchargement impossible") and "limite d'âge" not in out

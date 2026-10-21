@@ -38,3 +38,28 @@ def hashtags(text: str, n: int = 4) -> list[str]:
 def caption(title: str, limit: int = 110) -> str:
     t = re.sub(r"\s+", " ", title).strip()
     return t if len(t) <= limit else t[:limit].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+
+
+def split_sentences(text: str) -> list[str]:
+    return [x.strip() for x in re.split(r"(?<=[.!?…])\s+", text.strip()) if x.strip()]
+
+
+def pick_hook(text: str, min_words: int = 3, max_words: int = 12, max_chars: int = 64) -> str:
+    """Accroche d'un clip : une phrase **entière** et courte du clip, jamais une phrase tronquée.
+
+    Préfère une question, un chiffre, des mots forts, une phrase qui arrive tôt. Sans phrase convenable, renvoie ""
+    (mieux vaut pas d'accroche qu'une accroche coupée au milieu d'un mot).
+    """
+    best, best_sc = "", -1.0
+    for idx, s in enumerate(split_sentences(text)[:8]):
+        toks = L.tokens(s)
+        n = len(toks)
+        if not (min_words <= n <= max_words) or len(s) > max_chars or s[-1] not in ".!?…" or s[0].islower():
+            continue
+        if toks[0] in L.DANGLING or toks[0] in L.ANAPHORIC or toks[-1] in L.DANGLING_END and s[-1] == ",":
+            continue
+        sc = (0.35 * s.endswith("?") + 0.25 * bool(re.search(r"\d", s)) + 0.15 * min(2, sum(t in L.POWER for t in toks))
+              + 0.10 * (1 - idx / 8) + 0.10 * (n <= 7))
+        if sc > best_sc + 1e-9:                      # à égalité, la plus précoce
+            best, best_sc = s, sc
+    return best.rstrip(".") if best else ""

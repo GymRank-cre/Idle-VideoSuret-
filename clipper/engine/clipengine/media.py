@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+import os
 import re
 import socket
 import subprocess
@@ -128,6 +129,25 @@ def check_remote(meta: dict, max_s: float = MAX_SOURCE_S) -> None:
         raise UserError(f"Vidéo trop courte ({dur:.0f} s) : il en faut au moins {MIN_SOURCE_S} s.")
 
 
+def explain_download_error(msg: str) -> str:
+    """Traduit une erreur de yt-dlp en une consigne que l'on peut suivre."""
+    msg = re.sub(r"\x1b\[[0-9;]*m|ERROR:\s*", "", msg)
+    low = msg.lower()
+    if "not a bot" in low or "confirm you" in low and "bot" in low:
+        return ("YouTube bloque le téléchargement automatique depuis cette adresse (vérification anti-robot, fréquente "
+                "depuis un serveur). Télécharge la vidéo et envoie le fichier, ou donne à CLIPENGINE_COOKIES le chemin "
+                "d'un fichier de cookies YouTube exporté.")
+    if re.search(r"age[- ]restrict|confirm your age|inappropriate for some", low):
+        return "Cette vidéo est soumise à une limite d'âge : télécharge-la et envoie le fichier."
+    if re.search(r"private video|members[- ]only|join this channel|premium", low):
+        return "Cette vidéo est privée ou réservée aux membres : télécharge-la et envoie le fichier."
+    if re.search(r"available in your country|in your country|geo[- ]?(restrict|block)", low):
+        return "Cette vidéo n'est pas disponible dans ton pays : télécharge-la et envoie le fichier."
+    if re.search(r"video unavailable|has been removed|no longer available|does not exist|deleted", low):
+        return "Cette vidéo n'existe plus ou n'est pas disponible."
+    return "Téléchargement impossible : " + msg.strip()[:200]
+
+
 def fetch(url: str, out_dir: str | Path, max_s: float = MAX_SOURCE_S,
           log: Callable[[str], None] = print) -> tuple[Path, dict]:
     """Télécharge une vidéo (YouTube, Twitch, Vimeo… tout ce que yt-dlp sait lire), ≤ 1080p, en mp4."""
@@ -139,6 +159,9 @@ def fetch(url: str, out_dir: str | Path, max_s: float = MAX_SOURCE_S,
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     base = {"quiet": True, "noprogress": True, "noplaylist": True, "socket_timeout": 30, "retries": 3}
+    cookies = os.environ.get("CLIPENGINE_COOKIES")
+    if cookies and Path(cookies).is_file():
+        base["cookiefile"] = cookies                 # exportés depuis un navigateur connecté (format Netscape)
     try:
         with yt_dlp.YoutubeDL({**base, "skip_download": True}) as ydl:
             meta = ydl.extract_info(url, download=False)
@@ -157,11 +180,7 @@ def fetch(url: str, out_dir: str | Path, max_s: float = MAX_SOURCE_S,
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.extract_info(url, download=True)
     except yt_dlp.utils.DownloadError as e:
-        msg = str(e)
-        if re.search(r"private|members|sign in|age|unavailable|removed", msg, re.I):
-            raise UserError("YouTube refuse l'accès à cette vidéo (privée, supprimée, réservée aux membres ou "
-                            "soumise à une limite d'âge). Télécharge-la et envoie le fichier.") from None
-        raise UserError("Téléchargement impossible : " + re.sub(r"\x1b\[[0-9;]*m|ERROR:\s*", "", msg)[:200]) from None
+        raise UserError(explain_download_error(str(e))) from None
     path = next(out_dir.glob("source.*"))
     return path, {"title": meta.get("title") or "", "id": meta.get("id") or "",
                   "uploader": meta.get("uploader") or "", "duration": meta.get("duration")}

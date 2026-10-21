@@ -1,6 +1,8 @@
 """Rendu d'un clip : décodage ffmpeg -> recadrage OpenCV -> encodage ffmpeg (+ sous-titres ASS, audio normalisé)."""
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -10,6 +12,40 @@ import numpy as np
 from .config import Config
 from .reframe import CameraPlan, crop_size, frame_params
 from .styles import Style, ass_filter
+
+
+LOUD_I, LOUD_TP, LOUD_LRA = -14.0, -1.5, 11.0       # niveau des plateformes de vidéo courte
+
+
+def measure_loudness(src: str | Path, start: float, dur: float) -> dict | None:
+    """Première passe de `loudnorm` sur l'extrait exact du clip : mesures à fournir à la seconde passe.
+
+    La normalisation en une passe se contente d'estimer en cours de route et rate souvent la cible de 1 à 2 LU ;
+    avec les mesures, le gain est appliqué d'un bloc. None si l'extrait est muet ou si ffmpeg n'a rien mesuré.
+    """
+    r = subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(src),
+                        "-vn", "-af", f"loudnorm=I={LOUD_I}:TP={LOUD_TP}:LRA={LOUD_LRA}:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True, errors="replace")
+    m = re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr)
+    if r.returncode != 0 or not m:
+        return None
+    try:
+        raw = json.loads(m.group(0))
+        vals = {k: float(raw[k]) for k in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")}
+    except (ValueError, KeyError):
+        return None
+    if not all(np.isfinite(v) for v in vals.values()) or vals["input_i"] < -60:
+        return None                                          # silence : rien à mesurer
+    return vals
+
+
+def loudnorm_filter(measured: dict | None) -> str:
+    base = f"loudnorm=I={LOUD_I}:TP={LOUD_TP}:LRA={LOUD_LRA}"
+    if not measured:
+        return base
+    return (f"{base}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}"
+            f":measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}"
+            f":offset={measured['target_offset']}:linear=true")
 
 
 def _warp(frame: np.ndarray, box, out_w: int, out_h: int) -> np.ndarray:
@@ -91,7 +127,7 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
     if has_audio:
         af = f"afade=t=in:d=0.04,afade=t=out:st={max(dur - 0.08, 0):.3f}:d=0.08"
         if cfg.loudnorm:
-            af = "loudnorm=I=-14:TP=-1.5:LRA=11," + af
+            af = loudnorm_filter(measure_loudness(src, start, dur)) + "," + af
         enc_cmd += ["-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(src), "-map", "0:v", "-map", "1:a:0",
                     "-af", af, "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
     enc_cmd += ["-vf", vf, "-c:v", "libx264", "-preset", cfg.preset, "-crf", str(cfg.crf),

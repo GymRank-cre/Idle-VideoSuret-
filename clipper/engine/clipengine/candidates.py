@@ -1,6 +1,7 @@
 """Phrases, frontières de sujet, génération et calage des candidats."""
 from __future__ import annotations
 
+import re
 from collections import Counter
 from math import sqrt
 
@@ -8,31 +9,81 @@ import numpy as np
 
 from .audio import AudioProfile
 from .config import Config
-from .lexicon import TERMINAL, content_tokens
+from .lexicon import DANGLING_END, TERMINAL, content_tokens
 from .models import Candidate, Sentence, Word
 
 
-def build_sentences(words: list[Word], gap: float = 0.8, max_len: float = 14.0) -> list[Sentence]:
-    """Découpe en phrases : ponctuation finale ou pause longue.
+def _dur(ws: list[Word]) -> float:
+    return ws[-1].end - ws[0].start
 
-    Une phrase fleuve (> max_len) est recoupée au dernier point de respiration (virgule ou pause) déjà passé.
+
+def _is_soft_point(ws: list[Word], k: int, min_gap: float) -> bool:
+    """Peut-on couper après ws[k] sans laisser une idée en suspens ?"""
+    w = ws[k]
+    if k + 1 >= len(ws):
+        return False
+    if re.sub(r"[^\w']", "", w.text.lower()) in DANGLING_END:
+        return False
+    return w.text[-1] in ",;:" or (ws[k + 1].start - w.end) >= min_gap
+
+
+def _split_long(ws: list[Word], max_len: float) -> list[Sentence]:
+    """Phrase fleuve : recoupée au dernier point de respiration avant `max_len`, jamais juste après « et », « the »…
+
+    Les morceaux de gauche sont marqués `soft_end` : une coupe de clip n'y est pas souhaitable.
     """
     out: list[Sentence] = []
+    while _dur(ws) > max_len and len(ws) > 3:
+        k = None
+        for min_gap in (0.35, 0.2, 0.1):
+            cands = [i for i in range(len(ws) - 1) if ws[i].end - ws[0].start <= max_len and _is_soft_point(ws, i, min_gap)]
+            if cands:
+                k = cands[-1]
+                break
+        if k is None:
+            break
+        out.append(Sentence(ws[:k + 1], soft_end=True))
+        ws = ws[k + 1:]
+    out.append(Sentence(ws))
+    return out
+
+
+def build_sentences(words: list[Word], gap: float = 0.8, max_len: float = 14.0) -> list[Sentence]:
+    """Phrases à partir des mots, en tenant compte des artefacts de la transcription.
+
+    1. coupe sur ponctuation finale ou pause longue ;
+    2. recolle les miettes (« else. », « And » seul) ;
+    3. recoupe les phrases fleuves à un vrai point de respiration (voir `_split_long`) ;
+    4. marque `soft_end` toute frontière douteuse : coupe de force, ou point suivi d'une minuscule sans pause
+       (« …Kennedy. so we'll… » : Whisper ponctue à la fin de chaque morceau de voix, même au milieu d'une phrase).
+       Ces frontières restent des frontières, mais un clip qui s'y arrête ou y commence est pénalisé.
+    """
+    chunks: list[list[Word]] = []
     cur: list[Word] = []
-    soft = -1                                   # indice (dans cur) du dernier point de coupe douce
     for i, w in enumerate(words):
         cur.append(w)
         nxt = words[i + 1] if i + 1 < len(words) else None
-        if nxt is not None and (w.text[-1] in ",;:" or nxt.start - w.end > 0.35):
-            soft = len(cur) - 1
         if nxt is None or w.text[-1] in TERMINAL or (nxt.start - w.end) > gap:
-            out.append(Sentence(cur))
-            cur, soft = [], -1
-        elif w.end - cur[0].start > max_len:
-            cut = soft + 1 if soft >= 0 else len(cur)
-            out.append(Sentence(cur[:cut]))
-            cur = cur[cut:]
-            soft = -1
+            chunks.append(cur)
+            cur = []
+    merged: list[list[Word]] = []
+    for ch in chunks:
+        if merged:
+            prev = merged[-1]
+            g = ch[0].start - prev[-1].end
+            crumb = len(ch) <= 2 or _dur(ch) < 0.9
+            lone_prefix = len(prev) <= 2 and prev[-1].text[-1] not in TERMINAL     # « And » seul devant sa phrase
+            if g < gap and (crumb or lone_prefix):
+                prev.extend(ch)
+                continue
+        merged.append(list(ch))
+    out: list[Sentence] = []
+    for ch in merged:
+        out.extend(_split_long(ch, max_len))
+    for a, b in zip(out, out[1:]):
+        # une minuscule en tête de phrase signale une suite d'idée, même après une pause d'hésitation
+        if not a.soft_end and b.words[0].start - a.words[-1].end < 2.0 and b.words[0].text[:1].islower():
+            a.soft_end = True
     return out
 
 
@@ -136,7 +187,8 @@ def split_full(sents: list[Sentence], prof: AudioProfile | None, cfg: Config) ->
                 break
             if d >= cfg.min_dur or j == n - 1:
                 pause = (sents[j + 1].start - sents[j].end) if j + 1 < n else 2.0
-                score = -abs(d - cfg.target_dur) / cfg.target_dur + 0.35 * float(bs[j]) + 0.1 * min(pause, 1.5)
+                score = (-abs(d - cfg.target_dur) / cfg.target_dur + 0.35 * float(bs[j]) + 0.1 * min(pause, 1.5)
+                         - (0.6 if sents[j].soft_end else 0.0))
                 if best is None or score > best[0]:
                     best = (score, j)
         j = best[1] if best else i

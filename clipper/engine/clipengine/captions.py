@@ -106,8 +106,29 @@ def _page_emphasis(tokens: list[str], limit: int = 3) -> set[int]:
     return set((nums + power)[:limit])
 
 
+def place_hook(default_top: float, h: float, avoid: tuple[float, float] | None,
+               limit: float = 0.58) -> float | None:
+    """Où poser l'accroche (haut de la boîte, fraction de la hauteur) sans couvrir `avoid` (bande des têtes).
+
+    Ordre : position voulue ; sous le visage si ça tient au-dessus des sous-titres ; au-dessus du visage ; sinon rien.
+    """
+    if avoid is None:
+        return default_top
+    a, b = avoid
+    margin = 0.012
+    if default_top + h + margin <= a or default_top >= b + margin:
+        return default_top
+    below = b + 0.015
+    if below + h <= limit:
+        return below
+    above = a - h - 0.015
+    if above >= 0.095:
+        return above
+    return None
+
+
 def build_ass(words: list[Word], clip_start: float, clip_end: float, cfg: Config, title: str = "",
-              style: Style | None = None) -> str:
+              style: Style | None = None, avoid: tuple[float, float] | None = None) -> str:
     """`words` en temps source ; la sortie est en temps relatif au clip."""
     st = style or get_style(getattr(cfg, "style", "podcast"))
     W, H = cfg.out_w, cfg.out_h
@@ -203,18 +224,20 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                               f"{{{pos}\\1a&HFF&\\blur9{fade}}}{ghost}")
                 ev.append(f"Dialogue: 1,{_t(s)},{_t(e)},Cap,,0,0,0,,{{{pos}{fade}}}{line}")
 
-    # ---- accroche
+    # ---- accroche : jamais par-dessus un visage ni sur la zone des sous-titres
     if cfg.title_overlay and st.hook_on and title:
         lines, e_hook = wrap_px(_esc(title).upper() if st.upper and st.font in ("anton", "bebas", "bangers")
-                                else _esc(title), st.font, hook_em, W - 2 * SAFE_LEFT * sc - 32 * sc)
+                                else _esc(title), st.font, hook_em, W - 2 * SAFE_LEFT * sc - 32 * sc, max_lines=2)
         end = min(st.hook_seconds, dur) if st.hook_seconds > 0 else dur
-        txt = "\\N".join(lines)
-        sz = f"\\fs{ass_size(st.font, e_hook)}" if abs(e_hook - hook_em) > 0.5 else ""
-        if st.hook_where == "haut":
-            where = f"\\an8\\pos({W // 2},{round(H * 0.105)})"
-        else:
-            where = f"\\an5\\pos({W // 2},{round(H * 0.34)})"
-        ev.append(f"Dialogue: 2,{_t(0)},{_t(end)},Hook,,0,0,0,,{{{where}{sz}\\c{_c(st.hook_color)}\\fad(220,260)}}{txt}")
+        pad = 16 * sc
+        box_h = (len(lines) * ass_size(st.font, e_hook) + 2 * pad) / H          # hauteur réelle de la boîte (mesurée)
+        default_top = 0.105 if st.hook_where == "haut" else 0.34 - box_h / 2
+        top = place_hook(default_top, box_h, avoid)
+        if top is not None:
+            sz = f"\\fs{ass_size(st.font, e_hook)}" if abs(e_hook - hook_em) > 0.5 else ""
+            where = f"\\an8\\pos({W // 2},{round(top * H + pad)})"
+            txt = "\\N".join(lines)
+            ev.append(f"Dialogue: 2,{_t(0)},{_t(end)},Hook,,0,0,0,,{{{where}{sz}\\c{_c(st.hook_color)}\\fad(220,260)}}{txt}")
 
     # ---- signature
     if st.signature:
@@ -236,8 +259,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 
 def default_title(text: str, limit: int = 58) -> str:
+    """Titre sans IA : la première phrase ; si elle est trop longue, coupée sur une virgule plutôt qu'au milieu d'un
+    groupe de mots, et jamais sur un mot de liaison."""
     first = re.split(r"(?<=[.!?…])\s", text.strip(), maxsplit=1)[0]
     if len(first) <= limit:
         return first.rstrip(".")
-    cut = first[:limit].rsplit(" ", 1)[0]
-    return cut.rstrip(",;:") + "…"
+    head = first[:limit]
+    k = max(head.rfind(", "), head.rfind("; "), head.rfind(": "), head.rfind(" — "))
+    if k >= 0.45 * limit:
+        return head[:k].rstrip(" ,;:—")
+    words = head.rsplit(" ", 1)[0].split()
+    while len(words) > 3 and re.sub(r"[^\w']", "", words[-1].lower()) in L.DANGLING_END:
+        words.pop()
+    return " ".join(words).rstrip(",;:") + "…"

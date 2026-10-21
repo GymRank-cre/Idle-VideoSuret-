@@ -42,6 +42,14 @@ il elle ils elles ça ce cela celui celle ceux
 he she they it this that these those
 """.split())
 
+# Un clip ou une phrase qui finit sur l'un de ces mots (sans ponctuation) s'arrête au milieu d'une idée.
+DANGLING_END = set("""
+et ou mais donc car que qui dont de du des d la le les un une à au aux en dans avec pour sur sous par comme si quand
+parce alors ni je tu il elle on nous vous ils elles ce cette ces mon ma mes ton ta tes son sa ses
+and or but so because that which who whom whose to of the a an in on at by for with from as if when while then
+than like is are was were be been am i we you they it he she this these those my your our their his her its
+""".split())
+
 FILLERS = set("""
 euh heu hum bah ben bon genre voilà
 um uh uhm hmm er like
