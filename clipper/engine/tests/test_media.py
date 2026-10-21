@@ -71,3 +71,9 @@ def test_download_errors_are_explained_not_misattributed():
     assert "n'existe plus" in ex("ERROR: Video unavailable. This video has been removed by the uploader")
     out = ex("ERROR: something about a message and a page")           # « age » dans « message » ou « page » : pas de faux positif
     assert out.startswith("Téléchargement impossible") and "limite d'âge" not in out
+
+
+def test_a_403_from_youtube_is_explained_as_a_server_ip_problem():
+    from clipengine.media import explain_download_error as ex
+    msg = ex("ERROR: unable to download video data: HTTP Error 403: Forbidden")
+    assert "403" in msg and "ordinateur" in msg and "CLIPENGINE_COOKIES" in msg

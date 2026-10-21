@@ -77,7 +77,7 @@ La clé voyage dans l'en-tête `X-Goog-Api-Key` (l'API YouTube le lit comme le p
 
 Quota gratuit : 10 000 unités par jour ; une visite de l'onglet en coûte de 5 à 30 (réponses gardées 15 minutes, bouton
 **Actualiser** pour interroger à nouveau). La documentation de Google ne mentionne aucune facturation pour cette API ; si
-la console en demande une, s'arrêter là. Sans clé, l'onglet explique la marche à suivre.
+la console en demande une, s'arrêter là. Sans clé, l'onglet explique la marche à suivre. Par défaut la liste est en **français** et dans la catégorie « Parole » (actualités, blogs, sciences et tech, divertissement) : le classement général de YouTube est aux deux tiers du jeu vidéo.
 
 ### Réglages voisins (pas des clés d'API)
 
@@ -226,7 +226,7 @@ chemin complet du moteur (SDK, repli de sécurité, `claude-opus-5-5`) :
   vocabulaire ; `large-v3` fait mieux, plus lentement.
 - Non testés ici : téléchargement YouTube depuis une connexion personnelle (depuis ce serveur : refusé par le contrôle anti-robot,
   message clair) ; lecture des clips dans un navigateur avec décodeur H.264 (le Chromium de test n'en a pas).
-- **Découvrir** : essayé contre un faux serveur YouTube (requêtes, quota, erreurs, interface), jamais avec la vraie API.
+- **Découvrir** : les listes ont été essayées avec la vraie API YouTube (clé en secret réseau) ; l'interface, elle, contre un faux serveur. **Clipper une vidéo YouTube depuis un serveur cloud échoue** : YouTube répond 403 au téléchargement (message explicite) ; depuis ton ordinateur, ou avec des cookies, non essayé.
   « Vues par heure » est un indicateur de ce qui monte, pas une prévision. Le moteur ne vérifie pas que tu as le droit
   de clipper une vidéo : pour celle d'un autre créateur, c'est son accord qu'il faut (d'où « Mes chaînes »).
 - Pas de publication automatique ni de statistiques TikTok, pas de génération vidéo/image : voir `../ANALYSE-MOQI.md`.

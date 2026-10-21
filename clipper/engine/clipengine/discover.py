@@ -29,6 +29,7 @@ API = "https://www.googleapis.com/youtube/v3"
 CACHE_S = 900
 MAX_CHANNELS = 50
 CHANNEL_ID = re.compile(r"^UC[\w-]{22}$")
+TALK = ("25", "22", "28", "24")      # actualités, blogs, sciences et tech, divertissement : là où se trouvent débats et interviews
 NO_KEY = ("Aucune clé YouTube reçue : définir la variable YOUTUBE_API_KEY, ou un secret réseau pour www.googleapis.com "
           "(en-tête X-Goog-Api-Key)")
 
@@ -56,7 +57,8 @@ def explain_error(code: int, body: str) -> str:
         return "l'API « YouTube Data API v3 » n'est pas activée pour le projet de cette clé (bibliothèque d'API)"
     if reason in ("ipRefererBlocked", "forbidden") or "referer" in low or "ip address" in low:
         return "la clé est restreinte à d'autres adresses ou sites : retirer la restriction d'application"
-    if reason in ("videoChartNotFound", "invalidChart") or "chart" in low and code == 404:
+    if reason in ("videoChartNotFound", "invalidChart") or "chart" in low and code == 404 \
+            or code == 404 and "requested entity was not found" in low:
         return "pas de classement pour ce pays ou cette catégorie"
     if reason in ("channelNotFound", "playlistNotFound"):
         return "chaîne introuvable"
@@ -223,17 +225,21 @@ class Discover:
         return val
 
     # ------------------------------------------------------------------ tendances
-    def trending(self, region: str = "FR", category: str = "0", days: float = 3, min_min: float = 10,
-                 fresh: bool = False) -> list[dict]:
-        """Vidéos populaires récentes, longues, classées par vues par heure (celles qui montent d'abord)."""
-        if not re.fullmatch(r"[A-Z]{2}", region) or not re.fullmatch(r"\d{1,3}", category):
-            raise UserError("Pays ou catégorie invalide.")
+    def trending(self, region: str = "FR", category: str = "talk", days: float = 3, min_min: float = 10,
+                 lang: str = "fr", fresh: bool = False) -> list[dict]:
+        """Vidéos populaires récentes, longues, classées par vues par heure (celles qui montent d'abord).
 
-        def load():
+        `category` : un numéro YouTube, "0" pour toutes, ou "talk" pour les catégories où l'on parle (le classement
+        général est aux deux tiers du jeu vidéo). `lang` : langue de l'audio ("" = toutes)."""
+        if not re.fullmatch(r"[A-Z]{2}", region) or not re.fullmatch(r"\d{1,3}|talk", category) \
+                or not re.fullmatch(r"[a-z]{0,3}", lang):
+            raise UserError("Pays, catégorie ou langue invalide.")
+
+        def chart(cat: str) -> list[dict]:
             items, token = [], None
             for _ in range(4):                                     # jusqu'à 200 vidéos pour 4 unités de quota
                 p = {"part": "snippet,contentDetails,statistics", "chart": "mostPopular", "regionCode": region,
-                     "maxResults": 50, **({"videoCategoryId": category} if category != "0" else {}),
+                     "maxResults": 50, **({"videoCategoryId": cat} if cat != "0" else {}),
                      **({"pageToken": token} if token else {})}
                 d = yt_get("videos", p)
                 items += d.get("items", [])
@@ -243,8 +249,23 @@ class Discover:
             now = time.time()
             return [normalize(it, now) for it in items]
 
+        def load():
+            cats = TALK if category == "talk" else (category,)
+            found: dict[str, dict] = {}
+            errors: list[str] = []
+            for c in cats:
+                try:
+                    for v in chart(c):
+                        found.setdefault(v["id"], v)
+                except UserError as e:
+                    errors.append("pas de classement pour cette catégorie en " + region if "classement" in str(e) else str(e))
+            if not found and errors:
+                raise UserError(errors[0])
+            return list(found.values())
+
         every = self._cached(("trending", region, category), fresh, load)
-        keep = [v for v in every if _keep(v, min_min * 60) and v["age_hours"] <= days * 24]
+        keep = [v for v in every if _keep(v, min_min * 60) and v["age_hours"] <= days * 24
+                and (not lang or v["language"].startswith(lang))]
         return sorted(keep, key=lambda v: v["views_per_hour"], reverse=True)[:40]
 
     # ------------------------------------------------------------------ chaînes suivies

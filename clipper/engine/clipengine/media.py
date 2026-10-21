@@ -5,6 +5,7 @@ import hashlib
 import ipaddress
 import json
 import os
+import shutil
 import re
 import socket
 import subprocess
@@ -137,6 +138,10 @@ def explain_download_error(msg: str) -> str:
         return ("YouTube bloque le téléchargement automatique depuis cette adresse (vérification anti-robot, fréquente "
                 "depuis un serveur). Télécharge la vidéo et envoie le fichier, ou donne à CLIPENGINE_COOKIES le chemin "
                 "d'un fichier de cookies YouTube exporté.")
+    if "403" in low and ("forbidden" in low or "unable to download video data" in low):
+        return ("YouTube refuse d'envoyer la vidéo à cette connexion (erreur 403), ce qui arrive depuis un serveur. "
+                "Lance le moteur sur ton ordinateur, télécharge la vidéo et envoie le fichier, ou donne à "
+                "CLIPENGINE_COOKIES le chemin d'un fichier de cookies YouTube exporté.")
     if re.search(r"age[- ]restrict|confirm your age|inappropriate for some", low):
         return "Cette vidéo est soumise à une limite d'âge : télécharge-la et envoie le fichier."
     if re.search(r"private video|members[- ]only|join this channel|premium", low):
@@ -159,6 +164,11 @@ def fetch(url: str, out_dir: str | Path, max_s: float = MAX_SOURCE_S,
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     base = {"quiet": True, "noprogress": True, "noplaylist": True, "socket_timeout": 30, "retries": 3}
+    # YouTube demande un moteur JavaScript (deno, node, bun ou quickjs) pour déchiffrer les adresses des flux ; yt-dlp
+    # n'active que deno par défaut, alors qu'un ordinateur a souvent node.
+    runtimes = {name: {} for name in ("deno", "node", "bun", "quickjs") if shutil.which(name)}
+    if runtimes:
+        base["js_runtimes"] = runtimes
     cookies = os.environ.get("CLIPENGINE_COOKIES")
     if cookies and Path(cookies).is_file():
         base["cookiefile"] = cookies                 # exportés depuis un navigateur connecté (format Netscape)

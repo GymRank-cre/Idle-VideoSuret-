@@ -360,7 +360,8 @@ function upload(file, meta, onProgress) {
 }
 
 // ───────────────────────────────────────────────────────────── Découvrir : tendances et nouveautés des chaînes suivies
-const CATS = [["0", "Toutes"], ["24", "Divertissement"], ["25", "Actualités"], ["27", "Éducation"], ["28", "Science et tech"], ["20", "Jeux vidéo"], ["22", "Blogs"], ["23", "Humour"], ["17", "Sport"]];
+const CATS = [["talk", "Parole : actualités, blogs, sciences (conseillé)"], ["0", "Toutes (surtout du jeu vidéo)"], ["25", "Actualités"], ["22", "Blogs"], ["28", "Science et tech"],
+              ["24", "Divertissement"], ["20", "Jeux vidéo"], ["17", "Sport"], ["23", "Humour"], ["1", "Films"], ["2", "Autos"]];
 const ago = hrs => hrs < 1 ? "il y a moins d'1 h" : hrs < 48 ? `il y a ${Math.round(hrs)} h` : `il y a ${Math.round(hrs / 24)} j`;
 const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
 
@@ -404,7 +405,8 @@ async function viewDiscover(app) {
   if (current.token !== tok) return;
   if (!enabled) { app.append(gap(), discoverSetup()); return; }
 
-  const st = { tab: "trend", days: 3, min: 10, cat: "0", ...store.get("disc", {}) };
+  const st = { tab: "trend", days: 3, min: 10, cat: "talk", lang: "fr", ...store.get("disc", {}) };
+  if (!CATS.some(([v]) => v === st.cat)) st.cat = "talk";
   const save = () => store.set("disc", st);
   const body = h("div");
   let seq = 0;
@@ -424,10 +426,11 @@ async function viewDiscover(app) {
   async function trendView(fresh) {
     const daysSeg = seg([[1, "24 h"], [3, "3 jours"], [7, "7 jours"]], st.days, v => { st.days = v; save(); show(false); }, { label: "Âge maximal" });
     const minSeg = seg([[5, "≥ 5 min"], [10, "≥ 10 min"], [20, "≥ 20 min"]], st.min, v => { st.min = v; save(); show(false); }, { label: "Durée minimale" });
+    const langSeg = seg([["fr", "Français"], ["", "Toutes"]], st.lang, v => { st.lang = v; save(); show(false); }, { label: "Langue" });
     const catSel = h("select", { "aria-label": "Catégorie", style: "width:auto", onchange: e => { st.cat = e.target.value; save(); show(false); } }, CATS.map(([v, l]) => h("option", { value: v }, l)));
     catSel.value = st.cat;
-    const { videos } = await API.get(`/api/discover/trending?days=${st.days}&min=${st.min}&category=${st.cat}${fresh ? "&fresh=1" : ""}`);
-    return h("div", {}, h("div", { class: "opts", style: "margin:16px 0 6px" }, field("Parue depuis", daysSeg), field("Durée", minSeg), field("Catégorie", catSel)),
+    const { videos } = await API.get(`/api/discover/trending?days=${st.days}&min=${st.min}&category=${st.cat}&lang=${st.lang}${fresh ? "&fresh=1" : ""}`);
+    return h("div", {}, h("div", { class: "opts", style: "margin:16px 0 6px" }, field("Parue depuis", daysSeg), field("Durée", minSeg), field("Langue", langSeg), field("Catégorie", catSel)),
       h("p", { class: "muted", style: "font-size:13px;margin-bottom:14px" }, "Classées par vues par heure : celles qui montent d'abord."),
       videos.length ? h("div", { class: "grid vgrid" }, videos.map(videoCard)) : h("div", { class: "empty" }, "Aucune vidéo longue ne correspond : élargis l'âge ou baisse la durée minimale."));
   }

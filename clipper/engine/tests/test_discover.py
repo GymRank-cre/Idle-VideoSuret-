@@ -25,11 +25,11 @@ def iso(hours_ago: float) -> str:
     return (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def item(vid, minutes=20, hours_ago=5, views=10_000, live="none", channel=UC_A, title=None):
+def item(vid, minutes=20, hours_ago=5, views=10_000, live="none", channel=UC_A, title=None, lang="fr"):
     return {"id": vid, "snippet": {"publishedAt": iso(hours_ago), "channelId": channel, "title": title or f"Vidéo {vid}",
                                    "channelTitle": "Chaîne " + channel[2:4], "liveBroadcastContent": live,
                                    "thumbnails": {"medium": {"url": f"https://i.ytimg.com/vi/{vid}/mqdefault.jpg"}},
-                                   "defaultAudioLanguage": "fr"},
+                                   **({"defaultAudioLanguage": lang} if lang else {})},
             "contentDetails": {"duration": f"PT{minutes // 60}H{minutes % 60}M0S" if minutes >= 60 else f"PT{minutes}M0S"},
             "statistics": {"viewCount": str(views), "likeCount": str(views // 50)}}
 
@@ -37,6 +37,8 @@ def item(vid, minutes=20, hours_ago=5, views=10_000, live="none", channel=UC_A, 
 class FakeYouTube:
     def __init__(self):
         self.pages: list[list[dict]] = [[]]                      # pages du classement « mostPopular »
+        self.pages_by_cat: dict[str, list[list[dict]]] = {}      # classement propre à une catégorie (sinon `pages`)
+        self.missing_cats: set[str] = set()                      # catégories sans classement : 404 comme chez YouTube
         self.videos: dict[str, dict] = {}
         self.uploads: dict[str, list[str]] = {}
         self.channels: dict[str, dict] = {}
@@ -63,10 +65,15 @@ class FakeYouTube:
                     code, reason, msg = outer.fail.pop(0)
                     return self.reply(code, {"error": {"code": code, "message": msg, "errors": [{"reason": reason}]}})
                 if u.path == "/videos" and q.get("chart") == "mostPopular":
+                    cat = q.get("videoCategoryId")
+                    if cat in outer.missing_cats:
+                        return self.reply(404, {"error": {"code": 404, "message": "Requested entity was not found.",
+                                                          "errors": [{"reason": "notFound"}]}})
+                    pages = outer.pages_by_cat.get(cat, outer.pages)
                     n = int(q.get("pageToken", "0") or 0)
-                    page = outer.pages[n] if n < len(outer.pages) else []
+                    page = pages[n] if n < len(pages) else []
                     body = {"items": page}
-                    if n + 1 < len(outer.pages):
+                    if n + 1 < len(pages):
                         body["nextPageToken"] = str(n + 1)
                     return self.reply(200, body)
                 if u.path == "/videos":
@@ -142,7 +149,7 @@ def test_trending_keeps_long_recent_non_live_videos_and_ranks_by_views_per_hour(
                  item("huge", minutes=300, views=900_000, hours_ago=3)],             # plus de 4 h : refusée par le moteur
                 [item("page2", views=30_000, hours_ago=3)]]                          # 10 000 vues/h, 2e page
     D = Discover(tmp_path)
-    got = D.trending(days=3, min_min=10)
+    got = D.trending(category="0", days=3, min_min=10)
     assert [v["id"] for v in got] == ["fast", "page2", "slow"]
     assert len(yt.hits("/videos")) == 2                                              # deux pages = deux unités de quota
     assert all(r["q"]["regionCode"] == "FR" for r in yt.requests)
@@ -151,10 +158,10 @@ def test_trending_keeps_long_recent_non_live_videos_and_ranks_by_views_per_hour(
 def test_trending_is_cached_so_that_filters_cost_no_quota(yt, tmp_path):
     yt.pages = [[item("a", hours_ago=3), item("b", hours_ago=60)]]
     D = Discover(tmp_path)
-    assert [v["id"] for v in D.trending(days=1)] == ["a"]
-    assert [v["id"] for v in D.trending(days=7)] == ["a", "b"] or [v["id"] for v in D.trending(days=7)] == ["b", "a"]
+    assert [v["id"] for v in D.trending(category="0", days=1)] == ["a"]
+    assert sorted(v["id"] for v in D.trending(category="0", days=7)) == ["a", "b"]
     assert len(yt.hits("/videos")) == 1                                              # même liste, filtrée autrement
-    D.trending(days=7, fresh=True)
+    D.trending(category="0", days=7, fresh=True)
     assert len(yt.hits("/videos")) == 2                                              # « Actualiser » interroge à nouveau
     D.trending(category="28", fresh=True)
     assert yt.hits("/videos")[-1]["q"]["videoCategoryId"] == "28"
@@ -187,9 +194,9 @@ def test_youtube_errors_are_explained_and_never_leak_the_key(yt, tmp_path, monke
 
 
 def test_trending_rejects_odd_parameters(yt, tmp_path):
-    for region, cat in (("fr", "0"), ("FRA", "0"), ("FR", "x"), ("FR", "1234")):
+    for region, cat, lang in (("fr", "0", "fr"), ("FRA", "0", "fr"), ("FR", "x", "fr"), ("FR", "1234", "fr"), ("FR", "0", "FR1")):
         with pytest.raises(UserError):
-            Discover(tmp_path).trending(region=region, category=cat)
+            Discover(tmp_path).trending(region=region, category=cat, lang=lang)
 
 
 # ----------------------------------------------------------------------------- chaînes suivies
@@ -358,3 +365,27 @@ def test_a_non_key_failure_while_probing_does_not_hide_the_tab(yt, tmp_path, mon
     yt.fail.append((500, "backendError", "oups"))
     st = Discover(tmp_path).status()
     assert st["enabled"] is True and "500" in st["error"]
+
+
+def test_language_filter_defaults_to_french_and_can_be_lifted(yt, tmp_path):
+    yt.pages = [[item("fr1", views=20_000), item("en1", views=90_000, lang="en"), item("inconnue", views=50_000, lang="")]]
+    D = Discover(tmp_path)
+    assert [v["id"] for v in D.trending(category="0")] == ["fr1"]
+    assert [v["id"] for v in D.trending(category="0", lang="")] == ["en1", "inconnue", "fr1"]
+    assert [v["id"] for v in D.trending(category="0", lang="en")] == ["en1"]
+
+
+def test_talk_merges_news_blogs_science_and_entertainment_and_skips_missing_charts(yt, tmp_path):
+    yt.pages_by_cat = {"25": [[item("news", views=50_000)]], "22": [[item("blog", views=80_000), item("news", views=50_000)]],
+                       "24": [[item("fun", views=10_000)]]}
+    yt.missing_cats = {"28"}                                                         # pas de classement « sciences » : ignoré
+    D = Discover(tmp_path)
+    got = D.trending()                                                               # catégorie par défaut : « talk »
+    assert [v["id"] for v in got] == ["blog", "news", "fun"]                         # fusionnées, sans doublon, par vues/h
+    assert sorted(r["q"]["videoCategoryId"] for r in yt.hits("/videos")) == ["22", "24", "25", "28"]
+    yt.missing_cats = {"25", "22", "28", "24"}
+    with pytest.raises(UserError, match="pas de classement"):
+        D.trending(fresh=True)
+    yt.missing_cats = {"20"}
+    with pytest.raises(UserError, match="pas de classement"):                        # une catégorie seule : erreur claire
+        D.trending(category="20", fresh=True)
