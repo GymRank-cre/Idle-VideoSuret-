@@ -35,13 +35,14 @@ def jcall(url, obj=None, method=None, headers=None):
         return s, b, hd
 
 
-def start(tmp_path, password=None, data_inside_web=False):
+def start(tmp_path, password=None, data_inside_web=False, token=None, origins=()):
     web = tmp_path / "web"
     (web / "engine").mkdir(parents=True, exist_ok=True)
     (web / "index.html").write_text("<h1>ok</h1>")
     (web / "engine" / "secret.py").write_text("x=1")
     data = web / "mesdonnees" if data_inside_web else tmp_path / "data"
-    srv, app = make_server(web, data, port=0, base_cfg={"min_score": 0, "preset": "ultrafast"}, password=password)
+    srv, app = make_server(web, data, port=0, base_cfg={"min_score": 0, "preset": "ultrafast"}, password=password,
+                           token=token, origins=origins)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     return f"http://127.0.0.1:{srv.server_address[1]}", srv, app
 
@@ -103,6 +104,154 @@ def test_password_protects_everything(tmp_path, stub_engine):
         assert call(base + "/api/health", headers={**good, "Host": "mon-site.fr"})[0] == 200   # exposé : le mot de passe suffit
     finally:
         srv.shutdown(); app.close()
+
+
+TOKEN = "t0ken-" + "x" * 30
+PAGE = "https://clipo-rho.vercel.app"
+BEARER = {"Authorization": "Bearer " + TOKEN}
+
+
+@pytest.fixture()
+def remote(tmp_path, stub_engine):
+    """Moteur ouvert à une page hébergée ailleurs : jeton + origine autorisée."""
+    base, srv, app = start(tmp_path, token=TOKEN, origins=[PAGE])
+    yield base, app
+    srv.shutdown(); app.close()
+
+
+def test_token_closes_the_api_but_not_the_page(remote, monkeypatch):
+    base, app = remote
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    assert call(base + "/")[0] == 200                                                    # la page n'a rien de secret
+    assert call(base + "/engine/secret.py")[0] == 404                                    # le code reste caché
+    for path in ("/api/health", "/api/projects", "/api/settings", "/api/discover/status"):
+        s, b, _ = call(base + path, headers={"Host": "mon-tunnel.trycloudflare.com"})
+        assert s == 401 and b"jeton" in b, path
+    assert call(base + "/api/health", headers={"Authorization": "Bearer " + "y" * 30})[0] == 401
+    assert call(base + "/api/health", headers={"Authorization": TOKEN})[0] == 401        # schéma Bearer exigé
+    s, d, _ = jcall(base + "/api/health", headers={**BEARER, "Host": "mon-tunnel.trycloudflare.com"})
+    assert s == 200 and d["ok"] is True and d["auth"] is True and d["media"] == app.media_key and len(d["media"]) == 32
+    assert TOKEN not in json.dumps(d)                                                    # la clé n'est pas le jeton
+    s, _, _ = jcall(base + "/api/projects", {}, "POST")                                  # écritures fermées aussi
+    assert s == 401
+    assert call(base + "/api/projects/0123456789abcdef", method="DELETE")[0] == 401
+    assert jcall(base + "/api/projects", headers=BEARER)[0] == 200
+
+
+def test_media_key_opens_clips_and_zip_only(remote, media_long, monkeypatch):
+    base, app = remote
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    s, d, _ = call(f"{base}/api/projects?filename=ep.mp4", media_long.read_bytes(),
+                   {"Content-Type": "video/mp4", "X-Options": json.dumps({"options": OPTS}), **BEARER})
+    assert s == 202
+    pid = json.loads(d)["project"]["id"]
+
+    def first_clip():
+        r = jcall(f"{base}/api/projects/{pid}", headers=BEARER)[1]
+        return r if r["status"] == "ready" and any(x["state"] == "done" for x in r["proposals"]) else None
+
+    info = wait_until(first_clip, 90)
+    clip = next(x for x in info["proposals"] if x["state"] == "done")
+    key = app.media_key
+    url = f"{base}/files/{pid}/{clip['video']}"
+    assert call(url)[0] == 401 and call(url + "?m=" + "0" * 32)[0] == 401
+    assert call(url + "?m=" + key)[0] == 200
+    s, body, h = call(url + "?download=1&m=" + key, headers={"Range": "bytes=0-9"})
+    assert s == 206 and len(body) == 10 and "attachment" in h["Content-Disposition"]
+    assert call(f"{base}/api/projects/{pid}/zip?m={key}")[0] == 200
+    for path in (f"/api/projects/{pid}", "/api/projects", "/api/settings", "/api/health"):
+        assert call(f"{base}{path}?m={key}")[0] == 401, path                             # la clé ne sert qu'à lire les clips
+    assert call(f"{base}/api/projects/{pid}?m={key}", method="DELETE")[0] == 401
+    assert call(f"{base}/api/projects/{pid}", method="DELETE", headers=BEARER)[0] == 200
+
+
+def test_cors_only_for_the_allowed_page(remote):
+    base, _ = remote
+    pre = {"Origin": PAGE, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization,content-type"}
+    s, _, h = call(base + "/api/projects", headers=pre, method="OPTIONS")
+    assert s == 204 and h["Access-Control-Allow-Origin"] == PAGE and h["Vary"] == "Origin"
+    assert "Authorization" in h["Access-Control-Allow-Headers"] and "X-Options" in h["Access-Control-Allow-Headers"]
+    assert "POST" in h["Access-Control-Allow-Methods"] and "DELETE" in h["Access-Control-Allow-Methods"]
+    s, _, h = call(base + "/api/projects", headers={**pre, "Origin": "https://autre-site.example"}, method="OPTIONS")
+    assert s == 204 and "Access-Control-Allow-Origin" not in h and "Access-Control-Allow-Methods" not in h
+    s, _, h = call(base + "/api/projects", headers={**pre, "Origin": PAGE + ".autre.example"}, method="OPTIONS")
+    assert "Access-Control-Allow-Origin" not in h                                        # pas de correspondance partielle
+    s, _, h = call(base + "/api/projects", headers={**BEARER, "Origin": PAGE.upper().replace("HTTPS", "https")})
+    assert s == 200 and h["Access-Control-Allow-Origin"] == PAGE.lower()
+    s, b, h = call(base + "/api/projects", headers={"Origin": PAGE})                     # un refus reste lisible par la page
+    assert s == 401 and h["Access-Control-Allow-Origin"] == PAGE and b"jeton" in b
+    assert "Access-Control-Allow-Origin" not in call(base + "/api/projects", headers={**BEARER, "Origin": "https://autre-site.example"})[2]
+    assert "Access-Control-Allow-Origin" not in call(base + "/")[2]
+
+
+def test_forged_writes_from_another_site_stay_refused_with_a_token(remote, monkeypatch):
+    base, _ = remote
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    # simple requête de formulaire depuis une autre page : ni jeton, ni type « non simple »
+    s, _, _ = call(base + "/api/projects", b'{"url": "https://exemple.org/v"}', {"Content-Type": "text/plain", "Origin": "https://autre-site.example"}, "POST")
+    assert s == 401
+    s, _, _ = call(base + "/api/projects", b'{"url": "https://exemple.org/v"}', {"Content-Type": "text/plain", **BEARER}, "POST")
+    assert s == 415                                                                      # même avec le jeton, le type simple est refusé
+
+
+def test_token_and_password_can_coexist(tmp_path, stub_engine, monkeypatch):
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    base, srv, app = start(tmp_path, password="s3cret", token=TOKEN, origins=[PAGE])
+    try:
+        import base64 as b64
+        basic = {"Authorization": "Basic " + b64.b64encode(b"x:s3cret").decode()}
+        assert call(base + "/api/health")[0] == 401 and call(base + "/")[0] == 401        # le mot de passe garde la page
+        assert call(base + "/api/health", headers=basic)[0] == 200                         # navigateur local, mot de passe
+        assert call(base + "/api/health", headers=BEARER)[0] == 200                        # page distante, jeton
+    finally:
+        srv.shutdown(); app.close()
+
+
+def test_invalid_token_or_origin_is_refused_at_start(tmp_path):
+    from clipengine.errors import UserError
+    web = tmp_path / "w"; web.mkdir(); (web / "index.html").write_text("x")
+    with pytest.raises(UserError, match="trop court"):
+        make_server(web, tmp_path / "d1", port=0, token="court")
+    with pytest.raises(UserError, match="demande un jeton"):
+        make_server(web, tmp_path / "d2", port=0, origins=[PAGE])
+    for bad in ("clipo.vercel.app", "https://clipo.vercel.app/chemin", "ftp://x.example", "https://user@x.example", "*"):
+        with pytest.raises(UserError, match="invalide"):
+            make_server(web, tmp_path / "d3", port=0, token=TOKEN, origins=[bad])
+
+
+def test_serve_creates_and_keeps_a_token_for_a_remote_page(monkeypatch, tmp_path, capsys):
+    from clipengine import server as srv_mod
+    seen = {}
+
+    class Stop(Exception):
+        pass
+
+    def fake_make(*a, **k):
+        seen.update(k)
+        raise Stop
+
+    monkeypatch.setattr(srv_mod, "make_server", fake_make)
+    monkeypatch.delenv("CLIPENGINE_TOKEN", raising=False)
+    monkeypatch.delenv("CLIPENGINE_ALLOW_ORIGIN", raising=False)
+    monkeypatch.delenv("CLIPENGINE_PASSWORD", raising=False)
+    with pytest.raises(Stop):
+        serve_main(["--data", str(tmp_path / "d"), "--allow-origin", PAGE])
+    tok = seen["token"]
+    assert len(tok) >= 24 and (tmp_path / "d" / "token").read_text().strip() == tok
+    assert oct((tmp_path / "d" / "token").stat().st_mode & 0o777) == "0o600"
+    assert seen["origins"] == [PAGE]
+    with pytest.raises(Stop):
+        serve_main(["--data", str(tmp_path / "d"), "--token"])
+    assert seen["token"] == tok                                                           # le même jeton à chaque démarrage
+    monkeypatch.setenv("CLIPENGINE_TOKEN", "e" * 30)
+    monkeypatch.setenv("CLIPENGINE_ALLOW_ORIGIN", "https://a.example, https://b.example")
+    with pytest.raises(Stop):
+        serve_main(["--data", str(tmp_path / "d"), "--allow-origin", PAGE])
+    assert seen["token"] == "e" * 30 and seen["origins"] == ["https://a.example", " https://b.example", PAGE]
+    # écouter hors de cet ordinateur avec un jeton n'est plus refusé
+    monkeypatch.setattr(srv_mod, "make_server", lambda *a, **k: (_ for _ in ()).throw(Stop()))
+    with pytest.raises(Stop):
+        serve_main(["--data", str(tmp_path / "d"), "--host", "0.0.0.0", "--token"])
 
 
 def test_serve_refuses_to_listen_publicly_without_password(monkeypatch, capsys):

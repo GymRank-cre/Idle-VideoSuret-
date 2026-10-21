@@ -24,6 +24,12 @@
 Sécurité : mot de passe optionnel (Basic), refus des adresses internes pour les liens, refus de tout JSON ou
 dépôt qui n'a pas un type de contenu « non simple » (bloque les requêtes forgées depuis un autre site), contrôle
 de l'en-tête Host sans mot de passe (bloque le DNS rebinding).
+
+Page hébergée ailleurs (Vercel…) : avec un jeton (CLIPENGINE_TOKEN, ou --token qui en crée un et le garde dans le
+dossier de données), l'API et les fichiers exigent `Authorization: Bearer <jeton>` ; la page elle-même reste
+publique, elle n'a rien de secret. Les pages listées par --allow-origin (adresse exacte, sans joker) reçoivent les
+en-têtes CORS. Les clips (lecture, téléchargement, zip) se chargent aussi avec `?m=<clé>`, une clé dérivée du jeton
+que /api/health donne à qui le présente : le jeton lui-même n'apparaît jamais dans une adresse.
 """
 from __future__ import annotations
 
@@ -52,13 +58,50 @@ from .styles import Style, catalog, preview_png
 MAX_UPLOAD = int(os.environ.get("CLIPENGINE_MAX_UPLOAD", 8 * 1024**3))
 FILE_RE = re.compile(r"^[A-Za-z0-9_\-.]+\.(mp4|jpg|ass|json)$")
 LOOPBACK = {"localhost", "127.0.0.1", "[::1]", "::1"}
+MIN_TOKEN = 24
+ORIGIN_RE = re.compile(r"https?://[^/\s?#@]+")
+MEDIA_RE = re.compile(r"/files/[0-9a-f]{16}/[A-Za-z0-9_\-.]+|/api/projects/[0-9a-f]{16}/zip")
+
+
+def parse_origins(values) -> set[str]:
+    """Adresses de pages (schéma + hôte [+ port], rien d'autre), telles que le navigateur les envoie."""
+    out: set[str] = set()
+    for v in values or ():
+        v = str(v).strip().rstrip("/")
+        if not v:
+            continue
+        if not ORIGIN_RE.fullmatch(v):
+            raise UserError(f"Adresse de page invalide : « {v} » (attendu : https://nom-du-site, sans chemin).")
+        out.add(v.lower())
+    return out
+
+
+def stored_token(data_dir: Path) -> str:
+    """Jeton créé une fois, gardé dans le dossier de données (lecture réservée au propriétaire)."""
+    f = Path(data_dir) / "token"
+    if f.is_file():
+        t = f.read_text(encoding="utf-8").strip()
+        if len(t) >= MIN_TOKEN:
+            return t
+    Path(data_dir).mkdir(parents=True, exist_ok=True)
+    t = secrets.token_urlsafe(32)
+    with os.fdopen(os.open(f, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as fh:
+        fh.write(t)
+    return t
 
 
 class App:
     def __init__(self, web_dir: Path, data_dir: Path, base_cfg: dict | None = None, password: str | None = None,
-                 projects: Projects | None = None):
+                 projects: Projects | None = None, token: str | None = None, origins=()):
         self.web_dir = Path(web_dir).resolve()
         self.password = password or None
+        self.token = token or None
+        self.origins = parse_origins(origins)
+        if self.token and len(self.token) < MIN_TOKEN:
+            raise UserError(f"Jeton trop court ({MIN_TOKEN} caractères au moins).")
+        if self.origins and not self.token:
+            raise UserError("Autoriser une page hébergée ailleurs demande un jeton (CLIPENGINE_TOKEN ou --token).")
+        self.media_key = hmac.new(self.token.encode(), b"clipo-media-v1", "sha256").hexdigest()[:32] if self.token else ""
         self.projects = projects or Projects(Path(data_dir), base_cfg)
         self.discover = Discover(self.projects.root)
         self.incoming = self.projects.root / "_incoming"
@@ -99,6 +142,29 @@ def make_handler(app: App):
             pass
 
         # ---------------------------------------------------------- sorties
+        def _origin(self) -> str:
+            o = (self.headers.get("Origin") or "").strip().rstrip("/").lower()
+            return o if o in app.origins else ""
+
+        def end_headers(self) -> None:
+            o = self._origin()
+            if o:
+                self.send_header("Access-Control-Allow-Origin", o)
+                self.send_header("Vary", "Origin")
+                self.send_header("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Disposition")
+            super().end_headers()
+
+        def do_OPTIONS(self) -> None:                           # préalable CORS : sans identifiants, ne livre rien
+            self.send_response(204)
+            if self._origin():
+                self.send_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Options")
+                self.send_header("Access-Control-Max-Age", "600")
+            else:
+                self.send_header("Allow", "GET, POST, DELETE, OPTIONS")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
         def _send(self, code: int, body: bytes, ctype: str, extra: dict | None = None) -> None:
             self.send_response(code)
             self.send_header("Content-Type", ctype)
@@ -167,8 +233,20 @@ def make_handler(app: App):
                     left -= len(chunk)
 
         # ---------------------------------------------------------- garde
+        def _bearer_ok(self) -> bool:
+            auth = self.headers.get("Authorization", "")
+            return bool(app.token) and auth.startswith("Bearer ") and hmac.compare_digest(auth[7:].strip().encode(), app.token.encode())
+
+        def _media_ok(self, path: str, query: dict) -> bool:
+            """Clé dérivée du jeton : lecture seule des clips, jamais l'API."""
+            return bool(app.token) and bool(MEDIA_RE.fullmatch(path)) and hmac.compare_digest(
+                query.get("m", [""])[0].encode(), app.media_key.encode())
+
         def _guard(self) -> bool:
-            """Mot de passe (Basic) ou, à défaut, contrôle de l'en-tête Host. False = réponse déjà envoyée."""
+            """Jeton, mot de passe (Basic) ou, à défaut, contrôle de l'en-tête Host. False = réponse déjà envoyée."""
+            u = urlparse(self.path)
+            if app.token and (self._bearer_ok() or self._media_ok(u.path, parse_qs(u.query))):
+                return True
             if app.password:
                 auth = self.headers.get("Authorization", "")
                 ok = False
@@ -184,6 +262,12 @@ def make_handler(app: App):
                                {"WWW-Authenticate": 'Basic realm="Clipo", charset="UTF-8"'})
                     return False
                 return True
+            if app.token:
+                if self.command == "GET" and not u.path.startswith(("/api/", "/files/")):
+                    return True                                   # la page n'a rien de secret : c'est l'API qui est fermée
+                time.sleep(0.4)
+                self._err(401, "jeton requis ou refusé")
+                return False
             if _host_only(self.headers.get("Host")) not in LOOPBACK:
                 self._err(403, "hôte refusé (aucun mot de passe défini : accès local uniquement)")
                 return False
@@ -217,7 +301,7 @@ def make_handler(app: App):
             p = unquote(u.path)
             P = app.projects
             if p == "/api/health":
-                return self._json(200, {"ok": True, "auth": bool(app.password)})
+                return self._json(200, {"ok": True, "auth": bool(app.password or app.token), **({"media": app.media_key} if app.media_key else {})})
             if p == "/api/projects":
                 return self._json(200, {"projects": P.summaries()})
             if p == "/api/settings":
@@ -421,8 +505,8 @@ def make_handler(app: App):
 
 def make_server(web_dir: Path, data_dir: Path, host: str = "127.0.0.1", port: int = 8080,
                 base_cfg: dict | None = None, password: str | None = None,
-                projects: Projects | None = None) -> tuple[ThreadingHTTPServer, App]:
-    app = App(web_dir, data_dir, base_cfg, password, projects)
+                projects: Projects | None = None, token: str | None = None, origins=()) -> tuple[ThreadingHTTPServer, App]:
+    app = App(web_dir, data_dir, base_cfg, password, projects, token, origins)
     srv = ThreadingHTTPServer((host, port), make_handler(app))
     srv.daemon_threads = True
     return srv, app
@@ -440,17 +524,35 @@ def serve_main(argv: list[str]) -> int:
     p.add_argument("--model", default=os.environ.get("CLIPENGINE_MODEL", "small"), help="modèle Whisper")
     p.add_argument("--preset", default="veryfast", help="preset x264")
     p.add_argument("--insecure", action="store_true", help="autorise l'écoute hors boucle locale sans mot de passe")
+    p.add_argument("--token", action="store_true",
+                   help="ferme l'API par un jeton (CLIPENGINE_TOKEN, sinon créé et gardé dans le dossier de données)")
+    p.add_argument("--allow-origin", action="append", default=[], metavar="URL",
+                   help="page hébergée ailleurs autorisée à utiliser ce moteur, ex. https://clipo.vercel.app (demande un jeton)")
     a = p.parse_args(argv)
     password = os.environ.get("CLIPENGINE_PASSWORD") or None
+    token = os.environ.get("CLIPENGINE_TOKEN") or None
+    origins = [o for o in os.environ.get("CLIPENGINE_ALLOW_ORIGIN", "").split(",") if o.strip()] + a.allow_origin
     local = a.host in ("127.0.0.1", "localhost", "::1")
-    if not local and not password and not a.insecure:
+    if (origins or a.token) and not token:
+        token = stored_token(Path(a.data))
+    if not local and not password and not token and not a.insecure:
         print("Refus : écouter hors de cet ordinateur sans mot de passe exposerait le serveur.\n"
-              "Définis CLIPENGINE_PASSWORD (ou --insecure si tu sais pourquoi).")
+              "Définis CLIPENGINE_PASSWORD ou --token (ou --insecure si tu sais pourquoi).")
         return 2
-    srv, app = make_server(Path(a.web), Path(a.data), a.host, a.port,
-                           base_cfg={"whisper_model": a.model, "preset": a.preset}, password=password)
+    try:
+        srv, app = make_server(Path(a.web), Path(a.data), a.host, a.port,
+                               base_cfg={"whisper_model": a.model, "preset": a.preset}, password=password,
+                               token=token, origins=origins)
+    except UserError as e:
+        print(f"Refus : {e}")
+        return 2
     print(f"clipengine : http://{a.host}:{a.port}  (Whisper {a.model}, "
-          f"{'mot de passe actif' if password else 'accès local sans mot de passe'})")
+          f"{'mot de passe actif' if password else 'jeton actif' if token else 'accès local sans mot de passe'})")
+    if token:
+        print(f"Jeton d'accès (à coller dans la page, onglet Moteur) : {token}")
+    if app.origins:
+        print("Pages autorisées : " + ", ".join(sorted(app.origins)))
+        print(f"Pour joindre ce moteur depuis Internet : cloudflared tunnel --url http://localhost:{a.port}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

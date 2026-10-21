@@ -33,6 +33,7 @@ button,select,input{font:inherit;color:inherit}
 .engine{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);white-space:nowrap}
 .engine i{width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .engine.on i{background:var(--ok)}
+.engine:hover{color:var(--text)}
 main{padding-block:28px 64px}
 h1{font-size:clamp(26px,4.4vw,40px);line-height:1.1;letter-spacing:-.03em;max-width:18em}
 h2{font-size:20px;letter-spacing:-.01em}
@@ -50,7 +51,7 @@ h2{font-size:20px;letter-spacing:-.01em}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field>label,.lbl{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
-input[type=url],input[type=text],select{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-width:0;width:100%}
+input[type=url],input[type=text],input[type=password],select{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;min-width:0;width:100%}
 select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
 .seg{display:inline-flex;flex-wrap:wrap;gap:2px;border:1px solid var(--line);border-radius:11px;padding:3px;background:var(--panel2);align-self:flex-start}
 .seg button{border:0;background:none;color:var(--mute);font-weight:600;font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer}
@@ -146,7 +147,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
     <a href="#biblio" data-go="biblio" data-nav="biblio">Bibliothèque<span class="count" id="count" hidden></span></a>
     <a href="#style" data-go="style" data-nav="style">Mon style</a>
   </nav>
-  <span class="engine" id="engine" title="État du moteur"><i></i><span>Moteur</span></span>
+  <a class="engine" id="engine" href="#moteur" data-go="moteur" title="État du moteur"><i></i><span>Moteur</span></a>
 </div></header>
 <main class="wrap" id="app" aria-live="polite"></main>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -176,15 +177,22 @@ const store = { get(k, d) { try { const v = JSON.parse(localStorage.getItem("cli
 const toast = msg => { const t = h("div", {}, msg); $("#toast").append(t); setTimeout(() => t.remove(), 3200); };
 
 // ───────────────────────────────────────────────────────────── API (moteur) et mode aperçu (exemple)
-const S = { apiOk: false, demo: false, demoProject: null, demoCatalog: null, catalog: null, settings: null, timers: [] };
+const S = { apiOk: false, demo: false, demoProject: null, demoCatalog: null, catalog: null, settings: null, timers: [], engineError: "" };
 const J = async r => { let d = null; try { d = await r.json(); } catch {} if (!r.ok) throw new Error((d && d.error) || ("Erreur " + r.status)); return d; };
+// Moteur : même adresse que la page (lancé par clipengine serve) ou distant (adresse + jeton, réglés dans l'écran « Moteur »).
+const ENGINE = (() => { const c = store.get("engine", {}); return { url: String(c.url || "").replace(/\/+$/, ""), token: String(c.token || ""), media: "" }; })();
+const authHeaders = () => ENGINE.token ? { Authorization: "Bearer " + ENGINE.token } : {};
+const keyed = u => ENGINE.media ? u + (u.includes("?") ? "&" : "?") + "m=" + ENGINE.media : u;      // clips : clé de lecture, jamais le jeton
+const dl = u => u + (u.includes("?") ? "&" : "?") + "download=1";
+const unreachable = () => new Error(ENGINE.url ? `Le moteur ne répond pas (${ENGINE.url}).` : "Le moteur ne répond pas.");
+const call = (p, init) => fetch(ENGINE.url + p, init).catch(() => { throw unreachable(); }).then(J);
 const API = {
-  get: p => fetch(p, { cache: "no-store" }).then(J),
-  post: (p, b) => fetch(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b ?? {}) }).then(J),
-  del: p => fetch(p, { method: "DELETE" }).then(J),
+  get: p => call(p, { cache: "no-store", headers: authHeaders() }),
+  post: (p, b) => call(p, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify(b ?? {}) }),
+  del: p => call(p, { method: "DELETE", headers: authHeaders() }),
 };
 const needEngine = () => { if (S.demo) { toast("Disponible avec le moteur (aperçu : données d'exemple)."); return true; } return false; };
-const media = (pid, name) => S.demo ? "demo/" + name : `/files/${pid}/${encodeURIComponent(name)}`;
+const media = (pid, name) => S.demo ? "demo/" + name : keyed(`${ENGINE.url}/files/${pid}/${encodeURIComponent(name)}`);
 const DATA = {
   projects: async () => S.demo ? { projects: [demoSummary()] } : API.get("/api/projects"),
   project: async id => S.demo ? JSON.parse(JSON.stringify(S.demoProject)) : API.get("/api/projects/" + id),
@@ -207,10 +215,10 @@ function route(forced) {
   if (token === current.token && !forced) return;
   current.destroy(); clearTimers(); current = { token, destroy() {} };
   const app = $("#app"); app.replaceChildren();
-  if (S.demo) app.append(demoBanner());
+  if (S.demo && token !== "moteur") app.append(demoBanner());
   const base = token.startsWith("p-") ? "biblio" : token;
   document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === base ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
-  const v = token === "biblio" ? viewLibrary : token === "style" ? viewStyle : token === "decouvrir" ? viewDiscover
+  const v = token === "biblio" ? viewLibrary : token === "style" ? viewStyle : token === "decouvrir" ? viewDiscover : token === "moteur" ? viewEngine
     : token.startsWith("p-") ? () => viewProject(token.slice(2)) : viewStudio;
   Promise.resolve(v(app)).catch(e => app.append(h("p", { class: "err" }, e.message)));
   window.scrollTo(0, 0);
@@ -218,10 +226,17 @@ function route(forced) {
 document.addEventListener("click", e => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); go(a.dataset.go); } });
 window.addEventListener("hashchange", () => route());
 function demoBanner() {
-  return h("div", { class: "banner" }, "Aperçu sans moteur : ce que tu vois est un exemple produit par le moteur sur une vidéo de test. Pour analyser tes propres vidéos, lance ",
-           h("code", {}, "clipengine serve"), " sur un ordinateur puis ouvre ", h("code", {}, "http://localhost:8080"), ".");
+  const remote = ENGINE.url || ENGINE.token;
+  return h("div", { class: "banner" }, remote
+    ? ["Le moteur ne répond pas : ", S.engineError || "vérifie l'adresse et le jeton", ". Tu vois l'aperçu en attendant. "]
+    : ["Aperçu sans moteur : ce que tu vois est un exemple produit par le moteur sur une vidéo de test. Pour analyser tes propres vidéos, branche ton moteur ou lance-le chez toi (",
+       h("code", {}, "clipengine serve"), " puis ", h("code", {}, "http://localhost:8080"), "). "],
+    h("a", { href: "#moteur", "data-go": "moteur", style: "text-decoration:underline" }, remote ? "Régler le moteur" : "Brancher mon moteur"), ".");
 }
-function setEngine() { const e = $("#engine"); e.classList.toggle("on", S.apiOk); $("span", e).textContent = S.apiOk ? "Moteur connecté" : "Aperçu"; e.title = S.apiOk ? "Le moteur répond" : "Pas de moteur : données d'exemple"; }
+function setEngine() {
+  const e = $("#engine"); e.classList.toggle("on", S.apiOk); $("span", e).textContent = S.apiOk ? "Moteur connecté" : "Aperçu";
+  e.title = S.apiOk ? (ENGINE.url ? "Le moteur répond : " + ENGINE.url : "Le moteur répond") : (S.engineError || "Pas de moteur : données d'exemple") + " · régler le moteur";
+}
 async function refreshCount() {
   try { const n = (await DATA.projects()).projects.length, c = $("#count"); c.hidden = !n; c.textContent = n; } catch {}
 }
@@ -349,8 +364,9 @@ async function viewStudio(app) {
 function upload(file, meta, onProgress) {
   return new Promise((resolve, reject) => {
     const x = new XMLHttpRequest();
-    x.open("POST", "/api/projects?filename=" + encodeURIComponent(file.name));
+    x.open("POST", ENGINE.url + "/api/projects?filename=" + encodeURIComponent(file.name));
     x.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    if (ENGINE.token) x.setRequestHeader("Authorization", "Bearer " + ENGINE.token);
     x.setRequestHeader("X-Options", JSON.stringify(meta).replace(/[\u007f-￿]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0")));
     x.upload.onprogress = e => e.lengthComputable && onProgress(e.loaded / e.total);
     x.onload = () => { let d = {}; try { d = JSON.parse(x.responseText); } catch {} x.status < 300 ? resolve(d) : reject(new Error(d.error || "Erreur " + x.status)); };
@@ -539,7 +555,7 @@ async function viewProject(pid) {
     try { await API.post(`/api/projects/${pid}/style`, { style: styleChoice === "mine" ? settings.style : cat.presets.find(p => p.id === styleChoice).style }); toast("Style du projet : " + e.target.selectedOptions[0].textContent.split(" — ")[0]); } catch (err) { toast(err.message); } } },
     cat.presets.map(p => h("option", { value: p.id }, `${p.label} — ${p.hint}`)), h("option", { value: "mine" }, "Mon style enregistré"));
   styleSel.value = styleChoice;
-  const zip = h("a", { class: "btn sec sm", href: `/api/projects/${pid}/zip`, hidden: true }, "Tout télécharger (zip)");
+  const zip = h("a", { class: "btn sec sm", href: keyed(`${ENGINE.url}/api/projects/${pid}/zip`), hidden: true }, "Tout télécharger (zip)");
   const del = h("button", { type: "button", class: "btn danger sm" }, "Supprimer le projet");
   del.addEventListener("click", () => {
     if (del.dataset.arm) { if (needEngine()) return; API.del("/api/projects/" + pid).then(() => { toast("Projet supprimé"); go("biblio"); }).catch(err => toast(err.message)); return; }
@@ -640,7 +656,7 @@ function proposalCard(x0, ctx) {
         if (!note.firstChild) note.append(h("p", { class: "vnote" }, "La vidéo n'a pas pu se charger ici."));
       });
       mediaBox.append(videoEl);
-      if (!S.demo) actsBox.append(h("a", { class: "btn sec sm", href: src + "?download=1" }, "Télécharger"));
+      if (!S.demo) actsBox.append(h("a", { class: "btn sec sm", href: dl(src) }, "Télécharger"));
       actsBox.append(h("button", { type: "button", class: "btn sec sm", onclick: () => ctx.render(x.id) }, "Refaire avec le style choisi"));
     } else if (x.state === "queued" || x.state === "rendering") {
       barEl = h("i"); pctEl = h("span");
@@ -680,7 +696,7 @@ async function viewStyle(app) {
       }
       wait.hidden = false;
       try {
-        const r = await fetch("/api/style-preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ style: st }) });
+        const r = await fetch(ENGINE.url + "/api/style-preview", { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, body: JSON.stringify({ style: st }) }).catch(() => { throw unreachable(); });
         if (!r.ok) throw new Error((await r.json()).error || "Aperçu impossible");
         const b = await r.blob(); if (my !== seq) return;
         const u = URL.createObjectURL(b); img.src = u; img.hidden = false; if (lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = u;
@@ -724,9 +740,49 @@ async function viewStyle(app) {
   preview();
 }
 
+// ───────────────────────────────────────────────────────────── Moteur : brancher la page sur un moteur lancé ailleurs
+function viewEngine(app) {
+  const here = location.origin, remote = !!(ENGINE.url || ENGINE.token);
+  const url = h("input", { id: "engine-url", type: "text", inputmode: "url", placeholder: "https://mon-moteur.exemple.com", autocomplete: "off", spellcheck: "false", "aria-label": "Adresse du moteur", value: ENGINE.url });
+  const tok = h("input", { id: "engine-token", type: "password", placeholder: "Jeton affiché par le moteur au démarrage", autocomplete: "off", spellcheck: "false", "aria-label": "Jeton d'accès", value: ENGINE.token });
+  const out = h("div", { class: "err", style: "margin-top:8px", role: "status" });
+  const save = h("button", { class: "btn", type: "submit" }, "Tester et enregistrer");
+  const off = h("button", { class: "btn sec", type: "button", hidden: !remote, onclick: () => { store.set("engine", {}); location.hash = "#studio"; location.reload(); } }, "Déconnecter");
+  const form = h("form", { novalidate: true, style: "margin-top:14px;display:grid;gap:12px" }, field("Adresse du moteur", url), field("Jeton d'accès", tok), h("div", { class: "row" }, save, off), out);
+  form.addEventListener("submit", async e => {
+    e.preventDefault(); out.textContent = "";
+    const u = url.value.trim().replace(/\/+$/, ""), t = tok.value.trim();
+    if (u && !/^(https:\/\/[^/\s?#@]+|http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?)$/i.test(u)) { out.textContent = "Adresse invalide : https://… attendu (http:// seulement pour localhost)."; return; }
+    if (!u && !t) { store.set("engine", {}); location.hash = "#studio"; location.reload(); return; }
+    save.disabled = true;
+    try {
+      const r = await fetch(u + "/api/health", { cache: "no-store", headers: t ? { Authorization: "Bearer " + t } : {} })
+        .catch(() => { throw new Error(`Pas de réponse : le tunnel est arrêté, l'adresse est fausse, ou le moteur n'a pas été lancé avec --allow-origin ${here}.`); });
+      const d = await J(r);
+      if (d.ok !== true) throw new Error("Cette adresse ne répond pas comme un moteur Clipo.");
+      store.set("engine", { url: u, token: t }); location.hash = "#studio"; location.reload();
+    } catch (x) { out.textContent = x.message; save.disabled = false; }
+  });
+  const state = S.apiOk ? `Connecté${ENGINE.url ? " à " + ENGINE.url : " : ce serveur sert déjà la page"}.`
+    : remote ? "Injoignable : " + (S.engineError || "pas de réponse") + "." : "Aucun moteur branché : tu vois l'aperçu.";
+  const cmd = t => h("code", {}, t);
+  app.append(h("h1", { style: "font-size:30px" }, "Moteur"),
+    h("p", { class: "lead" }, "Le moteur fait le vrai travail : analyse, recadrage, sous-titres, rendu. Cette page se branche sur celui que tu lances toi-même, chez toi ou sur un serveur."),
+    h("div", { style: "height:20px" }),
+    h("div", { class: "panel" }, h("h2", {}, "État"), h("p", { class: S.apiOk ? "" : "muted", style: "margin-top:6px" }, state), form,
+      h("p", { class: "muted", style: "font-size:13px;margin-top:12px" }, "L'adresse et le jeton restent dans ce navigateur. Le jeton n'apparaît jamais dans une adresse de clip.")),
+    h("details", { class: "adv", open: !S.apiOk }, h("summary", {}, "Lancer le moteur chez moi"),
+      h("ol", { class: "steps-list" },
+        h("li", {}, "Une fois : installe le moteur et ffmpeg (le README du dossier ", cmd("clipper/engine"), " donne les commandes)."),
+        h("li", {}, "Lance-le en autorisant cette page : ", cmd(`clipengine serve --allow-origin ${here}`), ". Il affiche un jeton : copie-le ci-dessus."),
+        h("li", {}, "Ouvre-le sur Internet avec un tunnel, par exemple ", cmd("cloudflared tunnel --url http://localhost:8080"), ". Il affiche une adresse en https : colle-la ci-dessus."),
+        h("li", {}, "Tant que ces deux commandes tournent, cette page, depuis n'importe quel appareil, pilote ton moteur. L'adresse du tunnel change à chaque lancement : refais l'étape 3 quand elle change."),
+        h("li", {}, "Les téléchargements YouTube passent mieux depuis ton ordinateur que depuis un serveur loué : YouTube bloque beaucoup d'adresses de serveurs."))));
+}
+
 // ───────────────────────────────────────────────────────────── démarrage
 (async function boot() {
-  try { const d = await API.get("/api/health"); S.apiOk = d.ok === true; } catch { S.apiOk = false; }
+  try { const d = await API.get("/api/health"); S.apiOk = d.ok === true; ENGINE.media = d.media || ""; } catch (e) { S.apiOk = false; S.engineError = e.message; }
   if (!S.apiOk) {
     try {
       const [p, c] = await Promise.all([fetch("demo/projet.json").then(J), fetch("demo/styles.json").then(J)]);

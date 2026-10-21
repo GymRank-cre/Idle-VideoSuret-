@@ -95,9 +95,44 @@ la console en demande une, s'arrêter là. Sans clé, l'onglet explique la march
 | **Projet** | Progression de l'analyse, puis clips rendus au fil de l'eau. Chaque carte : lecteur, note + étiquette, **détail de la note** (9 critères), titre / légende / hashtags à copier, texte du moment, télécharger, refaire avec un autre style. Les moments **en réserve** se fabriquent d'un clic. Export zip avec `publication.txt`. |
 | **Bibliothèque** | Tous les projets, leur avancement, suppression. Une vidéo déjà analysée est reconnue (liens `youtu.be`, `shorts`, `m.youtube` = même vidéo). |
 | **Mon style** | 6 packs, 7 polices libres, couleurs, fond (contour, ombre, boîte, pastille), position, mots par ligne, apparition, accroche, signature, fond du plan entier. L'aperçu est le **rendu réel** du moteur. |
+| **Moteur** | Pour une page hébergée ailleurs : adresse du moteur + jeton, état de la connexion, les commandes pour le lancer. Cliquer sur l'état du moteur, en haut à droite, y mène. |
 
 Sans moteur (page ouverte depuis un hébergement statique), la page passe en **aperçu** avec un projet d'exemple produit
-par le moteur (`demo/`).
+par le moteur (`demo/`). Si `demo/decouvrir.json` existe (un relevé réel de la liste Découvrir, daté), l'onglet
+l'affiche ; sinon il explique ce qu'il demande.
+
+## Page sur Vercel, moteur chez toi
+
+Deux morceaux, deux endroits :
+
+| Morceau | Où | Pourquoi |
+|---|---|---|
+| **La page** (`index.html` + `demo/`) | Vercel : projet `clipo`, racine `clipper`, réglages dans [`../vercel.json`](../vercel.json) | Page statique : une adresse qui s'ouvre de partout. La commande de construction ne publie que ces deux éléments (jamais `engine/` ni les notes). |
+| **Le moteur** (ffmpeg, Whisper, rendu) | Ton ordinateur, ou un serveur loué | Une analyse prend des minutes de calcul et plusieurs Go de disque : une fonction Vercel s'arrête bien avant et ne garde pas de fichiers. |
+
+Pour que la page publiée pilote ton moteur :
+
+```bash
+clipengine serve --allow-origin https://clipo-rho.vercel.app   # affiche un jeton (gardé dans engine/data/token)
+cloudflared tunnel --url http://localhost:8080                 # une adresse https publique vers ton moteur
+```
+
+Puis, sur la page : **Moteur** → coller l'adresse du tunnel et le jeton → *Tester et enregistrer*. L'adresse et le jeton
+restent dans le navigateur de chaque appareil ; il faut recommencer l'étape du tunnel quand son adresse change (un tunnel
+nommé, avec un nom de domaine, garde la même).
+
+- Le jeton ferme l'API et les fichiers (`Authorization: Bearer …`) ; la page elle-même reste publique, elle n'a rien de
+  secret. `--allow-origin` prend l'adresse exacte de la page (pas de joker) ; il demande un jeton. Variables : `CLIPENGINE_TOKEN`
+  (le tien, 24 caractères au moins), `CLIPENGINE_ALLOW_ORIGIN` (liste séparée par des virgules). Pour changer de jeton :
+  supprimer `engine/data/token` et relancer.
+- Les clips (lecture, téléchargement, zip) se chargent avec `?m=<clé>`, une clé **dérivée** du jeton qui ne donne que la
+  lecture des clips : le jeton n'apparaît dans aucune adresse (historique, journaux, captures).
+- Hors de `localhost`, la page exige **https** (le navigateur refuse sinon). Le tunnel s'en charge.
+- Limites : le moteur doit rester allumé ; Cloudflare plafonne les envois à environ 100 Mo par requête sur ses offres
+  gratuites (au-delà : un lien, ou le dépôt du fichier depuis la page du moteur chez toi, `http://localhost:8080`) ;
+  YouTube refuse beaucoup d'adresses de serveurs loués, donc les téléchargements passent mieux depuis ton ordinateur.
+- La publication se refait avec un nouveau déploiement du projet Vercel quand la page change. Par défaut Vercel
+  protège les adresses de déploiement ; l'adresse principale du projet est publique, avec `X-Robots-Tag: noindex`.
 
 ## Fonctionnement
 
@@ -132,12 +167,15 @@ Polices : Poppins, Anton, Bebas Neue, Bangers, DM Serif Display, Varela Round, s
 | `GET/POST /api/settings` · `GET /api/styles` | réglages par défaut · packs, polices, couleurs |
 | `POST /api/style-preview` | PNG rendu par libass pour un style |
 | `GET /files/<id>/<clip>` | mp4 / jpg / ass, requêtes Range gérées |
+| `GET /api/health` | `{ok, auth}` ; avec un jeton, aussi `media` : la clé de lecture à ajouter aux adresses de clips (`?m=`) |
 
 Un projet à la fois travaille (le rendu occupe tous les cœurs) ; le reste attend en file.
 
 ## Sécurité
 
 - `CLIPENGINE_PASSWORD` active un mot de passe (Basic) sur tout, page comprise.
+- `--token` / `CLIPENGINE_TOKEN` ferme l'API et les fichiers par un jeton (comparé en temps constant, échecs ralentis) ;
+  avec `--allow-origin`, seules les pages listées reçoivent les en-têtes CORS. Voir « Page sur Vercel, moteur chez toi ».
 - Sans mot de passe, le serveur n'accepte que les hôtes locaux (contre le DNS rebinding) et **refuse d'écouter hors de
   cet ordinateur** (`--host 0.0.0.0` exige un mot de passe, ou `--insecure`).
 - Les liens doivent être http(s) vers une **adresse publique** : boucle locale, réseaux privés et métadonnées cloud sont
@@ -156,7 +194,7 @@ Un projet à la fois travaille (le rendu occupe tous les cœurs) ; le reste atte
 ## Tests
 
 ```bash
-pytest -q                 # ≈ 150 tests, dont des rendus réels et 7 parcours dans un navigateur (≈ 2 min 10)
+pytest -q                 # 173 tests, dont des rendus réels et 14 parcours dans un navigateur (≈ 2 min 30)
 pytest -q -m "not slow"   # logique seule, quelques secondes
 ```
 
