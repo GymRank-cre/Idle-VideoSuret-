@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<title>Clipo · Clips automatiques pour TikTok, Reels et Shorts</title>
+<meta name="description" content="Colle une vidéo YouTube : Clipo en fait des clips verticaux sous-titrés. Génère aussi des vidéos et des images à partir d'une idée.">
+<style>
+:root{--bg:#09090b;--panel:#131316;--line:#26262c;--text:#f4f4f5;--mute:#a1a1aa;--accent:#a78bfa;--accent2:#f472b6;--ok:#4ade80}
+@media (prefers-color-scheme:light){:root:not([data-force-dark]){--bg:#fafafa;--panel:#fff;--line:#e4e4e7;--text:#18181b;--mute:#52525b;--accent:#7c3aed;--accent2:#db2777}}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;gap:20px;height:60px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.02em;margin-right:auto}
+.logo b{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav a.l{color:var(--mute);font-size:14px}nav a.l:hover{color:var(--text)}
+.badge{font-size:11px;padding:2px 7px;border-radius:99px;background:var(--accent);color:#fff;margin-left:6px;vertical-align:middle}
+.btn{display:inline-block;border:0;cursor:pointer;font:inherit;font-weight:600;padding:11px 20px;border-radius:12px;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--text)}
+.btn:hover{filter:brightness(1.1)}
+@media(max-width:720px){nav a.l{display:none}}
+.hero{padding:64px 0 32px;text-align:center}
+.eyebrow{color:var(--accent);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+h1{font-size:clamp(32px,6vw,58px);line-height:1.08;letter-spacing:-.03em;margin:12px auto;max-width:15em}
+.sub{color:var(--mute);max-width:36em;margin:0 auto 28px;font-size:18px}
+.tabs{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:14px;margin-bottom:20px;background:var(--panel)}
+.tabs button{border:0;background:none;color:var(--mute);font:inherit;font-weight:600;padding:8px 18px;border-radius:10px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--bg);color:var(--text)}
+.box{max-width:640px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;gap:10px}
+.box input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;padding:8px 10px}
+.hint{color:var(--mute);font-size:13px;margin-top:12px}
+.result{max-width:640px;margin:20px auto 0;display:none;gap:12px;grid-template-columns:repeat(3,1fr)}
+.result.on{display:grid}
+.clip{aspect-ratio:9/16;border-radius:14px;border:1px solid var(--line);position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding:10px;text-align:center;font-weight:800;font-size:15px;text-shadow:0 2px 6px #000;color:#fff}
+.clip:nth-child(1){background:linear-gradient(160deg,#4c1d95,#be185d)}
+.clip:nth-child(2){background:linear-gradient(160deg,#0e7490,#4338ca)}
+.clip:nth-child(3){background:linear-gradient(160deg,#b45309,#be123c)}
+.clip small{position:absolute;top:8px;left:8px;background:#000a;border-radius:6px;padding:1px 6px;font-weight:600;font-size:11px}
+.spin{display:none;color:var(--mute);margin-top:16px}.spin.on{display:block}
+section{padding:72px 0}
+h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;line-height:1.15;margin:8px 0 12px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:32px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+.card .n{color:var(--accent);font-weight:800}
+.card p{color:var(--mute);margin-top:6px}
+.coach{display:grid;gap:32px;grid-template-columns:1fr 1fr;align-items:center}
+@media(max-width:760px){.coach{grid-template-columns:1fr}.result{grid-template-columns:repeat(3,1fr)}}
+.phone{max-width:280px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:18px}
+.bar{height:8px;border-radius:4px;background:var(--line);margin:10px 0;overflow:hidden}.bar i{display:block;height:100%;width:40%;background:var(--accent2)}
+.tip{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
+.price{text-align:center}
+.amount{font-size:64px;font-weight:800;letter-spacing:-.03em}
+.price ul{list-style:none;padding:0;max-width:380px;margin:20px auto;text-align:left}
+.price li{padding:6px 0;color:var(--mute)}.price li::before{content:"✓ ";color:var(--ok);font-weight:800}
+details{border-bottom:1px solid var(--line);padding:16px 0}
+summary{cursor:pointer;font-weight:600}
+details p{color:var(--mute);margin-top:8px}
+footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav>
+  <a class="logo" href="#">Clip<b>o</b></a>
+  <a class="l" href="#coach">Coach<span class="badge">Nouveau</span></a>
+  <a class="l" href="#how">Comment ça marche</a>
+  <a class="l" href="#prix">Tarifs</a>
+  <a class="l" href="#faq">Aide</a>
+  <a class="btn" href="#top">Essayer gratuit</a>
+</nav></div></header>
+
+<main id="top">
+<div class="wrap hero">
+  <p class="eyebrow">Pour TikTok, Reels et Shorts</p>
+  <h1 id="title">Colle une vidéo YouTube. Clipo en fait des clips.</h1>
+  <p class="sub" id="subtitle">Les moments forts, à la verticale, sous-titrés. Rien à monter.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-mode="clips">Clips</button>
+    <button role="tab" aria-selected="false" data-mode="video">Vidéo</button>
+    <button role="tab" aria-selected="false" data-mode="image">Image</button>
+  </div>
+
+  <form class="box" id="form">
+    <input id="input" required placeholder="https://youtube.com/watch?v=…" aria-label="Entrée">
+    <button class="btn" id="go">Générer mes clips</button>
+  </form>
+  <p class="hint">Premier essai offert · sans carte bancaire</p>
+  <p class="spin" id="spin">Analyse en cours…</p>
+  <div class="result" id="result"></div>
+</div>
+
+<section id="how"><div class="wrap">
+  <p class="eyebrow">Comment ça marche</p>
+  <h2>Tu colles ou tu écris. Clipo fait le reste.</h2>
+  <div class="grid">
+    <div class="card"><span class="n">Clips</span><p>Colle un lien. Clipo repère les moments qui tiennent, recadre sur la personne qui parle et incruste les sous-titres.</p></div>
+    <div class="card"><span class="n">Vidéo</span><p>Écris une idée. Clipo lit ta phrase, fabrique la vidéo et lui met le son.</p></div>
+    <div class="card"><span class="n">Image</span><p>Décris l'image. Clipo compose la scène et te la rend aux bons formats.</p></div>
+  </div>
+</div></section>
+
+<section id="coach"><div class="wrap coach">
+  <div>
+    <p class="eyebrow">Nouveau · Coach</p>
+    <h2>Il analyse ton compte. Il te dit quoi poster.</h2>
+    <p class="sub" style="margin:0 0 20px">Il regarde chaque vidéo, trouve où les gens décrochent, écrit tes prochaines idées et peut les publier à ta place.</p>
+    <a class="btn ghost" href="#top">Analyser mon compte</a>
+  </div>
+  <div class="phone">
+    <strong>Ta vidéo de mardi</strong>
+    <div class="bar"><i></i></div>
+    <small style="color:var(--mute)">4 viewers sur 10 partent à 0:03</small>
+    <div class="tip">Ta phrase forte arrive trop tard. Dis-la en premier.</div>
+  </div>
+</div></section>
+
+<section id="prix"><div class="wrap price">
+  <p class="eyebrow">Le prix</p>
+  <h2>Un prix clair, sans piège.</h2>
+  <div class="amount">0,99 €</div>
+  <ul>
+    <li>Clips, vidéo, image et Coach compris</li>
+    <li>Fichiers sans filigrane, en HD</li>
+    <li>Sous-titres animés et recadrage automatique</li>
+    <li>Tout se télécharge, prêt à poster</li>
+  </ul>
+  <a class="btn" href="#top">Voir les formules</a>
+  <p class="hint">Sans engagement.</p>
+</div></section>
+
+<section id="faq"><div class="wrap" style="max-width:720px">
+  <h2>Questions fréquentes</h2>
+  <details><summary>Quelles vidéos puis-je utiliser ?</summary><p>Celles dont tu détiens les droits : tes podcasts, lives, interviews, talks.</p></details>
+  <details><summary>Les clips sont-ils recadrés automatiquement ?</summary><p>Oui, en 9:16, centrés sur la personne qui parle.</p></details>
+  <details><summary>Puis-je annuler ?</summary><p>À tout moment, sans engagement.</p></details>
+</div></section>
+</main>
+
+<footer><div class="wrap">© Clipo — maquette front-end. Aucune génération réelle : le moteur reste à brancher.</div></footer>
+
+<script>
+const MODES={
+  clips:{h:"Colle une vidéo YouTube. Clipo en fait des clips.",s:"Les moments forts, à la verticale, sous-titrés. Rien à monter.",ph:"https://youtube.com/watch?v=…",b:"Générer mes clips",type:"url"},
+  video:{h:"Écris une idée. Clipo en fait une vidéo.",s:"Décris la scène. Clipo crée la vidéo avec le son, en vertical ou en horizontal.",ph:"Une astronaute atterrit sur un toit, la ville en feu derrière elle",b:"Générer la vidéo",type:"text"},
+  image:{h:"Écris une idée. Clipo en fait une image.",s:"Miniature, visuel de post, décor : décris l'image, tu la récupères aux bons formats.",ph:"Un loup en néon dans une ruelle sous la pluie",b:"Générer l'image",type:"text"}
+};
+let mode="clips";
+const $=id=>document.getElementById(id);
+document.querySelectorAll(".tabs button").forEach(t=>t.onclick=()=>{
+  mode=t.dataset.mode;const m=MODES[mode];
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b===t));
+  $("title").textContent=m.h;$("subtitle").textContent=m.s;
+  $("input").placeholder=m.ph;$("input").type=m.type;$("input").value="";$("go").textContent=m.b;
+  $("result").className="result";
+});
+$("form").onsubmit=e=>{
+  e.preventDefault();
+  const r=$("result");r.className="result";$("spin").classList.add("on");
+  setTimeout(()=>{
+    $("spin").classList.remove("on");
+    const n=mode==="clips"?3:1;
+    r.style.gridTemplateColumns=n===1?"minmax(0,220px)":"";r.style.justifyContent="center";
+    r.innerHTML=Array.from({length:n},(_,i)=>`<div class="clip"><small>${mode==="clips"?"0:"+(20+i*7)+" s":mode==="video"?"0:08 s":"1080×1920"}</small>${mode==="clips"?["« La vraie raison… »","« Personne ne le dit »","« Voilà le piège »"][i]:"Aperçu de démonstration"}</div>`).join("");
+    r.classList.add("on");
+  },1400);
+};
+</script>
+</body>
+</html>
