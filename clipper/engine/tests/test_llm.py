@@ -1,7 +1,9 @@
-"""Appel à Claude : erreurs lisibles, nouvelles tentatives, état affiché ; l'API elle-même est simulée (pas de clé ici)."""
-import io
+"""Appel à Claude par le SDK officiel : requête conforme, erreurs lisibles, nouvelles tentatives, repli ; l'API est simulée
+par un petit serveur local (pas de clé ici) : on vérifie ce que le SDK envoie réellement et comment on lit ses réponses."""
 import json
-import urllib.error
+import sys
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
@@ -9,64 +11,133 @@ from clipengine import Config, llm
 from clipengine.pipeline import find_moments
 from clipengine.transcribe import Transcript
 
-
-def http_error(code: int, kind: str = "", message: str = ""):
-    body = json.dumps({"type": "error", "error": {"type": kind, "message": message}}).encode()
-    return urllib.error.HTTPError(llm.API, code, "x", {}, io.BytesIO(body))
+anthropic = pytest.importorskip("anthropic")
 
 
-class FakeResponse(io.BytesIO):
-    def __enter__(self):
-        return self
+def message(text="[]", stop="end_turn", **extra):
+    return {"id": "msg_1", "type": "message", "role": "assistant", "model": "claude-opus-5-5", "stop_sequence": None,
+            "content": [{"type": "text", "text": text}], "stop_reason": stop,
+            "usage": {"input_tokens": 10, "output_tokens": 5}, **extra}
 
-    def __exit__(self, *a):
-        return False
+
+def error(kind, text):
+    return {"type": "error", "error": {"type": kind, "message": text}}
+
+
+class FakeAPI:
+    """Serveur local : répond dans l'ordre aux requêtes (ou par un message vide) et garde ce qu'il a reçu."""
+
+    def __init__(self):
+        self.responses: list[tuple[int, dict, dict]] = []
+        self.requests: list[dict] = []
+        outer = self
+
+        class H(BaseHTTPRequestHandler):
+            def do_POST(self):
+                body = json.loads(self.rfile.read(int(self.headers.get("content-length", 0))) or b"{}")
+                outer.requests.append({"path": self.path, "body": body,
+                                       "headers": {k.lower(): v for k, v in self.headers.items()}})
+                status, payload, headers = outer.responses.pop(0) if outer.responses else (200, message(), {})
+                data = json.dumps(payload).encode()
+                self.send_response(status)
+                self.send_header("content-type", "application/json")
+                self.send_header("content-length", str(len(data)))
+                for k, v in headers.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                self.wfile.write(data)
+
+            def log_message(self, *a):
+                pass
+
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), H)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def reply(self, status, payload, **headers):
+        self.responses.append((status, payload, {"retry-after-ms": "1", **headers}))
 
 
 @pytest.fixture()
-def fast_calls(monkeypatch):
+def api(monkeypatch):
+    fake = FakeAPI()
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    monkeypatch.setattr(llm.time, "sleep", lambda s: None)
+    monkeypatch.setenv("CLIPENGINE_LLM_URL", fake.url)
+    yield fake
+    fake.server.shutdown()
 
 
-def test_http_errors_are_explained_in_plain_words():
-    assert "clé refusée" in llm.explain_http_error(401, '{"error":{"type":"authentication_error","message":"invalid x-api-key"}}')
-    assert "crédit" in llm.explain_http_error(400, '{"error":{"type":"invalid_request_error","message":"Your credit balance is too low"}}')
-    assert "modèle introuvable (claude-x)" in llm.explain_http_error(404, '{"error":{"type":"not_found_error","message":"model: claude-x"}}', "claude-x")
-    assert "limite" in llm.explain_http_error(429, "{}")
-    assert "surchargé" in llm.explain_http_error(529, '{"error":{"type":"overloaded_error","message":"Overloaded"}}')
-    assert "droit" in llm.explain_http_error(403, '{"error":{"type":"permission_error","message":"no"}}')
-    assert "requête refusée (400)" in llm.explain_http_error(400, "pas du json")
+def test_the_request_sent_matches_the_documented_api(api):
+    api.reply(200, message('[{"id": 0, "score": 80}]'))
+    assert llm._call(Config(), "### Extrait 0 (30s)\nbonjour") == '[{"id": 0, "score": 80}]'
+    r = api.requests[0]
+    assert r["path"].startswith("/v1/messages") and r["headers"]["x-api-key"] == "sk-test"
+    assert llm.FALLBACK_BETA in r["headers"]["anthropic-beta"] and r["headers"]["anthropic-version"]
+    b = r["body"]
+    assert b["model"] == "claude-opus-5-5" == Config().llm_model                 # modèle par défaut : Claude Opus 5.5
+    assert b["max_tokens"] == 16000 and b["system"] == llm.SYSTEM and b["fallbacks"] == "default"
+    assert b["messages"] == [{"role": "user", "content": "### Extrait 0 (30s)\nbonjour"}]
+    assert not {"thinking", "temperature", "top_p", "top_k"} & set(b)             # refusés par les modèles 5.x
 
 
-def test_a_refused_key_is_reported_without_retrying(monkeypatch, fast_calls):
-    calls = []
-    def deny(req, timeout=0):
-        calls.append(1)
-        raise http_error(401, "authentication_error", "invalid x-api-key")
-    monkeypatch.setattr(llm.urllib.request, "urlopen", deny)
-    with pytest.raises(llm.LLMError, match="clé refusée"):
+def test_a_refused_key_is_reported_with_its_reference_and_not_retried(api):
+    api.reply(401, error("authentication_error", "invalid x-api-key"), **{"request-id": "req_abc"})
+    with pytest.raises(llm.LLMError, match=r"clé refusée.*req_abc"):
         llm._call(Config(), "x")
-    assert len(calls) == 1
+    assert len(api.requests) == 1
 
 
-def test_overload_is_retried_then_succeeds(monkeypatch, fast_calls):
-    answers = [http_error(529, "overloaded_error", "Overloaded"), http_error(429, "rate_limit_error", "slow"),
-               FakeResponse(json.dumps({"content": [{"type": "text", "text": "[]"}]}).encode())]
-    def flaky(req, timeout=0):
-        a = answers.pop(0)
-        if isinstance(a, Exception):
-            raise a
-        return a
-    monkeypatch.setattr(llm.urllib.request, "urlopen", flaky)
-    assert llm._call(Config(), "x") == "[]" and not answers
+def test_overload_is_retried_by_the_sdk_then_succeeds(api):
+    api.reply(529, error("overloaded_error", "Overloaded"))
+    api.reply(200, message("[]"))
+    assert llm._call(Config(), "x") == "[]" and len(api.requests) == 2
 
 
-def test_network_failure_becomes_a_readable_error(monkeypatch, fast_calls):
-    def down(req, timeout=0):
-        raise urllib.error.URLError("dns")
-    monkeypatch.setattr(llm.urllib.request, "urlopen", down)
+def test_credit_workspace_permission_model_and_rate_limit_errors_are_explained(api):
+    cases = [(400, "invalid_request_error", "Your credit balance is too low to access the Anthropic API.", "crédit insuffisant"),
+             (400, "invalid_request_error", "anthropic-workspace-id is required when authenticating with an identity-linked "
+              "API key", "espace de travail"),
+             (403, "permission_error", "no access", "pas le droit"),
+             (404, "not_found_error", "model: claude-x", "modèle introuvable"),
+             (429, "rate_limit_error", "slow down", "limite de débit")]
+    for status, kind, text, expected in cases:
+        for _ in range(3):                               # 429 : le SDK réessaie avant d'abandonner
+            api.reply(status, error(kind, text))
+        with pytest.raises(llm.LLMError, match=expected):
+            llm._call(Config(), "x")
+        api.responses.clear()
+
+
+def test_a_bad_fallback_request_is_retried_as_a_plain_call(api):
+    api.reply(400, error("invalid_request_error", "fallbacks: Extra inputs are not permitted"))
+    api.reply(200, message('[{"id": 0, "score": 60}]'))
+    assert llm._call(Config(), "x") == '[{"id": 0, "score": 60}]'
+    plain = api.requests[1]
+    assert "fallbacks" not in plain["body"] and "anthropic-beta" not in plain["headers"]
+
+
+def test_refusal_and_truncation_are_errors_in_plain_words(api):
+    api.reply(200, message("", stop="refusal", stop_details={"type": "refusal", "category": "cyber", "explanation": "x"}))
+    with pytest.raises(llm.LLMError, match=r"refusé.*cyber"):
+        llm._call(Config(), "x")
+    api.reply(200, message('[{"id": 0, "sc', stop="max_tokens"))
+    with pytest.raises(llm.LLMError, match="coupée"):
+        llm._call(Config(), "x")
+
+
+def test_thinking_blocks_are_ignored_when_reading_the_answer(api):
+    api.reply(200, message("[]", content=[{"type": "thinking", "thinking": "", "signature": "s"},
+                                          {"type": "text", "text": '[{"id": 1, "score": 5}]'}]))
+    assert llm._call(Config(), "x") == '[{"id": 1, "score": 5}]'
+
+
+def test_network_failure_and_missing_sdk_are_readable(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setenv("CLIPENGINE_LLM_URL", "http://127.0.0.1:9")                  # personne n'écoute
     with pytest.raises(llm.LLMError, match="réseau injoignable"):
+        llm._call(Config(), "x", retries=0)
+    monkeypatch.setitem(sys.modules, "anthropic", None)                              # `import anthropic` échoue
+    with pytest.raises(llm.LLMError, match="paquet « anthropic » manque"):
         llm._call(Config(), "x")
 
 
@@ -138,11 +209,11 @@ def test_check_llm_says_whether_the_key_works_and_why_not(monkeypatch, capsys):
     assert llm.check()[0] is False and "absente" in llm.check()[1]
     assert main(["check-llm"]) == 1 and "ANTHROPIC_API_KEY absente" in capsys.readouterr().out
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    monkeypatch.setattr(llm, "_call", lambda cfg, user, retries=2: (_ for _ in ()).throw(llm.LLMError("clé refusée (x)")))
+    monkeypatch.setattr(llm, "_call", lambda cfg, user, **kw: (_ for _ in ()).throw(llm.LLMError("clé refusée (x)")))
     assert llm.check() == (False, "clé refusée (x)") and main(["check-llm"]) == 1
-    monkeypatch.setattr(llm, "_call", lambda cfg, user, retries=2: "pas du json")
+    monkeypatch.setattr(llm, "_call", lambda cfg, user, **kw: "pas du json")
     assert llm.check()[0] is False and "tableau JSON" in llm.check()[1]
-    monkeypatch.setattr(llm, "_call", lambda cfg, user, retries=2: '[{"id": 0, "score": 71}]')
+    monkeypatch.setattr(llm, "_call", lambda cfg, user, **kw: '[{"id": 0, "score": 71}]')
     ok, msg = llm.check()
     capsys.readouterr()                                     # vide ce que les appels précédents ont affiché
     assert ok and "71" in msg and main(["check-llm"]) == 0 and capsys.readouterr().out.startswith("✓")

@@ -28,7 +28,7 @@ class Config:
 
     # --- LLM (réévaluation + titres) : "auto" | "claude" | "none"
     llm: str = "auto"
-    llm_model: str = "claude-sonnet-5-5"
+    llm_model: str = "claude-opus-5-5"
     llm_top: int = 20
     llm_weight: float = 0.5
 

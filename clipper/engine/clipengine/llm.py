@@ -1,18 +1,18 @@
-"""Réévaluation par Claude (optionnelle) : note éditoriale, titre, accroche. Sans dépendance externe."""
+"""Réévaluation par Claude (optionnelle) : note éditoriale, titre, accroche. Appel par le SDK officiel `anthropic`
+(extra `llm`) ; les erreurs sont traduites en messages lisibles, jamais avalées."""
 from __future__ import annotations
 
 import json
 import os
 import re
-import time
-import urllib.error
-import urllib.request
 
 from .config import Config
 from .models import Candidate
 from .select import distinct_pool
 
-API = "https://api.anthropic.com/v1/messages"
+API_URL = "https://api.anthropic.com"        # fixé : ANTHROPIC_BASE_URL peut désigner la passerelle d'un autre outil
+MAX_TOKENS = 16000                           # la réflexion (activée d'office sur les modèles 5.x) compte dans ce plafond
+FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 SYSTEM = """Tu es monteur en chef de contenus courts verticaux (TikTok, Reels, Shorts).
 On te donne des extraits d'une vidéo longue. Pour chacun, juge s'il fonctionnerait SEUL comme short :
@@ -36,60 +36,62 @@ def available(cfg: Config) -> bool:
     return cfg.llm != "none" and bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
-def explain_http_error(code: int, body: str, model: str = "") -> str:
-    """Cause lisible d'un refus de l'API (sans quoi une clé fausse donne des clips « normaux » sans que rien n'alerte)."""
-    try:
-        err = json.loads(body).get("error", {})
-        kind, msg = str(err.get("type", "")), str(err.get("message", ""))
-    except (ValueError, AttributeError):
-        kind, msg = "", body[:160]
+def explain_error(e: Exception, model: str = "") -> str:
+    """Cause lisible d'un échec de l'API (sans quoi une clé fausse donne des clips « normaux » sans que rien n'alerte)."""
+    import anthropic
+    ref = f" (réf. {e.request_id})" if getattr(e, "request_id", None) else ""
+    msg = str(getattr(e, "message", "") or e)
     low = msg.lower()
-    if code == 401 or kind == "authentication_error":
-        return "clé refusée (ANTHROPIC_API_KEY invalide ou révoquée)"
+    if isinstance(e, anthropic.AuthenticationError):
+        return "clé refusée (ANTHROPIC_API_KEY invalide, expirée ou révoquée)" + ref
     if "credit balance" in low or "billing" in low:
-        return "crédit insuffisant sur le compte Anthropic"
-    if code == 403 or kind == "permission_error":
-        return "la clé n'a pas le droit d'utiliser ce modèle"
-    if code == 404 or kind == "not_found_error":
-        return f"modèle introuvable ({model or 'llm_model'})"
-    if code == 429 or kind == "rate_limit_error":
-        return "limite de débit atteinte, réessayer plus tard"
-    if code >= 500 or kind in ("api_error", "overloaded_error"):
-        return "service Claude surchargé ou en panne, réessayer plus tard"
-    return f"requête refusée ({code}) : {msg[:120]}" if msg else f"requête refusée ({code})"
+        return "crédit insuffisant sur le compte Anthropic" + ref
+    if "anthropic-workspace-id" in low:
+        return "clé non liée à un espace de travail : la recréer en la limitant à un seul espace (Default)" + ref
+    if isinstance(e, anthropic.PermissionDeniedError):
+        return "la clé n'a pas le droit d'utiliser ce modèle" + ref
+    if isinstance(e, anthropic.NotFoundError):
+        return f"modèle introuvable ({model or 'llm_model'})" + ref
+    if isinstance(e, anthropic.RateLimitError):
+        return "limite de débit atteinte, réessayer plus tard" + ref
+    if isinstance(e, anthropic.APITimeoutError):
+        return "Claude n'a pas répondu à temps"
+    if isinstance(e, anthropic.APIConnectionError):
+        return "réseau injoignable"
+    if isinstance(e, anthropic.APIStatusError) and e.status_code >= 500:
+        return "service Claude surchargé ou en panne, réessayer plus tard" + ref
+    return f"requête refusée : {msg[:140]}" + ref
 
 
-RETRY_CODES = {429, 500, 502, 503, 504, 529}
+def _text(resp) -> str:
+    """Texte de la réponse ; un refus de sécurité ou une réponse coupée sont des erreurs dites en clair."""
+    if resp.stop_reason == "refusal":
+        cat = getattr(getattr(resp, "stop_details", None), "category", None)
+        raise LLMError("Claude a refusé d'évaluer ce contenu" + (f" (catégorie {cat})" if cat else ""))
+    if resp.stop_reason == "max_tokens":
+        raise LLMError("réponse coupée : limite de longueur atteinte")
+    return "".join(b.text for b in resp.content if b.type == "text")
 
 
-def _call(cfg: Config, user: str, retries: int = 2) -> str:
-    body = json.dumps({
-        "model": cfg.llm_model,
-        "max_tokens": 4000,
-        "system": SYSTEM,
-        "messages": [{"role": "user", "content": user}],
-    }).encode()
-    req = urllib.request.Request(API, data=body, headers={
-        "x-api-key": os.environ["ANTHROPIC_API_KEY"],
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-    })
-    for k in range(retries + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=120) as r:
-                data = json.load(r)
-            return "".join(b.get("text", "") for b in data.get("content", []))
-        except urllib.error.HTTPError as e:
-            if e.code in RETRY_CODES and k < retries:
-                time.sleep(2 ** (k + 1))
-                continue
-            raise LLMError(explain_http_error(e.code, e.read().decode("utf-8", "replace"), cfg.llm_model)) from e
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
-            if k < retries:
-                time.sleep(2 ** (k + 1))
-                continue
-            raise LLMError(f"réseau injoignable ({type(e).__name__})") from e
-    return ""
+def _call(cfg: Config, user: str, retries: int = 2, max_tokens: int = MAX_TOKENS) -> str:
+    try:
+        import anthropic
+    except ImportError as e:
+        raise LLMError("le paquet « anthropic » manque : pip install 'clipengine[llm]'") from e
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"], max_retries=retries, timeout=300.0,
+                                 base_url=os.environ.get("CLIPENGINE_LLM_URL", API_URL))
+    args = {"model": cfg.llm_model, "max_tokens": max_tokens, "system": SYSTEM,
+            "messages": [{"role": "user", "content": user}]}
+    try:
+        try:   # repli côté serveur si les filtres de sécurité refusent : Anthropic choisit le modèle de secours
+            resp = client.beta.messages.create(**args, betas=[FALLBACK_BETA], fallbacks="default")
+        except anthropic.BadRequestError as e:
+            if not re.search(r"fallback|beta", str(e), re.I):
+                raise
+            resp = client.messages.create(**args)             # modèle ou compte sans repli serveur : appel simple
+    except anthropic.AnthropicError as e:
+        raise LLMError(explain_error(e, cfg.llm_model)) from e
+    return _text(resp)
 
 
 def check(cfg: Config | None = None) -> tuple[bool, str]:
@@ -100,7 +102,7 @@ def check(cfg: Config | None = None) -> tuple[bool, str]:
     sample = ("### Extrait 0 (30s)\nPourquoi personne ne vous dit la vérité sur le sommeil ? Parce que la plupart des "
               "gens dorment mal sans le savoir, et cela abîme leur santé à long terme.")
     try:
-        rows = parse_json_array(_call(cfg, sample, retries=0))
+        rows = parse_json_array(_call(cfg, sample, retries=0, max_tokens=8000))
     except LLMError as e:
         return False, str(e)
     if not rows:

@@ -13,15 +13,25 @@ Prérequis : Python 3.10+, `ffmpeg` (avec libass et x264).
 ```bash
 cd clipper/engine
 python -m venv .venv && source .venv/bin/activate     # Windows : .venv\Scripts\activate
-pip install -e '.[asr,download]'
+pip install -e '.[asr,download,llm]'
 clipengine serve                                       # puis http://localhost:8080
 ```
 
 - Premier lancement : le modèle de transcription se télécharge (`--model small` par défaut ; `large-v3` est plus
   précis et bien plus lent sans carte graphique).
-- Titres, accroches, légendes et avis éditorial par Claude : définir `ANTHROPIC_API_KEY` avant `clipengine serve`,
-  puis `clipengine check-llm` (un petit appel réel : dit si la clé marche, et pourquoi sinon). La page du projet indique
-  si le choix a été revu par Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, réseau).
+- Titres, accroches, légendes et avis éditorial par Claude (extra `llm`, SDK officiel `anthropic`) :
+  1. créer un compte sur [platform.claude.com](https://platform.claude.com) (la Console de l'API ; ce n'est pas
+     l'abonnement claude.ai) et y ajouter un petit crédit (facturation à l'usage) ;
+  2. page **API keys** (`platform.claude.com/settings/keys`) → **Create key** ; la **limiter à un seul espace de
+     travail** (Default), sans quoi l'API réclame un en-tête d'espace en plus ; copier la clé (`sk-ant-…`), elle ne
+     s'affiche qu'une fois ;
+  3. la définir avant `clipengine serve` : `export ANTHROPIC_API_KEY=sk-ant-…` (Windows : `setx`) ;
+  4. `clipengine check-llm` : un petit appel réel qui dit si la clé marche, et pourquoi sinon.
+
+  Un appel par vidéo (≈ 12 000 caractères envoyés, 20 extraits), modèle `claude-opus-5-5` par défaut (réglage
+  `llm_model` ; `claude-sonnet-5-5` coûte moitié moins). Estimation : de l'ordre de 10 à 20 centimes par vidéo, la
+  réflexion du modèle comptant dans la sortie ; la Console affiche la dépense réelle. La page du projet indique si le
+  choix a été revu par Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, réseau, refus de sécurité).
   Sans clé, tout fonctionne avec le score du moteur et des textes générés sans IA.
 - Lien YouTube refusé avec « Sign in to confirm you're not a bot » (cas d'un serveur ou d'un VPN) : exporter les cookies
   du navigateur au format Netscape et lancer avec `CLIPENGINE_COOKIES=/chemin/cookies.txt`. Depuis une connexion
@@ -91,7 +101,7 @@ Un projet à la fois travaille (le rendu occupe tous les cœurs) ; le reste atte
 
 ## Réglages utiles (`Config`)
 
-`min_score`, `reserve_min_score`, `max_clips`, `reserve`, `min_dur` / `max_dur` / `target_dur`, `mode`, `layout`,
+`min_score`, `reserve_min_score`, `max_clips`, `reserve`, `min_dur` / `max_dur` / `target_dur`, `mode`, `layout`, `llm_model`,
 `zoom`, `group_frame`, `cam_smooth`, `dead_zone`, `style`, `captions`, `title_overlay`, `crf`, `preset`.
 
 ## Tests
@@ -132,9 +142,11 @@ Une interview française (Framasoft, 21 min en 720p, une personne à l'image, li
 
 ### L'avis de Claude, essayé une fois
 
-Il n'y avait pas de clé dans l'environnement d'essai : **l'appel HTTP n'a pas été exécuté**. Pour savoir ce que vaut
-l'avis, un agent Claude (modèle Sonnet) a reçu le prompt exact que le moteur envoie (consigne + 20 extraits distincts de
-l'interview française) et a répondu comme demandé ; sa réponse a été passée dans `rerank` et `propose`.
+Il n'y avait pas de clé dans l'environnement d'essai : **l'appel à l'API n'a pas été exécuté**. Pour savoir ce que vaut
+l'avis, un agent Claude (modèle Sonnet, pas l'Opus 5.5 que le moteur appelle maintenant par défaut) a reçu le prompt
+exact que le moteur envoie (consigne + 20 extraits distincts de l'interview française) et a répondu comme demandé ;
+sa réponse a été passée dans `rerank` et `propose`. Côté appel, la requête que le SDK envoie (modèle, plafond, repli de
+sécurité, en-têtes) et la lecture des erreurs sont vérifiées contre un faux serveur local, pas contre l'API réelle.
 
 - Format : 20 réponses sur 20 exploitables. Notes réparties de 6 à 87, là où le score du moteur reste entre 60 et 87.
 - Choix : 3 clips sur 5 changent. Écartés : une présentation de parcours, un passage technique confus, un témoignage flou
@@ -152,7 +164,8 @@ l'interview française) et a répondu comme demandé ; sa réponse a été pass�
 
 - **Le choix des moments est un score heuristique** : il trouve des passages complets et cohérents, il ne comprend pas
   le sujet. Il peut retenir une longue question de l'animateur, une présentation de parcours ou une transition. L'avis
-  de Claude corrige cela dans l'essai ci-dessus, mais **l'appel à l'API elle-même n'a jamais été exécuté ici**.
+  de Claude corrige cela dans l'essai ci-dessus, mais **l'appel à l'API elle-même n'a jamais été exécuté ici**
+  (`clipengine check-llm` le fait en une commande dès qu'une clé existe).
 - Sans modèle de langage, titre et accroche sont des phrases du clip (la plus courte et entière), pas des textes
   rédigés pour accrocher. En gros plan, l'accroche est omise plutôt que posée sur le visage (la carte du clip le dit).
 - Le locuteur actif est deviné par le mouvement de la bouche, pas par la voix : un locuteur hors champ ou une personne
