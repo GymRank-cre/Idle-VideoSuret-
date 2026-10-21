@@ -106,11 +106,13 @@ Pour tout lancer : `pip install -e '.[dev,ui]'` ; les tests du navigateur demand
 Deux interviews publiques de la NASA en anglais (4 min en 1080p ; 30 min en 480p à deux intervenantes), transcription
 Whisper `small` sur processeur, 5 clips chacune :
 
-- visage détecté dans 100 % des images mesurées (une toutes les 0,5 s) ; centrage stable à ±14–25 px sur 1080 quand une
-  seule personne parle, bascule sur celle qui prend la parole quand elles alternent ;
+- visage détecté dans 100 % des images mesurées (une toutes les 0,5 s) ; position du visage dans l'image finale :
+  écart-type de 14 à 54 px sur 1080 de large (le cadre suit avec une zone morte : un orateur qui bouge bouge un peu
+  dans le cadre) ; bascule sur la personne qui prend la parole quand elles alternent ;
 - sous-titres lisibles et dans la zone sûre ; son à −14,0 / −14,2 LUFS (source très calme : −14,5 / −15,1, le plafond
   de crête à −1,5 dBFS limite le gain) ;
-- les 10 clips commencent au début d'une phrase et finissent sur une fin de phrase (un mot parasite de Whisper mis à part) ;
+- les 10 clips commencent par une majuscule (début de phrase) et 9 finissent sur une ponctuation forte ; le dixième se
+  termine sur un mot parasite de Whisper, de 0,05 s à l'écran, qui n'est plus sous-titré ;
 - 4 min de vidéo analysées et rendues en ≈ 3 min ; 30 min en ≈ 5 min 30, sans carte graphique.
 
 Ces essais ont fait corriger : la ponctuation parasite de Whisper (clips qui démarraient au milieu d'une phrase),
