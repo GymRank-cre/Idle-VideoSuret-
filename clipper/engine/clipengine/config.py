@@ -11,6 +11,8 @@ class Config:
     target_dur: float = 36.0
     dur_spread: float = 20.0
     max_clips: int = 8
+    reserve: int = 6                  # propositions supplémentaires gardées « en réserve »
+    mode: str = "best"                # best = meilleurs moments | full = toute la vidéo en parties
     min_score: float = 38.0
     max_overlap: float = 0.0          # part de chevauchement tolérée entre deux clips
     max_similarity: float = 0.55      # similarité lexicale max entre deux clips retenus
@@ -26,7 +28,7 @@ class Config:
     # --- LLM (réévaluation + titres) : "auto" | "claude" | "none"
     llm: str = "auto"
     llm_model: str = "claude-sonnet-5-5"
-    llm_top: int = 14
+    llm_top: int = 20
     llm_weight: float = 0.5
 
     # --- recadrage
@@ -35,6 +37,7 @@ class Config:
     fps: int = 30
     layout: str = "auto"              # auto | track | fit | split
     zoom: float = 1.0
+    group_frame: bool = True          # cadrer tout le groupe quand tous les visages tiennent dans le cadre
     sample_fps: float = 10.0
     detect_width: int = 640
     cam_smooth: float = 0.45          # secondes (sigma gaussien)
@@ -42,18 +45,10 @@ class Config:
     cut_jump: float = 0.75            # saut > x * largeur de crop => coupe franche
     scene_threshold: float = 0.55
 
-    # --- sous-titres
+    # --- sous-titres (le détail visuel vit dans styles.Style)
     captions: bool = True
-    caption_font: str = "Inter"
-    caption_size: int = 86
-    caption_words: int = 3
-    caption_upper: bool = True
-    caption_color: str = "#FFFFFF"
-    highlight_color: str = "#FFE14D"
-    caption_y: float = 0.66           # position verticale (fraction de la hauteur)
     title_overlay: bool = True
-    title_seconds: float = 2.8
-    progress_bar: bool = True
+    style: str = "podcast"            # pack de style (podcast, business, sport, humour, education, recit)
 
     # --- encodage
     crf: int = 19

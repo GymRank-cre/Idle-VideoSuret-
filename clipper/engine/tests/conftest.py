@@ -106,3 +106,48 @@ def media(tmp_path_factory, face_img):
         "duo": make_video(d / "duo.mp4", "duo", face_img),
         "empty": make_video(d / "empty.mp4", "empty", face_img, dur=12.0),
     }
+
+
+@pytest.fixture(scope="session")
+def media_long(tmp_path_factory, face_img):
+    """70 s : couvre toute la transcription de test (≈ 66 s)."""
+    if not _have_media_tools():
+        pytest.skip("ffmpeg indisponible")
+    return make_video(tmp_path_factory.mktemp("long") / "long.mp4", "pan", face_img, dur=70.0)
+
+
+def wait_until(cond, timeout=60.0, step=0.1):
+    import time
+    end = time.time() + timeout
+    while time.time() < end:
+        v = cond()
+        if v:
+            return v
+        time.sleep(step)
+    raise AssertionError("délai dépassé")
+
+
+@pytest.fixture()
+def stub_engine(monkeypatch, words):
+    """Transcription déterministe et rendu factice : on teste la logique, pas ffmpeg."""
+    from clipengine import pipeline, projects
+    from clipengine.pipeline import Rendered
+    from clipengine.transcribe import Transcript
+
+    monkeypatch.setattr(pipeline, "transcribe", lambda *a, **k: Transcript("fr", words))
+    calls = []
+
+    def fake_render(source, info, tr, prof, c, out_dir, stem, cfg, style=None, detector=None, on_progress=None):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        v, j, a = out_dir / f"{stem}.mp4", out_dir / f"{stem}.jpg", out_dir / f"{stem}.ass"
+        v.write_bytes(b"\x00\x00\x00\x18ftypmp42" + b"x" * 4000)
+        j.write_bytes(b"\xff\xd8\xff" + b"x" * 200)
+        a.write_text("ass")
+        if on_progress:
+            on_progress(0.5)
+            on_progress(1.0)
+        calls.append((c.start, c.end, style.name if style else None, style.to_dict() if style else None))
+        return Rendered(v, a, j, ["track"], "stub")
+
+    monkeypatch.setattr(projects, "render_candidate", fake_render)
+    return calls

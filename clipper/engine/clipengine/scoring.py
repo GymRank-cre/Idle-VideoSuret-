@@ -38,6 +38,25 @@ LABELS = {
 }
 
 
+CRITERIA = {
+    "hook": "Accroche", "payoff": "Chute", "pace": "Rythme", "dynamics": "Voix expressive",
+    "emotion": "Mots forts", "novelty": "Densité", "duration": "Durée", "cohesion": "Un seul sujet",
+    "edges": "Coupes propres",
+}
+
+
+def label_for(score: float) -> str:
+    """Étiquette lisible. Un avis sur le contenu : elle ne prédit ni vues ni abonnés."""
+    return "Excellent" if score >= 80 else "Fort" if score >= 65 else "Correct" if score >= 50 else "Faible"
+
+
+def breakdown(f: dict[str, float]) -> list[dict]:
+    """Détail de la note : valeur 0-1 de chaque critère et son poids, du plus fort au plus faible."""
+    rows = [{"key": k, "label": CRITERIA[k], "value": round(float(f.get(k, 0.0)), 3), "weight": WEIGHTS[k]}
+            for k in WEIGHTS]
+    return sorted(rows, key=lambda r: r["value"], reverse=True)
+
+
 def _clip01(x: float) -> float:
     return max(0.0, min(1.0, x))
 

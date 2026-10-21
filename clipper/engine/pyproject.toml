@@ -3,7 +3,7 @@ name = "clipengine"
 version = "0.1.0"
 description = "Moteur de clipping automatique : long format -> clips verticaux sous-titrés"
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.26", "opencv-python-headless>=4.9"]
+dependencies = ["numpy>=1.26", "opencv-python-headless>=4.9", "pillow>=10"]
 
 [project.optional-dependencies]
 asr = ["faster-whisper>=1.0"]
@@ -19,6 +19,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["clipengine"]
+
+[tool.setuptools.package-data]
+clipengine = ["fonts/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

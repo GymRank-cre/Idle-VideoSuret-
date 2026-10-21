@@ -136,3 +136,22 @@ def test_forced_layout():
     n = 100
     tl = tl_from({0: trk(900)}, np.zeros(n, int))
     assert plan_camera(tl, SW, SH, 10.0, Config(layout="fit")).shots[0].layout == "fit"
+
+
+def test_group_frame_centres_on_everyone_when_faces_fit():
+    n = 100
+    tl = tl_from({0: trk(800, n=n), 1: trk(1000, n=n)}, np.zeros(n, int), n=n)      # actif = visage de gauche
+    _, (x0, _, w, _) = frame_params(plan_camera(tl, SW, SH, 10.0, Config()), 3.0)
+    assert abs((x0 + w / 2) - 900) < 25                                             # milieu des deux visages
+    _, (x0, _, w, _) = frame_params(plan_camera(tl, SW, SH, 10.0, Config(group_frame=False)), 3.0)
+    assert abs((x0 + w / 2) - 800) < 25                                             # sans l'option : le locuteur
+
+
+def test_group_frame_ignores_faces_too_far_apart_or_small():
+    n = 100
+    far = tl_from({0: trk(400, n=n), 1: trk(1500, n=n)}, np.zeros(n, int), n=n)
+    _, (x0, _, w, _) = frame_params(plan_camera(far, SW, SH, 10.0, Config(layout="track")), 3.0)
+    assert abs((x0 + w / 2) - 400) < 40
+    small = tl_from({0: trk(800, size=200, n=n), 1: {**trk(1000, n=n), "size": np.full(n, 60.0)}}, np.zeros(n, int), n=n)
+    _, (x0, _, w, _) = frame_params(plan_camera(small, SW, SH, 10.0, Config()), 3.0)
+    assert abs((x0 + w / 2) - 800) < 25                                             # visage de fond ignoré

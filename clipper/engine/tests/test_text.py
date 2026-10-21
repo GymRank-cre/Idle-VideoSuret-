@@ -11,6 +11,7 @@ from clipengine.llm import parse_json_array, rerank
 from clipengine.models import Candidate, Sentence, Word
 from clipengine.scoring import hook_score, payoff_score, score_candidates
 from clipengine.select import select
+from clipengine.styles import get_style
 from clipengine.transcribe import Transcript, load_srt, load_transcript
 
 from conftest import make_words
@@ -147,8 +148,9 @@ def test_ass_structure_and_timing(words):
         f = l.split(",", 9)
         assert sec(f[2]) > sec(f[1])
     assert any(l.startswith("Dialogue: 2") for l in ass.splitlines())   # bandeau d'accroche
-    assert "\\clip" in ass                                                # barre de progression
-    assert "&H4DE1FF&" in ass                                             # #FFE14D -> BGR
+    assert "\\clip" not in ass                                            # barre de progression : off par défaut
+    assert "\\clip" in build_ass(sub, 0.0, 12.0, cfg, "x", get_style({"progress_bar": True}))
+    assert "&H4DFFE1&" not in ass and "&H4DE1FF&" in ass                  # #FFE14D -> BGR
 
 
 def test_pages_have_at_most_three_words(words):

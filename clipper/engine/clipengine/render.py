@@ -9,6 +9,7 @@ import numpy as np
 
 from .config import Config
 from .reframe import CameraPlan, crop_size, frame_params
+from .styles import Style, ass_filter
 
 
 def _warp(frame: np.ndarray, box, out_w: int, out_h: int) -> np.ndarray:
@@ -24,25 +25,39 @@ def _warp(frame: np.ndarray, box, out_w: int, out_h: int) -> np.ndarray:
     return cv2.warpAffine(frame, m, (out_w, out_h), flags=interp, borderMode=cv2.BORDER_REPLICATE)
 
 
-def _fit(frame: np.ndarray, out_w: int, out_h: int) -> np.ndarray:
-    """Plan entier centré sur un fond flou issu de la même image."""
+def _hex_bgr(h: str) -> tuple[int, int, int]:
+    h = h.lstrip("#")
+    return int(h[4:6], 16), int(h[2:4], 16), int(h[0:2], 16)
+
+
+def _fit(frame: np.ndarray, out_w: int, out_h: int, bg: str = "blur", color: str = "#101014") -> np.ndarray:
+    """Plan entier centré ; fond flou issu de l'image, uni, ou miroir (réflexion de l'image)."""
     h, w = frame.shape[:2]
-    cw, ch = crop_size(w, h, out_w / out_h, 1.0)
-    x0, y0 = int((w - cw) / 2), int((h - ch) / 2)
-    bg = cv2.resize(frame[y0:y0 + int(ch), x0:x0 + int(cw)], (out_w // 10, out_h // 10), interpolation=cv2.INTER_AREA)
-    bg = cv2.GaussianBlur(bg, (0, 0), 4)
-    bg = cv2.resize(bg, (out_w, out_h), interpolation=cv2.INTER_LINEAR)
-    bg = (bg.astype(np.float32) * 0.55).astype(np.uint8)
     s = min(out_w / w, out_h / h)
     fw, fh = int(round(w * s)), int(round(h * s))
     fg = cv2.resize(frame, (fw, fh), interpolation=cv2.INTER_AREA if s < 1 else cv2.INTER_CUBIC)
-    y = (out_h - fh) // 2
-    x = (out_w - fw) // 2
-    bg[y:y + fh, x:x + fw] = fg
-    return bg
+    y, x = (out_h - fh) // 2, (out_w - fw) // 2
+    if bg == "color":
+        out = np.empty((out_h, out_w, 3), np.uint8)
+        out[:] = _hex_bgr(color)
+    elif bg == "mirror":
+        out = np.pad(fg, ((y, out_h - y - fh), (x, out_w - x - fw), (0, 0)), mode="symmetric")
+        out = cv2.GaussianBlur(out, (0, 0), 6)
+        out = (out.astype(np.float32) * 0.55).astype(np.uint8)
+    else:
+        cw, ch = crop_size(w, h, out_w / out_h, 1.0)
+        x0, y0 = int((w - cw) / 2), int((h - ch) / 2)
+        small = cv2.resize(frame[y0:y0 + int(ch), x0:x0 + int(cw)], (out_w // 10, out_h // 10),
+                           interpolation=cv2.INTER_AREA)
+        small = cv2.GaussianBlur(small, (0, 0), 4)
+        out = cv2.resize(small, (out_w, out_h), interpolation=cv2.INTER_LINEAR)
+        out = (out.astype(np.float32) * 0.55).astype(np.uint8)
+    out[y:y + fh, x:x + fw] = fg
+    return out
 
 
-def compose(frame: np.ndarray, plan: CameraPlan, t: float, out_w: int, out_h: int) -> np.ndarray:
+def compose(frame: np.ndarray, plan: CameraPlan, t: float, out_w: int, out_h: int,
+            fit_bg: str = "blur", fit_color: str = "#101014") -> np.ndarray:
     layout, box = frame_params(plan, t)
     if layout == "track":
         return _warp(frame, box, out_w, out_h)
@@ -53,16 +68,12 @@ def compose(frame: np.ndarray, plan: CameraPlan, t: float, out_w: int, out_h: in
         out = np.vstack([top, bot])
         out[hh - 3:hh + 3] = (20, 20, 20)
         return out
-    return _fit(frame, out_w, out_h)
-
-
-def _filter_path(p: Path) -> str:
-    s = str(p.resolve()).replace("\\", "/")
-    return s.replace(":", r"\:").replace("'", r"\'").replace(",", r"\,").replace("[", r"\[").replace("]", r"\]")
+    return _fit(frame, out_w, out_h, fit_bg, fit_color)
 
 
 def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass: Path | None,
-                out: Path, cfg: Config, has_audio: bool = True) -> Path:
+                out: Path, cfg: Config, has_audio: bool = True, style: Style | None = None,
+                on_progress=None) -> Path:
     dur = end - start
     fps = cfg.fps
     W, H = cfg.out_w, cfg.out_h
@@ -74,7 +85,7 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
          "-an", "-vf", f"fps={fps}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-"],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
-    vf = f"ass='{_filter_path(ass)}'" if ass is not None else "null"
+    vf = ass_filter(ass)
     enc_cmd = ["ffmpeg", "-y", "-v", "error", "-nostdin",
                "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(fps), "-i", "-"]
     if has_audio:
@@ -88,6 +99,7 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
     enc = subprocess.Popen(enc_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
 
     fbytes = sw * sh * 3
+    fit_bg, fit_color = (style.fit_bg, style.fit_color) if style else ("blur", "#101014")
     assert dec.stdout is not None and enc.stdin is not None
     last = None
     written = 0
@@ -97,9 +109,11 @@ def render_clip(src: str | Path, start: float, end: float, plan: CameraPlan, ass
             if len(buf) < fbytes:
                 break
             frame = np.frombuffer(buf, np.uint8).reshape(sh, sw, 3)
-            last = compose(frame, plan, n / fps, W, H)
+            last = compose(frame, plan, n / fps, W, H, fit_bg, fit_color)
             enc.stdin.write(last.tobytes())
             written += 1
+            if on_progress and written % 15 == 0:
+                on_progress(written / nframes)
         # décodeur en retard de quelques images : on fige la dernière pour garder audio/vidéo alignés
         while last is not None and written < nframes:
             enc.stdin.write(last.tobytes())

@@ -144,14 +144,33 @@ def _top_two(tl: Timeline, i0: int, i1: int) -> list[int]:
     return sorted(best, key=lambda k: float(np.nanmean(tl.tracks[k]["cx"][i0:i1])))   # gauche -> haut
 
 
-def _focus(tl: Timeline, i0: int, i1: int, src_w: int, src_h: int):
-    """Cible x/y du locuteur actif ; NaN tant qu'aucun visage n'a été vu."""
+def _focus(tl: Timeline, i0: int, i1: int, src_w: int, src_h: int, cw: float = 0.0, group: bool = True):
+    """Cible x/y de la caméra ; NaN tant qu'aucun visage n'a été vu.
+
+    Un seul visage important, ou des visages trop éloignés pour tenir ensemble : on suit le locuteur actif.
+    Tous les visages importants tiennent dans le cadre : on cadre l'ensemble (plan de groupe stable, aucune tête
+    coupée, pas de va-et-vient quand la parole alterne).
+    """
     cx = np.full(i1 - i0, np.nan)
     cy = np.full(i1 - i0, np.nan)
     for j, s in enumerate(range(i0, i1)):
         a = tl.active[s]
         if a >= 0 and not np.isnan(tl.tracks[a]["cx"][s]):
             cx[j], cy[j] = tl.tracks[a]["cx"][s], tl.tracks[a]["cy"][s]
+        if not group or cw <= 0:
+            continue
+        faces = [(t["cx"][s], t["cy"][s], t["size"][s]) for t in tl.tracks.values() if not np.isnan(t["cx"][s])]
+        if len(faces) < 2:
+            continue
+        big = max(f[2] for f in faces)
+        faces = [f for f in faces if f[2] >= 0.5 * big]
+        if len(faces) < 2:
+            continue
+        left = min(f[0] - 0.45 * f[2] for f in faces)
+        right = max(f[0] + 0.45 * f[2] for f in faces)
+        if right - left <= 0.82 * cw:
+            cx[j] = (left + right) / 2
+            cy[j] = float(np.mean([f[1] for f in faces]))
     return _fill(cx, src_w / 2), _fill(cy, src_h * 0.4)
 
 
@@ -192,7 +211,7 @@ def plan_camera(tl: Timeline, src_w: int, src_h: int, dur: float, cfg: Config, s
                               _gauss(xa, cfg.cam_smooth * fps), _gauss(ya, cfg.cam_smooth * fps),
                               _gauss(xb, cfg.cam_smooth * fps), _gauss(yb, cfg.cam_smooth * fps)))
         else:
-            fx, fy = _focus(tl, i0, i1, src_w, src_h)
+            fx, fy = _focus(tl, i0, i1, src_w, src_h, cw, cfg.group_frame)
             segs = smooth_path(fx, cw, fps, cfg)
             fy_s = _gauss(_median(fy), cfg.cam_smooth * fps * 1.5)
             for a, b, vals in segs:

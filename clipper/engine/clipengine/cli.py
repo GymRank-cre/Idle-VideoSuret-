@@ -26,6 +26,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--llm", choices=["auto", "claude", "none"], help="réévaluation éditoriale par Claude")
     p.add_argument("--layout", choices=["auto", "track", "fit", "split"])
     p.add_argument("--zoom", type=float)
+    p.add_argument("--style", help="pack de style : podcast, business, sport, humour, education, recit")
+    p.add_argument("--mode", choices=["best", "full"], help="best = meilleurs moments, full = toute la vidéo en parties")
     p.add_argument("--no-captions", action="store_true")
     p.add_argument("--preset", help="preset x264 (ultrafast … slow)")
     p.add_argument("--no-render", action="store_true", help="analyse seulement (JSON), sans vidéo")

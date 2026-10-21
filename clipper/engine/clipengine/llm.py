@@ -10,6 +10,7 @@ import urllib.request
 
 from .config import Config
 from .models import Candidate
+from .select import distinct_pool
 
 API = "https://api.anthropic.com/v1/messages"
 
@@ -17,11 +18,14 @@ SYSTEM = """Tu es monteur en chef de contenus courts verticaux (TikTok, Reels, S
 On te donne des extraits d'une vidéo longue. Pour chacun, juge s'il fonctionnerait SEUL comme short :
 - accroche : les 3 premières secondes donnent-elles envie de rester ?
 - autonomie : se comprend sans le reste de la vidéo (pas de « il », « ça » sans référent) ;
-- tension / valeur : une idée forte, une histoire, une émotion, une révélation ;
+- valeur : punchline, opinion tranchée, info surprenante, histoire forte, conseil concret, chiffre choc ;
 - chute : la fin conclut ou fait réagir.
+Pénalise les intros molles, remerciements, transitions et digressions.
 Réponds UNIQUEMENT par un tableau JSON, un objet par extrait :
 {"id": <int>, "score": <0-100>, "title": "<titre court, 60 car. max, dans la langue de l'extrait>",
- "hook": "<texte d'accroche à afficher en haut, 6 mots max>", "why": "<une phrase>"}"""
+ "hook": "<texte d'accroche à afficher en haut, 6 mots max>", "why": "<une phrase>",
+ "caption": "<légende de publication, 1 à 2 phrases, 150 car. max, sans hashtags>",
+ "hashtags": ["#mot", "..."]}   (3 à 5 hashtags, dans la langue de l'extrait)"""
 
 
 def available(cfg: Config) -> bool:
@@ -63,12 +67,21 @@ def parse_json_array(text: str) -> list[dict]:
     return [x for x in arr if isinstance(x, dict) and "id" in x]
 
 
+def _tags(raw) -> list[str]:
+    out: list[str] = []
+    for t in raw if isinstance(raw, list) else []:
+        t = re.sub(r"[^\w]", "", str(t), flags=re.UNICODE)
+        if 1 < len(t) <= 30 and "#" + t not in out:
+            out.append("#" + t)
+    return out[:6]
+
+
 def rerank(cands: list[Candidate], cfg: Config, call=_call) -> list[Candidate]:
-    """Note les `llm_top` meilleurs candidats et mélange avec le score heuristique.
+    """Note les `llm_top` meilleurs moments *distincts* et mélange avec le score heuristique.
 
     En cas d'erreur réseau/format, on garde silencieusement le score heuristique.
     """
-    top = sorted(cands, key=lambda c: c.heuristic, reverse=True)[: cfg.llm_top]
+    top = distinct_pool(cands, cfg.llm_top)
     if not top:
         return cands
     prompt = "\n\n".join(
@@ -88,11 +101,13 @@ def rerank(cands: list[Candidate], cfg: Config, call=_call) -> list[Candidate]:
         c.title = str(r.get("title", ""))[:80]
         c.hook = str(r.get("hook", ""))[:60]
         c.why = str(r.get("why", ""))[:240]
+        c.caption = str(r.get("caption", ""))[:200]
+        c.hashtags = _tags(r.get("hashtags"))
         c.score = (1 - w) * c.heuristic + w * c.llm_score
     # les candidats non évalués ne doivent pas passer devant les évalués sur la foi du seul heuristique
     scored = [c.llm_score for c in top if c.llm_score is not None]
     if scored:
         for c in cands:
             if c.llm_score is None:
-                c.score = min(c.heuristic, c.heuristic * 0.85)
+                c.score = c.heuristic * 0.85
     return cands

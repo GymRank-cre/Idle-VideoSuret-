@@ -113,3 +113,44 @@ def make_candidates(sents: list[Sentence], prof: AudioProfile | None, cfg: Confi
         text = " ".join(s.text for s in sents[lo:hi + 1])
         out.append(Candidate(start=a, end=b, lo=lo, hi=hi, text=text))
     return out
+
+
+def split_full(sents: list[Sentence], prof: AudioProfile | None, cfg: Config) -> list[Candidate]:
+    """Mode « tout le long » : la vidéo entière, dans l'ordre, en parties proches de `target_dur`.
+
+    Chaque coupe tombe sur une fin de phrase ; entre plusieurs fins possibles on préfère un vrai changement de
+    sujet et une pause. Un reste trop court est rattaché à la partie précédente quand la durée le permet.
+    """
+    n = len(sents)
+    if n == 0:
+        return []
+    bs = boundary_strengths(sents)
+    spans: list[list[int]] = []
+    i = 0
+    while i < n:
+        t0 = sents[i].start
+        best: tuple[float, int] | None = None
+        for j in range(i, n):
+            d = sents[j].end - t0
+            if d > cfg.max_dur and j > i:
+                break
+            if d >= cfg.min_dur or j == n - 1:
+                pause = (sents[j + 1].start - sents[j].end) if j + 1 < n else 2.0
+                score = -abs(d - cfg.target_dur) / cfg.target_dur + 0.35 * float(bs[j]) + 0.1 * min(pause, 1.5)
+                if best is None or score > best[0]:
+                    best = (score, j)
+        j = best[1] if best else i
+        spans.append([i, j])
+        i = j + 1
+    if len(spans) > 1:
+        last = spans[-1]
+        if sents[last[1]].end - sents[last[0]].start < cfg.min_dur:
+            prev = spans[-2]
+            if sents[last[1]].end - sents[prev[0]].start <= cfg.max_dur * 1.1:
+                prev[1] = last[1]
+                spans.pop()
+    out = []
+    for lo, hi in spans:
+        a, b = snap(sents, lo, hi, prof, cfg)
+        out.append(Candidate(start=a, end=b, lo=lo, hi=hi, text=" ".join(s.text for s in sents[lo:hi + 1])))
+    return out

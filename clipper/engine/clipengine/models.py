@@ -43,6 +43,8 @@ class Candidate:
     title: str = ""
     hook: str = ""
     why: str = ""
+    caption: str = ""
+    hashtags: list[str] = field(default_factory=list)
 
     @property
     def duration(self) -> float:
@@ -59,6 +61,8 @@ class Candidate:
             "title": self.title,
             "hook": self.hook,
             "why": self.why,
+            "caption": self.caption,
+            "hashtags": self.hashtags,
             "reasons": self.reasons,
             "features": {k: round(v, 3) for k, v in self.features.items()},
             "text": self.text,

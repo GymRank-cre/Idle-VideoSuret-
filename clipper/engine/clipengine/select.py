@@ -21,12 +21,15 @@ def _sim(a: Counter, b: Counter) -> float:
     return num / (sqrt(sum(v * v for v in a.values())) * sqrt(sum(v * v for v in b.values())) + 1e-9)
 
 
-def select(cands: list[Candidate], cfg: Config) -> list[Candidate]:
-    """Glouton par score décroissant. Une redite (même sujet) ou un recouvrement est écarté."""
+def select_ranked(cands: list[Candidate], cfg: Config, limit: int) -> list[Candidate]:
+    """Glouton par score décroissant ; ordre de sortie = rang (meilleur d'abord).
+
+    Un recouvrement ou une redite (même sujet) avec un clip déjà retenu est écarté.
+    """
     chosen: list[Candidate] = []
     bags: list[Counter] = []
     for c in sorted(cands, key=lambda x: x.score, reverse=True):
-        if c.score < cfg.min_score or len(chosen) >= cfg.max_clips:
+        if c.score < cfg.min_score or len(chosen) >= limit:
             break
         bag = Counter(L.content_tokens(c.text))
         if any(_overlap(c, o) > cfg.max_overlap for o in chosen):
@@ -35,4 +38,30 @@ def select(cands: list[Candidate], cfg: Config) -> list[Candidate]:
             continue
         chosen.append(c)
         bags.append(bag)
-    return sorted(chosen, key=lambda x: x.start)
+    return chosen
+
+
+def select(cands: list[Candidate], cfg: Config) -> list[Candidate]:
+    """Les `max_clips` meilleurs, dans l'ordre chronologique."""
+    return sorted(select_ranked(cands, cfg, cfg.max_clips), key=lambda x: x.start)
+
+
+def propose(cands: list[Candidate], cfg: Config) -> tuple[list[Candidate], int]:
+    """Propositions classées : les `max_clips` premières sont fabriquées d'office, les suivantes restent en réserve."""
+    ranked = select_ranked(cands, cfg, cfg.max_clips + cfg.reserve)
+    return ranked, min(cfg.max_clips, len(ranked))
+
+
+def distinct_pool(cands: list[Candidate], k: int, max_overlap: float = 0.2) -> list[Candidate]:
+    """Les k meilleurs moments *distincts* d'après l'heuristique.
+
+    Sans cela, les fenêtres qui ne diffèrent que d'une phrase occupent tout le classement et l'avis du LLM
+    porte sur trois moments répétés au lieu de k moments différents.
+    """
+    out: list[Candidate] = []
+    for c in sorted(cands, key=lambda x: x.heuristic, reverse=True):
+        if len(out) >= k:
+            break
+        if all(_overlap(c, o) <= max_overlap for o in out):
+            out.append(c)
+    return out
