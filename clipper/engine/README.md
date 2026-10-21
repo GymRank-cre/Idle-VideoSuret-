@@ -37,7 +37,7 @@ la supprimer et en créer une autre.
 | Variable | Sert à | Coût | Vérifier |
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | choix des moments revu par Claude, titres, accroches, légendes | à l'usage, ≈ 0,11 $ par vidéo | `clipengine check-llm` |
-| `YOUTUBE_API_KEY` | onglet Découvrir (tendances, nouveautés des chaînes) | gratuit, 10 000 unités par jour | `clipengine check-youtube` |
+| `YOUTUBE_API_KEY` (variable **ou** secret réseau) | onglet Découvrir (tendances, nouveautés des chaînes) | gratuit, 10 000 unités par jour | `clipengine check-youtube` |
 
 ### 1. Claude (`ANTHROPIC_API_KEY`)
 
@@ -49,6 +49,9 @@ la supprimer et en créer une autre.
    réclame un en-tête d'espace en plus et refuse la requête.
 4. Copier la clé (`sk-ant-…`) tout de suite : elle ne s'affiche qu'une fois.
 5. La définir (`ANTHROPIC_API_KEY`), puis `clipengine check-llm`.
+
+Cette clé va **en variable d'environnement, pas en secret réseau** : l'agent proxy des sessions cloud n'ajoute jamais de
+secret aux requêtes vers `api.anthropic.com` (limite de la plateforme, documentée par Anthropic).
 
 Un appel par vidéo (≈ 12 000 caractères envoyés, 20 extraits), modèle `claude-opus-5-5` par défaut (réglage `llm_model` ;
 `claude-sonnet-5-5` coûte moitié moins). Mesuré : 5 311 jetons envoyés et 4 384 reçus, soit environ 0,11 $ ; la Console
@@ -62,7 +65,15 @@ Claude, ou pourquoi il ne l'a pas été (clé refusée, crédit, modèle, résea
 3. [Bibliothèque d'API](https://console.cloud.google.com/apis/library) → chercher **YouTube Data API v3** → **Activer**.
 4. [Identifiants](https://console.cloud.google.com/apis/credentials) → **Créer des identifiants** → **Clé API** ; la copier.
 5. **Restreindre la clé** → restrictions d'API → **YouTube Data API v3** → enregistrer : volée, elle ne sert à rien d'autre.
-6. La définir (`YOUTUBE_API_KEY`), puis `clipengine check-youtube`.
+6. La fournir au moteur, de l'une de ces deux façons :
+   - **variable d'environnement** `YOUTUBE_API_KEY` : la plus simple, mais lisible par quiconque utilise l'environnement ;
+   - **secret réseau** (sessions cloud ; la session ne voit jamais la clé) : fenêtre de l'environnement → **Network
+     secrets** → **Add secret** : *Allowed websites* = `www.googleapis.com` ; *Custom headers* = une ligne, nom
+     `X-Goog-Api-Key`, **préfixe vide** (effacer « Bearer »), valeur = la clé. Le proxy ajoute alors l'en-tête aux requêtes
+     vers ce site, et le moteur, qui n'a pas de variable, envoie sa requête quand même.
+7. `clipengine check-youtube` : dit si ça marche et par quelle voie (variable ou secret réseau).
+
+La clé voyage dans l'en-tête `X-Goog-Api-Key` (l'API YouTube le lit comme le paramètre `key`), jamais dans l'adresse.
 
 Quota gratuit : 10 000 unités par jour ; une visite de l'onglet en coûte de 5 à 30 (réponses gardées 15 minutes, bouton
 **Actualiser** pour interroger à nouveau). La documentation de Google ne mentionne aucune facturation pour cette API ; si

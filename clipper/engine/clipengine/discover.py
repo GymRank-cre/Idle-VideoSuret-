@@ -1,7 +1,11 @@
 """Découvrir : vidéos qui montent sur YouTube et nouveautés des chaînes suivies, par l'API YouTube Data v3.
 
-Une clé Google gratuite suffit (`YOUTUBE_API_KEY`) : 10 000 unités par jour, et chaque appel d'ici en coûte une. Les
-réponses sont gardées 15 minutes, si bien qu'une visite coûte de l'ordre de 5 à 30 unités.
+Une clé Google gratuite suffit : 10 000 unités par jour, et chaque appel d'ici en coûte une. Les réponses sont gardées
+15 minutes, si bien qu'une visite coûte de l'ordre de 5 à 30 unités.
+
+La clé peut venir de la variable `YOUTUBE_API_KEY` (envoyée dans l'en-tête `X-Goog-Api-Key`, jamais dans l'adresse) ou
+d'un secret réseau de l'environnement cloud : la session ne la voit pas, le proxy ajoute l'en-tête aux requêtes vers
+`www.googleapis.com`. Sans variable, le module envoie donc sa requête quand même et lit la réponse.
 
 Ce module ne télécharge rien : il liste des vidéos. Clipper la vidéo d'un autre créateur pour la republier demande son
 accord ; c'est pourquoi « Mes chaînes » (celles dont tu as l'accord) est mis au même rang que « Tendances ».
@@ -25,6 +29,8 @@ API = "https://www.googleapis.com/youtube/v3"
 CACHE_S = 900
 MAX_CHANNELS = 50
 CHANNEL_ID = re.compile(r"^UC[\w-]{22}$")
+NO_KEY = ("Aucune clé YouTube reçue : définir la variable YOUTUBE_API_KEY, ou un secret réseau pour www.googleapis.com "
+          "(en-tête X-Goog-Api-Key)")
 
 
 def api_key() -> str:
@@ -40,6 +46,8 @@ def explain_error(code: int, body: str) -> str:
     except (ValueError, AttributeError, IndexError):
         reason, msg = "", body[:120]
     low = msg.lower()
+    if "unregistered callers" in low or "missing a valid api key" in low or "without established identity" in low:
+        return NO_KEY
     if reason == "keyInvalid" or "api key not valid" in low or "api_key_invalid" in low:
         return "clé YouTube refusée (YOUTUBE_API_KEY invalide)"
     if reason in ("quotaExceeded", "dailyLimitExceeded", "rateLimitExceeded", "userRateLimitExceeded"):
@@ -55,15 +63,17 @@ def explain_error(code: int, body: str) -> str:
     return f"YouTube a refusé la requête ({code}) : {msg[:120]}" if msg else f"YouTube a refusé la requête ({code})"
 
 
+PROBE = {"part": "id", "chart": "mostPopular", "regionCode": "FR", "maxResults": 1}
+
+
 def yt_get(path: str, params: dict) -> dict:
     """GET sur l'API ; UserError lisible en cas d'échec. L'adresse de base se change par CLIPENGINE_YT_URL (essais)."""
     key = api_key()
-    if not key:
-        raise UserError("Pas de clé YouTube : définir YOUTUBE_API_KEY (clé gratuite « YouTube Data API v3 »).")
     base = os.environ.get("CLIPENGINE_YT_URL", API).rstrip("/")
-    url = f"{base}/{path}?{urllib.parse.urlencode({**params, 'key': key})}"
+    headers = {"Accept": "application/json", **({"X-Goog-Api-Key": key} if key else {})}
+    req = urllib.request.Request(f"{base}/{path}?{urllib.parse.urlencode(params)}", headers=headers)
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=20) as r:
+        with urllib.request.urlopen(req, timeout=20) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
         raise UserError(explain_error(e.code, e.read().decode("utf-8", "replace"))) from None
@@ -72,14 +82,13 @@ def yt_get(path: str, params: dict) -> dict:
 
 
 def check() -> tuple[bool, str]:
-    """Un appel réel (1 unité de quota) : dit si la clé YouTube marche, et pourquoi sinon."""
-    if not api_key():
-        return False, "YOUTUBE_API_KEY absente de l'environnement"
+    """Un appel réel (1 unité de quota) : dit si la clé YouTube marche, d'où elle vient, et pourquoi sinon."""
     try:
-        yt_get("videos", {"part": "id", "chart": "mostPopular", "regionCode": "FR", "maxResults": 1})
+        yt_get("videos", PROBE)
     except UserError as e:
         return False, str(e)
-    return True, "YouTube répond (cet essai a coûté 1 unité de quota sur 10 000 par jour)"
+    via = "la variable YOUTUBE_API_KEY" if api_key() else "un secret réseau (la session ne voit pas la clé)"
+    return True, f"YouTube répond, clé fournie par {via} ; cet essai a coûté 1 unité de quota sur 10 000 par jour"
 
 
 def parse_duration(iso: str) -> int:
@@ -171,9 +180,25 @@ class Discover:
         self._cache: dict[tuple, tuple[float, object]] = {}
 
     # ------------------------------------------------------------------ état
-    @staticmethod
-    def enabled() -> bool:
-        return bool(api_key())
+    def status(self) -> dict:
+        """La clé est-elle utilisable ? Variable d'environnement : oui. Sinon un secret réseau peut l'apporter sans que la
+        session la voie : on essaie une fois (1 unité, gardée 15 minutes ; une requête sans clé ne coûte rien)."""
+        if api_key():
+            return {"enabled": True, "via": "env"}
+        with self._lock:
+            hit = self._cache.get(("probe",))
+            if hit and time.time() - hit[0] < CACHE_S:
+                return hit[1]
+        try:
+            yt_get("videos", PROBE)
+        except UserError as e:
+            if str(e) == NO_KEY:
+                return {"enabled": False, "via": ""}              # pas gardé : la clé peut arriver d'une minute à l'autre
+            return {"enabled": True, "via": "secret", "error": str(e)}   # autre panne : les listes la diront
+        out = {"enabled": True, "via": "secret"}
+        with self._lock:
+            self._cache[("probe",)] = (time.time(), out)
+        return out
 
     def _read(self) -> list[dict]:
         try:

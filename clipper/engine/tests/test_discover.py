@@ -42,14 +42,21 @@ class FakeYouTube:
         self.channels: dict[str, dict] = {}
         self.fail: list[tuple[int, str, str]] = []
         self.requests: list[dict] = []
+        self.anonymous_ok = False                                 # vrai : le proxy du secret réseau ajoute la clé
         outer = self
 
         class H(BaseHTTPRequestHandler):
             def do_GET(self):
                 u = urllib.parse.urlparse(self.path)
                 q = {k: v[0] for k, v in urllib.parse.parse_qs(u.query).items()}
-                outer.requests.append({"path": u.path, "q": q})
-                if q.get("key") != KEY:
+                headers = {k.lower(): v for k, v in self.headers.items()}
+                outer.requests.append({"path": u.path, "q": q, "headers": headers})
+                key = headers.get("x-goog-api-key") or q.get("key")
+                if key is None and not outer.anonymous_ok:
+                    return self.reply(403, {"error": {"code": 403, "message": "Method doesn't allow unregistered callers (callers "
+                                                      "without established identity). Please use API Key or other form of API "
+                                                      "consumer identity to call this API.", "errors": [{"reason": "forbidden"}]}})
+                if key is not None and key != KEY:
                     return self.reply(400, {"error": {"code": 400, "message": "API key not valid. Please pass a valid API key.",
                                                       "errors": [{"reason": "badRequest"}]}})
                 if outer.fail:
@@ -166,10 +173,10 @@ def test_youtube_errors_are_explained_and_never_leak_the_key(yt, tmp_path, monke
         with pytest.raises(UserError, match=expected) as e:
             D.trending(fresh=True)
         assert KEY not in str(e.value)
-    monkeypatch.setenv("YOUTUBE_API_KEY", "mauvaise-clé")
+    monkeypatch.setenv("YOUTUBE_API_KEY", "mauvaise-cle")
     with pytest.raises(UserError, match="clé YouTube refusée") as e:
         D.trending(fresh=True)
-    assert "mauvaise-clé" not in str(e.value)
+    assert "mauvaise-cle" not in str(e.value)
     monkeypatch.delenv("YOUTUBE_API_KEY")
     with pytest.raises(UserError, match="YOUTUBE_API_KEY"):
         D.trending(fresh=True)
@@ -280,7 +287,7 @@ def test_discover_routes_end_to_end(api, yt):
     yt.add_channel(UC_A, "Chaîne A", handle="@chaine-a")
     yt.uploads["UU" + "a" * 22] = ["v1"]
     yt.videos = {"v1": item("v1", hours_ago=1)}
-    assert api("GET", "/api/discover/status") == (200, {"enabled": True})
+    assert api("GET", "/api/discover/status") == (200, {"enabled": True, "via": "env"})
     code, d = api("GET", "/api/discover/trending?days=1&min=10")
     assert code == 200 and [v["id"] for v in d["videos"]] == ["t1"] and "thumbnail" in d["videos"][0]
     code, d = api("GET", "/api/discover/trending?days=nimporte&min=-5&category=0&region=fr&fresh=1")
@@ -300,7 +307,7 @@ def test_discover_posts_need_a_non_simple_content_type_and_no_key_gives_a_clear_
     assert api("POST", "/api/discover/channels", {"query": "@chaine-a"}, ctype="text/plain")[0] == 415   # pas de requête forgée
     assert api("POST", "/api/discover/seen", {}, ctype="application/x-www-form-urlencoded")[0] == 415
     monkeypatch.delenv("YOUTUBE_API_KEY")
-    assert api("GET", "/api/discover/status") == (200, {"enabled": False})
+    assert api("GET", "/api/discover/status") == (200, {"enabled": False, "via": ""})
     code, d = api("GET", "/api/discover/trending")
     assert code == 400 and "YOUTUBE_API_KEY" in d["error"]
     code, d = api("GET", "/api/discover/channels")
@@ -317,4 +324,37 @@ def test_check_youtube_says_whether_the_key_works_and_why_not(yt, monkeypatch, c
     ok, msg = discover.check()
     assert not ok and "refusée" in msg and "fausse" not in msg and main(["check-youtube"]) == 1
     monkeypatch.delenv("YOUTUBE_API_KEY")
-    assert discover.check() == (False, "YOUTUBE_API_KEY absente de l'environnement")
+    ok, msg = discover.check()
+    assert not ok and "YOUTUBE_API_KEY" in msg and "X-Goog-Api-Key" in msg
+
+
+def test_the_key_travels_in_a_header_never_in_the_url(yt, tmp_path):
+    yt.pages = [[item("a", hours_ago=3)]]
+    Discover(tmp_path).trending()
+    r = yt.requests[-1]
+    assert r["headers"]["x-goog-api-key"] == KEY and "key" not in r["q"] and KEY not in r["path"]
+
+
+def test_a_network_secret_works_without_the_variable(yt, tmp_path, monkeypatch):
+    """Secret réseau : la session ne voit pas la clé, le proxy ajoute l'en-tête ; sans variable, le module essaie quand même."""
+    monkeypatch.delenv("YOUTUBE_API_KEY")
+    D = Discover(tmp_path)
+    assert D.status() == {"enabled": False, "via": ""}                               # ni variable ni secret
+    with pytest.raises(UserError, match="X-Goog-Api-Key"):
+        D.trending(fresh=True)
+    yt.anonymous_ok = True                                                           # le proxy ajoute la clé
+    assert D.status() == {"enabled": True, "via": "secret"}                          # l'absence de clé n'a pas été mémorisée
+    yt.pages = [[item("a", hours_ago=3)]]
+    assert [v["id"] for v in D.trending(fresh=True)] == ["a"]
+    n = len(yt.requests)
+    assert D.status()["enabled"] is True and len(yt.requests) == n                   # sondage gardé : aucun appel de plus
+    ok, msg = discover.check()
+    assert ok and "secret réseau" in msg and "x-goog-api-key" not in yt.requests[-1]["headers"]
+
+
+def test_a_non_key_failure_while_probing_does_not_hide_the_tab(yt, tmp_path, monkeypatch):
+    monkeypatch.delenv("YOUTUBE_API_KEY")
+    yt.anonymous_ok = True
+    yt.fail.append((500, "backendError", "oups"))
+    st = Discover(tmp_path).status()
+    assert st["enabled"] is True and "500" in st["error"]

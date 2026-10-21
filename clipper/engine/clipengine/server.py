@@ -12,7 +12,7 @@
     GET    /api/settings    POST /api/settings   {"style": {...}, "defaults": {...}}
     GET    /api/styles                        packs, polices, couleurs
     POST   /api/style-preview                 {"style": {...}} -> PNG rendu par libass
-    GET    /api/discover/status               {"enabled"} : la clé YouTube (YOUTUBE_API_KEY) est-elle définie ?
+    GET    /api/discover/status               {"enabled", "via"} : une clé YouTube est-elle utilisable (variable ou secret réseau) ?
     GET    /api/discover/trending             ?days=3&min=10&category=0&region=FR&fresh=1  vidéos qui montent
     GET    /api/discover/channels             chaînes suivies et leurs dernières vidéos longues
     POST   /api/discover/channels             {"query": "@nom" | adresse | UC…}  suit une chaîne
@@ -260,7 +260,7 @@ def make_handler(app: App):
             fresh = q.get("fresh", ["0"])[0] == "1"
             try:
                 if p == "/api/discover/status":
-                    return self._json(200, {"enabled": D.enabled()})
+                    return self._json(200, D.status())
                 if p == "/api/discover/trending":
                     vids = D.trending(region=q.get("region", ["FR"])[0].upper(), category=q.get("category", ["0"])[0],
                                       days=num("days", 3, 0.5, 14), min_min=num("min", 10, 1, 180), fresh=fresh)
