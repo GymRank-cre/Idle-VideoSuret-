@@ -80,10 +80,23 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 4c)_
+**Étape 4c — Retouches visuelles et cadrage portrait : compile, gameplay inchangé, 8 captures `4c-*` (1080×1920, HUD inclus).**
+1. **Cadrage portrait.** Variantes A et B capturées. **Variante A retenue** (`4c-01-depart-hud`) : on voit le joueur, le poste et la dalle à gauche, plus de la moitié de la palette à droite. La B (`4c-00-comparaison-variante-B`, caméra `(0, 11, -7)`) grossit un peu le joueur mais coupe davantage le poste et la palette. Constantes en tête de `PrototypeSetup` : `PilePosition (4,5; 0,1; 0)`, `Station1Position (-4,5; 0,1; 0)`, `Station2Position (-4,5; 0,1; 7,5)`, `PadPosition (-4,5; 0,01; 4)`, `CameraOffset (0, 12, -8)`, `CameraFov 65`. `CameraFollow` n'est pas modifié (l'offset est seulement réglé par le Setup).
+2. **Joint noir** : supprimé. Plinthe acier clair (0,18 m) collée au sol et au mur, sans espace ; capture `4c-04-joint-mur-sol`.
+3. **Sol** : dalles de 1 m, contraste plus faible. Lignes de circulation de 0,2 m : couloir tas → poste (2 lignes blanches, axe jaune en tirets), puis lignes jaunes poste → dalle → poste 2 ; elles sont calculées à partir des positions des objets. Pièce resserrée (x de -8,5 à 11, z de -9 à 11,5) ; 3 étagères, bobines et cartons le long des bords, plus une bobine et deux cartons autour du centre (hors du chemin).
+4. **Fond de caméra** : uni `#2B3441`. Murs de 4 m avec liseré jaune bas et moulure haute (corniche acier) ; la pièce est fermée.
+5. **Barre de progression** : montée de 0,6 m (y local 2,8), 1,1 m de long, fond en capsule sombre arrondie, remplissage plus fin ; elle ne touche plus la tête du joueur.
+6. **Casque** : le cube est remplacé par une arête basse allongée (sphère écrasée, avant → arrière). Petit sourire de 5 billes sombres, sous les yeux. Le sourire se lit plutôt comme des points à cette échelle.
+7. **Capture HUD portrait** : faite en passant le Canvas en `ScreenSpaceCamera` le temps du rendu dans la texture 1080×1920 (script de capture jetable, pas dans le projet). `$ 0` et `0/8` sont lisibles sur `4c-01-depart-hud`.
+- Test Play après les changements (nouvelles positions) : 8 caisses ramassées (MAX), dépôt au poste, 10 billets ramassés (argent 100), dalle payée en 60 pas, poste 2 actif à `(-4,5; 0,1; 7,5)`, animation du personnage OK (balancement 40°, retour à 0 à l'arrêt). 0 erreur, 0 warning (hors message du pont MCP).
+- Captures : `4c-00-comparaison-variante-B`, `01-depart-hud`, `02-poste-hud`, `03-perso-face`, `04-joint-mur-sol`, `05-perso-dos`, `06-dalle-hud`.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Barre de progression au repos** : elle reste visible en noir (pastille vide) quand le poste ne travaille pas. Veux-tu qu'elle n'apparaisse que pendant un travail ? (petite modification de `ProgressBar3D`, visuel seulement)
+- **HUD** : le texte `$ 0` / `0/8` chevauche le haut du mur sur le cadrage actuel ; lisible grâce au contour, mais on peut le descendre un peu ou l'assombrir si tu préfères.
+- **Étape 4d** : les 4 FBX Mixamo sont déjà dans `Assets/Characters` (`Technicien.fbx`, `Breathing Idle.fbx`, `Walking.fbx`, `Running.fbx`). Je ne les ai pas touchés, en attente de ton feu vert pour la 4d.
+- Tâche parallèle (dépôt iOS) : non faite, toujours REPORTÉE.
+
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -146,3 +159,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4b : habillage visuel (Build workshop, technicien animé, atelier, post-traitement) fait ; 9 captures dans unity/captures ; à relire côté cloud.
 - Étape 4b (habillage) relue côté cloud sur captures : bonne base. Étape 4c (retouches et cadrage portrait) spécifiée.
 - Sébastien valide la 4c et demande un vrai humain : étape 4d (Mixamo) ajoutée.
+- Étape 4c : cadrage portrait (variante A), plinthe, sol 1 m + lignes, fond #2B3441, barre de progression, casque et sourire, capture HUD ; testé via MCP.

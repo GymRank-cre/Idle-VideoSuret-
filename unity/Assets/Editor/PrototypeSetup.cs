@@ -13,6 +13,14 @@ public static class PrototypeSetup
     const string Root = "Assets/Prototype";
     const int StartMoney = 0; // mettre 100 pour tester les dalles, puis remettre 0
 
+    // ---- Positions de jeu et caméra : une seule zone à modifier ----
+    static readonly Vector3 PilePosition = new Vector3(4.5f, 0.1f, 0f);
+    static readonly Vector3 Station1Position = new Vector3(-4.5f, 0.1f, 0f);
+    static readonly Vector3 Station2Position = new Vector3(-4.5f, 0.1f, 7.5f);
+    static readonly Vector3 PadPosition = new Vector3(-4.5f, 0.01f, 4f);
+    static readonly Vector3 CameraOffset = new Vector3(0f, 12f, -8f);
+    const float CameraFov = 65f;
+
     [MenuItem("Tools/Idle Prototype/Build scene")]
     static void Build()
     {
@@ -72,17 +80,19 @@ public static class PrototypeSetup
 
         // Caméra
         Camera cam = Camera.main;
-        cam.transform.position = new Vector3(0f, 12f, -8f);
+        cam.transform.position = player.transform.position + CameraOffset;
         cam.transform.rotation = Quaternion.Euler(55f, 0f, 0f);
+        cam.fieldOfView = CameraFov;
         CameraFollow follow = cam.gameObject.AddComponent<CameraFollow>();
         var followSo = new SerializedObject(follow);
         followSo.FindProperty("target").objectReferenceValue = player.transform;
+        followSo.FindProperty("offset").vector3Value = CameraOffset;
         followSo.ApplyModifiedPropertiesWithoutUndo();
 
         // Zone de ramassage
         GameObject pile = GameObject.CreatePrimitive(PrimitiveType.Cube);
         pile.name = "ResourcePile";
-        pile.transform.position = new Vector3(6f, 0.1f, 0f);
+        pile.transform.position = PilePosition;
         pile.transform.localScale = new Vector3(3f, 0.2f, 3f);
         pile.GetComponent<Renderer>().sharedMaterial = pileMat;
         BoxCollider box = pile.GetComponent<BoxCollider>();
@@ -95,8 +105,8 @@ public static class PrototypeSetup
 
         StationConfig stationConfig = LoadOrCreateStationConfig();
         GameObject billPrefab = BuildBillPrefab();
-        BuildStation("InstallStation", new Vector3(-6f, 0.1f, 0f), resourcePile, stationConfig, billPrefab);
-        GameObject station2 = BuildStation("InstallStation2", new Vector3(-6f, 0.1f, 9f), resourcePile, stationConfig, billPrefab);
+        BuildStation("InstallStation", Station1Position, resourcePile, stationConfig, billPrefab);
+        GameObject station2 = BuildStation("InstallStation2", Station2Position, resourcePile, stationConfig, billPrefab);
         station2.SetActive(false); // débloqué par la dalle
 
         BuildJoystick(player.GetComponent<PlayerController>());
@@ -217,7 +227,7 @@ public static class PrototypeSetup
         }
 
         GameObject pad = new GameObject("UnlockPad");
-        pad.transform.position = new Vector3(-6f, 0.01f, 5f);
+        pad.transform.position = PadPosition;
 
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.name = "Visual";

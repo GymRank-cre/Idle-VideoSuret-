@@ -13,6 +13,10 @@ public static class WorkshopBuilder
 {
     const string Root = "Assets/Prototype";
 
+    // ---- Dimensions de la pièce (resserrée autour de la zone de jeu) ----
+    const float RoomLeft = -8.5f, RoomRight = 11f, RoomFront = -9f, RoomBack = 11.5f;
+    const float WallHeight = 4f;
+
     // ---- Palette (8 à 10 couleurs de base) ----
     static readonly Color Wood = new Color(0.80f, 0.62f, 0.40f);
     static readonly Color Steel = new Color(0.35f, 0.43f, 0.52f);
@@ -21,13 +25,13 @@ public static class WorkshopBuilder
     static readonly Color Orange = new Color(1.00f, 0.45f, 0.08f);
     static readonly Color Dark = new Color(0.13f, 0.15f, 0.18f);
     static readonly Color FloorA = new Color(0.82f, 0.84f, 0.86f);
-    static readonly Color FloorB = new Color(0.72f, 0.75f, 0.78f);
+    static readonly Color FloorB = new Color(0.77f, 0.79f, 0.82f);
     static readonly Color Carton = new Color(0.72f, 0.52f, 0.30f);
     static readonly Color Skin = new Color(0.96f, 0.76f, 0.60f);
-    static readonly Color Sky = new Color(0.80f, 0.87f, 0.93f);
+    static readonly Color Sky = new Color(0.169f, 0.204f, 0.255f); // fond uni #2B3441
 
     // ---- Matériaux ----
-    static Material mWood, mSteel, mWhite, mYellow, mOrange, mDark, mCarton, mTape, mSkin, mPants, mBelt,
+    static Material mSteelDark, mWood, mSteel, mWhite, mYellow, mOrange, mDark, mCarton, mTape, mSkin, mPants, mBelt,
         mMetal, mGlass, mScreen, mNeon, mLedGreen, mLedRed, mReflect, mGreen, mGreenDark, mRed,
         mFloor, mStripes, mShadow, mHalo, mMat;
 
@@ -150,53 +154,103 @@ public static class WorkshopBuilder
 
     static void BuildRoom(Transform parent)
     {
-        // Sol : damier de dalles de 2 m (le plan "Ground" du jeu garde son collider).
+        float midX = (RoomLeft + RoomRight) * 0.5f, midZ = (RoomFront + RoomBack) * 0.5f;
+        float width = RoomRight - RoomLeft, depth = RoomBack - RoomFront;
+
+        // Sol : damier de dalles de 1 m (le plan "Ground" du jeu garde son collider).
         GameObject ground = GameObject.Find("Ground");
         if (ground != null)
         {
-            ground.transform.position = new Vector3(2f, 0f, 2.5f);
-            ground.transform.localScale = new Vector3(2.4f, 1f, 2.3f); // 24 m x 23 m
+            ground.transform.position = new Vector3(midX, 0f, midZ);
+            ground.transform.localScale = new Vector3(width / 10f, 1f, depth / 10f); // un plan fait 10 m
             ground.GetComponent<Renderer>().sharedMaterial = mFloor;
+            mFloor.SetTextureScale("_BaseMap", new Vector2(width / 2f, depth / 2f)); // la texture couvre 2 m
         }
 
-        // Murs du fond (z = 14) et de gauche (x = -10) ; rien côté caméra.
-        Prim(PrimitiveType.Cube, "WallBack", parent, new Vector3(2f, 1.5f, 14.15f), new Vector3(24.6f, 3f, 0.3f), mWhite);
-        Prim(PrimitiveType.Cube, "WallLeft", parent, new Vector3(-10.15f, 1.5f, 2.5f), new Vector3(0.3f, 3f, 23.6f), mWhite);
+        // Murs du fond et de gauche, ~4 m ; rien côté caméra.
+        Prim(PrimitiveType.Cube, "WallBack", parent, new Vector3(midX - 0.15f, WallHeight * 0.5f, RoomBack + 0.15f),
+            new Vector3(width + 0.3f, WallHeight, 0.3f), mWhite);
+        Prim(PrimitiveType.Cube, "WallLeft", parent, new Vector3(RoomLeft - 0.15f, WallHeight * 0.5f, midZ),
+            new Vector3(0.3f, WallHeight, depth), mWhite);
 
-        // Bande de couleur et plinthe
-        Prim(PrimitiveType.Cube, "StripeBack", parent, new Vector3(2f, 1.0f, 13.97f), new Vector3(24f, 0.3f, 0.06f), mSteel);
-        Prim(PrimitiveType.Cube, "StripeLeft", parent, new Vector3(-9.97f, 1.0f, 2.5f), new Vector3(0.06f, 0.3f, 23f), mSteel);
-        Prim(PrimitiveType.Cube, "BaseboardBack", parent, new Vector3(2f, 0.08f, 13.95f), new Vector3(24f, 0.16f, 0.1f), mDark);
-        Prim(PrimitiveType.Cube, "BaseboardLeft", parent, new Vector3(-9.95f, 0.08f, 2.5f), new Vector3(0.1f, 0.16f, 23f), mDark);
-        Prim(PrimitiveType.Cube, "TopTrimBack", parent, new Vector3(2f, 2.97f, 13.93f), new Vector3(24.6f, 0.06f, 0.14f), mYellow);
-        Prim(PrimitiveType.Cube, "TopTrimLeft", parent, new Vector3(-9.93f, 2.97f, 2.5f), new Vector3(0.14f, 0.06f, 23.6f), mYellow);
+        // Bande de couleur
+        Prim(PrimitiveType.Cube, "StripeBack", parent, new Vector3(midX, 1.0f, RoomBack - 0.02f), new Vector3(width, 0.3f, 0.06f), mSteel);
+        Prim(PrimitiveType.Cube, "StripeLeft", parent, new Vector3(RoomLeft + 0.02f, 1.0f, midZ), new Vector3(0.06f, 0.3f, depth), mSteel);
+
+        // Plinthe acier posée sur le sol, collée au mur (aucune face sombre, aucun espace).
+        Prim(PrimitiveType.Cube, "BaseboardBack", parent, new Vector3(midX, 0.09f, RoomBack - 0.04f), new Vector3(width, 0.18f, 0.08f), mSteelDark);
+        Prim(PrimitiveType.Cube, "BaseboardLeft", parent, new Vector3(RoomLeft + 0.04f, 0.09f, midZ), new Vector3(0.08f, 0.18f, depth), mSteelDark);
+
+        // Liseré jaune et moulure haute qui ferment la pièce.
+        Prim(PrimitiveType.Cube, "TopTrimBack", parent, new Vector3(midX, WallHeight - 0.45f, RoomBack - 0.03f), new Vector3(width, 0.06f, 0.06f), mYellow);
+        Prim(PrimitiveType.Cube, "TopTrimLeft", parent, new Vector3(RoomLeft + 0.03f, WallHeight - 0.45f, midZ), new Vector3(0.06f, 0.06f, depth), mYellow);
+        Prim(PrimitiveType.Cube, "CorniceBack", parent, new Vector3(midX - 0.15f, WallHeight - 0.1f, RoomBack - 0.1f), new Vector3(width + 0.3f, 0.2f, 0.22f), mSteelDark);
+        Prim(PrimitiveType.Cube, "CorniceLeft", parent, new Vector3(RoomLeft + 0.1f, WallHeight - 0.1f, midZ), new Vector3(0.22f, 0.2f, depth), mSteelDark);
+
+        // Lignes de circulation (jaune et blanc, 0,2 m) : couloir du tas au poste, puis du poste à la dalle.
+        BuildFloorLines(parent);
+    }
+
+    static void BuildFloorLines(Transform parent)
+    {
+        ResourcePile pile = Object.FindFirstObjectByType<ResourcePile>();
+        UnlockPad pad = Object.FindFirstObjectByType<UnlockPad>(FindObjectsInactive.Include);
+        InstallStation station1 = null, station2 = null;
+        foreach (InstallStation st in Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (st.name == "InstallStation") station1 = st;
+            else if (st.name == "InstallStation2") station2 = st;
+        }
+        if (pile == null || pad == null || station1 == null || station2 == null) return;
+
+        Transform lines = Group(parent, "FloorLines", Vector3.zero);
+        const float w = 0.2f, y = 0.008f, half = 1.5f; // demi-côté des zones 3 x 3
+        Vector3 p = pile.transform.position, s1 = station1.transform.position;
+        Vector3 d = pad.transform.position, s2 = station2.transform.position;
+
+        // Couloir tas -> poste : deux lignes blanches pleines et un axe jaune en tirets.
+        float x0 = s1.x + half, x1 = p.x - half, len = x1 - x0, cx = (x0 + x1) * 0.5f;
+        Prim(PrimitiveType.Cube, "LineN", lines, new Vector3(cx, y, s1.z + 1.3f), new Vector3(len, 0.01f, w), mWhite);
+        Prim(PrimitiveType.Cube, "LineS", lines, new Vector3(cx, y, s1.z - 1.3f), new Vector3(len, 0.01f, w), mWhite);
+        int dashes = Mathf.Max(1, Mathf.FloorToInt(len));
+        for (int i = 0; i < dashes; i++)
+            Prim(PrimitiveType.Cube, "Dash", lines, new Vector3(x0 + (i + 0.5f) * len / dashes, y, s1.z), new Vector3(0.6f, 0.01f, w), mYellow);
+
+        // Poste -> dalle, puis dalle -> poste 2 : deux lignes jaunes de chaque côté du chemin.
+        foreach (float dx in new[] { -1.3f, 1.3f })
+        {
+            float a = s1.z + half, b = d.z - half;
+            if (b > a) Prim(PrimitiveType.Cube, "PathLine", lines, new Vector3(d.x + dx, y, (a + b) * 0.5f), new Vector3(w, 0.01f, b - a), mYellow);
+            a = d.z + half; b = s2.z - half;
+            if (b > a) Prim(PrimitiveType.Cube, "PathLine", lines, new Vector3(d.x + dx, y, (a + b) * 0.5f), new Vector3(w, 0.01f, b - a), mYellow);
+        }
     }
 
     // ------------------------------------------------------------------ décor mural
 
     static void BuildWallDecor(Transform parent)
     {
-        const float z = 13.95f; // face intérieure du mur du fond
+        const float z = RoomBack - 0.05f; // face intérieure du mur du fond
 
         // Fenêtre
-        Prim(PrimitiveType.Cube, "WindowFrame", parent, new Vector3(4.5f, 1.85f, z - 0.03f), new Vector3(2.8f, 1.7f, 0.12f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowGlass", parent, new Vector3(4.5f, 1.85f, z - 0.09f), new Vector3(2.5f, 1.4f, 0.05f), mGlass);
-        Prim(PrimitiveType.Cube, "WindowBarV", parent, new Vector3(4.5f, 1.85f, z - 0.11f), new Vector3(0.08f, 1.4f, 0.05f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowBarH", parent, new Vector3(4.5f, 1.85f, z - 0.11f), new Vector3(2.5f, 0.08f, 0.05f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(4.5f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
+        Prim(PrimitiveType.Cube, "WindowFrame", parent, new Vector3(3.2f, 1.85f, z - 0.03f), new Vector3(2.8f, 1.7f, 0.12f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowGlass", parent, new Vector3(3.2f, 1.85f, z - 0.09f), new Vector3(2.5f, 1.4f, 0.05f), mGlass);
+        Prim(PrimitiveType.Cube, "WindowBarV", parent, new Vector3(3.2f, 1.85f, z - 0.11f), new Vector3(0.08f, 1.4f, 0.05f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowBarH", parent, new Vector3(3.2f, 1.85f, z - 0.11f), new Vector3(2.5f, 0.08f, 0.05f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(3.2f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
 
         // Enseigne néon "SÉCURITÉ"
-        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(-3f, 2.3f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
-        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(-3f, 2.72f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(-3f, 1.88f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(-5.08f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(-0.92f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(-3f, 2.3f, z - 0.13f), 0.09f, 100,
+        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(-4.3f, 2.3f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
+        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(-4.3f, 2.72f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(-4.3f, 1.88f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(-6.38f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(-2.22f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(-4.3f, 2.3f, z - 0.13f), 0.09f, 100,
             new Color(0.45f, 1f, 0.85f));
         sign.fontStyle = FontStyle.Bold;
 
         // Tableau d'outils
-        Transform board = Group(parent, "ToolBoard", new Vector3(0.6f, 1.7f, z - 0.05f));
+        Transform board = Group(parent, "ToolBoard", new Vector3(-0.3f, 1.7f, z - 0.05f));
         Prim(PrimitiveType.Cube, "Board", board, Vector3.zero, new Vector3(2.6f, 1.5f, 0.08f), mWood);
         for (int i = 0; i < 3; i++) // tournevis
         {
@@ -214,12 +268,12 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cylinder, "CableHang2", board, new Vector3(0.95f, -0.05f, -0.07f), new Vector3(0.03f, 0.3f, 0.03f), mYellow);
 
         // Mur de caméras dôme (2 x 3)
-        Prim(PrimitiveType.Cube, "CamPanel", parent, new Vector3(9.5f, 1.8f, z - 0.03f), new Vector3(4.2f, 1.7f, 0.06f), mDark);
+        Prim(PrimitiveType.Cube, "CamPanel", parent, new Vector3(7.0f, 1.8f, z - 0.03f), new Vector3(3.6f, 1.7f, 0.06f), mDark);
         for (int row = 0; row < 2; row++)
         {
             for (int col = 0; col < 3; col++)
             {
-                Vector3 p = new Vector3(8.3f + col * 1.2f, 1.45f + row * 0.75f, z - 0.1f);
+                Vector3 p = new Vector3(5.9f + col * 1.1f, 1.45f + row * 0.75f, z - 0.1f);
                 Prim(PrimitiveType.Cylinder, "DomeBase", parent, p, new Vector3(0.42f, 0.02f, 0.42f), mWhite, new Vector3(90, 0, 0));
                 Prim(PrimitiveType.Sphere, "Dome", parent, p + new Vector3(0, 0, -0.04f), new Vector3(0.36f, 0.36f, 0.22f), mGlass);
                 Prim(PrimitiveType.Sphere, "DomeLens", parent, p + new Vector3(0, -0.02f, -0.1f), new Vector3(0.1f, 0.1f, 0.06f), mDark);
@@ -228,22 +282,22 @@ public static class WorkshopBuilder
         }
 
         // Armoire électrique avec voyants
-        Prim(PrimitiveType.Cube, "CabinetBody", parent, new Vector3(12.8f, 1.1f, z - 0.25f), new Vector3(1.1f, 2.2f, 0.5f), mSteel);
-        Prim(PrimitiveType.Cube, "CabinetDoor", parent, new Vector3(12.8f, 1.1f, z - 0.52f), new Vector3(1.0f, 2.1f, 0.04f), mMetal);
-        Prim(PrimitiveType.Cube, "CabinetHandle", parent, new Vector3(13.2f, 1.1f, z - 0.57f), new Vector3(0.05f, 0.3f, 0.05f), mDark);
+        Prim(PrimitiveType.Cube, "CabinetBody", parent, new Vector3(10.3f, 1.1f, z - 0.25f), new Vector3(1.1f, 2.2f, 0.5f), mSteel);
+        Prim(PrimitiveType.Cube, "CabinetDoor", parent, new Vector3(10.3f, 1.1f, z - 0.52f), new Vector3(1.0f, 2.1f, 0.04f), mMetal);
+        Prim(PrimitiveType.Cube, "CabinetHandle", parent, new Vector3(10.7f, 1.1f, z - 0.57f), new Vector3(0.05f, 0.3f, 0.05f), mDark);
         for (int i = 0; i < 4; i++)
         {
             Material led = i % 3 == 2 ? mLedRed : mLedGreen;
-            Prim(PrimitiveType.Sphere, "CabinetLed", parent, new Vector3(12.45f + i * 0.17f, 1.85f, z - 0.56f), Vector3.one * 0.07f, led);
+            Prim(PrimitiveType.Sphere, "CabinetLed", parent, new Vector3(9.95f + i * 0.17f, 1.85f, z - 0.56f), Vector3.one * 0.07f, led);
         }
-        Prim(PrimitiveType.Cube, "CabinetLabel", parent, new Vector3(12.6f, 1.45f, z - 0.55f), new Vector3(0.5f, 0.18f, 0.01f), mYellow);
+        Prim(PrimitiveType.Cube, "CabinetLabel", parent, new Vector3(10.1f, 1.45f, z - 0.55f), new Vector3(0.5f, 0.18f, 0.01f), mYellow);
 
         // Poster
-        Prim(PrimitiveType.Cube, "PosterFrame", parent, new Vector3(-8.3f, 1.8f, z - 0.04f), new Vector3(1.3f, 1.8f, 0.05f), mDark);
-        Prim(PrimitiveType.Cube, "PosterPaper", parent, new Vector3(-8.3f, 1.8f, z - 0.075f), new Vector3(1.15f, 1.65f, 0.02f), mWhite);
-        Prim(PrimitiveType.Cylinder, "PosterShield", parent, new Vector3(-8.3f, 2.0f, z - 0.095f), new Vector3(0.7f, 0.01f, 0.7f), mYellow, new Vector3(90, 0, 0));
-        Prim(PrimitiveType.Cylinder, "PosterLens", parent, new Vector3(-8.3f, 2.0f, z - 0.11f), new Vector3(0.3f, 0.01f, 0.3f), mDark, new Vector3(90, 0, 0));
-        Prim(PrimitiveType.Cube, "PosterBand", parent, new Vector3(-8.3f, 1.25f, z - 0.095f), new Vector3(0.95f, 0.2f, 0.01f), mSteel);
+        Prim(PrimitiveType.Cube, "PosterFrame", parent, new Vector3(-7.6f, 1.8f, z - 0.04f), new Vector3(1.3f, 1.8f, 0.05f), mDark);
+        Prim(PrimitiveType.Cube, "PosterPaper", parent, new Vector3(-7.6f, 1.8f, z - 0.075f), new Vector3(1.15f, 1.65f, 0.02f), mWhite);
+        Prim(PrimitiveType.Cylinder, "PosterShield", parent, new Vector3(-7.6f, 2.0f, z - 0.095f), new Vector3(0.7f, 0.01f, 0.7f), mYellow, new Vector3(90, 0, 0));
+        Prim(PrimitiveType.Cylinder, "PosterLens", parent, new Vector3(-7.6f, 2.0f, z - 0.11f), new Vector3(0.3f, 0.01f, 0.3f), mDark, new Vector3(90, 0, 0));
+        Prim(PrimitiveType.Cube, "PosterBand", parent, new Vector3(-7.6f, 1.25f, z - 0.095f), new Vector3(0.95f, 0.2f, 0.01f), mSteel);
     }
 
     // ------------------------------------------------------------------ décor au sol
@@ -251,21 +305,28 @@ public static class WorkshopBuilder
     static void BuildFloorDecor(Transform parent)
     {
         // Étagères métalliques avec cartons contre le mur de gauche
-        BuildShelf(parent, new Vector3(-9.55f, 0f, 3.0f));
-        BuildShelf(parent, new Vector3(-9.55f, 0f, 7.6f));
-        BuildShelf(parent, new Vector3(-9.55f, 0f, 11.4f));
+        float shelfX = RoomLeft + 0.45f;
+        BuildShelf(parent, new Vector3(shelfX, 0f, 1.2f));
+        BuildShelf(parent, new Vector3(shelfX, 0f, 4.5f));
+        BuildShelf(parent, new Vector3(shelfX, 0f, 8.0f));
 
-        // Bobines de câble
-        BuildReel(parent, new Vector3(-8.4f, 0f, -5.0f), mOrange);
-        BuildReel(parent, new Vector3(-7.4f, 0f, -6.3f), mYellow);
-        BuildReel(parent, new Vector3(11.5f, 0f, 11.0f), mOrange);
-        BuildReel(parent, new Vector3(10.2f, 0f, 12.2f), mDark);
+        // Bobbines de câble contre les bords, jamais sur le chemin du joueur
+        BuildReel(parent, new Vector3(-6.8f, 0f, -5.5f), mOrange);
+        BuildReel(parent, new Vector3(-5.8f, 0f, -6.6f), mYellow);
+        BuildReel(parent, new Vector3(9.8f, 0f, 9.5f), mOrange);
+        BuildReel(parent, new Vector3(8.8f, 0f, 10.2f), mDark);
 
-        // Quelques cartons isolés
-        BuildCarton(parent, new Vector3(12.2f, 0.3f, 7.0f), new Vector3(0.9f, 0.6f, 0.7f), 15f);
-        BuildCarton(parent, new Vector3(12.3f, 0.3f, 8.0f), new Vector3(0.8f, 0.6f, 0.7f), -8f);
-        BuildCarton(parent, new Vector3(12.25f, 0.9f, 7.4f), new Vector3(0.7f, 0.5f, 0.6f), 30f);
-        Shadow(parent, new Vector3(12.2f, 0.01f, 7.5f), 2.4f);
+        // Quelques cartons isolés, côté droit
+        BuildCarton(parent, new Vector3(10.2f, 0.3f, 3.5f), new Vector3(0.9f, 0.6f, 0.7f), 15f);
+        BuildCarton(parent, new Vector3(10.3f, 0.3f, 4.5f), new Vector3(0.8f, 0.6f, 0.7f), -8f);
+        BuildCarton(parent, new Vector3(10.25f, 0.9f, 4.0f), new Vector3(0.7f, 0.5f, 0.6f), 30f);
+        Shadow(parent, new Vector3(10.2f, 0.01f, 4.0f), 2.4f);
+
+        // Deux détails autour du centre vide
+        BuildReel(parent, new Vector3(2.2f, 0f, 6.2f), mOrange);
+        BuildCarton(parent, new Vector3(7.2f, 0.3f, 3.2f), new Vector3(0.9f, 0.6f, 0.7f), 20f);
+        BuildCarton(parent, new Vector3(7.9f, 0.3f, 3.6f), new Vector3(0.7f, 0.5f, 0.6f), -12f);
+        Shadow(parent, new Vector3(7.5f, 0.01f, 3.4f), 2.2f);
     }
 
     static void BuildShelf(Transform parent, Vector3 basePos)
@@ -367,6 +428,29 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cylinder, "Screwdriver", bench, new Vector3(0.1f, topY + 0.08f, 0.5f), new Vector3(0.05f, 0.1f, 0.05f), mOrange, new Vector3(0, 0, 90));
 
         Shadow(bench, new Vector3(0f, -0.09f, 0.2f), 4.6f);
+
+        // Barre de progression : plus haute (hors de la tête du joueur), plus courte, fond arrondi et sombre.
+        ProgressBar3D bar = station.GetComponentInChildren<ProgressBar3D>(true);
+        if (bar != null)
+        {
+            bar.transform.localPosition = new Vector3(0f, 2.8f, 0f);
+            var barSo = new SerializedObject(bar);
+            barSo.FindProperty("width").floatValue = 1.1f;
+            barSo.ApplyModifiedPropertiesWithoutUndo();
+
+            Clear(bar.transform, "Back");
+            Prim(PrimitiveType.Capsule, "Back", bar.transform, Vector3.zero, new Vector3(0.2f, 0.66f, 0.05f),
+                Mat("WS_BarBack", new Color(0.06f, 0.07f, 0.09f), 0.2f), new Vector3(0f, 0f, 90f));
+
+            Transform fill = (Transform)barSo.FindProperty("fill").objectReferenceValue;
+            if (fill != null)
+            {
+                Vector3 fs = fill.localScale;
+                fill.localScale = new Vector3(fs.x, 0.12f, 0.04f);
+                Vector3 fp = fill.localPosition;
+                fill.localPosition = new Vector3(fp.x, 0f, -0.04f);
+            }
+        }
     }
 
     // ------------------------------------------------------------------ dalle de déblocage
@@ -446,7 +530,17 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Sphere, "EyeR", body, new Vector3(0.12f, 0.38f, 0.28f), Vector3.one * 0.07f, mDark);
         Prim(PrimitiveType.Sphere, "Helmet", body, new Vector3(0f, 0.56f, -0.01f), new Vector3(0.68f, 0.46f, 0.68f), mYellow);
         Prim(PrimitiveType.Cylinder, "Brim", body, new Vector3(0f, 0.44f, 0.02f), new Vector3(0.8f, 0.015f, 0.8f), mYellow);
-        Prim(PrimitiveType.Cube, "HelmetRidge", body, new Vector3(0f, 0.78f, -0.01f), new Vector3(0.06f, 0.05f, 0.5f), mYellow);
+        // Arête basse allongée de l'avant vers l'arrière, enfoncée dans la coque
+        Prim(PrimitiveType.Sphere, "HelmetRidge", body, new Vector3(0f, 0.765f, -0.01f), new Vector3(0.08f, 0.07f, 0.5f), mYellow);
+
+        // Petit sourire : arc de petites billes sombres sur la face
+        for (int i = -2; i <= 2; i++)
+        {
+            float x = i * 0.04f;
+            float y = 0.255f + 0.012f * i * i; // les coins remontent
+            float zz = Mathf.Sqrt(Mathf.Max(0f, 0.31f * 0.31f - x * x - (y - 0.46f) * (y - 0.46f)));
+            Prim(PrimitiveType.Sphere, "Smile", body, new Vector3(x, y, zz), new Vector3(0.03f, 0.026f, 0.016f), mDark);
+        }
 
         // Bras (pivot à l'épaule)
         Transform armL = MakeArm(body, "ArmL", -0.4f);
@@ -527,6 +621,7 @@ public static class WorkshopBuilder
     {
         mWood = Mat("WS_Wood", Wood, 0.25f);
         mSteel = Mat("WS_Steel", Steel, 0.4f, 0.2f);
+        mSteelDark = Mat("WS_SteelDark", new Color(0.42f, 0.50f, 0.59f), 0.35f, 0.1f);
         mWhite = Mat("WS_OffWhite", OffWhite, 0.15f);
         mYellow = Mat("WS_Yellow", Yellow, 0.3f);
         mOrange = Mat("WS_Orange", Orange, 0.25f);
@@ -554,7 +649,7 @@ public static class WorkshopBuilder
             bool a = (x < 128) == (y < 128);
             Color c = a ? FloorA : FloorB;
             int tx = x % 128, ty = y % 128;
-            if (tx < 3 || ty < 3 || tx > 124 || ty > 124) c = Color.Lerp(c, new Color(0.55f, 0.58f, 0.63f), 0.7f);
+            if (tx < 3 || ty < 3 || tx > 124 || ty > 124) c = Color.Lerp(c, new Color(0.68f, 0.71f, 0.75f), 0.6f);
             return c;
         }, true);
         mFloor = Mat("WS_Floor", Color.white, 0.35f);
