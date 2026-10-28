@@ -8,7 +8,7 @@ using UnityEngine;
 public class InstallStation : MonoBehaviour
 {
     [SerializeField] StationConfig config;
-    [SerializeField] GameObject cratePrefab;
+    [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
     [SerializeField] GameObject billPrefab;
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
@@ -39,7 +39,7 @@ public class InstallStation : MonoBehaviour
 
     void Awake()
     {
-        cratePool = new ObjectPool(cratePrefab, new GameObject(name + " Crates").transform);
+        cratePool = cratesSource.Pool;
         billPool = new ObjectPool(billPrefab, new GameObject(name + " Bills").transform);
     }
 
@@ -134,7 +134,8 @@ public class InstallStation : MonoBehaviour
             Vector2 offset = Random.insideUnitCircle * billScatterRadius;
             Vector3 pos = center + new Vector3(offset.x, 0f, offset.y);
             Quaternion rot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-            billPool.Get(pos, rot);
+            GameObject go = billPool.Get(pos, rot);
+            go.GetComponent<Bill>().Init(config.BillValue, billPool.Release);
         }
     }
 }

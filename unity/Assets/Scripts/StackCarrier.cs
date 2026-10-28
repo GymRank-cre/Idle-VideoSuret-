@@ -16,6 +16,8 @@ public class StackCarrier : MonoBehaviour
     Camera cam;
 
     public int Count => items.Count;
+    public int Capacity => capacity;
+    public event System.Action OnCountChanged;
     public bool IsFull => items.Count >= capacity;
     public bool IsEmpty => items.Count == 0;
 
@@ -74,5 +76,6 @@ public class StackCarrier : MonoBehaviour
     {
         if (maxIndicator != null)
             maxIndicator.SetActive(IsFull);
+        OnCountChanged?.Invoke();
     }
 }

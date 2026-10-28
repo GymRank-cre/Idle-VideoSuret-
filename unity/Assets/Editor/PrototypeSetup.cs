@@ -92,9 +92,10 @@ public static class PrototypeSetup
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
         pileSo.ApplyModifiedPropertiesWithoutUndo();
 
-        BuildStation(cratePrefab);
+        BuildStation(resourcePile);
 
         BuildJoystick(player.GetComponent<PlayerController>());
+        BuildHud(player, carrier);
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
@@ -104,7 +105,7 @@ public static class PrototypeSetup
 
     // Poste d'installation à gauche de la zone de ramassage, avec sa config,
     // son prefab de billet et sa barre de progression.
-    static void BuildStation(GameObject cratePrefab)
+    static void BuildStation(ResourcePile cratesSource)
     {
         Material stationMat = MakeMaterial("Station", new Color(0.1f, 0.18f, 0.4f));
         Material billMat = MakeMaterial("Bill", new Color(0.25f, 0.75f, 0.35f));
@@ -125,7 +126,8 @@ public static class PrototypeSetup
         bill.name = "Bill";
         bill.transform.localScale = new Vector3(0.4f, 0.04f, 0.25f);
         bill.GetComponent<Renderer>().sharedMaterial = billMat;
-        Object.DestroyImmediate(bill.GetComponent<Collider>());
+        bill.GetComponent<BoxCollider>().isTrigger = true; // détecté par BillCollector
+        bill.AddComponent<Bill>();
         GameObject billPrefab = PrefabUtility.SaveAsPrefabAsset(bill, Root + "/Bill.prefab");
         Object.DestroyImmediate(bill);
 
@@ -177,11 +179,62 @@ public static class PrototypeSetup
         InstallStation installStation = station.AddComponent<InstallStation>();
         var so = new SerializedObject(installStation);
         so.FindProperty("config").objectReferenceValue = config;
-        so.FindProperty("cratePrefab").objectReferenceValue = cratePrefab;
+        so.FindProperty("cratesSource").objectReferenceValue = cratesSource;
         so.FindProperty("billPrefab").objectReferenceValue = billPrefab;
         so.FindProperty("progressBar").objectReferenceValue = progressBar;
         so.FindProperty("billExit").objectReferenceValue = exit.transform;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Porte-monnaie, ramassage des billets et HUD (argent en haut à gauche,
+    // caisses en haut à droite) dans le Canvas du joystick. Texte UI classique.
+    static void BuildHud(GameObject player, StackCarrier carrier)
+    {
+        GameObject walletGo = new GameObject("Wallet", typeof(Wallet));
+        Wallet wallet = walletGo.GetComponent<Wallet>();
+
+        BillCollector collector = player.AddComponent<BillCollector>();
+        var collectorSo = new SerializedObject(collector);
+        collectorSo.FindProperty("wallet").objectReferenceValue = wallet;
+        collectorSo.ApplyModifiedPropertiesWithoutUndo();
+
+        Transform canvas = GameObject.Find("Canvas").transform;
+
+        Text moneyText = MakeText("MoneyText", canvas, new Vector2(0f, 1f), new Vector2(40f, -40f), TextAnchor.UpperLeft);
+        MoneyHud moneyHud = moneyText.gameObject.AddComponent<MoneyHud>();
+        var moneySo = new SerializedObject(moneyHud);
+        moneySo.FindProperty("wallet").objectReferenceValue = wallet;
+        moneySo.FindProperty("label").objectReferenceValue = moneyText;
+        moneySo.ApplyModifiedPropertiesWithoutUndo();
+
+        Text crateText = MakeText("CrateText", canvas, new Vector2(1f, 1f), new Vector2(-40f, -40f), TextAnchor.UpperRight);
+        CrateHud crateHud = crateText.gameObject.AddComponent<CrateHud>();
+        var crateSo = new SerializedObject(crateHud);
+        crateSo.FindProperty("carrier").objectReferenceValue = carrier;
+        crateSo.FindProperty("label").objectReferenceValue = crateText;
+        crateSo.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static Text MakeText(string name, Transform parent, Vector2 corner, Vector2 offset, TextAnchor align)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
+        go.transform.SetParent(parent, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = corner;
+        rt.anchoredPosition = offset;
+        rt.sizeDelta = new Vector2(480f, 120f);
+
+        Text text = go.GetComponent<Text>();
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        text.fontSize = 80;
+        text.fontStyle = FontStyle.Bold;
+        text.alignment = align;
+        text.color = Color.white;
+        text.raycastTarget = false; // ne bloque pas le joystick
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+        go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
+        return text;
     }
 
     // Canvas + EventSystem + joystick tactile flottant (moitié gauche de l'écran).

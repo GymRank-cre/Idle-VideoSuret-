@@ -2,6 +2,7 @@ using UnityEngine;
 
 // Zone de ramassage : tant que le joueur reste dedans et que sa pile n'est
 // pas pleine, un objet apparaît à intervalle régulier et vole vers son dos.
+// Les caisses viennent d'un pool, partagé avec le poste qui les y remet.
 [RequireComponent(typeof(Collider))]
 public class ResourcePile : MonoBehaviour
 {
@@ -9,6 +10,17 @@ public class ResourcePile : MonoBehaviour
     [SerializeField] float interval = 0.15f;
 
     float timer;
+    ObjectPool pool;
+
+    public ObjectPool Pool
+    {
+        get
+        {
+            if (pool == null)
+                pool = new ObjectPool(itemPrefab, new GameObject(name + " Items").transform);
+            return pool;
+        }
+    }
 
     void Reset()
     {
@@ -24,8 +36,7 @@ public class ResourcePile : MonoBehaviour
         if (timer < interval) return;
         timer = 0f;
 
-        GameObject item = Instantiate(
-            itemPrefab, transform.position + Vector3.up * 0.5f, Quaternion.identity);
+        GameObject item = Pool.Get(transform.position + Vector3.up * 0.5f, Quaternion.identity);
         carrier.TryAdd(item.transform);
     }
 
