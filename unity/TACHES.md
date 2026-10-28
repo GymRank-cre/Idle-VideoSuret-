@@ -20,35 +20,35 @@ Une responsabilité par script, champs en `[SerializeField]`, valeurs d'économi
 
 ---
 
-## Relecture cloud de l'étape 2 : validée
-Code conforme à CLAUDE.md (une responsabilité par script, SerializeField, économie dans StationConfig, pooling). Rien à corriger, deux remarques pour l'étape 3 :
-- `ResourcePile` fait encore `Instantiate` à chaque caisse alors que les caisses déposées au poste partent dans un pool : brancher `ResourcePile` sur un `ObjectPool` pour que les caisses soient réellement recyclées.
-- Les billets restent au sol sans limite : normal jusqu'au ramassage (étape 3), qui doit les rendre au pool.
+## Relecture cloud de l'étape 3 : validée
+Code propre (Wallet, Bill, BillCollector, HUD), pool partagé caisses/poste, texte UI classique sans TMP. Rien à corriger. Notes pour plus tard : l'argent n'est pas encore sauvegardé (étape 7) ; `BillCollector` fait un `GetComponent` par collider et par frame, acceptable pour l'instant.
 
-## Tâche en cours : étape 3 — Billets à ramasser, argent, HUD
+## Tâche en cours : étape 4 — Dalles de déblocage (prix décroissant)
 
-**Objectif :** le joueur ramasse les billets du poste, l'argent s'affiche en haut à gauche, le stock de caisses en haut à droite.
+**Objectif :** une dalle au sol affiche un prix. Le joueur s'y place, son argent la paie petit à petit, le prix descend à vue d'œil ; à 0 la dalle disparaît et un 2e poste d'installation s'active.
 
 **À créer**
-1. `Wallet` (MonoBehaviour, une seule instance dans la scène) : `Money` (int), `Add(int)`, événement `OnChanged`. Rien d'autre.
-2. `Bill` (MonoBehaviour sur le prefab de billet) : porte sa `Value`, fixée à l'apparition par `InstallStation` depuis `config.BillValue` (le poste continue de lire la config en direct).
-3. `BillCollector` (sur le joueur) : quand le joueur touche un billet (zone de ramassage autour du joueur, rayon dans un `[SerializeField]`), le billet vole vers lui (~0,2 s), puis `Wallet.Add(Value)` et retour au pool de billets. Pas de limite de capacité pour les billets.
-4. `MoneyHud` : texte en haut à gauche, valeur de `Wallet`, léger effet de gonflement à chaque gain. `CrateHud` : en haut à droite, `Count/Capacity` de `StackCarrier`. Pour cela, ajouter à `StackCarrier` : `public int Capacity` et un événement `OnCountChanged`.
-5. `PrototypeSetup` : ajouter Wallet, BillCollector, les deux textes dans le Canvas existant (joystick). Utiliser le composant texte de Unity UI déjà installé, pas de package externe ; si TextMeshPro oblige à importer des ressources, préférer le texte UI classique et le dire dans Résultats.
-6. Nettoyage : `ResourcePile` utilise un `ObjectPool` pour les caisses (voir relecture).
+1. `Wallet` : ajouter `bool TrySpend(int amount)` (retire si assez, renvoie false sinon, déclenche `OnChanged`). Un seul endroit où l'argent diminue.
+2. `UnlockConfig` (ScriptableObject) : `price` (défaut 100), `payStep` (argent retiré à chaque pas, défaut 5), `payInterval` (secondes entre deux pas, défaut 0,05).
+3. `UnlockPad` (MonoBehaviour, zone trigger comme `ResourcePile`) :
+   - tant que le joueur est dans la zone et que `remainingPrice > 0` : toutes les `payInterval`, essaie de payer `min(payStep, remainingPrice, argent disponible)` via `Wallet`. S'il n'a plus d'argent, le prix reste là où il est (rien n'est perdu) ;
+   - le prix restant est affiché sur la dalle (texte 3D : `TextMesh` intégré à Unity, face à la caméra, ou texte UI en monde ; pas de package externe) ;
+   - à 0 : désactive la dalle et active l'objet `target` (le 2e poste), avec un petit effet (gonflement de 0 à 1 en ~0,3 s).
+4. `PrototypeSetup` : dalle de 3×3 (cube plat jaune) à `(-6, 0.01, 5)`, un 2e `InstallStation` (même `StationConfig`, même construction que le 1er, factorisée en une fonction) à `(-6, 0.1, 9)`, **désactivé** au départ, relié à la dalle. Créer `Assets/Prototype/UnlockConfig.asset`. Une seule `Wallet`, le même `BillCollector` ramasse les billets des deux postes.
+5. `Wallet` démarre à 0 : prévoir dans `PrototypeSetup` un champ `startMoney` (défaut 0) utilisable pour les tests, par exemple 100 en test, remis à 0 ensuite.
 
 **Critères de réussite (test MCP, puis Sébastien)**
-- 0 erreur de compilation, 0 erreur en Play.
-- Déposer 3 caisses au poste, attendre la fin du travail : 5 billets au sol, le joueur les ramasse en passant dessus, l'argent monte de 5 × `billValue`.
-- Le compteur de caisses en haut à droite suit la pile (0/8 à 8/8) ; l'argent est en haut à gauche, lisible sur un écran de téléphone (Canvas 1080×1920).
-- Changer `billValue` dans `StationConfig` change le gain sans toucher au code.
+- 0 erreur de compilation ni en Play.
+- Avec 100 en poche : le joueur sur la dalle, le prix passe de 100 à 0 en ~1 s, l'argent de 100 à 0, le 2e poste apparaît et fonctionne.
+- Avec 40 en poche : le prix tombe à 60 puis s'arrête ; en gagnant plus d'argent et en revenant, on continue à payer depuis 60.
+- Changer `price` dans `UnlockConfig` change le prix sans toucher au code.
 
-**Hors périmètre :** dalles de déblocage, clients, employés, sauvegarde.
+**Hors périmètre :** clients, employés, sauvegarde, sons et effets avancés.
 
 ---
 
 ## Tâche parallèle : projet Unity complet sur GitHub (pour le build iOS cloud)
-À faire APRÈS l'étape 3 (ne pas interrompre l'étape 3).
+**REPORTÉE : Sébastien a choisi de finir le jeu avant le build iOS (licence Unity Personal, Codemagic exige Plus ou Pro). Ne la faire que si Sébastien le demande ou si le dépôt `GymRank-cre/idle-securite-unity` existe déjà : dans ce cas, seulement les points 1 à 3 (sauvegarde Git), pas les réglages iOS.**
 Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébastien sur github.com (le cloud n'a pas le droit de créer des dépôts). S'il n'existe pas encore, le noter dans Questions et passer à la suite.
 1. Dans `E:\PROJET 1\IdleSecurite` : `git init` si besoin, ajouter un `.gitignore` Unity standard (Library, Temp, Logs, obj, UserSettings, Builds, *.csproj, *.sln, .vs), vérifier que `Assets`, `Packages` et `ProjectSettings` sont suivis, ainsi que les `.meta`.
 2. Ajouter `CLAUDE.md` et ce fichier `TACHES.md` à la racine de ce dépôt (copie), pour que la suite se fasse là-bas.
@@ -57,13 +57,7 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 3 — Billets, argent, HUD : compile, testée via MCP en Play.**
-- Ajoutés : `Wallet`, `Bill`, `BillCollector` (sur le joueur), `MoneyHud`, `CrateHud`. `StackCarrier` : `Capacity` et événement `OnCountChanged`. `PrototypeSetup` : Wallet, BillCollector et les deux textes dans le Canvas du joystick (texte UI classique `Text`, police `LegacyRuntime.ttf`, aucun import TextMeshPro).
-- Billets : le prefab porte un BoxCollider trigger ; `BillCollector` détecte par `OverlapSphereNonAlloc` (rayon 1,4), le billet vole 0,2 s vers le joueur, `Wallet.Add(Value)`, retour au pool. `InstallStation` fixe `Value` depuis `config.BillValue` à chaque apparition.
-- Nettoyage : `ResourcePile` expose `Pool` ; `InstallStation` reçoit `cratesSource` (le `ResourcePile`) à la place de `cratePrefab` et remet les caisses dans ce pool partagé. Test : 6 caisses utilisées, 3 seulement créées.
-- Test MCP : 0 erreur à la compilation, au Build scene et en Play. 3 caisses au poste, 5 billets au sol, ramassés : argent 0 → 50, HUD « $ 50 ». Compteur de caisses « 3/8 » puis « 0/8 ». Avec `billValue` = 25 : gain de 125 ; remis à 10.
-- Non vérifié visuellement : lisibilité des textes (80 pt, Canvas 1080×1920), effet de gonflement, vol des billets.
-- Le test a utilisé `EditorApplication.Step()` (éditeur non focalisé).
+_(vide — étape 4)_
 
 ## Questions (à remplir par Claude Code local)
 _(vide)_
@@ -80,9 +74,19 @@ _(vide)_
 - Non vérifié visuellement : le rendu de la barre (remplissage jaune) et le vol des caisses ; à confirmer par Sébastien en Play.
 - Le test a eu besoin de `EditorApplication.Step()` car l'éditeur non focalisé n'avance pas les frames.
 
+## Archive : résultats de l'étape 3 (Claude Code local)
+**Étape 3 — Billets, argent, HUD : compile, testée via MCP en Play.**
+- Ajoutés : `Wallet`, `Bill`, `BillCollector` (sur le joueur), `MoneyHud`, `CrateHud`. `StackCarrier` : `Capacity` et événement `OnCountChanged`. `PrototypeSetup` : Wallet, BillCollector et les deux textes dans le Canvas du joystick (texte UI classique `Text`, police `LegacyRuntime.ttf`, aucun import TextMeshPro).
+- Billets : le prefab porte un BoxCollider trigger ; `BillCollector` détecte par `OverlapSphereNonAlloc` (rayon 1,4), le billet vole 0,2 s vers le joueur, `Wallet.Add(Value)`, retour au pool. `InstallStation` fixe `Value` depuis `config.BillValue` à chaque apparition.
+- Nettoyage : `ResourcePile` expose `Pool` ; `InstallStation` reçoit `cratesSource` (le `ResourcePile`) à la place de `cratePrefab` et remet les caisses dans ce pool partagé. Test : 6 caisses utilisées, 3 seulement créées.
+- Test MCP : 0 erreur à la compilation, au Build scene et en Play. 3 caisses au poste, 5 billets au sol, ramassés : argent 0 → 50, HUD « $ 50 ». Compteur de caisses « 3/8 » puis « 0/8 ». Avec `billValue` = 25 : gain de 125 ; remis à 10.
+- Non vérifié visuellement : lisibilité des textes (80 pt, Canvas 1080×1920), effet de gonflement, vol des billets.
+- Le test a utilisé `EditorApplication.Step()` (éditeur non focalisé).
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
 - Étape 2 : poste d'installation (StationConfig, InstallStation, ProgressBar3D, ObjectPool) compilé et testé via MCP ; rendu visuel à confirmer par Sébastien.
 - Étape 2 relue côté cloud : validée. Étape 3 spécifiée.
 - Étape 3 : billets à ramasser, Wallet, HUD argent/caisses, ResourcePile sur pool partagé ; compilé et testé via MCP, rendu à confirmer par Sébastien.
+- Étape 3 (billets, argent, HUD) relue côté cloud : validée. Étape 4 spécifiée. Build iOS cloud reporté.
