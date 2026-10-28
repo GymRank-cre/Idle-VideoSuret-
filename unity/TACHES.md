@@ -48,6 +48,28 @@ Le gameplay ne change pas (règles, vitesses, prix). Seules les positions et le 
 
 ---
 
+## Tâche suivante : étape 4d — Vrai personnage humain (Mixamo)
+
+**Décision de Sébastien :** « je veux un vrai humain ». Le technicien en formes simples est remplacé par un **vrai modèle humain rigué avec de vraies animations**. Faire d'abord 4c, puis 4d.
+
+**Prérequis (par Sébastien, sur son PC, avec un compte Adobe gratuit sur mixamo.com).** Il dépose les fichiers FBX dans `E:\PROJET 1\IdleSecurite\Assets\Characters\` :
+- `Technicien.fbx` : un personnage masculin réaliste, pose T, format FBX Binary, avec la peau (skin).
+- `Idle.fbx` : animation « Breathing Idle » (ou équivalent), FBX Binary, **Without Skin**.
+- `Walk.fbx` : « Walking », FBX Binary, Without Skin, **In Place** coché.
+- `Run.fbx` : « Running » (ou « Jog Forward »), Without Skin, **In Place** coché.
+Si ces fichiers n'existent pas encore quand tu arrives ici, note-le dans Questions et continue autre chose : ne rien inventer.
+
+**À faire (Claude Code local)**
+1. Importer : rig `Humanoid` pour les 4 fichiers (Avatar copié depuis `Technicien.fbx` pour les animations), boucle activée sur Idle/Walk/Run, matériaux du personnage convertis en URP/Lit (corriger le rose éventuel), échelle pour que le personnage mesure environ 1,7 m dans la scène.
+2. `AnimatorController` : états Idle, Walk, Run, avec un paramètre `Speed` (0 à 1) piloté par un petit script `HumanAnimator` à partir de l'entrée de `PlayerController`. Ne modifier le déplacement ni les règles : seulement lire la vitesse (ajouter une propriété publique en lecture seule si besoin). Transitions courtes (0,1 s).
+3. **Équipement du technicien** (le métier doit se voir) : casque de chantier jaune attaché à l'os de la tête (formes simples, arête basse), gilet orange haute visibilité avec 2 bandes réfléchissantes sur le torse (coque fine attachée à l'os du torse), cela même si le modèle a déjà des vêtements. Ceinture d'outils facultative.
+4. Remplacer le personnage en formes simples (désactiver `CharacterAnimator` et le visuel de `WorkshopBuilder`, sans supprimer le code). `CharacterController`, `StackCarrier` et `StackAnchor` ne changent pas : vérifier que la pile de caisses reste bien dans le dos du nouveau personnage (ajuster le point d'accroche seulement).
+5. Captures 1080×1920 dans `unity/captures/` (préfixe `4d-`) : de face, de dos avec 8 caisses, en marche (si possible 2 images à 0,2 s d'écart), au poste.
+
+**Critères de réussite :** 0 erreur ; personnage humain reconnaissable (proportions réalistes), animé à l'arrêt et en marche (pas de glissement des pieds visible), casque et gilet visibles ; gameplay étapes 1 à 4 inchangé ; la pile reste dans le dos.
+
+---
+
 ## Tâche parallèle : projet Unity complet sur GitHub (pour le build iOS cloud)
 **REPORTÉE : Sébastien a choisi de finir le jeu avant le build iOS (licence Unity Personal, Codemagic exige Plus ou Pro). Ne la faire que si Sébastien le demande ou si le dépôt `GymRank-cre/idle-securite-unity` existe déjà : dans ce cas, seulement les points 1 à 3 (sauvegarde Git), pas les réglages iOS.**
 Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébastien sur github.com (le cloud n'a pas le droit de créer des dépôts). S'il n'existe pas encore, le noter dans Questions et passer à la suite.
@@ -123,3 +145,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4 (dalles de déblocage) validée par Sébastien et relue côté cloud. Étape 4b (habillage visuel) spécifiée.
 - Étape 4b : habillage visuel (Build workshop, technicien animé, atelier, post-traitement) fait ; 9 captures dans unity/captures ; à relire côté cloud.
 - Étape 4b (habillage) relue côté cloud sur captures : bonne base. Étape 4c (retouches et cadrage portrait) spécifiée.
+- Sébastien valide la 4c et demande un vrai humain : étape 4d (Mixamo) ajoutée.
