@@ -92,12 +92,96 @@ public static class PrototypeSetup
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
         pileSo.ApplyModifiedPropertiesWithoutUndo();
 
+        BuildStation(cratePrefab);
+
         BuildJoystick(player.GetComponent<PlayerController>());
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
         Selection.activeGameObject = player;
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");
+    }
+
+    // Poste d'installation à gauche de la zone de ramassage, avec sa config,
+    // son prefab de billet et sa barre de progression.
+    static void BuildStation(GameObject cratePrefab)
+    {
+        Material stationMat = MakeMaterial("Station", new Color(0.1f, 0.18f, 0.4f));
+        Material billMat = MakeMaterial("Bill", new Color(0.25f, 0.75f, 0.35f));
+        Material barBackMat = MakeMaterial("BarBack", new Color(0.12f, 0.12f, 0.14f));
+        Material barFillMat = MakeMaterial("BarFill", new Color(0.95f, 0.8f, 0.2f));
+
+        // Config (asset conservé s'il existe : les réglages de Sébastien ne sont pas écrasés)
+        string configPath = Root + "/StationConfig.asset";
+        StationConfig config = AssetDatabase.LoadAssetAtPath<StationConfig>(configPath);
+        if (config == null)
+        {
+            config = ScriptableObject.CreateInstance<StationConfig>();
+            AssetDatabase.CreateAsset(config, configPath);
+        }
+
+        // Prefab de billet : cube vert plat
+        GameObject bill = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        bill.name = "Bill";
+        bill.transform.localScale = new Vector3(0.4f, 0.04f, 0.25f);
+        bill.GetComponent<Renderer>().sharedMaterial = billMat;
+        Object.DestroyImmediate(bill.GetComponent<Collider>());
+        GameObject billPrefab = PrefabUtility.SaveAsPrefabAsset(bill, Root + "/Bill.prefab");
+        Object.DestroyImmediate(bill);
+
+        // Poste : racine non mise à l'échelle (le collider et les enfants restent propres)
+        GameObject station = new GameObject("InstallStation");
+        station.transform.position = new Vector3(-6f, 0.1f, 0f);
+
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        visual.name = "Visual";
+        visual.transform.SetParent(station.transform, false);
+        visual.transform.localScale = new Vector3(3f, 0.2f, 3f);
+        visual.GetComponent<Renderer>().sharedMaterial = stationMat;
+        Object.DestroyImmediate(visual.GetComponent<Collider>());
+
+        BoxCollider box = station.AddComponent<BoxCollider>();
+        box.isTrigger = true;
+        box.size = new Vector3(3f, 10f, 3f); // assez haute pour englober le joueur
+        box.center = new Vector3(0f, 5f, 0f);
+
+        GameObject exit = new GameObject("BillExit");
+        exit.transform.SetParent(station.transform, false);
+        exit.transform.position = new Vector3(-6f, 0.05f, -3.2f); // au sud, hors de la zone
+
+        // Barre de progression au-dessus du poste
+        GameObject bar = new GameObject("ProgressBar");
+        bar.transform.SetParent(station.transform, false);
+        bar.transform.localPosition = new Vector3(0f, 2.2f, 0f);
+        ProgressBar3D progressBar = bar.AddComponent<ProgressBar3D>();
+
+        GameObject back = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        back.name = "Back";
+        back.transform.SetParent(bar.transform, false);
+        back.transform.localScale = new Vector3(1.7f, 0.28f, 0.04f);
+        back.GetComponent<Renderer>().sharedMaterial = barBackMat;
+        Object.DestroyImmediate(back.GetComponent<Collider>());
+
+        GameObject fill = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        fill.name = "Fill";
+        fill.transform.SetParent(bar.transform, false);
+        fill.transform.localPosition = new Vector3(-0.8f, 0f, -0.03f);
+        fill.transform.localScale = new Vector3(0.0001f, 0.2f, 0.04f);
+        fill.GetComponent<Renderer>().sharedMaterial = barFillMat;
+        Object.DestroyImmediate(fill.GetComponent<Collider>());
+
+        var barSo = new SerializedObject(progressBar);
+        barSo.FindProperty("fill").objectReferenceValue = fill.transform;
+        barSo.ApplyModifiedPropertiesWithoutUndo();
+
+        InstallStation installStation = station.AddComponent<InstallStation>();
+        var so = new SerializedObject(installStation);
+        so.FindProperty("config").objectReferenceValue = config;
+        so.FindProperty("cratePrefab").objectReferenceValue = cratePrefab;
+        so.FindProperty("billPrefab").objectReferenceValue = billPrefab;
+        so.FindProperty("progressBar").objectReferenceValue = progressBar;
+        so.FindProperty("billExit").objectReferenceValue = exit.transform;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // Canvas + EventSystem + joystick tactile flottant (moitié gauche de l'écran).
