@@ -1,6 +1,9 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
 
 // Menu Tools > Idle Prototype > Build scene
 // Construit la scène du prototype : sol, joueur, caméra qui suit,
@@ -89,10 +92,60 @@ public static class PrototypeSetup
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
         pileSo.ApplyModifiedPropertiesWithoutUndo();
 
+        BuildJoystick(player.GetComponent<PlayerController>());
+
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
         Selection.activeGameObject = player;
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");
+    }
+
+    // Canvas + EventSystem + joystick tactile flottant (moitié gauche de l'écran).
+    static void BuildJoystick(PlayerController player)
+    {
+        GameObject es = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+        es.GetComponent<InputSystemUIInputModule>().AssignDefaultActions();
+
+        GameObject canvasGo = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        canvasGo.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080f, 1920f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        Sprite circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
+        GameObject area = new GameObject("JoystickArea", typeof(RectTransform), typeof(Image), typeof(VirtualJoystick));
+        area.transform.SetParent(canvasGo.transform, false);
+        RectTransform areaRt = area.GetComponent<RectTransform>();
+        areaRt.anchorMin = Vector2.zero;
+        areaRt.anchorMax = new Vector2(0.6f, 1f);
+        areaRt.offsetMin = Vector2.zero;
+        areaRt.offsetMax = Vector2.zero;
+        area.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f); // invisible mais capte les touches
+
+        RectTransform bg = MakeCircle("Background", areaRt, circle, 200f, new Color(1f, 1f, 1f, 0.25f));
+        RectTransform knob = MakeCircle("Knob", bg, circle, 90f, new Color(1f, 1f, 1f, 0.7f));
+
+        var so = new SerializedObject(area.GetComponent<VirtualJoystick>());
+        so.FindProperty("player").objectReferenceValue = player;
+        so.FindProperty("background").objectReferenceValue = bg;
+        so.FindProperty("knob").objectReferenceValue = knob;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static RectTransform MakeCircle(string name, RectTransform parent, Sprite sprite, float size, Color color)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = new Vector2(size, size);
+        Image img = go.GetComponent<Image>();
+        img.sprite = sprite;
+        img.color = color;
+        img.raycastTarget = false;
+        return rt;
     }
 
     static Material MakeMaterial(string name, Color color)
