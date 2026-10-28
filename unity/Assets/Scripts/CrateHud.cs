@@ -20,6 +20,7 @@ public class CrateHud : MonoBehaviour
 
     void Refresh()
     {
-        label.text = carrier.Count + "/" + carrier.Capacity;
+        // la capacité est plus petite et plus discrète que le nombre de caisses
+        label.text = carrier.Count + "<size=44><color=#FFFFFFAA>/" + carrier.Capacity + "</color></size>";
     }
 }

@@ -14,6 +14,8 @@ public class PlayerController : MonoBehaviour
     Vector2 externalInput;
 
     public bool IsMoving { get; private set; }
+    public float MoveAmount { get; private set; }  // intensité de l'entrée, de 0 à 1 (lecture seule)
+    public float PlanarSpeed { get; private set; } // vitesse au sol en m/s (lecture seule)
 
     void Awake()
     {
@@ -66,6 +68,8 @@ public class PlayerController : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
 
         IsMoving = planar.sqrMagnitude > 0.01f;
+        MoveAmount = input.magnitude;
+        PlanarSpeed = planar.magnitude;
         if (IsMoving)
         {
             Quaternion target = Quaternion.LookRotation(planar, Vector3.up);

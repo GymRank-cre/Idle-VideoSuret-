@@ -87,10 +87,28 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — retouches HUD puis 4d)_
+**Retouches HUD + barre, puis étape 4d — Vrai personnage humain (Mixamo) : compile, gameplay inchangé, 9 captures `4d-*` (1080×1920).**
+
+*Retouches demandées avant la 4d*
+- **Barre de progression** : cachée tant que la progression est à 0 (`ProgressBar3D` masque ses enfants), visible seulement pendant un travail. Vérifié en Play (enfants inactifs au repos).
+- **HUD en pastilles** : conteneur `HudSafeArea` (script `SafeAreaFitter`, zone sûre de l'écran pour l'encoche) avec marge haute de 60 px ; pastille arrondie semi-transparente sombre en haut à gauche (icône de billet vert + nombre, sans « $ ») et en haut à droite (icône de caisse + `0/8`, la capacité en plus petit et plus discret, via texte riche). Texte UI classique, `UISprite`/`Knob` intégrés, aucun package.
+
+*4d*
+- **Import** (`Editor/HumanCharacterBuilder.cs`, menu `Tools > Idle Prototype > Setup human character`, appelé aussi par `Build scene`) : les 4 FBX en rig `Humanoid`, Avatar créé sur `Technicien.fbx` et copié sur les 3 animations, boucle activée (`loopTime`, `loopPose`), position/rotation de la racine figées (« In Place »). Clips renommés Idle (9,93 s), Walk (1,03 s), Run (0,70 s). Le FBX n'a pas de texture (matériaux blancs, pas de rose) : un matériau URP/Lit uni par pièce (peau, cheveux, bottes, pantalon, chemise, gilet orange, casque jaune) dans `Assets/Characters/Materials`. Échelle réglée par le Setup pour 1,7 m.
+- **Le modèle contient déjà un casque et un gilet** (maillages `Ch17_Helmet`, `Ch17_Vest`) : je les ai colorés (jaune, orange). Ajouts en formes simples attachés aux os : 2 bandes réfléchissantes sur le torse (os `Chest`, calées sur les vrais sommets du gilet), arête basse sur le casque (os `Head`), ceinture d'outils avec 2 pochettes et un outil (os `Hips`), yeux et sourcils (os `Head`). Le visage du modèle est celui d'un homme barbu ; le sourire n'est pas visible sous la barbe.
+- **Animator** `Assets/Characters/Technicien.controller` : états Idle, Walk, Run, paramètres `Speed` (0 à 1) et `AnimSpeed`, transitions de 0,1 s (Idle→Walk 0,1 ; Walk→Run 0,5 ; retours 0,06 et 0,4). `HumanAnimator` lit `PlayerController.MoveAmount` et `PlayerController.PlanarSpeed`, deux propriétés **en lecture seule ajoutées** à `PlayerController` (le déplacement n'a pas changé).
+- **Remplacement** : `WorkshopBuilder.UseHumanCharacter = true` ; l'ancien technicien en formes simples et `CharacterAnimator` sont gardés dans le code mais ne sont plus construits (si les FBX manquent, le Setup retombe sur l'ancien). `CharacterController` et `StackCarrier` inchangés ; **seul le point d'accroche** `StackAnchor` passe de `-0,7` à `-0,55` en z (pile collée au dos). Le panneau MAX passe de 2,4 à 3,25 m de haut : il traversait la caisse du haut.
+- **Tests Play** (0 erreur, 0 warning hors message du pont MCP) : états Idle → Walk (entrée 0,3) → Run (entrée 1) → Idle vérifiés ; ramassage 8/8 MAX, dépôt, 10 billets, argent 100 (HUD 100), dalle payée en 60 pas, poste 2 actif.
+- **Glissement des pieds, mesuré** (vitesse monde de l'orteil, personnage en mouvement) : **marche** 0,13 m/s en moyenne sur les 25 % d'images les plus lentes (pied planté, pas de glissement) ; **course** : ~3 m/s, la course glisse encore un peu. J'ai calibré la vitesse de lecture sur le recul réel du pied d'appui (`walkClipSpeed` 1,4 m/s, `runClipSpeed` 3,4 m/s) ; aucune valeur de 2 à 5 ne fait mieux, donc le clip de course ne colle pas parfaitement à 5 m/s. Sur les captures de course (`4d-03-marche-a/b`) le mouvement est fluide.
+- **Captures** : `4d-00-depart-hud`, `01-face`, `01b-visage-gros-plan`, `02-dos-8-caisses` (trois-quarts arrière), `02b-profil-8-caisses`, `03-marche-a` et `03-marche-b` (course, 0,2 s d'écart), `03-marche-lente`, `04-poste-hud`.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Course** : le glissement résiduel du clip « Running » à 5 m/s. Veux-tu que je baisse la vitesse du joueur à la course, ou qu'on essaie un autre clip Mixamo (« Jog Forward ») ? Je n'ai pas touché au déplacement.
+- **Textures du modèle** : le FBX n'a pas de texture, donc peau, barbe et vêtements sont des couleurs unies. Si tu veux plus de détail (texture de visage, de chemise), il faut re-télécharger le personnage depuis Mixamo avec les textures (`Technicien.fbx` « With Skin » et textures incluses).
+- **Visage** : j'ai ajouté de petits yeux et sourcils car le modèle n'en a pas sans texture ; à juger sur `4d-01b-visage-gros-plan`.
+- **Poids du FBX** : `Technicien.fbx` fait 65 Mo ; à garder hors du dépôt `sync` (seuls les scripts y sont copiés) mais à prévoir si on sauvegarde tout le projet sur GitHub.
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE, non faite.
+
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -173,3 +191,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Sébastien valide la 4c et demande un vrai humain : étape 4d (Mixamo) ajoutée.
 - Étape 4c : cadrage portrait (variante A), plinthe, sol 1 m + lignes, fond #2B3441, barre de progression, casque et sourire, capture HUD ; testé via MCP.
 - Étape 4c relue sur captures : validée. Retouches HUD et barre cachée demandées ; 4d (vrai humain) lancée.
+- Étape 4d : technicien humain Mixamo (Humanoid, Idle/Walk/Run, équipement), barre cachée au repos, HUD en pastilles ; testé via MCP, 9 captures 4d-*.

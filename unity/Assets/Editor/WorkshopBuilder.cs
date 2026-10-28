@@ -501,8 +501,57 @@ public static class WorkshopBuilder
 
     // ------------------------------------------------------------------ technicien
 
+    // true : vrai personnage humain (Mixamo) ; false : l'ancien technicien en formes simples (code gardé).
+    const bool UseHumanCharacter = true;
+    const float HumanHeight = 1.7f;
+
+    static bool BuildHumanTechnician(PlayerController player)
+    {
+        GameObject prefab = HumanCharacterBuilder.EnsurePrefab();
+        if (prefab == null) return false; // FBX absents : on garde le technicien en formes simples
+
+        Transform p = player.transform;
+        Clear(p, "Model");
+        Clear(p, "Human");
+        Clear(p, "ShadowBlob");
+
+        MeshRenderer capsule = p.GetComponent<MeshRenderer>();
+        if (capsule != null) capsule.enabled = false;
+
+        var human = (GameObject)PrefabUtility.InstantiatePrefab(prefab, p);
+        human.name = "Human";
+        human.transform.localPosition = Vector3.zero;
+        human.transform.localRotation = Quaternion.identity;
+        human.transform.localScale = Vector3.one;
+
+        // Échelle : le personnage mesure 1,7 m dans la scène.
+        Bounds bounds = new Bounds();
+        bool first = true;
+        foreach (SkinnedMeshRenderer r in human.GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            if (first) { bounds = r.bounds; first = false; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        float height = Mathf.Max(0.1f, bounds.size.y / Mathf.Max(0.0001f, p.lossyScale.y));
+        human.transform.localScale = Vector3.one * (HumanHeight / height);
+        // Les pieds sur le sol : le centre du CharacterController est à ~1,08 m
+        human.transform.localPosition = new Vector3(0f, -1.075f, 0f);
+
+        HumanAnimator anim = human.GetComponent<HumanAnimator>();
+        if (anim == null) anim = human.AddComponent<HumanAnimator>();
+        var so = new SerializedObject(anim);
+        so.FindProperty("player").objectReferenceValue = player;
+        so.FindProperty("animator").objectReferenceValue = human.GetComponent<Animator>();
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        Shadow(p, new Vector3(0f, -1.07f, 0f), 1.4f).name = "ShadowBlob";
+        return true;
+    }
+
     static void BuildTechnician(PlayerController player)
     {
+        if (UseHumanCharacter && BuildHumanTechnician(player)) return;
+
         Transform p = player.transform;
         Clear(p, "Model");
         Clear(p, "ShadowBlob");

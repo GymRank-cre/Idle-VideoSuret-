@@ -62,12 +62,12 @@ public static class PrototypeSetup
 
         GameObject anchor = new GameObject("StackAnchor");
         anchor.transform.SetParent(player.transform, false);
-        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.7f);
+        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.55f); // dans le dos du technicien humain (0,7 avec l'ancien visuel)
 
         GameObject maxIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
         maxIndicator.name = "MaxIndicator";
         maxIndicator.transform.SetParent(player.transform, false);
-        maxIndicator.transform.localPosition = new Vector3(0f, 2.4f, 0f);
+        maxIndicator.transform.localPosition = new Vector3(0f, 3.25f, 0f); // au-dessus de la pile pleine (8 caisses)
         maxIndicator.transform.localScale = new Vector3(0.8f, 0.3f, 0.05f);
         maxIndicator.GetComponent<Renderer>().sharedMaterial = maxMat;
         Object.DestroyImmediate(maxIndicator.GetComponent<Collider>());
@@ -284,14 +284,34 @@ public static class PrototypeSetup
 
         Transform canvas = GameObject.Find("Canvas").transform;
 
-        Text moneyText = MakeText("MoneyText", canvas, new Vector2(0f, 1f), new Vector2(40f, -40f), TextAnchor.UpperLeft);
+        // Conteneur calé dans la zone sûre de l'écran (encoche) ; les pastilles y sont posées avec une marge haute.
+        GameObject safeGo = new GameObject("HudSafeArea", typeof(RectTransform), typeof(SafeAreaFitter));
+        safeGo.transform.SetParent(canvas, false);
+        RectTransform safe = safeGo.GetComponent<RectTransform>();
+        safe.anchorMin = Vector2.zero;
+        safe.anchorMax = Vector2.one;
+        safe.offsetMin = safe.offsetMax = Vector2.zero;
+
+        Sprite round = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+        Sprite dot = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
+
+        // Argent : pastille en haut à gauche avec un billet vert
+        RectTransform moneyPill = MakePill("MoneyPill", safe, true, 330f, round);
+        MakeIcon("BillIcon", moneyPill, round, new Vector2(24f, 0f), new Vector2(78f, 48f), new Color(0.45f, 0.85f, 0.45f));
+        RectTransform billInner = MakeIcon("BillInner", moneyPill, round, new Vector2(32f, 0f), new Vector2(62f, 34f), new Color(0.22f, 0.62f, 0.32f));
+        MakeIcon("BillSeal", moneyPill, dot, new Vector2(40f, 0f), new Vector2(22f, 22f), new Color(0.6f, 0.92f, 0.6f));
+        Text moneyText = MakePillText("MoneyText", moneyPill);
         MoneyHud moneyHud = moneyText.gameObject.AddComponent<MoneyHud>();
         var moneySo = new SerializedObject(moneyHud);
         moneySo.FindProperty("wallet").objectReferenceValue = wallet;
         moneySo.FindProperty("label").objectReferenceValue = moneyText;
         moneySo.ApplyModifiedPropertiesWithoutUndo();
 
-        Text crateText = MakeText("CrateText", canvas, new Vector2(1f, 1f), new Vector2(-40f, -40f), TextAnchor.UpperRight);
+        // Caisses : pastille en haut à droite avec une caisse
+        RectTransform cratePill = MakePill("CratePill", safe, false, 290f, round);
+        MakeIcon("CrateIcon", cratePill, round, new Vector2(24f, 0f), new Vector2(60f, 60f), new Color(0.72f, 0.5f, 0.28f));
+        MakeIcon("CrateTape", cratePill, round, new Vector2(47f, 0f), new Vector2(14f, 60f), new Color(0.92f, 0.84f, 0.64f));
+        Text crateText = MakePillText("CrateText", cratePill);
         CrateHud crateHud = crateText.gameObject.AddComponent<CrateHud>();
         var crateSo = new SerializedObject(crateHud);
         crateSo.FindProperty("carrier").objectReferenceValue = carrier;
@@ -299,22 +319,60 @@ public static class PrototypeSetup
         crateSo.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    static Text MakeText(string name, Transform parent, Vector2 corner, Vector2 offset, TextAnchor align)
+    // Pastille arrondie semi-transparente sombre, ancrée en haut à gauche ou à droite.
+    static RectTransform MakePill(string name, Transform parent, bool left, float width, Sprite round)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
         go.transform.SetParent(parent, false);
         RectTransform rt = go.GetComponent<RectTransform>();
+        Vector2 corner = new Vector2(left ? 0f : 1f, 1f);
         rt.anchorMin = rt.anchorMax = rt.pivot = corner;
-        rt.anchoredPosition = offset;
-        rt.sizeDelta = new Vector2(480f, 120f);
+        rt.anchoredPosition = new Vector2(left ? 40f : -40f, -60f); // marge haute de 60 px
+        rt.sizeDelta = new Vector2(width, 110f);
+
+        Image img = go.GetComponent<Image>();
+        img.sprite = round;
+        img.type = Image.Type.Sliced;
+        img.pixelsPerUnitMultiplier = 3f; // coins bien arrondis
+        img.color = new Color(0.05f, 0.07f, 0.10f, 0.55f);
+        img.raycastTarget = false; // ne bloque pas le joystick
+        return rt;
+    }
+
+    static RectTransform MakeIcon(string name, RectTransform pill, Sprite sprite, Vector2 pos, Vector2 size, Color color)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(pill, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = rt.anchorMax = new Vector2(0f, 0.5f);
+        rt.pivot = new Vector2(0f, 0.5f);
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+        Image img = go.GetComponent<Image>();
+        img.sprite = sprite;
+        img.color = color;
+        img.raycastTarget = false;
+        return rt;
+    }
+
+    // Texte UI classique à droite de l'icône, avec contour sombre.
+    static Text MakePillText(string name, RectTransform pill)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
+        go.transform.SetParent(pill, false);
+        RectTransform rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(112f, 0f);
+        rt.offsetMax = new Vector2(-18f, 0f);
 
         Text text = go.GetComponent<Text>();
         text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 80;
+        text.fontSize = 66;
         text.fontStyle = FontStyle.Bold;
-        text.alignment = align;
+        text.alignment = TextAnchor.MiddleLeft;
         text.color = Color.white;
-        text.raycastTarget = false; // ne bloque pas le joystick
+        text.raycastTarget = false;
         text.horizontalOverflow = HorizontalWrapMode.Overflow;
         text.verticalOverflow = VerticalWrapMode.Overflow;
         go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
