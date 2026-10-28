@@ -20,60 +20,24 @@ Une responsabilité par script, champs en `[SerializeField]`, valeurs d'économi
 
 ---
 
-## Relecture cloud de l'étape 3 : validée
-Code propre (Wallet, Bill, BillCollector, HUD), pool partagé caisses/poste, texte UI classique sans TMP. Rien à corriger. Notes pour plus tard : l'argent n'est pas encore sauvegardé (étape 7) ; `BillCollector` fait un `GetComponent` par collider et par frame, acceptable pour l'instant.
+## Relectures cloud (étapes 3 à 4c) : toutes validées
+Étape 3 (billets, argent, HUD), 4 (dalles de déblocage), 4b (habillage), 4c (cadrage portrait, sol, murs) : validées sur code et captures. Les spécifications de ces étapes sont dans l'historique Git de ce fichier.
 
-## Relecture cloud de l'étape 4 : validée
-`UnlockPad`, `UnlockConfig`, `Wallet.TrySpend` conformes (un seul endroit où l'argent diminue, économie dans un ScriptableObject). Sébastien confirme que l'étape 4 fonctionne en jeu.
+## Relecture cloud de l'étape 4d : validée (très gros progrès)
+Le technicien humain (barbu, casque jaune, gilet orange, ceinture d'outils) se lit très bien, l'animation est bonne, les HUD en pastilles sont propres et la barre est cachée au repos. Réponses à tes questions :
+- **Course qui glisse** : d'abord baisser la vitesse du joueur à 4,2 m/s (`PlayerController`, valeur du `[SerializeField]`, sans changer le code) et recaler les vitesses de lecture ; si ça glisse encore, tu passes en Questions et Sébastien téléchargera « Jog Forward ». Ne pas bloquer là-dessus.
+- **Textures** : pas besoin pour l'instant. **Visage** : yeux et sourcils acceptés. **FBX de 65 Mo** : noté pour la sauvegarde Git (utiliser Git LFS ou garder hors dépôt).
 
-## Relecture cloud de l'étape 4b : bonne base, 4c de retouches
-Captures regardées (départ, poste, dalle, palette, personnage, mur du fond, vue paysage). Verdict : **le style est là** (palette cohérente, ombres douces, bloom discret). Le technicien se lit tout de suite (casque jaune, gilet orange), l'établi, la palette de cartons et la dalle à bandes sont réussis. Mais le **tout premier écran en portrait n'est pas encore beau** : un grand sol vide avec un petit personnage et les postes coupés sur les bords. Réponses à tes questions :
-- **Cadrage portrait : ne pas monter la caméra** (le personnage deviendrait minuscule). On rapproche le jeu de la caméra, voir 4c-1.
-- **Capture portrait avec HUD** : faire la capture de la vue Game en 1080×1920 avec le Canvas inclus (par exemple `ScreenCapture.CaptureScreenshot` en Play avec la vue Game réglée sur 1080×1920 via un `GameViewSize` en code, ou passer temporairement le Canvas en `ScreenSpaceCamera` pour le rendu). À toi de choisir la méthode qui marche.
-- **Ombre sous les caisses portées** : OK comme tu l'as fait. **Performance** : OK pour l'instant, à mesurer sur téléphone plus tard.
+## Tâche en cours : étape 4e — Petites retouches (échelle de la pile, détails)
+Gameplay inchangé. Captures 1080×1920 dans `unity/captures/` (préfixe `4e-`).
+1. **Bandes réfléchissantes** : elles flottent comme deux anneaux qui dépassent du gilet (capture `4d-01-face`). Les coller à la surface du gilet (même courbure, +2 mm), plus fines (4 cm), et les fermer par derrière.
+2. **Échelle de la pile** : 8 caisses atteignent près de 3 m, soit plus que le personnage, et la pile semble détachée du dos (capture `4d-02-dos-8-caisses`). Réduire les caisses (×0,75), réduire `itemHeight` (~0,26) pour que la pile pleine dépasse la tête de peu, et approcher la première caisse du dos (taille des hanches). Le balancement reste.
+3. **Prix de la dalle** : sur la capture `4d-02-dos-8-caisses`, « $ 100 » apparaît penché/déformé en vue oblique. Le texte doit toujours faire face à la caméra sans inclinaison (billboard complet, `rotation = caméra.rotation`).
+4. **Vitesse du joueur** : voir réponse sur la course ci-dessus.
+5. **Retour d'information (« juice ») de base**, avec des formes simples, sans son ni package : (a) chiffre flottant « +10 » qui monte et s'efface à chaque billet ramassé ; (b) petit éclat de particules (système de particules intégré à Unity) quand une caisse arrive au poste et quand un billet est ramassé ; (c) léger « pop » du compteur de caisses à chaque caisse ajoutée. Utiliser des pools. Réglages (durée, hauteur) dans un `ScriptableObject` `FeedbackConfig`.
 
-## Tâche en cours : étape 4c — Retouches visuelles et cadrage portrait
-
-Le gameplay ne change pas (règles, vitesses, prix). Seules les positions et le visuel bougent. Même méthode que 4b : captures 1080×1920 dans `unity/captures/` (préfixe `4c-`), avec le HUD cette fois.
-
-1. **Resserrer le jeu pour l'écran portrait.** Variante A : tas/palette en `x = 4,5`, poste 1 en `x = -4,5`, dalle en `(-4,5, 0,01, 4)`, poste 2 en `(-4,5, 0,1, 7,5)`, champ de vision de la caméra 65° (au lieu de 60°). Variante B : même chose avec `CameraFollow` offset `(0, 11, -7)`. Capturer le départ avec A puis B ; garder celle où on voit le joueur **et** au moins la moitié du tas et du poste dès le départ. Déplacer les positions dans une seule zone de constantes en tête de `PrototypeSetup`, pas en dur partout.
-2. **Joint noir mur/sol** : une bande noire est visible à la jonction (captures 01 et 07). La supprimer : plinthe collée au sol, de la couleur acier, sans espace ni face noire.
-3. **Sol** : dalles plus petites (1 m, contraste plus faible entre les deux gris) pour que le personnage ait une bonne échelle ; ajouter un tapis ou des **lignes de circulation au sol** (jaune/blanc, larges de 0,2 m) du tas au poste, et quelques détails au sol près des murs (cartons, bobines déjà présents : en ajouter 2 autour du centre vide, jamais sur le chemin).
-4. **Fond de caméra** : le ciel bleu uni derrière les murs fait « plateau de jeu ». Mettre un fond uni foncé neutre (bleu-gris `#2B3441` environ) et ajouter un **liseré de mur haut** (le mur monte à ~4 m ou une moulure haute) pour fermer la pièce.
-5. **Barre de progression** : elle chevauche la tête du joueur au poste. La monter d'environ 0,6 m, la raccourcir (1,2 m) et arrondir/foncer son fond.
-6. **Casque** : la petite barre jaune sur le dessus ressemble à un cube oublié. La remplacer par une **arête basse allongée de l'avant vers l'arrière** (ou la supprimer). Ajouter un **petit sourire** (arc sombre) sur le visage.
-7. **Capture HUD portrait** (voir ci-dessus) : une capture du départ avec `$ 0` et `0/8` visibles et lisibles.
-
-**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé en Play ; sur la capture de départ en portrait, le joueur est reconnaissable et au moins deux éléments de jeu (tas, poste ou dalle) sont visibles ; plus de bande noire ; HUD lisible.
-
----
-
-## Relecture cloud de l'étape 4c : validée (très net progrès)
-Sur les captures : on voit maintenant le joueur, la dalle, l'établi et la palette dès le départ ; les lignes de circulation guident bien ; plus de bande noire ; le fond foncé et la pièce fermée font un vrai décor. Variante A retenue : d'accord. Réponses à tes questions :
-- **Barre de progression au repos** : oui, la cacher quand le poste ne travaille pas (visuel seulement).
-- **HUD** : le descendre sous la zone du mur (marge haute ~60 px en 1080×1920, en tenant compte de l'encoche d'un téléphone), et mettre chaque compteur dans une pastille arrondie semi-transparente sombre avec une petite icône (un billet vert pour l'argent, une caisse pour le stock) à la place du « $ » et du « /8 » nus. Même texte UI classique, pas de package.
-- **Sourire** : se lit comme des points, accepté ; sera remplacé par le vrai visage de la 4d.
-- **4d** : **feu vert**. Les FBX Mixamo sont déposés ; passe à la 4d maintenant, après les deux petites retouches ci-dessus (barre cachée au repos, HUD en pastilles).
-
-## Tâche suivante : étape 4d — Vrai personnage humain (Mixamo)
-
-**Décision de Sébastien :** « je veux un vrai humain ». Le technicien en formes simples est remplacé par un **vrai modèle humain rigué avec de vraies animations**. Faire d'abord 4c, puis 4d.
-
-**Prérequis (par Sébastien, sur son PC, avec un compte Adobe gratuit sur mixamo.com).** Il dépose les fichiers FBX dans `E:\PROJET 1\IdleSecurite\Assets\Characters\` :
-- `Technicien.fbx` : un personnage masculin réaliste, pose T, format FBX Binary, avec la peau (skin).
-- `Idle.fbx` : animation « Breathing Idle » (ou équivalent), FBX Binary, **Without Skin**.
-- `Walk.fbx` : « Walking », FBX Binary, Without Skin, **In Place** coché.
-- `Run.fbx` : « Running » (ou « Jog Forward »), Without Skin, **In Place** coché.
-Si ces fichiers n'existent pas encore quand tu arrives ici, note-le dans Questions et continue autre chose : ne rien inventer.
-
-**À faire (Claude Code local)**
-1. Importer : rig `Humanoid` pour les 4 fichiers (Avatar copié depuis `Technicien.fbx` pour les animations), boucle activée sur Idle/Walk/Run, matériaux du personnage convertis en URP/Lit (corriger le rose éventuel), échelle pour que le personnage mesure environ 1,7 m dans la scène.
-2. `AnimatorController` : états Idle, Walk, Run, avec un paramètre `Speed` (0 à 1) piloté par un petit script `HumanAnimator` à partir de l'entrée de `PlayerController`. Ne modifier le déplacement ni les règles : seulement lire la vitesse (ajouter une propriété publique en lecture seule si besoin). Transitions courtes (0,1 s).
-3. **Équipement du technicien** (le métier doit se voir) : casque de chantier jaune attaché à l'os de la tête (formes simples, arête basse), gilet orange haute visibilité avec 2 bandes réfléchissantes sur le torse (coque fine attachée à l'os du torse), cela même si le modèle a déjà des vêtements. Ceinture d'outils facultative.
-4. Remplacer le personnage en formes simples (désactiver `CharacterAnimator` et le visuel de `WorkshopBuilder`, sans supprimer le code). `CharacterController`, `StackCarrier` et `StackAnchor` ne changent pas : vérifier que la pile de caisses reste bien dans le dos du nouveau personnage (ajuster le point d'accroche seulement).
-5. Captures 1080×1920 dans `unity/captures/` (préfixe `4d-`) : de face, de dos avec 8 caisses, en marche (si possible 2 images à 0,2 s d'écart), au poste.
-
-**Critères de réussite :** 0 erreur ; personnage humain reconnaissable (proportions réalistes), animé à l'arrêt et en marche (pas de glissement des pieds visible), casque et gilet visibles ; gameplay étapes 1 à 4 inchangé ; la pile reste dans le dos.
+**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé ; captures des 4 points ci-dessus ; en jouant, chaque ramassage de billet et chaque dépôt se voient.
+**Hors périmètre :** sons, vibrations (étape 8), clients (étape 5).
 
 ---
 
@@ -87,28 +51,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Retouches HUD + barre, puis étape 4d — Vrai personnage humain (Mixamo) : compile, gameplay inchangé, 9 captures `4d-*` (1080×1920).**
-
-*Retouches demandées avant la 4d*
-- **Barre de progression** : cachée tant que la progression est à 0 (`ProgressBar3D` masque ses enfants), visible seulement pendant un travail. Vérifié en Play (enfants inactifs au repos).
-- **HUD en pastilles** : conteneur `HudSafeArea` (script `SafeAreaFitter`, zone sûre de l'écran pour l'encoche) avec marge haute de 60 px ; pastille arrondie semi-transparente sombre en haut à gauche (icône de billet vert + nombre, sans « $ ») et en haut à droite (icône de caisse + `0/8`, la capacité en plus petit et plus discret, via texte riche). Texte UI classique, `UISprite`/`Knob` intégrés, aucun package.
-
-*4d*
-- **Import** (`Editor/HumanCharacterBuilder.cs`, menu `Tools > Idle Prototype > Setup human character`, appelé aussi par `Build scene`) : les 4 FBX en rig `Humanoid`, Avatar créé sur `Technicien.fbx` et copié sur les 3 animations, boucle activée (`loopTime`, `loopPose`), position/rotation de la racine figées (« In Place »). Clips renommés Idle (9,93 s), Walk (1,03 s), Run (0,70 s). Le FBX n'a pas de texture (matériaux blancs, pas de rose) : un matériau URP/Lit uni par pièce (peau, cheveux, bottes, pantalon, chemise, gilet orange, casque jaune) dans `Assets/Characters/Materials`. Échelle réglée par le Setup pour 1,7 m.
-- **Le modèle contient déjà un casque et un gilet** (maillages `Ch17_Helmet`, `Ch17_Vest`) : je les ai colorés (jaune, orange). Ajouts en formes simples attachés aux os : 2 bandes réfléchissantes sur le torse (os `Chest`, calées sur les vrais sommets du gilet), arête basse sur le casque (os `Head`), ceinture d'outils avec 2 pochettes et un outil (os `Hips`), yeux et sourcils (os `Head`). Le visage du modèle est celui d'un homme barbu ; le sourire n'est pas visible sous la barbe.
-- **Animator** `Assets/Characters/Technicien.controller` : états Idle, Walk, Run, paramètres `Speed` (0 à 1) et `AnimSpeed`, transitions de 0,1 s (Idle→Walk 0,1 ; Walk→Run 0,5 ; retours 0,06 et 0,4). `HumanAnimator` lit `PlayerController.MoveAmount` et `PlayerController.PlanarSpeed`, deux propriétés **en lecture seule ajoutées** à `PlayerController` (le déplacement n'a pas changé).
-- **Remplacement** : `WorkshopBuilder.UseHumanCharacter = true` ; l'ancien technicien en formes simples et `CharacterAnimator` sont gardés dans le code mais ne sont plus construits (si les FBX manquent, le Setup retombe sur l'ancien). `CharacterController` et `StackCarrier` inchangés ; **seul le point d'accroche** `StackAnchor` passe de `-0,7` à `-0,55` en z (pile collée au dos). Le panneau MAX passe de 2,4 à 3,25 m de haut : il traversait la caisse du haut.
-- **Tests Play** (0 erreur, 0 warning hors message du pont MCP) : états Idle → Walk (entrée 0,3) → Run (entrée 1) → Idle vérifiés ; ramassage 8/8 MAX, dépôt, 10 billets, argent 100 (HUD 100), dalle payée en 60 pas, poste 2 actif.
-- **Glissement des pieds, mesuré** (vitesse monde de l'orteil, personnage en mouvement) : **marche** 0,13 m/s en moyenne sur les 25 % d'images les plus lentes (pied planté, pas de glissement) ; **course** : ~3 m/s, la course glisse encore un peu. J'ai calibré la vitesse de lecture sur le recul réel du pied d'appui (`walkClipSpeed` 1,4 m/s, `runClipSpeed` 3,4 m/s) ; aucune valeur de 2 à 5 ne fait mieux, donc le clip de course ne colle pas parfaitement à 5 m/s. Sur les captures de course (`4d-03-marche-a/b`) le mouvement est fluide.
-- **Captures** : `4d-00-depart-hud`, `01-face`, `01b-visage-gros-plan`, `02-dos-8-caisses` (trois-quarts arrière), `02b-profil-8-caisses`, `03-marche-a` et `03-marche-b` (course, 0,2 s d'écart), `03-marche-lente`, `04-poste-hud`.
+_(vide — étape 4e)_
 
 ## Questions (à remplir par Claude Code local)
-- **Course** : le glissement résiduel du clip « Running » à 5 m/s. Veux-tu que je baisse la vitesse du joueur à la course, ou qu'on essaie un autre clip Mixamo (« Jog Forward ») ? Je n'ai pas touché au déplacement.
-- **Textures du modèle** : le FBX n'a pas de texture, donc peau, barbe et vêtements sont des couleurs unies. Si tu veux plus de détail (texture de visage, de chemise), il faut re-télécharger le personnage depuis Mixamo avec les textures (`Technicien.fbx` « With Skin » et textures incluses).
-- **Visage** : j'ai ajouté de petits yeux et sourcils car le modèle n'en a pas sans texture ; à juger sur `4d-01b-visage-gros-plan`.
-- **Poids du FBX** : `Technicien.fbx` fait 65 Mo ; à garder hors du dépôt `sync` (seuls les scripts y sont copiés) mais à prévoir si on sauvegarde tout le projet sur GitHub.
-- Tâche parallèle (dépôt iOS) : toujours REPORTÉE, non faite.
-
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -177,6 +123,29 @@ Questions posées à l'époque (répondues plus haut) :
 - **Étape 4d** : les 4 FBX Mixamo sont déjà dans `Assets/Characters` (`Technicien.fbx`, `Breathing Idle.fbx`, `Walking.fbx`, `Running.fbx`). Je ne les ai pas touchés, en attente de ton feu vert pour la 4d.
 - Tâche parallèle (dépôt iOS) : non faite, toujours REPORTÉE.
 
+## Archive : résultats des retouches HUD et de l'étape 4d (Claude Code local)
+**Retouches HUD + barre, puis étape 4d — Vrai personnage humain (Mixamo) : compile, gameplay inchangé, 9 captures `4d-*` (1080×1920).**
+
+*Retouches demandées avant la 4d*
+- **Barre de progression** : cachée tant que la progression est à 0 (`ProgressBar3D` masque ses enfants), visible seulement pendant un travail. Vérifié en Play (enfants inactifs au repos).
+- **HUD en pastilles** : conteneur `HudSafeArea` (script `SafeAreaFitter`, zone sûre de l'écran pour l'encoche) avec marge haute de 60 px ; pastille arrondie semi-transparente sombre en haut à gauche (icône de billet vert + nombre, sans « $ ») et en haut à droite (icône de caisse + `0/8`, la capacité en plus petit et plus discret, via texte riche). Texte UI classique, `UISprite`/`Knob` intégrés, aucun package.
+
+*4d*
+- **Import** (`Editor/HumanCharacterBuilder.cs`, menu `Tools > Idle Prototype > Setup human character`, appelé aussi par `Build scene`) : les 4 FBX en rig `Humanoid`, Avatar créé sur `Technicien.fbx` et copié sur les 3 animations, boucle activée (`loopTime`, `loopPose`), position/rotation de la racine figées (« In Place »). Clips renommés Idle (9,93 s), Walk (1,03 s), Run (0,70 s). Le FBX n'a pas de texture (matériaux blancs, pas de rose) : un matériau URP/Lit uni par pièce (peau, cheveux, bottes, pantalon, chemise, gilet orange, casque jaune) dans `Assets/Characters/Materials`. Échelle réglée par le Setup pour 1,7 m.
+- **Le modèle contient déjà un casque et un gilet** (maillages `Ch17_Helmet`, `Ch17_Vest`) : je les ai colorés (jaune, orange). Ajouts en formes simples attachés aux os : 2 bandes réfléchissantes sur le torse (os `Chest`, calées sur les vrais sommets du gilet), arête basse sur le casque (os `Head`), ceinture d'outils avec 2 pochettes et un outil (os `Hips`), yeux et sourcils (os `Head`). Le visage du modèle est celui d'un homme barbu ; le sourire n'est pas visible sous la barbe.
+- **Animator** `Assets/Characters/Technicien.controller` : états Idle, Walk, Run, paramètres `Speed` (0 à 1) et `AnimSpeed`, transitions de 0,1 s (Idle→Walk 0,1 ; Walk→Run 0,5 ; retours 0,06 et 0,4). `HumanAnimator` lit `PlayerController.MoveAmount` et `PlayerController.PlanarSpeed`, deux propriétés **en lecture seule ajoutées** à `PlayerController` (le déplacement n'a pas changé).
+- **Remplacement** : `WorkshopBuilder.UseHumanCharacter = true` ; l'ancien technicien en formes simples et `CharacterAnimator` sont gardés dans le code mais ne sont plus construits (si les FBX manquent, le Setup retombe sur l'ancien). `CharacterController` et `StackCarrier` inchangés ; **seul le point d'accroche** `StackAnchor` passe de `-0,7` à `-0,55` en z (pile collée au dos). Le panneau MAX passe de 2,4 à 3,25 m de haut : il traversait la caisse du haut.
+- **Tests Play** (0 erreur, 0 warning hors message du pont MCP) : états Idle → Walk (entrée 0,3) → Run (entrée 1) → Idle vérifiés ; ramassage 8/8 MAX, dépôt, 10 billets, argent 100 (HUD 100), dalle payée en 60 pas, poste 2 actif.
+- **Glissement des pieds, mesuré** (vitesse monde de l'orteil, personnage en mouvement) : **marche** 0,13 m/s en moyenne sur les 25 % d'images les plus lentes (pied planté, pas de glissement) ; **course** : ~3 m/s, la course glisse encore un peu. J'ai calibré la vitesse de lecture sur le recul réel du pied d'appui (`walkClipSpeed` 1,4 m/s, `runClipSpeed` 3,4 m/s) ; aucune valeur de 2 à 5 ne fait mieux, donc le clip de course ne colle pas parfaitement à 5 m/s. Sur les captures de course (`4d-03-marche-a/b`) le mouvement est fluide.
+- **Captures** : `4d-00-depart-hud`, `01-face`, `01b-visage-gros-plan`, `02-dos-8-caisses` (trois-quarts arrière), `02b-profil-8-caisses`, `03-marche-a` et `03-marche-b` (course, 0,2 s d'écart), `03-marche-lente`, `04-poste-hud`.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Course** : le glissement résiduel du clip « Running » à 5 m/s. Veux-tu que je baisse la vitesse du joueur à la course, ou qu'on essaie un autre clip Mixamo (« Jog Forward ») ? Je n'ai pas touché au déplacement.
+- **Textures du modèle** : le FBX n'a pas de texture, donc peau, barbe et vêtements sont des couleurs unies. Si tu veux plus de détail (texture de visage, de chemise), il faut re-télécharger le personnage depuis Mixamo avec les textures (`Technicien.fbx` « With Skin » et textures incluses).
+- **Visage** : j'ai ajouté de petits yeux et sourcils car le modèle n'en a pas sans texture ; à juger sur `4d-01b-visage-gros-plan`.
+- **Poids du FBX** : `Technicien.fbx` fait 65 Mo ; à garder hors du dépôt `sync` (seuls les scripts y sont copiés) mais à prévoir si on sauvegarde tout le projet sur GitHub.
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE, non faite.
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -192,3 +161,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4c : cadrage portrait (variante A), plinthe, sol 1 m + lignes, fond #2B3441, barre de progression, casque et sourire, capture HUD ; testé via MCP.
 - Étape 4c relue sur captures : validée. Retouches HUD et barre cachée demandées ; 4d (vrai humain) lancée.
 - Étape 4d : technicien humain Mixamo (Humanoid, Idle/Walk/Run, équipement), barre cachée au repos, HUD en pastilles ; testé via MCP, 9 captures 4d-*.
+- Étape 4d (vrai humain Mixamo) relue sur captures : validée. Étape 4e (retouches, échelle de la pile, juice de base) spécifiée.
