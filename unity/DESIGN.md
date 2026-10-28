@@ -1,5 +1,6 @@
 # DESIGN — Vision du jeu (proposition à valider par Sébastien)
 
+**Nom provisoire : Idle Sécurité** (choisi par Sébastien).
 Jeu mobile idle arcade (hybrid-casual), thème : entreprise d'installation de sécurité électronique.
 Ambition : un jeu au niveau des idle arcade connus de l'App Store (progression claire, sensations « juteuses », plusieurs mondes).
 
