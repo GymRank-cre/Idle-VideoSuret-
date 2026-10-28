@@ -26,52 +26,25 @@ Code propre (Wallet, Bill, BillCollector, HUD), pool partagé caisses/poste, tex
 ## Relecture cloud de l'étape 4 : validée
 `UnlockPad`, `UnlockConfig`, `Wallet.TrySpend` conformes (un seul endroit où l'argent diminue, économie dans un ScriptableObject). Sébastien confirme que l'étape 4 fonctionne en jeu.
 
-## Tâche en cours : étape 4b — Habillage visuel (« le début doit être beau »)
+## Relecture cloud de l'étape 4b : bonne base, 4c de retouches
+Captures regardées (départ, poste, dalle, palette, personnage, mur du fond, vue paysage). Verdict : **le style est là** (palette cohérente, ombres douces, bloom discret). Le technicien se lit tout de suite (casque jaune, gilet orange), l'établi, la palette de cartons et la dalle à bandes sont réussis. Mais le **tout premier écran en portrait n'est pas encore beau** : un grand sol vide avec un petit personnage et les postes coupés sur les bords. Réponses à tes questions :
+- **Cadrage portrait : ne pas monter la caméra** (le personnage deviendrait minuscule). On rapproche le jeu de la caméra, voir 4c-1.
+- **Capture portrait avec HUD** : faire la capture de la vue Game en 1080×1920 avec le Canvas inclus (par exemple `ScreenCapture.CaptureScreenshot` en Play avec la vue Game réglée sur 1080×1920 via un `GameViewSize` en code, ou passer temporairement le Canvas en `ScreenSpaceCamera` pour le rendu). À toi de choisir la méthode qui marche.
+- **Ombre sous les caisses portées** : OK comme tu l'as fait. **Performance** : OK pour l'instant, à mesurer sur téléphone plus tard.
 
-**Décision de Sébastien :** avant d'ajouter des fonctions, le début du jeu doit être propre et beau : un vrai personnage, un vrai atelier. (Cela remplace pour cette étape la règle « cubes d'abord » de CLAUDE.md. **Le gameplay ne change pas** : aucun script de jeu n'est modifié, sauf pour brancher les visuels.)
+## Tâche en cours : étape 4c — Retouches visuelles et cadrage portrait
 
-**Méthode : sans téléchargement d'abord.** Tout se construit par du code éditeur avec les formes de Unity (pas de package, pas d'asset externe). Une palette cohérente, du bon éclairage et des détails font déjà 80 % du rendu. Un pack d'assets gratuit (Kenney, licence CC0) ne sera envisagé qu'après, si Sébastien le demande.
+Le gameplay ne change pas (règles, vitesses, prix). Seules les positions et le visuel bougent. Même méthode que 4b : captures 1080×1920 dans `unity/captures/` (préfixe `4c-`), avec le HUD cette fois.
 
-**Séparer le visuel du jeu :** créer `Editor/WorkshopBuilder.cs`, menu `Tools > Idle Prototype > Build workshop` (relançable, ne supprime rien du jeu). `PrototypeSetup` appelle `Build workshop` à la fin. Les matériaux vont dans `Assets/Prototype/Materials`.
+1. **Resserrer le jeu pour l'écran portrait.** Variante A : tas/palette en `x = 4,5`, poste 1 en `x = -4,5`, dalle en `(-4,5, 0,01, 4)`, poste 2 en `(-4,5, 0,1, 7,5)`, champ de vision de la caméra 65° (au lieu de 60°). Variante B : même chose avec `CameraFollow` offset `(0, 11, -7)`. Capturer le départ avec A puis B ; garder celle où on voit le joueur **et** au moins la moitié du tas et du poste dès le départ. Déplacer les positions dans une seule zone de constantes en tête de `PrototypeSetup`, pas en dur partout.
+2. **Joint noir mur/sol** : une bande noire est visible à la jonction (captures 01 et 07). La supprimer : plinthe collée au sol, de la couleur acier, sans espace ni face noire.
+3. **Sol** : dalles plus petites (1 m, contraste plus faible entre les deux gris) pour que le personnage ait une bonne échelle ; ajouter un tapis ou des **lignes de circulation au sol** (jaune/blanc, larges de 0,2 m) du tas au poste, et quelques détails au sol près des murs (cartons, bobines déjà présents : en ajouter 2 autour du centre vide, jamais sur le chemin).
+4. **Fond de caméra** : le ciel bleu uni derrière les murs fait « plateau de jeu ». Mettre un fond uni foncé neutre (bleu-gris `#2B3441` environ) et ajouter un **liseré de mur haut** (le mur monte à ~4 m ou une moulure haute) pour fermer la pièce.
+5. **Barre de progression** : elle chevauche la tête du joueur au poste. La monter d'environ 0,6 m, la raccourcir (1,2 m) et arrondir/foncer son fond.
+6. **Casque** : la petite barre jaune sur le dessus ressemble à un cube oublié. La remplacer par une **arête basse allongée de l'avant vers l'arrière** (ou la supprimer). Ajouter un **petit sourire** (arc sombre) sur le visage.
+7. **Capture HUD portrait** (voir ci-dessus) : une capture du départ avec `$ 0` et `0/8` visibles et lisibles.
 
-**1. Ambiance (URP)**
-- Palette : bois clair, gris-bleu acier, blanc cassé, accents jaune sécurité et orange ; 8 à 10 couleurs au total, définies en tête du fichier.
-- Lumière : une lumière directionnelle douce (ombres douces activées), lumière ambiante chaude, ciel uni. Pas de fog.
-- Volume de post-traitement global : Tonemapping (ACES), Bloom léger, Vignette légère, Color Adjustments (contraste +10, saturation +10). Pas de package à ajouter (inclus dans URP).
-
-**2. L'atelier (pièce ouverte côté caméra)**
-- Sol : grandes dalles en damier de deux gris clairs, bords légèrement plus sombres. Plus de grand plan gris uni.
-- Murs : deux murs (fond et gauche) avec plinthe, bande de couleur et hauteur ~3 m ; **pas de mur côté caméra**. Une fenêtre (cadre + vitre bleu pâle) au fond.
-- Décor sécurité électronique : tableau mural avec outils (tournevis, pince, câbles : formes simples), une grille de caméras dôme au mur, une enseigne néon « SÉCURITÉ » (`TextMesh`, émissif), étagères métalliques avec des cartons, bobines de câble au sol, une armoire électrique avec de petites lumières vertes/rouges, un poster.
-- Zone de ramassage (tas gris) : remplacer par **une palette en bois chargée de cartons** (palette plate + 3 à 4 cartons empilés).
-- Poste d'installation : **établi** (plateau en bois sur 4 pieds métalliques), avec un écran d'ordinateur, une caméra dôme en cours d'assemblage, un tapis de travail. La barre de progression flotte au-dessus.
-- Dalle de déblocage : dalle jaune avec **bandes noires en biais** (texture générée par code) et léger halo.
-- Garder des zones libres autour du joueur : les distances de jeu (positions des postes et de la dalle) ne changent pas.
-
-**3. Le technicien**
-- Remplacer la capsule orange par un personnage construit en formes simples : jambes (2 cylindres) et bottes noires, torse en **gilet orange haute visibilité** avec bandes réfléchissantes, tête (sphère couleur peau), **casque de chantier jaune**, bras, **ceinture d'outils** (petits cubes). Proportions « mignonnes » : tête grosse, corps court.
-- Animation sans package : légère oscillation verticale à la marche, inclinaison vers l'avant selon la vitesse, bras qui balancent, petit « souffle » à l'arrêt. Dans un script `CharacterAnimator` qui lit `PlayerController.IsMoving` (propriété existante).
-- Le `CharacterController`, `StackCarrier` et le point d'accroche de la pile restent inchangés (la pile doit rester bien dans le dos).
-
-**4. Petits détails de finition**
-- Ombre ronde douce sous le personnage et sous les caisses (disque sombre transparent).
-- Caisses : cartons marron avec bande de ruban clair. Billets : vrais billets verts plats avec un liseré, qui flottent avec un léger balancement.
-- Étiquettes (prix, MAX, textes) lisibles : contour sombre, taille cohérente.
-
-**5. Captures d'écran : obligatoire**
-Le cloud juge le rendu sur images. Après chaque grande partie (ambiance, atelier, personnage, finitions) :
-- prendre des captures de la vue **Game** en 1080×1920 (portrait) : vue de départ, vue près du poste, vue de la dalle, personnage de près ;
-- les enregistrer en PNG dans `unity/captures/` (noms datés : `4b-atelier-01.png`...), les copier dans le clone `sync`, commiter et pousser ;
-- si les captures sont impossibles via MCP, le dire dans Questions (Sébastien en enverra).
-Le cloud relit les images et note les corrections dans ce fichier.
-
-**Critères de réussite**
-- 0 erreur de compilation et en Play ; le gameplay des étapes 1 à 4 fonctionne comme avant (ramassage, MAX, dépôt, billets, argent, dalle, 2e poste).
-- Au lancement, l'écran ressemble à un vrai atelier, pas à un test : couleurs cohérentes, ombres, personnage reconnaissable (casque jaune, gilet orange).
-- Les images de `unity/captures/` montrent les 4 vues demandées.
-- Aucune baisse de fluidité visible dans l'éditeur ; pas de lumière temps réel supplémentaire inutile (cible : téléphone).
-
-**Hors périmètre :** nouvelles fonctions de jeu, clients, employés, sons, sauvegarde.
+**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé en Play ; sur la capture de départ en portrait, le joueur est reconnaissable et au moins deux éléments de jeu (tas, poste ou dalle) sont visibles ; plus de bande noire ; HUD lisible.
 
 ---
 
@@ -85,24 +58,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 4b — Habillage visuel : compile, gameplay intact, 9 captures dans `unity/captures/`.**
-- Nouveau menu `Tools > Idle Prototype > Build workshop` (`Editor/WorkshopBuilder.cs`), appelé aussi à la fin de `Build scene`. Relançable (testé 2 fois) : il refait le dossier `Workshop` et l'habillage, sans toucher aux scripts de jeu.
-- Aucun asset externe, aucun package. Matériaux `WS_*` dans `Assets/Prototype/Materials`, 3 textures générées par code dans `Assets/Prototype/Textures` (damier, bandes de danger, dégradé radial pour ombres et halo).
-- Ambiance URP : lumière directionnelle chaude (ombres douces), ambiance plate chaude, ciel uni, pas de fog. Volume global `Assets/Prototype/PostFX.asset` : Tonemapping ACES, Bloom léger (seuil 1, intensité 0,25), Vignette 0,22, Contraste +10, Saturation +10. Une seule lumière temps réel. Décor fixe en `BatchingStatic`.
-- Atelier : sol en damier de dalles de 2 m (le plan `Ground` garde son collider), murs du fond et de gauche avec plinthe, bande acier et liseré jaune, aucun mur côté caméra. Décor : fenêtre, enseigne néon « SÉCURITÉ » (TextMesh + cadre émissif), tableau d'outils, mur de 6 caméras dôme, armoire électrique avec voyants, poster, 3 étagères avec cartons, bobines de câble, cartons isolés.
-- Palette de ramassage : palette en bois + 5 cartons à ruban (le tas gris est masqué, son trigger est gardé). Postes : établi (plateau bois, pieds métal, étagère basse) avec écran, caméra dôme en assemblage, vis, tournevis, tapis de travail ; l'établi est au fond du poste pour que les caisses arrivent devant. Dalle : texture à bandes noires en biais + halo jaune doux. Les positions de jeu n'ont pas changé.
-- Technicien : gilet orange avec 2 bandes réfléchissantes, casque jaune, tête, yeux, cou, bras, jambes et bottes noires, ceinture d'outils, ombre ronde. La capsule d'origine est masquée (renderer désactivé), `CharacterController`, `StackCarrier` et `StackAnchor` inchangés. `CharacterAnimator` (lit `PlayerController.IsMoving`) : balancement des jambes et bras (40°), rebond 0,07 m, inclinaison 10°, souffle à l'arrêt. Mesuré en Play : valeurs atteintes à la marche, retour à 0 à l'arrêt.
-- Détails : caisse en carton avec ruban, billet vert avec liseré et sceau qui flotte (`Bobbing`, vertical seulement car le parent est écrasé), ombre ronde sous le joueur, la palette et l'établi, prix de la dalle avec contour sombre (`TextMirror`, taille réduite à 0,075).
-- Gameplay étapes 1 à 4 vérifié en Play après l'habillage : 8 caisses ramassées (MAX), dépôt au poste, 10 billets ramassés (argent 100), dalle payée en 60 pas, poste 2 actif à l'échelle 1. 0 erreur, 0 warning dans la Console.
-- Captures (1080×1920, caméra du jeu rendue dans une texture) : `4b-atelier-01-depart`, `02-poste` (barre mi-chemin), `02b-billets`, `03-dalle` (prix visible), `04-palette`, `05-perso-dos` (8 caisses dans le dos), `06-perso-face`, `07-mur-fond`, et `09-hud-paysage` (vue Game de l'éditeur, avec le HUD).
+_(vide — étape 4c)_
 
 ## Questions (à remplir par Claude Code local)
-- **Cadrage portrait** : en 1080×1920, la caméra (0, 12, -8) voit seulement environ ±5 m en largeur. La palette (x = 6) et les postes (x = -6) sont sur les bords de l'écran quand le joueur est au centre. Je n'ai pas touché `CameraFollow` (gameplay). À décider : monter un peu la caméra ou élargir le champ de vision ?
-- **HUD en portrait** : la capture caméra n'inclut pas le Canvas (overlay). Le HUD est montré dans `09-hud-paysage` (vue Game de l'éditeur en paysage). Une capture portrait avec HUD demande de régler la vue Game en 1080×1920 à la main.
-- **Ombre sous les caisses** : faite sous la palette et l'établi, pas sous chaque caisse portée (les caisses de la pile sont déjà dans l'ombre du joueur, et une ombre par caisse se superposerait).
-- **Performance** : non mesurée sur téléphone. Côté éditeur : 1 lumière temps réel, décor fixe batché, pas de lumière ajoutée. Les ombres douces dépendent de l'asset URP du projet.
-- Tâche parallèle (dépôt iOS) : non faite, toujours REPORTÉE.
-
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -134,6 +93,25 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - Non vérifié visuellement : lisibilité du prix 3D, effet de gonflement, couleur de la dalle.
 - Tâche parallèle (dépôt `idle-securite-unity`) : non faite, marquée REPORTÉE.
 
+## Archive : résultats de l'étape 4b (Claude Code local)
+**Étape 4b — Habillage visuel : compile, gameplay intact, 9 captures dans `unity/captures/`.**
+- Nouveau menu `Tools > Idle Prototype > Build workshop` (`Editor/WorkshopBuilder.cs`), appelé aussi à la fin de `Build scene`. Relançable (testé 2 fois) : il refait le dossier `Workshop` et l'habillage, sans toucher aux scripts de jeu.
+- Aucun asset externe, aucun package. Matériaux `WS_*` dans `Assets/Prototype/Materials`, 3 textures générées par code dans `Assets/Prototype/Textures` (damier, bandes de danger, dégradé radial pour ombres et halo).
+- Ambiance URP : lumière directionnelle chaude (ombres douces), ambiance plate chaude, ciel uni, pas de fog. Volume global `Assets/Prototype/PostFX.asset` : Tonemapping ACES, Bloom léger (seuil 1, intensité 0,25), Vignette 0,22, Contraste +10, Saturation +10. Une seule lumière temps réel. Décor fixe en `BatchingStatic`.
+- Atelier : sol en damier de dalles de 2 m (le plan `Ground` garde son collider), murs du fond et de gauche avec plinthe, bande acier et liseré jaune, aucun mur côté caméra. Décor : fenêtre, enseigne néon « SÉCURITÉ » (TextMesh + cadre émissif), tableau d'outils, mur de 6 caméras dôme, armoire électrique avec voyants, poster, 3 étagères avec cartons, bobines de câble, cartons isolés.
+- Palette de ramassage : palette en bois + 5 cartons à ruban (le tas gris est masqué, son trigger est gardé). Postes : établi (plateau bois, pieds métal, étagère basse) avec écran, caméra dôme en assemblage, vis, tournevis, tapis de travail ; l'établi est au fond du poste pour que les caisses arrivent devant. Dalle : texture à bandes noires en biais + halo jaune doux. Les positions de jeu n'ont pas changé.
+- Technicien : gilet orange avec 2 bandes réfléchissantes, casque jaune, tête, yeux, cou, bras, jambes et bottes noires, ceinture d'outils, ombre ronde. La capsule d'origine est masquée (renderer désactivé), `CharacterController`, `StackCarrier` et `StackAnchor` inchangés. `CharacterAnimator` (lit `PlayerController.IsMoving`) : balancement des jambes et bras (40°), rebond 0,07 m, inclinaison 10°, souffle à l'arrêt. Mesuré en Play : valeurs atteintes à la marche, retour à 0 à l'arrêt.
+- Détails : caisse en carton avec ruban, billet vert avec liseré et sceau qui flotte (`Bobbing`, vertical seulement car le parent est écrasé), ombre ronde sous le joueur, la palette et l'établi, prix de la dalle avec contour sombre (`TextMirror`, taille réduite à 0,075).
+- Gameplay étapes 1 à 4 vérifié en Play après l'habillage : 8 caisses ramassées (MAX), dépôt au poste, 10 billets ramassés (argent 100), dalle payée en 60 pas, poste 2 actif à l'échelle 1. 0 erreur, 0 warning dans la Console.
+- Captures (1080×1920, caméra du jeu rendue dans une texture) : `4b-atelier-01-depart`, `02-poste` (barre mi-chemin), `02b-billets`, `03-dalle` (prix visible), `04-palette`, `05-perso-dos` (8 caisses dans le dos), `06-perso-face`, `07-mur-fond`, et `09-hud-paysage` (vue Game de l'éditeur, avec le HUD).
+
+Questions posées à l'époque (répondues plus haut) :
+- **Cadrage portrait** : en 1080×1920, la caméra (0, 12, -8) voit seulement environ ±5 m en largeur. La palette (x = 6) et les postes (x = -6) sont sur les bords de l'écran quand le joueur est au centre. Je n'ai pas touché `CameraFollow` (gameplay). À décider : monter un peu la caméra ou élargir le champ de vision ?
+- **HUD en portrait** : la capture caméra n'inclut pas le Canvas (overlay). Le HUD est montré dans `09-hud-paysage` (vue Game de l'éditeur en paysage). Une capture portrait avec HUD demande de régler la vue Game en 1080×1920 à la main.
+- **Ombre sous les caisses** : faite sous la palette et l'établi, pas sous chaque caisse portée (les caisses de la pile sont déjà dans l'ombre du joueur, et une ombre par caisse se superposerait).
+- **Performance** : non mesurée sur téléphone. Côté éditeur : 1 lumière temps réel, décor fixe batché, pas de lumière ajoutée. Les ombres douces dépendent de l'asset URP du projet.
+- Tâche parallèle (dépôt iOS) : non faite, toujours REPORTÉE.
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -144,3 +122,4 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - Étape 4 : dalle de déblocage à prix décroissant, 2e poste, Wallet.TrySpend ; compilé et testé via MCP, rendu à confirmer par Sébastien.
 - Étape 4 (dalles de déblocage) validée par Sébastien et relue côté cloud. Étape 4b (habillage visuel) spécifiée.
 - Étape 4b : habillage visuel (Build workshop, technicien animé, atelier, post-traitement) fait ; 9 captures dans unity/captures ; à relire côté cloud.
+- Étape 4b (habillage) relue côté cloud sur captures : bonne base. Étape 4c (retouches et cadrage portrait) spécifiée.
