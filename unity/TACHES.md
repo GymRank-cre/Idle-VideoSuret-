@@ -28,16 +28,30 @@ Le technicien humain (barbu, casque jaune, gilet orange, ceinture d'outils) se l
 - **Course qui glisse** : d'abord baisser la vitesse du joueur à 4,2 m/s (`PlayerController`, valeur du `[SerializeField]`, sans changer le code) et recaler les vitesses de lecture ; si ça glisse encore, tu passes en Questions et Sébastien téléchargera « Jog Forward ». Ne pas bloquer là-dessus.
 - **Textures** : pas besoin pour l'instant. **Visage** : yeux et sourcils acceptés. **FBX de 65 Mo** : noté pour la sauvegarde Git (utiliser Git LFS ou garder hors dépôt).
 
-## Tâche en cours : étape 4e — Petites retouches (échelle de la pile, détails)
-Gameplay inchangé. Captures 1080×1920 dans `unity/captures/` (préfixe `4e-`).
-1. **Bandes réfléchissantes** : elles flottent comme deux anneaux qui dépassent du gilet (capture `4d-01-face`). Les coller à la surface du gilet (même courbure, +2 mm), plus fines (4 cm), et les fermer par derrière.
-2. **Échelle de la pile** : 8 caisses atteignent près de 3 m, soit plus que le personnage, et la pile semble détachée du dos (capture `4d-02-dos-8-caisses`). Réduire les caisses (×0,75), réduire `itemHeight` (~0,26) pour que la pile pleine dépasse la tête de peu, et approcher la première caisse du dos (taille des hanches). Le balancement reste.
-3. **Prix de la dalle** : sur la capture `4d-02-dos-8-caisses`, « $ 100 » apparaît penché/déformé en vue oblique. Le texte doit toujours faire face à la caméra sans inclinaison (billboard complet, `rotation = caméra.rotation`).
-4. **Vitesse du joueur** : voir réponse sur la course ci-dessus.
-5. **Retour d'information (« juice ») de base**, avec des formes simples, sans son ni package : (a) chiffre flottant « +10 » qui monte et s'efface à chaque billet ramassé ; (b) petit éclat de particules (système de particules intégré à Unity) quand une caisse arrive au poste et quand un billet est ramassé ; (c) léger « pop » du compteur de caisses à chaque caisse ajoutée. Utiliser des pools. Réglages (durée, hauteur) dans un `ScriptableObject` `FeedbackConfig`.
+## Relecture cloud de l'étape 4e : validée avec 3 défauts à corriger
+Bien : les bandes suivent le gilet, le prix de la dalle est droit, le « +100 » flottant est lisible, le pop du compteur marche, 0 erreur. Réponses à tes questions :
+- **Pile pleine** : compromis (ni a, ni b, ni c) : caisses ×0,6 et pas de 0,17. La pile pleine doit monter à environ 2,3 m (≈0,6 m au-dessus de la tête). Réglages dans les constantes de `PrototypeSetup`.
+- **Course qui glisse** : Sébastien va télécharger « Jog Forward » (Without Skin, In Place) dans `Assets/Characters/` ; tu le branches quand il est là, sinon on laisse tel quel. Ne pas bloquer.
+- **Chiffre flottant fusionné** : garder « +100 » tel quel, c'est lisible.
+Défauts vus sur les captures :
+1. **Le panneau MAX est une dalle rouge sans texte**, très haute au-dessus de la pile et penchée (`4e-02-pile-trois-quarts`). Il doit afficher le mot « MAX » (TextMesh blanc à contour, sur pastille rouge arrondie), face caméra, juste au-dessus de la dernière caisse (sommet de la pile + 0,4 m), pas à hauteur fixe.
+2. **Le vide en bas de l'écran** : sur `4e-05-plus10-jeu-hud`, le bas de l'image est noir quand le joueur est près du bord sud (la pièce s'arrête et on voit en dehors). La caméra ne doit jamais voir le vide : prolonger le sol et les murs (ou un mur bas au sud) pour couvrir tout ce que la caméra peut voir quand le joueur est dans la zone jouable, et poser des limites invisibles à la zone jouable.
+3. **Les bandes de la ceinture/gilet vues de dos** sont un peu irrégulières (morceaux décalés, `4e-01b-bandes-dos`) : acceptable à la distance du jeu, à lisser si c'est rapide, sinon laisser.
 
-**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé ; captures des 4 points ci-dessus ; en jouant, chaque ramassage de billet et chaque dépôt se voient.
-**Hors périmètre :** sons, vibrations (étape 8), clients (étape 5).
+## Tâche en cours : étape 4f (corrections ci-dessus) puis étape 5a — Produits finis et plateau
+
+**4f :** faire les 3 corrections ci-dessus + le réglage de la pile. Captures `4f-`.
+
+**5a — Le poste fabrique de vrais produits (avant les clients).** Objectif : la boucle devient *caisses → poste → produit fini à livrer*. Les billets viendront des clients à l'étape 5b. Pour l'instant, **ajouter** les produits sans retirer les billets (le jeu reste jouable) : un champ de config `produceProducts` dans `StationConfig` (défaut vrai) ; les billets sortent encore quand il est faux.
+1. `ProductType` (ScriptableObject) : nom, forme/couleur, valeur. Trois produits en formes simples : **caméra dôme** (cylindre blanc + demi-sphère sombre), **badgeuse** (boîte noire avec voyant vert), **alarme** (boîte rouge avec sirène jaune).
+2. `StationConfig` : `productsPerJob` (défaut 1), liste des produits fabriqués (en rotation). Valeurs dans les ScriptableObjects, rien en dur.
+3. `InstallStation` : à la fin d'un travail, un produit apparaît sur un **plateau de sortie** devant le poste (pool d'objets, jusqu'à `outputCapacity` = 4).
+4. `ProductCarrier` (sur le joueur) : ramassage automatique des produits du plateau par proximité (comme les billets), portés **à la main, devant le torse** (petit plateau empilé, capacité 4), distinct de la pile de caisses dans le dos. Compteur `Produits x/4` dans le HUD sous le compteur de caisses (même style de pastille).
+5. Les produits portés ne retournent nulle part pour l'instant (la livraison arrive en 5b) : prévoir une action de test `Tools > Idle Prototype > Vider les produits`.
+6. Captures `5a-` : un produit sur le plateau, joueur portant 4 produits, HUD.
+
+**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé tant que `produceProducts` est faux ; avec `produceProducts` vrai, 3 caisses déposées → après la durée du travail, un produit sur le plateau, ramassé par le joueur, visible dans ses mains et dans le HUD.
+**Hors périmètre :** clients, comptoir, paiement (5b), employés (6).
 
 ---
 
@@ -51,26 +65,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 4e — Petites retouches et retour d'information : compile, gameplay inchangé, 9 captures `4e-*` (1080×1920).**
-1. **Bandes réfléchissantes** : ce sont maintenant de vrais anneaux de 4 cm de haut qui suivent la surface du gilet (+2 mm), construits sur les sommets réels du gilet à chaque hauteur (72 secteurs). Les petits trous sont comblés, donc elles sont fermées dans le dos ; elles restent ouvertes là où le gilet est ouvert devant. Maillages sauvés en assets (`Assets/Characters/Meshes`), matériau visible des deux côtés. Captures `4e-01*`.
-2. **Échelle de la pile** : caisses ×0,75 (constante `CrateScale` dans `PrototypeSetup`), `itemHeight` 0,26 (`StackItemHeight`), point d'accroche collé au dos (`z = -0,38`, hauteur de hanches). Balancement inchangé. **Mesuré : le sommet de la pile pleine est à 2,81 m, soit 1,1 m au-dessus de la tête (1,7 m)** : avec ces valeurs 8 caisses ne peuvent pas « dépasser la tête de peu » (il faudrait des caisses de 0,18 m et un pas de 0,19 m, ou une pile sur deux colonnes). Le panneau MAX est remonté juste au-dessus. Voir Questions.
-3. **Prix de la dalle** : le texte est un vrai billboard (`FaceCamera`, rotation = caméra, sans inclinaison) mis à jour juste avant le rendu de chaque caméra de jeu (`beginCameraRendering`), donc aussi quand la caméra est déplacée à la main. La capture `4e-03-prix-dalle-oblique` montre « $ 100 » droit en vue oblique ; l'inclinaison de `4d-02` venait d'une caméra déplacée après la mise à jour du billboard, pas du jeu.
-4. **Vitesse du joueur** : 4,2 m/s, réglée par la **valeur sérialisée** `moveSpeed` posée dans `PrototypeSetup` (`PlayerMoveSpeed`) ; `PlayerController` n'a pas changé. `runClipSpeed` passe à 4,2 (l'animation de course tourne à sa vitesse d'origine). Mesure (orteil, moyenne des 25 % d'images les plus lentes) : marche 0,11 m/s (planté) ; **course 2,7 à 2,9 m/s : ça glisse encore**, un peu moins qu'à 5 m/s (3,1). Voir Questions.
-5. **Retour d'information** (formes simples, sans son ni package, avec pools) :
-   - `FeedbackConfig` (ScriptableObject `Assets/Prototype/FeedbackConfig.asset`, conservé s'il existe) : durée et hauteur du chiffre, couleurs, nombre/durée/vitesse/taille des éclats, échelle et retour du pop.
-   - (a) **Chiffre flottant** « +valeur » : `FloatingText` + `FeedbackSpawner` (pool). Les billets ramassés à moins de 0,25 s d'écart sont **additionnés dans un seul chiffre** (« +100 » pour 10 billets d'un coup) : sinon dix « +10 » se superposaient en une tache illisible (voir `4e-05b`). Un billet ramassé seul affiche « +10 ».
-   - (b) **Éclats de particules** (système intégré, émission par `Emit`, pool) : à l'arrivée de chaque caisse au poste (`InstallStation`) et à chaque billet ramassé (`BillCollector`). Les deux scripts ont un champ `feedback` facultatif.
-   - (c) **Pop du compteur de caisses** (`CrateHud`) : mesuré à 1,13 juste après un ramassage, retour à 1,0.
-   - Mesures en Play : 1 éclat actif 20 images après le début du dépôt ; 1 chiffre « +100 » après le ramassage des 10 billets ; 0 chiffre actif 1 s plus tard.
-- **Non-régression (Play)** : 8 caisses ramassées (MAX), dépôt, 10 billets, argent 100, dalle payée en 60 pas, poste 2 actif ; 0 erreur et 0 warning dans la Console (hors message du pont MCP).
-- Captures : `4e-01-bandes-face`, `01b-bandes-dos`, `01c-bandes-trois-quarts`, `02-pile-trois-quarts`, `02b-pile-profil`, `03-prix-dalle-oblique`, `04-eclat-caisse-poste`, `05-plus10-jeu-hud`, `05b-plus10-gros-plan`.
+_(vide — étapes 4f et 5a)_
 
 ## Questions (à remplir par Claude Code local)
-- **Pile pleine trop haute** (point 2) : avec ×0,75 et un pas de 0,26, 8 caisses font 2,81 m (tête à 1,7 m). Pour que la pile ne dépasse que de peu, veux-tu : (a) des caisses encore plus petites (×0,5) avec un pas de 0,13, (b) une pile sur 2 colonnes de 4 caisses côte à côte dans le dos, ou (c) garder 8 caisses et accepter la hauteur ?
-- **Course qui glisse encore** (point 4) : même à 4,2 m/s le clip « Running » glisse (2,7 m/s mesurés sur le pied d'appui). Comme prévu, Sébastien peut télécharger « Jog Forward » (Without Skin, In Place) dans `Assets/Characters/` ; je le brancherai ensuite.
-- **Chiffre flottant fusionné** : est-ce que tu préfères un « +10 » par billet (étalés dans le temps) ? Cela demanderait d'échelonner l'arrivée des billets au joueur.
-- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
-
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -162,6 +160,27 @@ Questions posées à l'époque (répondues plus haut) :
 - **Poids du FBX** : `Technicien.fbx` fait 65 Mo ; à garder hors du dépôt `sync` (seuls les scripts y sont copiés) mais à prévoir si on sauvegarde tout le projet sur GitHub.
 - Tâche parallèle (dépôt iOS) : toujours REPORTÉE, non faite.
 
+## Archive : résultats de l'étape 4e (Claude Code local)
+**Étape 4e — Petites retouches et retour d'information : compile, gameplay inchangé, 9 captures `4e-*` (1080×1920).**
+1. **Bandes réfléchissantes** : ce sont maintenant de vrais anneaux de 4 cm de haut qui suivent la surface du gilet (+2 mm), construits sur les sommets réels du gilet à chaque hauteur (72 secteurs). Les petits trous sont comblés, donc elles sont fermées dans le dos ; elles restent ouvertes là où le gilet est ouvert devant. Maillages sauvés en assets (`Assets/Characters/Meshes`), matériau visible des deux côtés. Captures `4e-01*`.
+2. **Échelle de la pile** : caisses ×0,75 (constante `CrateScale` dans `PrototypeSetup`), `itemHeight` 0,26 (`StackItemHeight`), point d'accroche collé au dos (`z = -0,38`, hauteur de hanches). Balancement inchangé. **Mesuré : le sommet de la pile pleine est à 2,81 m, soit 1,1 m au-dessus de la tête (1,7 m)** : avec ces valeurs 8 caisses ne peuvent pas « dépasser la tête de peu » (il faudrait des caisses de 0,18 m et un pas de 0,19 m, ou une pile sur deux colonnes). Le panneau MAX est remonté juste au-dessus. Voir Questions.
+3. **Prix de la dalle** : le texte est un vrai billboard (`FaceCamera`, rotation = caméra, sans inclinaison) mis à jour juste avant le rendu de chaque caméra de jeu (`beginCameraRendering`), donc aussi quand la caméra est déplacée à la main. La capture `4e-03-prix-dalle-oblique` montre « $ 100 » droit en vue oblique ; l'inclinaison de `4d-02` venait d'une caméra déplacée après la mise à jour du billboard, pas du jeu.
+4. **Vitesse du joueur** : 4,2 m/s, réglée par la **valeur sérialisée** `moveSpeed` posée dans `PrototypeSetup` (`PlayerMoveSpeed`) ; `PlayerController` n'a pas changé. `runClipSpeed` passe à 4,2 (l'animation de course tourne à sa vitesse d'origine). Mesure (orteil, moyenne des 25 % d'images les plus lentes) : marche 0,11 m/s (planté) ; **course 2,7 à 2,9 m/s : ça glisse encore**, un peu moins qu'à 5 m/s (3,1). Voir Questions.
+5. **Retour d'information** (formes simples, sans son ni package, avec pools) :
+   - `FeedbackConfig` (ScriptableObject `Assets/Prototype/FeedbackConfig.asset`, conservé s'il existe) : durée et hauteur du chiffre, couleurs, nombre/durée/vitesse/taille des éclats, échelle et retour du pop.
+   - (a) **Chiffre flottant** « +valeur » : `FloatingText` + `FeedbackSpawner` (pool). Les billets ramassés à moins de 0,25 s d'écart sont **additionnés dans un seul chiffre** (« +100 » pour 10 billets d'un coup) : sinon dix « +10 » se superposaient en une tache illisible (voir `4e-05b`). Un billet ramassé seul affiche « +10 ».
+   - (b) **Éclats de particules** (système intégré, émission par `Emit`, pool) : à l'arrivée de chaque caisse au poste (`InstallStation`) et à chaque billet ramassé (`BillCollector`). Les deux scripts ont un champ `feedback` facultatif.
+   - (c) **Pop du compteur de caisses** (`CrateHud`) : mesuré à 1,13 juste après un ramassage, retour à 1,0.
+   - Mesures en Play : 1 éclat actif 20 images après le début du dépôt ; 1 chiffre « +100 » après le ramassage des 10 billets ; 0 chiffre actif 1 s plus tard.
+- **Non-régression (Play)** : 8 caisses ramassées (MAX), dépôt, 10 billets, argent 100, dalle payée en 60 pas, poste 2 actif ; 0 erreur et 0 warning dans la Console (hors message du pont MCP).
+- Captures : `4e-01-bandes-face`, `01b-bandes-dos`, `01c-bandes-trois-quarts`, `02-pile-trois-quarts`, `02b-pile-profil`, `03-prix-dalle-oblique`, `04-eclat-caisse-poste`, `05-plus10-jeu-hud`, `05b-plus10-gros-plan`.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Pile pleine trop haute** (point 2) : avec ×0,75 et un pas de 0,26, 8 caisses font 2,81 m (tête à 1,7 m). Pour que la pile ne dépasse que de peu, veux-tu : (a) des caisses encore plus petites (×0,5) avec un pas de 0,13, (b) une pile sur 2 colonnes de 4 caisses côte à côte dans le dos, ou (c) garder 8 caisses et accepter la hauteur ?
+- **Course qui glisse encore** (point 4) : même à 4,2 m/s le clip « Running » glisse (2,7 m/s mesurés sur le pied d'appui). Comme prévu, Sébastien peut télécharger « Jog Forward » (Without Skin, In Place) dans `Assets/Characters/` ; je le brancherai ensuite.
+- **Chiffre flottant fusionné** : est-ce que tu préfères un « +10 » par billet (étalés dans le temps) ? Cela demanderait d'échelonner l'arrivée des billets au joueur.
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -179,3 +198,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4d : technicien humain Mixamo (Humanoid, Idle/Walk/Run, équipement), barre cachée au repos, HUD en pastilles ; testé via MCP, 9 captures 4d-*.
 - Étape 4d (vrai humain Mixamo) relue sur captures : validée. Étape 4e (retouches, échelle de la pile, juice de base) spécifiée.
 - Étape 4e : bandes collées au gilet, pile ×0,75, vitesse 4,2 m/s, prix en vrai billboard, retour d'information (+valeur, éclats, pop) ; testé via MCP, 9 captures 4e-*.
+- Étape 4e relue sur captures : validée avec 3 défauts. Étapes 4f (corrections) et 5a (produits finis) spécifiées.
