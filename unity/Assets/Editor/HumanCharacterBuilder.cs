@@ -327,6 +327,18 @@ public static class HumanCharacterBuilder
             i = next;
         }
 
+        // lissage (2 passes) : enlève les petits décalages entre secteurs voisins, surtout visibles de dos
+        for (int pass = 0; pass < 2; pass++)
+        {
+            var smoothed = (float[])radius.Clone();
+            for (int i = 0; i < sectors; i++)
+            {
+                float a = radius[(i + sectors - 1) % sectors], b = radius[i], c = radius[(i + 1) % sectors];
+                if (a >= 0f && b >= 0f && c >= 0f) smoothed[i] = 0.25f * a + 0.5f * b + 0.25f * c;
+            }
+            radius = smoothed;
+        }
+
         var vertices = new System.Collections.Generic.List<Vector3>();
         var triangles = new System.Collections.Generic.List<int>();
         for (int i = 0; i < sectors; i++)

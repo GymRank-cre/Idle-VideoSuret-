@@ -35,6 +35,12 @@ public class FeedbackSpawner : MonoBehaviour
         Burst(position, config.CrateBurstColor);
     }
 
+    // Un produit fini apparaît sur le plateau.
+    public void ProductReady(Vector3 position)
+    {
+        Burst(position + Vector3.up * 0.1f, config.FloatColor);
+    }
+
     // Un billet est ramassé : éclat vert et "+valeur" qui monte.
     // Les billets ramassés presque ensemble (moins de 0,25 s) s'additionnent dans un seul chiffre lisible.
     public void BillCollected(Vector3 position, int value)

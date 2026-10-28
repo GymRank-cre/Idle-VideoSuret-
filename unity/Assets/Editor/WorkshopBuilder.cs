@@ -14,8 +14,13 @@ public static class WorkshopBuilder
     const string Root = "Assets/Prototype";
 
     // ---- Dimensions de la pièce (resserrée autour de la zone de jeu) ----
-    const float RoomLeft = -8.5f, RoomRight = 11f, RoomFront = -9f, RoomBack = 11.5f;
+    // La pièce couvre tout ce que la caméra peut voir quand le joueur est dans la zone jouable.
+    const float RoomLeft = -8.5f, RoomRight = 14f, RoomFront = -14f, RoomBack = 11.5f;
     const float WallHeight = 4f;
+    const float FrontWallHeight = 0.9f; // mur bas au sud (côté caméra)
+
+    // Zone jouable : limites invisibles (centre du joueur).
+    const float PlayMinX = -7.2f, PlayMaxX = 8.2f, PlayMinZ = -5f, PlayMaxZ = 10.8f;
 
     // ---- Palette (8 à 10 couleurs de base) ----
     static readonly Color Wood = new Color(0.80f, 0.62f, 0.40f);
@@ -187,8 +192,38 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cube, "CorniceBack", parent, new Vector3(midX - 0.15f, WallHeight - 0.1f, RoomBack - 0.1f), new Vector3(width + 0.3f, 0.2f, 0.22f), mSteelDark);
         Prim(PrimitiveType.Cube, "CorniceLeft", parent, new Vector3(RoomLeft + 0.1f, WallHeight - 0.1f, midZ), new Vector3(0.22f, 0.2f, depth), mSteelDark);
 
+        // Mur de droite (comme celui de gauche) et mur bas au sud : la caméra ne voit jamais le vide.
+        Prim(PrimitiveType.Cube, "WallRight", parent, new Vector3(RoomRight + 0.15f, WallHeight * 0.5f, midZ),
+            new Vector3(0.3f, WallHeight, depth), mWhite);
+        Prim(PrimitiveType.Cube, "StripeRight", parent, new Vector3(RoomRight - 0.02f, 1.0f, midZ), new Vector3(0.06f, 0.3f, depth), mSteel);
+        Prim(PrimitiveType.Cube, "BaseboardRight", parent, new Vector3(RoomRight - 0.04f, 0.09f, midZ), new Vector3(0.08f, 0.18f, depth), mSteelDark);
+        Prim(PrimitiveType.Cube, "TopTrimRight", parent, new Vector3(RoomRight - 0.03f, WallHeight - 0.45f, midZ), new Vector3(0.06f, 0.06f, depth), mYellow);
+        Prim(PrimitiveType.Cube, "CorniceRight", parent, new Vector3(RoomRight - 0.1f, WallHeight - 0.1f, midZ), new Vector3(0.22f, 0.2f, depth), mSteelDark);
+
+        Prim(PrimitiveType.Cube, "WallFront", parent, new Vector3(midX, FrontWallHeight * 0.5f, RoomFront - 0.15f),
+            new Vector3(width + 0.6f, FrontWallHeight, 0.3f), mWhite);
+        Prim(PrimitiveType.Cube, "StripeFront", parent, new Vector3(midX, 0.45f, RoomFront + 0.02f), new Vector3(width, 0.2f, 0.06f), mSteel);
+        Prim(PrimitiveType.Cube, "CapFront", parent, new Vector3(midX, FrontWallHeight + 0.03f, RoomFront - 0.15f), new Vector3(width + 0.6f, 0.06f, 0.36f), mYellow);
+
+        // Limites invisibles de la zone jouable (le CharacterController les rencontre).
+        Transform bounds = Group(parent, "PlayBounds", Vector3.zero);
+        float spanX = PlayMaxX - PlayMinX + 6f, spanZ = PlayMaxZ - PlayMinZ + 6f;
+        float cX = (PlayMinX + PlayMaxX) * 0.5f, cZ = (PlayMinZ + PlayMaxZ) * 0.5f;
+        AddBoundsBox(bounds, "Left", new Vector3(PlayMinX - 1f, 2f, cZ), new Vector3(2f, 4f, spanZ));
+        AddBoundsBox(bounds, "Right", new Vector3(PlayMaxX + 1f, 2f, cZ), new Vector3(2f, 4f, spanZ));
+        AddBoundsBox(bounds, "South", new Vector3(cX, 2f, PlayMinZ - 1f), new Vector3(spanX, 4f, 2f));
+        AddBoundsBox(bounds, "North", new Vector3(cX, 2f, PlayMaxZ + 1f), new Vector3(spanX, 4f, 2f));
+
         // Lignes de circulation (jaune et blanc, 0,2 m) : couloir du tas au poste, puis du poste à la dalle.
         BuildFloorLines(parent);
+    }
+
+    static void AddBoundsBox(Transform parent, string name, Vector3 center, Vector3 size)
+    {
+        GameObject go = new GameObject("Bound" + name);
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = center;
+        go.AddComponent<BoxCollider>().size = size; // invisible : pas de renderer
     }
 
     static void BuildFloorLines(Transform parent)

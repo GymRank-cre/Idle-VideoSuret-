@@ -11,9 +11,9 @@ public class StackCarrier : MonoBehaviour
     [SerializeField] float itemHeight = 0.35f;
     [SerializeField] float followSpeed = 14f;
     [SerializeField] GameObject maxIndicator; // étiquette "MAX", facultative
+    [SerializeField] float indicatorGap = 0.4f; // hauteur du panneau MAX au-dessus de la dernière caisse
 
     readonly List<Transform> items = new List<Transform>();
-    Camera cam;
 
     public int Count => items.Count;
     public int Capacity => capacity;
@@ -23,7 +23,6 @@ public class StackCarrier : MonoBehaviour
 
     void Start()
     {
-        cam = Camera.main;
         UpdateIndicator();
     }
 
@@ -67,9 +66,14 @@ public class StackCarrier : MonoBehaviour
             items[i].rotation = Quaternion.Slerp(items[i].rotation, stackAnchor.rotation, t);
         }
 
-        // L'indicateur MAX fait toujours face à la caméra.
-        if (maxIndicator != null && maxIndicator.activeSelf && cam != null)
-            maxIndicator.transform.rotation = cam.transform.rotation;
+        // Le panneau MAX suit le sommet réel de la pile (il fait face à la caméra grâce à FaceCamera).
+        if (maxIndicator != null && maxIndicator.activeSelf && items.Count > 0)
+        {
+            Transform last = items[items.Count - 1];
+            Renderer r = last.GetComponent<Renderer>();
+            float top = r != null ? r.bounds.max.y : last.position.y + 0.1f;
+            maxIndicator.transform.position = new Vector3(last.position.x, top + indicatorGap, last.position.z);
+        }
     }
 
     void UpdateIndicator()

@@ -22,8 +22,8 @@ public static class PrototypeSetup
     const float CameraFov = 65f;
 
     // ---- Échelle de la pile et vitesse du joueur (4e) ----
-    const float CrateScale = 0.75f;      // taille des caisses portées
-    const float StackItemHeight = 0.26f; // écart vertical entre deux caisses de la pile
+    const float CrateScale = 0.6f;       // taille des caisses portées
+    const float StackItemHeight = 0.17f; // écart vertical entre deux caisses (pile pleine ~2,3 m)
     const float PlayerMoveSpeed = 4.2f;  // m/s à fond (valeur du [SerializeField] de PlayerController)
 
     [MenuItem("Tools/Idle Prototype/Build scene")]
@@ -70,16 +70,9 @@ public static class PrototypeSetup
 
         GameObject anchor = new GameObject("StackAnchor");
         anchor.transform.SetParent(player.transform, false);
-        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.38f); // collée au dos, à hauteur de hanches (0,7 avec l'ancien visuel)
+        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.3f); // collée au dos, à hauteur de hanches (0,7 avec l'ancien visuel)
 
-        GameObject maxIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        maxIndicator.name = "MaxIndicator";
-        maxIndicator.transform.SetParent(player.transform, false);
-        maxIndicator.transform.localPosition = new Vector3(0f, 2.35f, 0f); // juste au-dessus de la pile pleine (8 caisses)
-        maxIndicator.transform.localScale = new Vector3(0.8f, 0.3f, 0.05f);
-        maxIndicator.GetComponent<Renderer>().sharedMaterial = maxMat;
-        Object.DestroyImmediate(maxIndicator.GetComponent<Collider>());
-        maxIndicator.SetActive(false);
+        GameObject maxIndicator = BuildMaxIndicator(player.transform, maxMat);
 
         var carrierSo = new SerializedObject(carrier);
         carrierSo.FindProperty("stackAnchor").objectReferenceValue = anchor.transform;
@@ -131,6 +124,45 @@ public static class PrototypeSetup
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");
     }
 
+    // Panneau « MAX » : pastille rouge arrondie avec le mot MAX en blanc à contour sombre, face caméra.
+    // Sa hauteur est calée par StackCarrier juste au-dessus de la dernière caisse.
+    static GameObject BuildMaxIndicator(Transform player, Material redMat)
+    {
+        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+        GameObject root = new GameObject("MaxIndicator", typeof(FaceCamera));
+        root.transform.SetParent(player, false);
+        root.transform.localPosition = new Vector3(0f, 2.3f, 0f);
+
+        GameObject pill = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        pill.name = "Pill";
+        pill.transform.SetParent(root.transform, false);
+        pill.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        pill.transform.localScale = new Vector3(0.3f, 0.44f, 0.06f); // ~0,88 m de long, 0,3 m de haut
+        pill.GetComponent<Renderer>().sharedMaterial = redMat;
+        Object.DestroyImmediate(pill.GetComponent<Collider>());
+
+        foreach (bool shadow in new[] { true, false })
+        {
+            GameObject t = new GameObject(shadow ? "TextShadow" : "Text", typeof(TextMesh));
+            t.transform.SetParent(root.transform, false);
+            t.transform.localPosition = shadow ? new Vector3(0.012f, -0.012f, -0.04f) : new Vector3(0f, 0f, -0.05f);
+            TextMesh tm = t.GetComponent<TextMesh>();
+            tm.font = font;
+            tm.text = "MAX";
+            tm.fontSize = 100;
+            tm.characterSize = 0.034f;
+            tm.fontStyle = FontStyle.Bold;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.color = shadow ? new Color(0.25f, 0.02f, 0.02f) : Color.white;
+            t.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+        }
+
+        root.SetActive(false);
+        return root;
+    }
+
     // Config (asset conservé s'il existe : les réglages de Sébastien ne sont pas écrasés).
     static StationConfig LoadOrCreateStationConfig()
     {
@@ -140,6 +172,19 @@ public static class PrototypeSetup
         {
             config = ScriptableObject.CreateInstance<StationConfig>();
             AssetDatabase.CreateAsset(config, configPath);
+        }
+
+        // Produits finis : la liste n'est remplie que si elle est vide (une liste modifiée est conservée).
+        var so = new SerializedObject(config);
+        SerializedProperty products = so.FindProperty("products");
+        ProductType[] types = ProductBuilder.EnsureProductTypes();
+        if (products.arraySize == 0)
+        {
+            products.arraySize = types.Length;
+            for (int i = 0; i < types.Length; i++)
+                products.GetArrayElementAtIndex(i).objectReferenceValue = types[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(config);
         }
         return config;
     }
@@ -220,6 +265,7 @@ public static class PrototypeSetup
         so.FindProperty("progressBar").objectReferenceValue = progressBar;
         so.FindProperty("billExit").objectReferenceValue = exit.transform;
         so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
+        so.FindProperty("outputTray").objectReferenceValue = ProductBuilder.BuildTray(station.transform);
         so.ApplyModifiedPropertiesWithoutUndo();
         return station;
     }
@@ -330,17 +376,54 @@ public static class PrototypeSetup
         crateSo.FindProperty("label").objectReferenceValue = crateText;
         crateSo.FindProperty("config").objectReferenceValue = FeedbackBuilder.LoadOrCreateConfig();
         crateSo.ApplyModifiedPropertiesWithoutUndo();
+
+        // Produits finis portés à la main (étape 5a) : pastille sous celle des caisses, icône de caméra dôme
+        ProductCarrier productCarrier = BuildProductCarrier(player);
+        RectTransform productPill = MakePill("ProductPill", safe, false, 290f, round, 60f + 110f + 16f);
+        MakeIcon("ProductBase", productPill, round, new Vector2(24f, -16f), new Vector2(62f, 14f), new Color(0.93f, 0.94f, 0.96f));
+        MakeIcon("ProductDome", productPill, dot, new Vector2(33f, 4f), new Vector2(44f, 36f), new Color(0.45f, 0.65f, 0.85f));
+        Text productText = MakePillText("ProductText", productPill);
+        ProductHud productHud = productText.gameObject.AddComponent<ProductHud>();
+        var productSo = new SerializedObject(productHud);
+        productSo.FindProperty("carrier").objectReferenceValue = productCarrier;
+        productSo.FindProperty("label").objectReferenceValue = productText;
+        productSo.FindProperty("config").objectReferenceValue = FeedbackBuilder.LoadOrCreateConfig();
+        productSo.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Les produits finis sont portés devant le torse, sur un petit plateau (distinct de la pile de caisses dans le dos).
+    static ProductCarrier BuildProductCarrier(GameObject player)
+    {
+        GameObject anchor = new GameObject("CarryAnchor");
+        anchor.transform.SetParent(player.transform, false);
+        anchor.transform.localPosition = new Vector3(0f, -0.2f, 0.5f); // à hauteur de ceinture, devant
+
+        Material trayMat = MakeMaterial("CarryTray", new Color(0.25f, 0.3f, 0.36f));
+        GameObject tray = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        tray.name = "CarryTray";
+        tray.transform.SetParent(anchor.transform, false);
+        tray.transform.localPosition = new Vector3(0f, -0.03f, 0f);
+        tray.transform.localScale = new Vector3(0.46f, 0.04f, 0.34f);
+        tray.GetComponent<Renderer>().sharedMaterial = trayMat;
+        Object.DestroyImmediate(tray.GetComponent<Collider>());
+
+        ProductCarrier carrier = player.AddComponent<ProductCarrier>();
+        var so = new SerializedObject(carrier);
+        so.FindProperty("carryAnchor").objectReferenceValue = anchor.transform;
+        so.FindProperty("trayVisual").objectReferenceValue = tray;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return carrier;
     }
 
     // Pastille arrondie semi-transparente sombre, ancrée en haut à gauche ou à droite.
-    static RectTransform MakePill(string name, Transform parent, bool left, float width, Sprite round)
+    static RectTransform MakePill(string name, Transform parent, bool left, float width, Sprite round, float top = 60f)
     {
         GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
         go.transform.SetParent(parent, false);
         RectTransform rt = go.GetComponent<RectTransform>();
         Vector2 corner = new Vector2(left ? 0f : 1f, 1f);
         rt.anchorMin = rt.anchorMax = rt.pivot = corner;
-        rt.anchoredPosition = new Vector2(left ? 40f : -40f, -60f); // marge haute de 60 px
+        rt.anchoredPosition = new Vector2(left ? 40f : -40f, -top); // marge haute de 60 px pour la 1re pastille
         rt.sizeDelta = new Vector2(width, 110f);
 
         Image img = go.GetComponent<Image>();

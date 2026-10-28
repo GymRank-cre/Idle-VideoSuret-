@@ -13,6 +13,8 @@ public class InstallStation : MonoBehaviour
     [SerializeField] FeedbackSpawner feedback; // facultatif : éclat quand une caisse arrive
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
+    [SerializeField] Transform outputTray;   // plateau de sortie des produits finis (places alignées sur son axe x)
+    [SerializeField] float traySurface = 0.06f; // hauteur de la surface du plateau, dans son repère
     [SerializeField] float flightDuration = 0.25f;
     [SerializeField] float flightArc = 0.8f;
     [SerializeField] float billScatterRadius = 1f;
@@ -27,6 +29,10 @@ public class InstallStation : MonoBehaviour
     readonly List<Flight> flights = new List<Flight>();
     ObjectPool cratePool;
     ObjectPool billPool;
+    readonly Dictionary<ProductType, ObjectPool> productPools = new Dictionary<ProductType, ObjectPool>();
+    Product[] slots;
+    int productCursor;
+    Transform productsHolder;
 
     int storedCrates;
     bool working;
@@ -125,7 +131,65 @@ public class InstallStation : MonoBehaviour
             working = false;
             if (progressBar != null) progressBar.SetProgress(0f);
             SpawnBills();
+            SpawnProducts();
         }
+    }
+
+    // Produits finis : un par travail (ou plus), posés sur la première place libre du plateau.
+    // Plateau plein : le produit est perdu, les billets sortent quand même.
+    void SpawnProducts()
+    {
+        if (!config.ProduceProducts || outputTray == null) return;
+        ProductType[] types = config.Products;
+        if (types == null || types.Length == 0) return;
+
+        if (slots == null || slots.Length != config.OutputCapacity)
+            slots = new Product[config.OutputCapacity];
+        if (productsHolder == null)
+            productsHolder = new GameObject(name + " Products").transform;
+
+        for (int n = 0; n < config.ProductsPerJob; n++)
+        {
+            int slot = FreeSlot();
+            if (slot < 0) return;
+
+            ProductType type = types[productCursor % types.Length];
+            productCursor++;
+            if (type == null || type.Prefab == null) continue;
+
+            if (!productPools.TryGetValue(type, out ObjectPool pool))
+            {
+                pool = new ObjectPool(type.Prefab, productsHolder);
+                productPools[type] = pool;
+            }
+
+            Vector3 pos = SlotPosition(slot);
+            GameObject go = pool.Get(pos, Quaternion.Euler(0f, 180f, 0f)); // face à la caméra
+            Product product = go.GetComponent<Product>();
+            product.Init(type, pool.Release, OnProductTaken);
+            slots[slot] = product;
+            if (feedback != null) feedback.ProductReady(pos);
+        }
+    }
+
+    int FreeSlot()
+    {
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] == null) return i;
+        return -1;
+    }
+
+    Vector3 SlotPosition(int index)
+    {
+        float x = (index - (slots.Length - 1) * 0.5f) * 0.42f;
+        return outputTray.TransformPoint(new Vector3(x, traySurface, 0f));
+    }
+
+    void OnProductTaken(Product product)
+    {
+        if (slots == null) return;
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] == product) slots[i] = null;
     }
 
     void SpawnBills()

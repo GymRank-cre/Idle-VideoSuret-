@@ -65,10 +65,33 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étapes 4f et 5a)_
+**Étapes 4f et 5a : compilent, 0 erreur en Play, gameplay des étapes 1 à 4 inchangé. Captures `4f-*` et `5a-*` (1080×1920).**
+
+### 4f — corrections
+- **Pile** : caisses ×0,6 (`CrateScale`), pas 0,17 (`StackItemHeight`), point d'accroche collé au dos (`z = -0,3`). **Mesuré : sommet de la pile pleine à 2,16 m, soit 0,46 m au-dessus de la tête (1,7 m)** ; la cible était ≈ 2,3 m, donc un peu plus bas, ce qui convient.
+- **Panneau MAX** : vraie pastille rouge arrondie avec le mot « MAX » en blanc à contour sombre, face caméra (`FaceCamera`, rotation = caméra), placée par `StackCarrier` à **sommet de la dernière caisse + 0,4 m** (mesuré : écart 0,40 m), plus de hauteur fixe. Texte ajusté pour tenir dans la pastille.
+- **Plus de vide** : la pièce couvre tout ce que la caméra voit (sol jusqu'à `z = -14`, mur de droite, mur bas de 0,9 m au sud avec liseré jaune) ; l'écran de bord sud, de coin sud-est et de coin nord-ouest montre toujours du sol (`4f-02*`). **Limites invisibles** de la zone jouable : `x` de -7,2 à 8,2, `z` de -5 à 10,8 (4 BoxColliders `PlayBounds`) ; mesuré en poussant le joueur : `z` min atteint -4,42, `x` min -6,62.
+- **Bandes de gilet vues de dos** : lissées (moyenne sur 3 secteurs, 2 passes), voir `4f-03-bandes-dos`.
+- **Jog Forward** : absent de `Assets/Characters/`, la course reste telle quelle comme demandé.
+
+### 5a — produits finis et plateau
+- **Scripts** : `ProductType` (ScriptableObject : nom, prefab, valeur, couleur), `Product` (collider trigger, pool, libère sa place du plateau quand il est pris), `ProductCarrier` (sur le joueur), `ProductHud`. `StationConfig` : `produceProducts` (défaut vrai), `productsPerJob` (1), `products` (liste, en rotation), `outputCapacity` (4). `InstallStation` : champ `outputTray` ; à la fin d'un travail, après les billets, un produit apparaît sur la première place libre du plateau (un pool par type de produit).
+- **3 produits en formes simples** (`Assets/Prototype/Products`, assets conservés s'ils existent) : caméra dôme (disque blanc + demi-sphère sombre + objectif, valeur 25), badgeuse (boîte noire, écran bleu, voyant vert, valeur 40), alarme (boîte rouge + sirène jaune, valeur 60).
+- **Plateau de sortie** : plateau acier à 4 places marquées, liseré jaune, sur le côté ouest de chaque poste (`x` local -2,1), donc le produit se ramasse en se plaçant près de lui ; le poste 2 en a un aussi.
+- **Portage à la main** : ramassage automatique par proximité (rayon 1,4 m, vol de 0,2 s), produits empilés sur un petit plateau devant le torse (`CarryAnchor`, capacité 4, écart 0,22), distinct de la pile de caisses dans le dos ; le petit plateau n'est visible que si on porte quelque chose. Pastille de HUD `Produits x/4` sous celle des caisses (icône de dôme, pop à chaque ajout).
+- **Action de test** : `Tools > Idle Prototype > Vider les produits` (en Play) rend les produits portés à leur pool.
+- **Tests Play (mesurés)** : 3 caisses déposées → après le travail 1 produit sur le plateau + 5 billets ; 4 travaux → 4 produits (plateau plein) ; un 5e travail → toujours 4 produits (le 5e est perdu) et 5 billets quand même ; en se plaçant près du plateau → porté 4/4, plateau vide ; avec les mains pleines un 6e produit reste sur le plateau ; `Vider les produits` → 0 porté (puis le produit du plateau est ramassé → 1) ; `produceProducts` faux → 0 produit et 5 billets comme avant (remis à vrai ensuite).
+- **Décision** : avec `produceProducts` vrai, les **billets sortent toujours aussi** (« ajouter sans retirer »). Les produits portés ne retournent nulle part avant 5b.
+- Captures : `4f-01-pile-max-trois-quarts`, `4f-01c-pile-max-jeu-hud`, `4f-02-bord-sud-jeu-hud`, `4f-02b-coin-sud-est-jeu-hud`, `4f-03-bandes-dos` ; `5a-01-produit-sur-plateau`, `5a-02-plateau-plein`, `5a-03-porte-4-produits-face`, `5a-03b-porte-4-produits-profil`, `5a-04-hud-produits`.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Produits portés** : empilés sur 4 niveaux ils montent jusqu'au visage (`5a-03`). Veux-tu les poser en 2 × 2 sur le plateau (moins haut) ou garder la pile ?
+- **Plateau plein** : un produit fabriqué quand le plateau est plein est perdu. Préfères-tu que le travail attende qu'une place se libère ?
+- **Billets et produits** : les deux sortent pour l'instant. À l'étape 5b, on retire les billets du poste (l'argent viendra des clients) : confirmes-tu ?
+- **Course** : toujours le clip « Running » (glissement léger), en attente de « Jog Forward ».
+- **Captures anciennes** : `4f-02` et `4f-02b` ont été prises avant l'ajustement final du texte MAX (le texte débordait de la pastille) ; `4f-01*` montrent la version finale.
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
+
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -199,3 +222,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4d (vrai humain Mixamo) relue sur captures : validée. Étape 4e (retouches, échelle de la pile, juice de base) spécifiée.
 - Étape 4e : bandes collées au gilet, pile ×0,75, vitesse 4,2 m/s, prix en vrai billboard, retour d'information (+valeur, éclats, pop) ; testé via MCP, 9 captures 4e-*.
 - Étape 4e relue sur captures : validée avec 3 défauts. Étapes 4f (corrections) et 5a (produits finis) spécifiées.
+- Étapes 4f et 5a : pile ×0,6, panneau MAX avec texte au sommet de la pile, sol/murs/limites sans vide ; produits finis (3 types), plateau de sortie, portage à la main, HUD Produits ; testé via MCP, captures 4f-* et 5a-*.
