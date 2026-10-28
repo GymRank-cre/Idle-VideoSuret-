@@ -46,25 +46,31 @@ Défauts vus sur les captures :
 - **Course** : on attend « Jog Forward » de Sébastien, ne pas bloquer.
 - Remarque visuelle : la pastille d'argent chevauche l'enseigne néon « SÉCURITÉ » sur `4f-01c` ; décaler l'enseigne vers le centre du mur ou la baisser.
 
-## Tâche en cours : étape 5b — Clients, comptoir et paiement
+## Relecture cloud de l'étape 5b : validée — la boucle complète fonctionne
+Captures regardées : file de clients, bulle « x1 » avec le produit, livraison, billets sur le comptoir, bulle « OK ». Très bon : le jeu a maintenant sa vraie boucle (caisses → produit → client → argent → déblocage). Réponses :
+- **Enseigne néon / pastille** : déplacer l'enseigne au milieu du mur du fond (pas de chevauchement avec les pastilles).
+- **Premier client** : oui, **forcer une caméra dôme** pour le tout premier client (le joueur apprend), puis hasard.
+- **Cheveux** : pas acceptable tel quel (voir défauts).
+Défauts vus sur les captures `5b-01b`, `5b-03` :
+1. **Clients chauves avec des morceaux de cheveux déchiquetés** autour du cou, et un **col de chemise déchiré** (triangles manquants) : le modèle perd des morceaux quand on enlève le gilet/casque. Cacher le maillage de cheveux du modèle et poser à la place **un bonnet de cheveux en formes simples** (calotte arrondie, 4 couleurs et 3 formes : court, mi-long, hérissé), et fermer le col (afficher le maillage de chemise complet ou ajouter un col simple). Aucun triangle visible déchiré.
+2. **Éclats en carrés** (particules vertes et jaunes) : à remplacer par des **points ronds doux** (la texture radiale générée pour les ombres convient) avec un léger fondu.
+3. Le panneau de la **bulle** est très grand en gros plan : réduire de 25 % la taille de la pastille et la maintenir à taille écran constante (même taille à l'écran quelle que soit la distance de la caméra).
 
-**Objectif :** des clients arrivent, font la queue avec une bulle de commande ; le joueur leur livre les produits, ils paient en billets. C'est la première boucle complète : caisses → produit → client → argent → déblocage.
+## Tâche en cours : étape 5c (corrections ci-dessus) puis étape 6a — Premier employé automatique
 
-**Retouches d'abord (5a-bis) :** produits portés en 2 × 2 à plat ; le travail du poste attend si le plateau est plein.
+**5c :** les 3 défauts, l'enseigne, le premier client forcé sur une caméra dôme. Captures `5c-`.
 
-**À créer**
-1. `CustomerConfig` (ScriptableObject) : `spawnInterval` (8 s), `maxWaiting` (3), `walkSpeed` (1,8), `minQuantity`/`maxQuantity` (1 et 2), `exitPause` (0,6). Prix = `ProductType.value × quantité`. Aucune valeur en dur.
-2. **Personnage client** (`CustomerBuilder`, éditeur) : même modèle humain `Technicien.fbx` et même `Technicien.controller`, **sans casque ni gilet**, avec une chemise et des cheveux de couleurs tirées au hasard dans une liste de 6 (matériaux par instance). Pool de 6 clients. Animation Idle/Walk pilotée par la vitesse de déplacement du client.
-3. `ServiceCounter` : comptoir en bois avec une caisse enregistreuse (formes simples), zone trigger devant. Position : à droite, au sud de la palette, hors des couloirs existants ; vérifier sur capture que le centre reste libre.
-4. `CustomerQueue` : fait apparaître les clients à une **porte** du mur de droite (cadre de porte en formes simples), les fait marcher en ligne droite (waypoints, **pas de NavMesh** : il viendra à l'étape 6) jusqu'à la file devant le comptoir (places espacées de 1 m, `maxWaiting`), puis vers la sortie après paiement. Le client en tête de file porte la **bulle de commande**.
-5. `OrderBubble` : pastille blanche arrondie au-dessus de la tête, face caméra, avec une petite copie du produit (le prefab de `ProductType`, échelle ~0,4) et « x2 » ; se met à jour quand une partie est livrée ; clignote en vert à la fin.
-6. **Livraison** : quand le joueur est dans la zone du comptoir avec un `ProductCarrier` portant un produit du bon type, les produits volent (0,25 s) vers le client, un par un. À la commande complète : pop de bonheur, **billets** (réutiliser `Bill` et son pool) qui apparaissent sur le comptoir pour une valeur `valeur × quantité`, ramassés par le `BillCollector` existant ; le client part ; le suivant avance.
-7. **Corbeille** : bac près du comptoir où le joueur peut vider tous ses produits portés (pas de pénalité), pour ne pas se bloquer avec un produit inutile. Retour au pool.
-8. **Retirer les billets du poste** quand `produceProducts` est vrai (l'argent vient des clients). Garder le comportement d'avant quand il est faux.
-9. Captures `5b-` (1080×1920) : file avec bulle, moment de la livraison, billets sur le comptoir, HUD.
+**6a — Un employé qui porte les caisses à la place du joueur.** Objectif : la première dalle « Embauche » fait apparaître un employé qui répète le cycle *tas de cartons → poste* tout seul. On voit l'atelier se mettre à tourner sans le joueur.
+1. **Package officiel Unity `AI Navigation`** (`com.unity.ai.navigation`, pas un package tiers) : l'installer s'il est absent et le **noter dans Résultats** (règle : prévenir Sébastien). Cuire un NavMesh sur le sol de la pièce (obstacles : établis, comptoir, étagères, murs).
+2. `EmployeeConfig` (ScriptableObject) : `moveSpeed` (3), `capacity` (6 caisses), `restDuration` (0,4 s), `hirePrice` (150).
+3. `Employee` : même structure que le joueur, **réutiliser `StackCarrier` et les zones existantes** (le tas `ResourcePile` et `InstallStation` détectent déjà un `StackCarrier` dans leur trigger) ; déplacement par `NavMeshAgent` ; boucle : aller au tas → attendre d'être plein (ou `restDuration` si le tas n'est plus rentable) → aller au poste → déposer → recommencer. S'il n'y a plus de place au poste (stock plein), il attend à côté. Aucun accès aux billets ni aux produits (le joueur garde clients et livraison).
+4. **Visuel** : même modèle humain, gilet **bleu** et casque blanc pour distinguer des clients et du joueur, mêmes animations Idle/Walk, pile de caisses dans le dos comme le joueur.
+5. **Dalle d'embauche** : réutiliser `UnlockPad` (prix = `hirePrice`), placée près du tas ; `target` = l'employé (désactivé au départ) ; effet d'apparition `PopIn`. Étiquette « Embauche » + prix au-dessus de la dalle.
+6. `PrototypeSetup` construit tout (relançable), valeurs dans `EmployeeConfig`.
+7. Captures `6a-` : l'employé qui porte, au tas, au poste, la dalle d'embauche.
 
-**Critères de réussite :** 0 erreur ; boucle complète en Play : 3 caisses déposées → produit → livraison à un client → billets → argent → dalle de déblocage payable avec cet argent ; les clients ne se bloquent pas et ne se chevauchent pas ; le gameplay des étapes 1 à 4 reste jouable avec `produceProducts` faux.
-**Hors périmètre :** NavMesh, employés (6), patience des clients, sons.
+**Critères de réussite :** 0 erreur ; sans toucher au joueur, après l'embauche, les caisses arrivent au poste seules et les produits se fabriquent ; l'employé ne traverse ni établi, ni comptoir, ni clients de façon visible ; le gameplay étapes 1 à 5 reste inchangé quand l'employé n'est pas embauché.
+**Hors périmètre :** 2e employé, améliorations de vitesse (étape 7), sauvegarde.
 
 ---
 
@@ -78,33 +84,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 5b (avec 5a-bis) : compile, 0 erreur en Play, boucle complète mesurée. Captures `5b-*` (1080×1920).**
-
-### 5a-bis
-- **Produits portés en 2 × 2 à plat** sur un petit plateau devant le torse (un seul niveau, plus de pile qui cache le visage) ; quand un produit est livré, les autres se serrent vers les premières places. Le plateau de portage n'est visible que si on porte quelque chose.
-- **Plateau de sortie plein : le travail attend** (barre pleine et visible) qu'une place se libère, aucun produit perdu. Mesuré : 5 travaux → 4 produits sur le plateau et barre pleine ; après ramassage le 5e apparaît.
-- **Enseigne néon** descendue de 0,5 m (y = 1,8) pour qu'elle ne passe plus sous la pastille d'argent ; elle apparaît encore derrière la pastille quand le joueur est à droite de la scène (voir Questions).
-
-### 5b — clients, comptoir, paiement
-- **Scripts** : `CustomerConfig` (ScriptableObject : intervalle d'arrivée 8 s, 3 clients max, vitesse 1,8, écart de file 1 m, pause de sortie 0,6 s, quantité 1 à 2, délai et durée de livraison, valeur max d'un billet 10), `Customer` (marche par points de passage, pas de NavMesh ; anime le modèle Idle/Walk d'après sa vitesse), `CustomerAppearance` (chemise et cheveux au hasard dans 6 couleurs, matériaux par instance), `OrderBubble`, `CustomerQueue`, `ServiceCounter`, `TrashBin`.
-- **Client** : même `Technicien.fbx` et même `Technicien.controller`, sans casque ni gilet, avec visage ; pool de 6 clients (`ObjectPool`). Construit par `CustomerBuilder` (Editor), qui crée aussi `Assets/Prototype/CustomerConfig.asset` (conservé s'il existe).
-- **Comptoir** en bois avec caisse enregistreuse (écran, touches, tiroir), au sud de la palette en `(5, 0, -5,4)` ; le centre et les couloirs restent libres (capture `5b-01`). Zone de livraison du côté du joueur.
-- **File** : les clients entrent par une **porte percée dans le mur de droite** (cadre jaune, linteau) à `z = -10,9`, longent le couloir d'arrivée (z = -11,5), remontent la file devant le comptoir (places de 1 m vers le sud) ; en sortie ils prennent un autre couloir (z = -10,3) pour ne pas croiser les arrivants. Quand le premier part, les autres avancent d'une place en gardant leurs points de passage.
-- **Bulle de commande** sur le client en tête seulement : pastille blanche, petite copie du produit, « x2 » ; se met à jour à chaque livraison, clignote en vert et affiche « OK » à la fin (icônes créées une fois par client, aucune allocation en jeu).
-- **Livraison** : dans la zone du comptoir, les produits du bon type volent un par un vers le client (0,25 s). À la commande complète : éclat de joie, **billets sur le comptoir** (le prix `valeur × quantité` découpé en billets d'au plus 10, réutilise `Bill` et son pool), ramassés par le `BillCollector` existant. Le client attend 0,6 s puis part.
-- **Corbeille** (à droite du comptoir) : y entrer avec des produits les vide, sans pénalité, retour au pool.
-- **Poste** : quand `produceProducts` est vrai, il ne fait plus de billets (l'argent vient des clients) ; `billsPerJob` et le comportement d'avant restent pour `produceProducts` faux.
-- **Mesures en Play** : 3 clients arrivés en 36 s, jamais plus de 3 dans la file, **distance minimale entre deux clients 1,00 m**, bulle seulement en tête. Boucle complète : 4 produits fabriqués (3 caisses chacun) → livraisons dôme ×2 (+50), badgeuse (+40), alarme (+60) = **150** → dalle de déblocage payée (100, en 60 pas) → poste 2 actif. Corbeille : 1 produit porté → 0. `produceProducts` faux : 0 produit, 5 billets au poste, comme avant.
-- **Bugs trouvés et corrigés pendant le test** : (1) les clients restaient en T-pose, car `HumanCharacterBuilder` supprimait et recréait `Technicien.controller` à chaque appel, ce qui cassait la référence du prefab client ; il n'est plus recréé s'il est valide (corrige aussi le risque pour le technicien). (2) Des billets déposés sur le bord du comptoir étaient hors de portée du joueur à sa position la plus au sud ; le comptoir est rapproché de 0,4 m.
-- **Captures** : `5b-01-file-bulle-jeu-hud`, `5b-01b-file-bulle-gros-plan`, `5b-02-livraison-en-vol`, `5b-03-billets-comptoir` (aussi : produits 2 × 2 sur le plateau de portage, bulle « OK »), `5b-03b-client-content`, `5b-04-hud-argent`.
+_(vide — étapes 5c et 6a)_
 
 ## Questions (à remplir par Claude Code local)
-- **Enseigne néon / pastille d'argent** : l'enseigne reste visible derrière la pastille quand le joueur est à droite de la scène (`5b-04`). Veux-tu que je la déplace (par exemple au milieu du mur du fond) ou que je la supprime ?
-- **Clients** : leurs cheveux sont un seul maillage du modèle (pas de coupes différentes) ; seules les couleurs changent. Acceptable pour le prototype ?
-- **Commande** : le type est tiré au hasard dans la liste des produits du poste (dôme, badgeuse, alarme). Pour guider le joueur au début, veux-tu forcer le premier client à commander une caméra dôme ?
-- **Course** : toujours en attente de « Jog Forward ».
-- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
-
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -245,6 +228,34 @@ Questions posées à l'époque (répondues plus haut) :
 - **Captures anciennes** : `4f-02` et `4f-02b` ont été prises avant l'ajustement final du texte MAX (le texte débordait de la pastille) ; `4f-01*` montrent la version finale.
 - Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
 
+## Archive : résultats de l'étape 5b (Claude Code local)
+**Étape 5b (avec 5a-bis) : compile, 0 erreur en Play, boucle complète mesurée. Captures `5b-*` (1080×1920).**
+
+### 5a-bis
+- **Produits portés en 2 × 2 à plat** sur un petit plateau devant le torse (un seul niveau, plus de pile qui cache le visage) ; quand un produit est livré, les autres se serrent vers les premières places. Le plateau de portage n'est visible que si on porte quelque chose.
+- **Plateau de sortie plein : le travail attend** (barre pleine et visible) qu'une place se libère, aucun produit perdu. Mesuré : 5 travaux → 4 produits sur le plateau et barre pleine ; après ramassage le 5e apparaît.
+- **Enseigne néon** descendue de 0,5 m (y = 1,8) pour qu'elle ne passe plus sous la pastille d'argent ; elle apparaît encore derrière la pastille quand le joueur est à droite de la scène (voir Questions).
+
+### 5b — clients, comptoir, paiement
+- **Scripts** : `CustomerConfig` (ScriptableObject : intervalle d'arrivée 8 s, 3 clients max, vitesse 1,8, écart de file 1 m, pause de sortie 0,6 s, quantité 1 à 2, délai et durée de livraison, valeur max d'un billet 10), `Customer` (marche par points de passage, pas de NavMesh ; anime le modèle Idle/Walk d'après sa vitesse), `CustomerAppearance` (chemise et cheveux au hasard dans 6 couleurs, matériaux par instance), `OrderBubble`, `CustomerQueue`, `ServiceCounter`, `TrashBin`.
+- **Client** : même `Technicien.fbx` et même `Technicien.controller`, sans casque ni gilet, avec visage ; pool de 6 clients (`ObjectPool`). Construit par `CustomerBuilder` (Editor), qui crée aussi `Assets/Prototype/CustomerConfig.asset` (conservé s'il existe).
+- **Comptoir** en bois avec caisse enregistreuse (écran, touches, tiroir), au sud de la palette en `(5, 0, -5,4)` ; le centre et les couloirs restent libres (capture `5b-01`). Zone de livraison du côté du joueur.
+- **File** : les clients entrent par une **porte percée dans le mur de droite** (cadre jaune, linteau) à `z = -10,9`, longent le couloir d'arrivée (z = -11,5), remontent la file devant le comptoir (places de 1 m vers le sud) ; en sortie ils prennent un autre couloir (z = -10,3) pour ne pas croiser les arrivants. Quand le premier part, les autres avancent d'une place en gardant leurs points de passage.
+- **Bulle de commande** sur le client en tête seulement : pastille blanche, petite copie du produit, « x2 » ; se met à jour à chaque livraison, clignote en vert et affiche « OK » à la fin (icônes créées une fois par client, aucune allocation en jeu).
+- **Livraison** : dans la zone du comptoir, les produits du bon type volent un par un vers le client (0,25 s). À la commande complète : éclat de joie, **billets sur le comptoir** (le prix `valeur × quantité` découpé en billets d'au plus 10, réutilise `Bill` et son pool), ramassés par le `BillCollector` existant. Le client attend 0,6 s puis part.
+- **Corbeille** (à droite du comptoir) : y entrer avec des produits les vide, sans pénalité, retour au pool.
+- **Poste** : quand `produceProducts` est vrai, il ne fait plus de billets (l'argent vient des clients) ; `billsPerJob` et le comportement d'avant restent pour `produceProducts` faux.
+- **Mesures en Play** : 3 clients arrivés en 36 s, jamais plus de 3 dans la file, **distance minimale entre deux clients 1,00 m**, bulle seulement en tête. Boucle complète : 4 produits fabriqués (3 caisses chacun) → livraisons dôme ×2 (+50), badgeuse (+40), alarme (+60) = **150** → dalle de déblocage payée (100, en 60 pas) → poste 2 actif. Corbeille : 1 produit porté → 0. `produceProducts` faux : 0 produit, 5 billets au poste, comme avant.
+- **Bugs trouvés et corrigés pendant le test** : (1) les clients restaient en T-pose, car `HumanCharacterBuilder` supprimait et recréait `Technicien.controller` à chaque appel, ce qui cassait la référence du prefab client ; il n'est plus recréé s'il est valide (corrige aussi le risque pour le technicien). (2) Des billets déposés sur le bord du comptoir étaient hors de portée du joueur à sa position la plus au sud ; le comptoir est rapproché de 0,4 m.
+- **Captures** : `5b-01-file-bulle-jeu-hud`, `5b-01b-file-bulle-gros-plan`, `5b-02-livraison-en-vol`, `5b-03-billets-comptoir` (aussi : produits 2 × 2 sur le plateau de portage, bulle « OK »), `5b-03b-client-content`, `5b-04-hud-argent`.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Enseigne néon / pastille d'argent** : l'enseigne reste visible derrière la pastille quand le joueur est à droite de la scène (`5b-04`). Veux-tu que je la déplace (par exemple au milieu du mur du fond) ou que je la supprime ?
+- **Clients** : leurs cheveux sont un seul maillage du modèle (pas de coupes différentes) ; seules les couleurs changent. Acceptable pour le prototype ?
+- **Commande** : le type est tiré au hasard dans la liste des produits du poste (dôme, badgeuse, alarme). Pour guider le joueur au début, veux-tu forcer le premier client à commander une caméra dôme ?
+- **Course** : toujours en attente de « Jog Forward ».
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -266,3 +277,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étapes 4f et 5a : pile ×0,6, panneau MAX avec texte au sommet de la pile, sol/murs/limites sans vide ; produits finis (3 types), plateau de sortie, portage à la main, HUD Produits ; testé via MCP, captures 4f-* et 5a-*.
 - Étapes 4f et 5a relues sur captures : validées. Étape 5b (clients, comptoir, paiement) spécifiée.
 - Étape 5b : clients (modèle humain, pool de 6), file avec bulle de commande, comptoir et caisse, livraison, billets, corbeille, porte ; 5a-bis (2 x 2 à plat, le travail attend) ; testé via MCP, captures 5b-*.
+- Étape 5b relue sur captures : validée (boucle complète). Étapes 5c (corrections) et 6a (premier employé, NavMesh) spécifiées.
