@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<link rel="icon" href="data:,">
+<title>Prototype — pile de caisses</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1220; color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; }
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: fixed; top: max(10px, env(safe-area-inset-top)); right: 12px; padding: 8px 14px;
+    background: rgba(255,255,255,.94); color: #16324a; border: 3px solid #223a55; border-radius: 16px; font-size: 20px; }
+  #help { position: fixed; top: max(10px, env(safe-area-inset-top)); left: 12px; font-size: 13px; opacity: .8; max-width: 55vw; }
+  #drop { position: fixed; bottom: max(18px, env(safe-area-inset-bottom)); right: 16px; padding: 14px 18px;
+    background: #ef4444; color: #fff; border: 3px solid #7f1d1d; border-radius: 16px; font: inherit; font-size: 16px; }
+  #max { position: fixed; transform: translate(-50%, -50%); background: #d93333; color: #fff; padding: 2px 10px;
+    border-radius: 8px; font-size: 15px; pointer-events: none; display: none; }
+  #joy, #knob { position: fixed; border-radius: 50%; pointer-events: none; display: none; }
+  #joy { width: 120px; height: 120px; margin: -60px 0 0 -60px; background: rgba(255,255,255,.18); border: 3px solid rgba(255,255,255,.45); }
+  #knob { width: 52px; height: 52px; margin: -26px 0 0 -26px; background: rgba(255,255,255,.65); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="help">Glisse le doigt pour bouger (WASD sur PC). Entre dans la zone grise.</div>
+<div class="hud">Caisses <span id="count">0</span>/<span id="cap">8</span></div>
+<div id="max">MAX</div>
+<button id="drop">Poser 1 caisse</button>
+<div id="joy"></div><div id="knob"></div>
+<script src="../vendor/three.min.js"></script>
+<script>
+(() => {
+  // Valeurs de réglage, équivalentes aux champs [SerializeField] du prototype Unity.
+  const CFG = {
+    moveSpeed: 5, turnSpeed: 720 * Math.PI / 180,
+    capacity: 8, itemHeight: 0.35, followSpeed: 14,
+    pileInterval: 0.15,
+    camOffset: [0, 12, 8], camSmooth: 8,
+  };
+
+  const stage = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87a7c8);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+  sun.position.set(-5, 10, 4);
+  scene.add(sun);
+
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+
+  const mat = c => new THREE.MeshLambertMaterial({ color: c });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), mat(0x9ea6b0));
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  // Joueur : cylindre + sphère (capsule simple).
+  const player = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 16), mat(0xf28c26));
+  body.position.y = 0.6; player.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12), mat(0xf28c26));
+  head.position.y = 1.2; player.add(head);
+  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.3), mat(0x222222)); // indique l'avant
+  nose.position.set(0, 1.3, 0.5); player.add(nose);
+  scene.add(player);
+
+  // Zone de ramassage (à droite de l'écran).
+  const pile = new THREE.Mesh(new THREE.BoxGeometry(3, 0.2, 3), mat(0x595f6b));
+  pile.position.set(6, 0.1, 0);
+  scene.add(pile);
+  const PILE_HALF = 1.5;
+
+  // Caisses
+  const crateGeo = new THREE.BoxGeometry(0.5, 0.3, 0.4);
+  const crateMat = mat(0xc9a36b);
+  const items = [];
+
+  const countEl = document.getElementById('count');
+  const maxEl = document.getElementById('max');
+  document.getElementById('cap').textContent = CFG.capacity;
+  const isFull = () => items.length >= CFG.capacity;
+
+  function refreshHud() {
+    countEl.textContent = items.length;
+    maxEl.style.display = isFull() ? 'block' : 'none';
+  }
+
+  function addCrate(pos) {
+    const m = new THREE.Mesh(crateGeo, crateMat);
+    m.position.copy(pos);
+    scene.add(m);
+    items.push(m);
+    refreshHud();
+  }
+
+  document.getElementById('drop').addEventListener('click', () => {
+    const m = items.pop();
+    if (m) scene.remove(m);
+    refreshHud();
+  });
+
+  // Entrées : clavier + joystick flottant tactile.
+  const keys = {};
+  addEventListener('keydown', e => { keys[e.code] = true; });
+  addEventListener('keyup', e => { keys[e.code] = false; });
+
+  const joyEl = document.getElementById('joy'), knobEl = document.getElementById('knob');
+  const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+  const JOY_R = 60;
+  stage.addEventListener('pointerdown', e => {
+    if (joy.id !== null) return;
+    joy.id = e.pointerId; joy.ox = e.clientX; joy.oy = e.clientY; joy.x = joy.y = 0;
+    stage.setPointerCapture(e.pointerId);
+    joyEl.style.cssText = `display:block;left:${joy.ox}px;top:${joy.oy}px`;
+    knobEl.style.cssText = `display:block;left:${joy.ox}px;top:${joy.oy}px`;
+  });
+  stage.addEventListener('pointermove', e => {
+    if (e.pointerId !== joy.id) return;
+    let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
+    const len = Math.hypot(dx, dy);
+    if (len > JOY_R) { dx = dx / len * JOY_R; dy = dy / len * JOY_R; }
+    joy.x = dx / JOY_R; joy.y = -dy / JOY_R; // haut de l'écran = +y
+    knobEl.style.left = joy.ox + dx + 'px'; knobEl.style.top = joy.oy + dy + 'px';
+  });
+  const endJoy = e => {
+    if (e.pointerId !== joy.id) return;
+    joy.id = null; joy.x = joy.y = 0;
+    joyEl.style.display = knobEl.style.display = 'none';
+  };
+  stage.addEventListener('pointerup', endJoy);
+  stage.addEventListener('pointercancel', endJoy);
+
+  function readInput() {
+    let x = joy.x, y = joy.y;
+    let kx = 0, ky = 0;
+    if (keys.KeyW || keys.ArrowUp) ky += 1;
+    if (keys.KeyS || keys.ArrowDown) ky -= 1;
+    if (keys.KeyD || keys.ArrowRight) kx += 1;
+    if (keys.KeyA || keys.ArrowLeft) kx -= 1;
+    if (kx || ky) { x = kx; y = ky; }
+    const l = Math.hypot(x, y);
+    return l > 1 ? [x / l, y / l] : [x, y];
+  }
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const damp = (rate, dt) => 1 - Math.exp(-rate * dt);
+  const angleDelta = (a, b) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
+
+  const UP = new THREE.Vector3(0, 1, 0);
+  const tmp = new THREE.Vector3();
+  const anchor = new THREE.Vector3();
+  let pileTimer = 0;
+  let last = performance.now();
+
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  camera.position.set(CFG.camOffset[0], CFG.camOffset[1], CFG.camOffset[2]);
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    // Déplacement : haut de l'écran = -z (caméra côté +z, rotation fixe).
+    const [ix, iy] = readInput();
+    const vx = ix * CFG.moveSpeed, vz = -iy * CFG.moveSpeed;
+    player.position.x = clamp(player.position.x + vx * dt, -19, 19);
+    player.position.z = clamp(player.position.z + vz * dt, -19, 19);
+    if (vx * vx + vz * vz > 0.01) {
+      const target = Math.atan2(vx, vz);
+      const d = angleDelta(player.rotation.y, target);
+      const step = CFG.turnSpeed * dt;
+      player.rotation.y += Math.abs(d) < step ? d : Math.sign(d) * step;
+    }
+
+    // Caméra qui suit en douceur.
+    tmp.set(player.position.x + CFG.camOffset[0], CFG.camOffset[1], player.position.z + CFG.camOffset[2]);
+    camera.position.lerp(tmp, damp(CFG.camSmooth, dt));
+    camera.lookAt(camera.position.x - CFG.camOffset[0], 0, camera.position.z - CFG.camOffset[2]);
+
+    // Ramassage automatique dans la zone.
+    const inPile = Math.abs(player.position.x - pile.position.x) < PILE_HALF &&
+                   Math.abs(player.position.z - pile.position.z) < PILE_HALF;
+    if (inPile && !isFull()) {
+      pileTimer += dt;
+      if (pileTimer >= CFG.pileInterval) {
+        pileTimer = 0;
+        addCrate(tmp.set(pile.position.x, 0.6, pile.position.z));
+      }
+    } else if (!inPile) {
+      pileTimer = 0;
+    }
+
+    // Pile dans le dos : les caisses du haut suivent avec plus de retard.
+    anchor.set(0, 0.8, -0.7).applyAxisAngle(UP, player.rotation.y).add(player.position);
+    items.forEach((m, i) => {
+      tmp.set(anchor.x, anchor.y + CFG.itemHeight * i, anchor.z);
+      const t = damp(CFG.followSpeed / (1 + i * 0.35), dt);
+      m.position.lerp(tmp, t);
+      m.rotation.y += angleDelta(m.rotation.y, player.rotation.y) * t;
+    });
+
+    // Étiquette MAX au-dessus de la tête.
+    if (isFull()) {
+      tmp.set(player.position.x, 2.6, player.position.z).project(camera);
+      maxEl.style.left = (tmp.x * 0.5 + 0.5) * innerWidth + 'px';
+      maxEl.style.top = (-tmp.y * 0.5 + 0.5) * innerHeight + 'px';
+    }
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  window.__proto = { player, items, keys }; // pour les tests automatiques
+})();
+</script>
+</body>
+</html>
