@@ -128,23 +128,47 @@ public class InstallStation : MonoBehaviour
 
         if (jobTimer >= config.JobDuration)
         {
+            // Plateau plein : le travail attend (barre pleine) qu'une place se libère, rien n'est perdu.
+            if (MakesProducts && FreeSlotCount() < config.ProductsPerJob)
+            {
+                jobTimer = config.JobDuration;
+                if (progressBar != null) progressBar.SetProgress(1f);
+                return;
+            }
+
             working = false;
             if (progressBar != null) progressBar.SetProgress(0f);
-            SpawnBills();
+            // Les billets viennent des clients quand le poste fabrique des produits (repli : produceProducts faux).
+            if (!MakesProducts) SpawnBills();
             SpawnProducts();
         }
     }
 
-    // Produits finis : un par travail (ou plus), posés sur la première place libre du plateau.
-    // Plateau plein : le produit est perdu, les billets sortent quand même.
-    void SpawnProducts()
-    {
-        if (!config.ProduceProducts || outputTray == null) return;
-        ProductType[] types = config.Products;
-        if (types == null || types.Length == 0) return;
+    bool MakesProducts => config.ProduceProducts && outputTray != null
+        && config.Products != null && config.Products.Length > 0;
 
+    void EnsureSlots()
+    {
         if (slots == null || slots.Length != config.OutputCapacity)
             slots = new Product[config.OutputCapacity];
+    }
+
+    int FreeSlotCount()
+    {
+        EnsureSlots();
+        int n = 0;
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] == null) n++;
+        return n;
+    }
+
+    // Produits finis : un par travail (ou plus), posés sur la première place libre du plateau.
+    void SpawnProducts()
+    {
+        if (!MakesProducts) return;
+        ProductType[] types = config.Products;
+
+        EnsureSlots();
         if (productsHolder == null)
             productsHolder = new GameObject(name + " Products").transform;
 

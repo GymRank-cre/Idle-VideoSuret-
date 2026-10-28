@@ -19,6 +19,10 @@ public static class WorkshopBuilder
     const float WallHeight = 4f;
     const float FrontWallHeight = 0.9f; // mur bas au sud (côté caméra)
 
+    // Porte du mur de droite : les clients entrent et sortent par là (voir CustomerBuilder).
+    public const float DoorCenterZ = -10.9f, DoorWidth = 2.6f, DoorHeight = 2.4f;
+    public const float RightWallX = RoomRight;
+
     // Zone jouable : limites invisibles (centre du joueur).
     const float PlayMinX = -7.2f, PlayMaxX = 8.2f, PlayMinZ = -5f, PlayMaxZ = 10.8f;
 
@@ -193,12 +197,20 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cube, "CorniceLeft", parent, new Vector3(RoomLeft + 0.1f, WallHeight - 0.1f, midZ), new Vector3(0.22f, 0.2f, depth), mSteelDark);
 
         // Mur de droite (comme celui de gauche) et mur bas au sud : la caméra ne voit jamais le vide.
-        Prim(PrimitiveType.Cube, "WallRight", parent, new Vector3(RoomRight + 0.15f, WallHeight * 0.5f, midZ),
-            new Vector3(0.3f, WallHeight, depth), mWhite);
-        Prim(PrimitiveType.Cube, "StripeRight", parent, new Vector3(RoomRight - 0.02f, 1.0f, midZ), new Vector3(0.06f, 0.3f, depth), mSteel);
-        Prim(PrimitiveType.Cube, "BaseboardRight", parent, new Vector3(RoomRight - 0.04f, 0.09f, midZ), new Vector3(0.08f, 0.18f, depth), mSteelDark);
-        Prim(PrimitiveType.Cube, "TopTrimRight", parent, new Vector3(RoomRight - 0.03f, WallHeight - 0.45f, midZ), new Vector3(0.06f, 0.06f, depth), mYellow);
-        Prim(PrimitiveType.Cube, "CorniceRight", parent, new Vector3(RoomRight - 0.1f, WallHeight - 0.1f, midZ), new Vector3(0.22f, 0.2f, depth), mSteelDark);
+        // Le mur de droite est percé d'une porte (par où arrivent et repartent les clients) : deux tronçons + un linteau.
+        float doorMin = DoorCenterZ - DoorWidth * 0.5f, doorMax = DoorCenterZ + DoorWidth * 0.5f;
+        RightWallPart(parent, "WallRight", RoomRight + 0.15f, WallHeight * 0.5f, 0.3f, WallHeight, doorMin, doorMax, mWhite);
+        RightWallPart(parent, "StripeRight", RoomRight - 0.02f, 1.0f, 0.06f, 0.3f, doorMin, doorMax, mSteel);
+        RightWallPart(parent, "BaseboardRight", RoomRight - 0.04f, 0.09f, 0.08f, 0.18f, doorMin, doorMax, mSteelDark);
+        RightWallPart(parent, "TopTrimRight", RoomRight - 0.03f, WallHeight - 0.45f, 0.06f, 0.06f, doorMin, doorMax, mYellow);
+        RightWallPart(parent, "CorniceRight", RoomRight - 0.1f, WallHeight - 0.1f, 0.22f, 0.2f, doorMin, doorMax, mSteelDark);
+        Prim(PrimitiveType.Cube, "DoorLintel", parent, new Vector3(RoomRight + 0.15f, (DoorHeight + WallHeight) * 0.5f, DoorCenterZ),
+            new Vector3(0.3f, WallHeight - DoorHeight, DoorWidth), mWhite);
+        // cadre de porte jaune
+        Prim(PrimitiveType.Cube, "DoorPostA", parent, new Vector3(RoomRight - 0.05f, DoorHeight * 0.5f, doorMin + 0.06f), new Vector3(0.14f, DoorHeight, 0.12f), mYellow);
+        Prim(PrimitiveType.Cube, "DoorPostB", parent, new Vector3(RoomRight - 0.05f, DoorHeight * 0.5f, doorMax - 0.06f), new Vector3(0.14f, DoorHeight, 0.12f), mYellow);
+        Prim(PrimitiveType.Cube, "DoorTop", parent, new Vector3(RoomRight - 0.05f, DoorHeight - 0.06f, DoorCenterZ), new Vector3(0.14f, 0.12f, DoorWidth), mYellow);
+        Prim(PrimitiveType.Cube, "DoorSill", parent, new Vector3(RoomRight, 0.01f, DoorCenterZ), new Vector3(0.5f, 0.02f, DoorWidth), mDark);
 
         Prim(PrimitiveType.Cube, "WallFront", parent, new Vector3(midX, FrontWallHeight * 0.5f, RoomFront - 0.15f),
             new Vector3(width + 0.6f, FrontWallHeight, 0.3f), mWhite);
@@ -216,6 +228,16 @@ public static class WorkshopBuilder
 
         // Lignes de circulation (jaune et blanc, 0,2 m) : couloir du tas au poste, puis du poste à la dalle.
         BuildFloorLines(parent);
+    }
+
+    // Tronçon du mur de droite : de RoomFront à la porte, et de la porte à RoomBack.
+    static void RightWallPart(Transform parent, string name, float x, float y, float thickness, float height,
+        float doorMin, float doorMax, Material mat)
+    {
+        float a0 = RoomFront - 0.3f, a1 = doorMin;
+        Prim(PrimitiveType.Cube, name + "A", parent, new Vector3(x, y, (a0 + a1) * 0.5f), new Vector3(thickness, height, a1 - a0), mat);
+        float b0 = doorMax, b1 = RoomBack + 0.3f;
+        Prim(PrimitiveType.Cube, name + "B", parent, new Vector3(x, y, (b0 + b1) * 0.5f), new Vector3(thickness, height, b1 - b0), mat);
     }
 
     static void AddBoundsBox(Transform parent, string name, Vector3 center, Vector3 size)
@@ -275,12 +297,12 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(3.2f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
 
         // Enseigne néon "SÉCURITÉ"
-        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(-4.3f, 2.3f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
-        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(-4.3f, 2.72f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(-4.3f, 1.88f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(-6.38f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(-2.22f, 2.3f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(-4.3f, 2.3f, z - 0.13f), 0.09f, 100,
+        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(-4.3f, 1.8f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
+        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(-4.3f, 2.22f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(-4.3f, 1.38f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(-6.38f, 1.8f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(-2.22f, 1.8f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(-4.3f, 1.8f, z - 0.13f), 0.09f, 100,
             new Color(0.45f, 1f, 0.85f));
         sign.fontStyle = FontStyle.Bold;
 

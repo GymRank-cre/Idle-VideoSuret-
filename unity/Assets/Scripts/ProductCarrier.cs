@@ -3,21 +3,22 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Sur le joueur : ramasse automatiquement les produits finis proches et les porte à la main,
-// empilés devant le torse (distinct de la pile de caisses dans le dos).
+// à plat sur un petit plateau devant le torse (2 x 2), distinct de la pile de caisses dans le dos.
 public class ProductCarrier : MonoBehaviour
 {
-    [SerializeField] Transform carryAnchor;      // devant le torse ; les produits s'empilent vers le haut
+    [SerializeField] Transform carryAnchor;      // devant le torse ; les places sont posées autour de ce point
     [SerializeField] GameObject trayVisual;      // petit plateau, visible seulement quand on porte quelque chose
     [SerializeField, Min(1)] int capacity = 4;
     [SerializeField] float pickupRadius = 1.4f;
     [SerializeField] float flightDuration = 0.2f;
-    [SerializeField] float itemHeight = 0.22f;   // écart vertical entre deux produits portés
+    [SerializeField] float slotSpacingX = 0.3f;  // écart entre les 2 colonnes
+    [SerializeField] float slotSpacingZ = 0.26f; // écart entre les 2 rangées
+    [SerializeField] float settleSpeed = 14f;    // vitesse à laquelle un produit rejoint sa place
 
     struct Flight
     {
         public Product product;
         public Vector3 from;
-        public int slot;
         public float elapsed;
     }
 
@@ -39,7 +40,16 @@ public class ProductCarrier : MonoBehaviour
     {
         if (!IsFull) Scan();
         UpdateFlights();
+        SettleCarried();
         UpdateTray();
+    }
+
+    // Place d'un produit sur le plateau : 2 colonnes x 2 rangées, à plat (un seul niveau).
+    Vector3 SlotLocal(int index)
+    {
+        float x = (index % 2 - 0.5f) * slotSpacingX;
+        float z = (0.5f - (index / 2) % 2) * slotSpacingZ;
+        return new Vector3(x, 0f, z);
     }
 
     void UpdateTray()
@@ -59,12 +69,7 @@ public class ProductCarrier : MonoBehaviour
             if (product == null || product.IsCollecting) continue;
 
             product.BeginCollect();
-            flights.Add(new Flight
-            {
-                product = product,
-                from = product.transform.position,
-                slot = carried.Count + flights.Count
-            });
+            flights.Add(new Flight { product = product, from = product.transform.position });
         }
     }
 
@@ -76,7 +81,7 @@ public class ProductCarrier : MonoBehaviour
             f.elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(f.elapsed / flightDuration);
 
-            Vector3 target = carryAnchor.TransformPoint(Vector3.up * (itemHeight * f.slot));
+            Vector3 target = carryAnchor.TransformPoint(SlotLocal(carried.Count + i));
             Vector3 pos = Vector3.Lerp(f.from, target, t);
             pos.y += Mathf.Sin(t * Mathf.PI) * 0.3f;
             f.product.transform.position = pos;
@@ -85,7 +90,7 @@ public class ProductCarrier : MonoBehaviour
             {
                 Transform pt = f.product.transform;
                 pt.SetParent(carryAnchor, false);
-                pt.localPosition = Vector3.up * (itemHeight * f.slot);
+                pt.localPosition = SlotLocal(carried.Count);
                 pt.localRotation = Quaternion.identity;
                 carried.Add(f.product);
                 flights.RemoveAt(i);
@@ -98,7 +103,34 @@ public class ProductCarrier : MonoBehaviour
         }
     }
 
-    // Les produits portés ne vont nulle part avant l'étape 5b : cette méthode les rend au pool (action de test).
+    // Quand un produit est retiré, les autres se serrent vers les premières places.
+    void SettleCarried()
+    {
+        float k = 1f - Mathf.Exp(-settleSpeed * Time.deltaTime);
+        for (int i = 0; i < carried.Count; i++)
+        {
+            Transform t = carried[i].transform;
+            t.localPosition = Vector3.Lerp(t.localPosition, SlotLocal(i), k);
+        }
+    }
+
+    // Retire un produit du type demandé (livraison à un client) ; renvoie null si le joueur n'en porte pas.
+    public Product TryTake(ProductType type)
+    {
+        for (int i = 0; i < carried.Count; i++)
+        {
+            if (carried[i].Type != type) continue;
+
+            Product p = carried[i];
+            carried.RemoveAt(i);
+            p.transform.SetParent(null, true);
+            OnCountChanged?.Invoke();
+            return p;
+        }
+        return null;
+    }
+
+    // Rend tous les produits portés à leur pool (corbeille, action de test).
     public void Clear()
     {
         foreach (Flight f in flights) f.product.Recycle();

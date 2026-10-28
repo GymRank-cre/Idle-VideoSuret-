@@ -115,6 +115,7 @@ public static class PrototypeSetup
         BuildJoystick(player.GetComponent<PlayerController>());
         BuildHud(player, carrier);
         BuildUnlockPad(station2);
+        CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
 
@@ -396,14 +397,14 @@ public static class PrototypeSetup
     {
         GameObject anchor = new GameObject("CarryAnchor");
         anchor.transform.SetParent(player.transform, false);
-        anchor.transform.localPosition = new Vector3(0f, -0.2f, 0.5f); // à hauteur de ceinture, devant
+        anchor.transform.localPosition = new Vector3(0f, -0.2f, 0.55f); // à hauteur de ceinture, devant
 
         Material trayMat = MakeMaterial("CarryTray", new Color(0.25f, 0.3f, 0.36f));
         GameObject tray = GameObject.CreatePrimitive(PrimitiveType.Cube);
         tray.name = "CarryTray";
         tray.transform.SetParent(anchor.transform, false);
         tray.transform.localPosition = new Vector3(0f, -0.03f, 0f);
-        tray.transform.localScale = new Vector3(0.46f, 0.04f, 0.34f);
+        tray.transform.localScale = new Vector3(0.7f, 0.04f, 0.56f); // 4 produits à plat, 2 x 2
         tray.GetComponent<Renderer>().sharedMaterial = trayMat;
         Object.DestroyImmediate(tray.GetComponent<Collider>());
 

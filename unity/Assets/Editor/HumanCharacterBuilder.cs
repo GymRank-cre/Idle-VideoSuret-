@@ -11,7 +11,7 @@ using UnityEngine;
 public static class HumanCharacterBuilder
 {
     const string Folder = "Assets/Characters";
-    const string ModelPath = Folder + "/Technicien.fbx";
+    public const string ModelPath = Folder + "/Technicien.fbx";
     const string IdlePath = Folder + "/Breathing Idle.fbx";
     const string WalkPath = Folder + "/Walking.fbx";
     const string RunPath = Folder + "/Running.fbx";
@@ -110,6 +110,11 @@ public static class HumanCharacterBuilder
 
     static void BuildController(AnimationClip idle, AnimationClip walk, AnimationClip run)
     {
+        // Le contrôleur est référencé par les prefabs (technicien, clients) : on ne le recrée que s'il est invalide,
+        // sinon chaque reconstruction casserait ces références.
+        var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+        if (existing != null && ControllerMatches(existing, idle, walk, run)) return;
+
         AssetDatabase.DeleteAsset(ControllerPath);
         AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
         controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
@@ -138,6 +143,19 @@ public static class HumanCharacterBuilder
         AddTransition(walkState, runState, AnimatorConditionMode.Greater, 0.5f);
         AddTransition(runState, walkState, AnimatorConditionMode.Less, 0.4f);
         EditorUtility.SetDirty(controller);
+    }
+
+    static bool ControllerMatches(AnimatorController controller, AnimationClip idle, AnimationClip walk, AnimationClip run)
+    {
+        if (controller.layers.Length == 0) return false;
+        int found = 0;
+        foreach (ChildAnimatorState s in controller.layers[0].stateMachine.states)
+        {
+            if (s.state.name == "Idle" && s.state.motion == idle) found++;
+            else if (s.state.name == "Walk" && s.state.motion == walk) found++;
+            else if (s.state.name == "Run" && s.state.motion == run) found++;
+        }
+        return found == 3;
     }
 
     static void AddTransition(AnimatorState from, AnimatorState to, AnimatorConditionMode mode, float threshold)
@@ -214,16 +232,11 @@ public static class HumanCharacterBuilder
         Material helmetMat = Mat("Tech_Helmet", new Color(1f, 0.80f, 0.10f), 0.55f);
         Material belt = Mat("Tech_Belt", new Color(0.40f, 0.26f, 0.14f), 0.2f);
         Material metal = Mat("Tech_Metal", new Color(0.66f, 0.69f, 0.73f), 0.65f);
-        Material white = Mat("Tech_EyeWhite", new Color(0.95f, 0.95f, 0.93f), 0.5f);
-        Material dark = Mat("Tech_Dark", new Color(0.07f, 0.06f, 0.06f), 0.3f);
-
         Transform chest = animator.GetBoneTransform(HumanBodyBones.Chest);
         Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
         Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
 
         Bounds vestB = BoundsOf(go, "vest");
-        Bounds helmetB = BoundsOf(go, "helmet");
-        Bounds lashB = BoundsOf(go, "eyelash");
 
         // 2 bandes réfléchissantes autour du gilet, calées sur les vrais sommets du maillage à chaque hauteur.
         // Chaque bande est un anneau de 4 cm qui suit la surface du gilet (+2 mm), ouvert là où le gilet est ouvert.
@@ -246,8 +259,18 @@ public static class HumanCharacterBuilder
         Part(PrimitiveType.Cube, "PouchR", hips, new Vector3(bx + 0.005f, beltY - 0.045f, zc + 0.03f), new Vector3(0.04f, 0.085f, 0.075f), belt);
         Part(PrimitiveType.Cube, "Tool", hips, new Vector3(bx + 0.03f, beltY - 0.1f, zc - 0.03f), new Vector3(0.018f, 0.13f, 0.018f), metal);
 
-        // Visage : yeux et sourire sur la face (les cils du modèle donnent la hauteur des yeux)
-        Vector3 eyeC = lashB.center;
+        AddFace(go, animator);
+    }
+
+    // Visage : yeux, sourcils et sourire sur la face (les cils du modèle donnent la hauteur des yeux).
+    // Le modèle n'a pas de texture, donc pas d'yeux : utilisé aussi pour les clients.
+    public static void AddFace(GameObject go, Animator animator)
+    {
+        Material white = Mat("Tech_EyeWhite", new Color(0.95f, 0.95f, 0.93f), 0.5f);
+        Material dark = Mat("Tech_Dark", new Color(0.07f, 0.06f, 0.06f), 0.3f);
+        Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
+        Vector3 eyeC = BoundsOf(go, "eyelash").center;
+
         foreach (float sx in new[] { -0.032f, 0.032f })
         {
             Part(PrimitiveType.Sphere, "EyeWhite", head, new Vector3(sx, eyeC.y - 0.002f, eyeC.z + 0.006f), new Vector3(0.017f, 0.010f, 0.010f), white);
@@ -431,14 +454,14 @@ public static class HumanCharacterBuilder
         }
     }
 
-    static Bounds BoundsOf(GameObject go, string nameContains)
+    public static Bounds BoundsOf(GameObject go, string nameContains)
     {
         foreach (SkinnedMeshRenderer r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             if (r.name.ToLowerInvariant().Contains(nameContains)) return r.bounds;
         return new Bounds(Vector3.zero, Vector3.one * 0.1f);
     }
 
-    static Material Mat(string name, Color color, float smoothness, Color? emission = null)
+    public static Material Mat(string name, Color color, float smoothness, Color? emission = null)
     {
         string path = Folder + "/Materials/" + name + ".mat";
         EnsureFolder(Folder + "/Materials");
