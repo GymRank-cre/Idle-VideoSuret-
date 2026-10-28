@@ -15,6 +15,11 @@ public class MoneyHud : MonoBehaviour
         label.text = Format(wallet.Money);
     }
 
+    void Start()
+    {
+        label.text = Format(wallet.Money); // Wallet.Awake a fixé l'argent de départ
+    }
+
     void OnDisable()
     {
         wallet.OnChanged -= OnMoneyChanged;

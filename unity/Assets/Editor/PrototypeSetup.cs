@@ -11,6 +11,7 @@ using UnityEngine.UI;
 public static class PrototypeSetup
 {
     const string Root = "Assets/Prototype";
+    const int StartMoney = 0; // mettre 100 pour tester les dalles, puis remettre 0
 
     [MenuItem("Tools/Idle Prototype/Build scene")]
     static void Build()
@@ -92,10 +93,15 @@ public static class PrototypeSetup
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
         pileSo.ApplyModifiedPropertiesWithoutUndo();
 
-        BuildStation(resourcePile);
+        StationConfig stationConfig = LoadOrCreateStationConfig();
+        GameObject billPrefab = BuildBillPrefab();
+        BuildStation("InstallStation", new Vector3(-6f, 0.1f, 0f), resourcePile, stationConfig, billPrefab);
+        GameObject station2 = BuildStation("InstallStation2", new Vector3(-6f, 0.1f, 9f), resourcePile, stationConfig, billPrefab);
+        station2.SetActive(false); // débloqué par la dalle
 
         BuildJoystick(player.GetComponent<PlayerController>());
         BuildHud(player, carrier);
+        BuildUnlockPad(station2);
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
@@ -103,16 +109,9 @@ public static class PrototypeSetup
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");
     }
 
-    // Poste d'installation à gauche de la zone de ramassage, avec sa config,
-    // son prefab de billet et sa barre de progression.
-    static void BuildStation(ResourcePile cratesSource)
+    // Config (asset conservé s'il existe : les réglages de Sébastien ne sont pas écrasés).
+    static StationConfig LoadOrCreateStationConfig()
     {
-        Material stationMat = MakeMaterial("Station", new Color(0.1f, 0.18f, 0.4f));
-        Material billMat = MakeMaterial("Bill", new Color(0.25f, 0.75f, 0.35f));
-        Material barBackMat = MakeMaterial("BarBack", new Color(0.12f, 0.12f, 0.14f));
-        Material barFillMat = MakeMaterial("BarFill", new Color(0.95f, 0.8f, 0.2f));
-
-        // Config (asset conservé s'il existe : les réglages de Sébastien ne sont pas écrasés)
         string configPath = Root + "/StationConfig.asset";
         StationConfig config = AssetDatabase.LoadAssetAtPath<StationConfig>(configPath);
         if (config == null)
@@ -120,8 +119,13 @@ public static class PrototypeSetup
             config = ScriptableObject.CreateInstance<StationConfig>();
             AssetDatabase.CreateAsset(config, configPath);
         }
+        return config;
+    }
 
-        // Prefab de billet : cube vert plat
+    // Prefab de billet : cube vert plat.
+    static GameObject BuildBillPrefab()
+    {
+        Material billMat = MakeMaterial("Bill", new Color(0.25f, 0.75f, 0.35f));
         GameObject bill = GameObject.CreatePrimitive(PrimitiveType.Cube);
         bill.name = "Bill";
         bill.transform.localScale = new Vector3(0.4f, 0.04f, 0.25f);
@@ -130,10 +134,20 @@ public static class PrototypeSetup
         bill.AddComponent<Bill>();
         GameObject billPrefab = PrefabUtility.SaveAsPrefabAsset(bill, Root + "/Bill.prefab");
         Object.DestroyImmediate(bill);
+        return billPrefab;
+    }
+
+    // Poste d'installation avec sa barre de progression et son point de sortie des billets.
+    static GameObject BuildStation(string stationName, Vector3 position, ResourcePile cratesSource,
+        StationConfig config, GameObject billPrefab)
+    {
+        Material stationMat = MakeMaterial("Station", new Color(0.1f, 0.18f, 0.4f));
+        Material barBackMat = MakeMaterial("BarBack", new Color(0.12f, 0.12f, 0.14f));
+        Material barFillMat = MakeMaterial("BarFill", new Color(0.95f, 0.8f, 0.2f));
 
         // Poste : racine non mise à l'échelle (le collider et les enfants restent propres)
-        GameObject station = new GameObject("InstallStation");
-        station.transform.position = new Vector3(-6f, 0.1f, 0f);
+        GameObject station = new GameObject(stationName);
+        station.transform.position = position;
 
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.name = "Visual";
@@ -149,7 +163,7 @@ public static class PrototypeSetup
 
         GameObject exit = new GameObject("BillExit");
         exit.transform.SetParent(station.transform, false);
-        exit.transform.position = new Vector3(-6f, 0.05f, -3.2f); // au sud, hors de la zone
+        exit.transform.position = position + new Vector3(0f, -0.05f, -3.2f); // au sud, hors de la zone
 
         // Barre de progression au-dessus du poste
         GameObject bar = new GameObject("ProgressBar");
@@ -184,6 +198,61 @@ public static class PrototypeSetup
         so.FindProperty("progressBar").objectReferenceValue = progressBar;
         so.FindProperty("billExit").objectReferenceValue = exit.transform;
         so.ApplyModifiedPropertiesWithoutUndo();
+        return station;
+    }
+
+    // Dalle de déblocage jaune : le joueur y paie, puis le poste `target` apparaît.
+    static void BuildUnlockPad(GameObject target)
+    {
+        Material padMat = MakeMaterial("UnlockPad", new Color(0.95f, 0.8f, 0.15f));
+
+        string configPath = Root + "/UnlockConfig.asset";
+        UnlockConfig config = AssetDatabase.LoadAssetAtPath<UnlockConfig>(configPath);
+        if (config == null)
+        {
+            config = ScriptableObject.CreateInstance<UnlockConfig>();
+            AssetDatabase.CreateAsset(config, configPath);
+        }
+
+        GameObject pad = new GameObject("UnlockPad");
+        pad.transform.position = new Vector3(-6f, 0.01f, 5f);
+
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        visual.name = "Visual";
+        visual.transform.SetParent(pad.transform, false);
+        visual.transform.localScale = new Vector3(3f, 0.02f, 3f);
+        visual.GetComponent<Renderer>().sharedMaterial = padMat;
+        Object.DestroyImmediate(visual.GetComponent<Collider>());
+
+        BoxCollider box = pad.AddComponent<BoxCollider>();
+        box.isTrigger = true;
+        box.size = new Vector3(3f, 10f, 3f);
+        box.center = new Vector3(0f, 5f, 0f);
+
+        // Prix affiché au-dessus de la dalle (TextMesh intégré, face à la caméra)
+        GameObject labelGo = new GameObject("PriceLabel", typeof(TextMesh), typeof(FaceCamera));
+        labelGo.transform.SetParent(pad.transform, false);
+        labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        TextMesh label = labelGo.GetComponent<TextMesh>();
+        label.font = font;
+        label.fontSize = 100;
+        label.characterSize = 0.1f;
+        label.anchor = TextAnchor.MiddleCenter;
+        label.alignment = TextAlignment.Center;
+        label.color = Color.white;
+        labelGo.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+
+        target.AddComponent<PopIn>();
+
+        Wallet wallet = Object.FindFirstObjectByType<Wallet>();
+        UnlockPad unlockPad = pad.AddComponent<UnlockPad>();
+        var so = new SerializedObject(unlockPad);
+        so.FindProperty("config").objectReferenceValue = config;
+        so.FindProperty("wallet").objectReferenceValue = wallet;
+        so.FindProperty("target").objectReferenceValue = target;
+        so.FindProperty("priceLabel").objectReferenceValue = label;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // Porte-monnaie, ramassage des billets et HUD (argent en haut à gauche,
@@ -192,6 +261,9 @@ public static class PrototypeSetup
     {
         GameObject walletGo = new GameObject("Wallet", typeof(Wallet));
         Wallet wallet = walletGo.GetComponent<Wallet>();
+        var walletSo = new SerializedObject(wallet);
+        walletSo.FindProperty("startMoney").intValue = StartMoney;
+        walletSo.ApplyModifiedPropertiesWithoutUndo();
 
         BillCollector collector = player.AddComponent<BillCollector>();
         var collectorSo = new SerializedObject(collector);
