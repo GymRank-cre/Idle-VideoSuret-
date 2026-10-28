@@ -10,6 +10,7 @@ public class InstallStation : MonoBehaviour
     [SerializeField] StationConfig config;
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
     [SerializeField] GameObject billPrefab;
+    [SerializeField] FeedbackSpawner feedback; // facultatif : éclat quand une caisse arrive
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
     [SerializeField] float flightDuration = 0.25f;
@@ -95,6 +96,7 @@ public class InstallStation : MonoBehaviour
                 cratePool.Release(f.item.gameObject);
                 flights.RemoveAt(i);
                 storedCrates++;
+                if (feedback != null) feedback.CrateArrived(CrateTarget);
             }
             else
             {

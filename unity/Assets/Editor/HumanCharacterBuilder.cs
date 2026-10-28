@@ -226,12 +226,11 @@ public static class HumanCharacterBuilder
         Bounds lashB = BoundsOf(go, "eyelash");
 
         // 2 bandes réfléchissantes autour du gilet, calées sur les vrais sommets du maillage à chaque hauteur.
-        foreach (float t in new[] { 0.28f, 0.58f })
-        {
-            float y = vestB.min.y + vestB.size.y * t;
-            SliceOf(go, "vest", y, 0.03f, out Vector3 c, out float sx, out float sz);
-            Part(PrimitiveType.Cylinder, "ReflectiveBand", chest, c, new Vector3(sx + 0.016f, 0.012f, sz + 0.016f), reflect);
-        }
+        // Chaque bande est un anneau de 4 cm qui suit la surface du gilet (+2 mm), ouvert là où le gilet est ouvert.
+        reflect.SetFloat("_Cull", 0f); // visible des deux côtés
+        Transform lowerBone = animator.GetBoneTransform(HumanBodyBones.Spine);
+        ReflectiveBand(go, "ReflectiveBandLow", lowerBone != null ? lowerBone : chest, vestB.min.y + vestB.size.y * 0.28f, 0.04f, reflect);
+        ReflectiveBand(go, "ReflectiveBandHigh", chest, vestB.min.y + vestB.size.y * 0.58f, 0.04f, reflect);
         SliceOf(go, "vest", vestB.min.y + 0.05f, 0.04f, out Vector3 hipC, out float hipX, out float hipZ);
         float rx = hipX * 0.5f, rz = hipZ * 0.5f, zc = hipC.z;
 
@@ -272,6 +271,96 @@ public static class HumanCharacterBuilder
         p.transform.position = worldPos;
         p.transform.localScale = worldScale;
         p.transform.SetParent(bone, true);
+    }
+
+    // Anneau mince collé au gilet : pour chaque secteur autour du torse, le rayon est celui du sommet
+    // le plus extérieur du gilet à cette hauteur (+2 mm). Les petits trous sont comblés (dos fermé) ;
+    // un grand trou (ouverture du devant) reste ouvert.
+    static void ReflectiveBand(GameObject go, string name, Transform bone, float y, float height, Material mat)
+    {
+        const int sectors = 72;
+        const float offset = 0.002f;
+        var radius = new float[sectors];
+        for (int i = 0; i < sectors; i++) radius[i] = -1f;
+
+        SkinnedMeshRenderer vest = null;
+        foreach (SkinnedMeshRenderer r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            if (r.name.ToLowerInvariant().Contains("vest")) { vest = r; break; }
+        if (vest == null) return;
+
+        var baked = new Mesh();
+        vest.BakeMesh(baked);
+        var points = new System.Collections.Generic.List<Vector3>();
+        float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+        foreach (Vector3 v in baked.vertices)
+        {
+            Vector3 w = vest.transform.TransformPoint(v);
+            if (Mathf.Abs(w.y - y) > height * 0.5f + 0.02f) continue;
+            points.Add(w);
+            minX = Mathf.Min(minX, w.x); maxX = Mathf.Max(maxX, w.x);
+            minZ = Mathf.Min(minZ, w.z); maxZ = Mathf.Max(maxZ, w.z);
+        }
+        Object.DestroyImmediate(baked);
+        if (points.Count < 8) return;
+
+        float cx = (minX + maxX) * 0.5f, cz = (minZ + maxZ) * 0.5f;
+        foreach (Vector3 w in points)
+        {
+            float dx = w.x - cx, dz = w.z - cz;
+            float angle = Mathf.Atan2(dx, dz); // 0 = devant (+z)
+            int s = Mathf.Clamp(Mathf.FloorToInt((angle + Mathf.PI) / (2f * Mathf.PI) * sectors), 0, sectors - 1);
+            radius[s] = Mathf.Max(radius[s], Mathf.Sqrt(dx * dx + dz * dz));
+        }
+
+        // combler les trous de 1 à 4 secteurs (le reste est l'ouverture du gilet)
+        for (int i = 0; i < sectors; i++)
+        {
+            if (radius[i] >= 0f) continue;
+            int prev = i, next = i, gap = 0;
+            while (radius[(prev + sectors - 1) % sectors] < 0f && gap < sectors) { prev = (prev + sectors - 1) % sectors; gap++; }
+            while (radius[(next + 1) % sectors] < 0f && gap < sectors) { next = (next + 1) % sectors; gap++; }
+            int left = (prev + sectors - 1) % sectors, right = (next + 1) % sectors;
+            int width = gap + 1;
+            if (width > 4 || radius[left] < 0f || radius[right] < 0f) { i = next; continue; }
+            for (int k = prev, n = 1; k != (next + 1) % sectors; k = (k + 1) % sectors, n++)
+                radius[k] = Mathf.Lerp(radius[left], radius[right], n / (float)(width + 1));
+            i = next;
+        }
+
+        var vertices = new System.Collections.Generic.List<Vector3>();
+        var triangles = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < sectors; i++)
+        {
+            int j = (i + 1) % sectors;
+            if (radius[i] < 0f || radius[j] < 0f) continue;
+            float a0 = -Mathf.PI + (i + 0.5f) / sectors * 2f * Mathf.PI;
+            float a1 = -Mathf.PI + (j + 0.5f) / sectors * 2f * Mathf.PI;
+            if (j == 0) a1 += 2f * Mathf.PI;
+            Vector3 p0 = new Vector3(cx + Mathf.Sin(a0) * (radius[i] + offset), 0f, cz + Mathf.Cos(a0) * (radius[i] + offset));
+            Vector3 p1 = new Vector3(cx + Mathf.Sin(a1) * (radius[j] + offset), 0f, cz + Mathf.Cos(a1) * (radius[j] + offset));
+            int b = vertices.Count;
+            vertices.Add(new Vector3(p0.x, y - height * 0.5f, p0.z));
+            vertices.Add(new Vector3(p0.x, y + height * 0.5f, p0.z));
+            vertices.Add(new Vector3(p1.x, y - height * 0.5f, p1.z));
+            vertices.Add(new Vector3(p1.x, y + height * 0.5f, p1.z));
+            triangles.AddRange(new[] { b, b + 1, b + 2, b + 2, b + 1, b + 3 });
+        }
+        if (vertices.Count == 0) return;
+
+        var mesh = new Mesh { name = name };
+        mesh.SetVertices(vertices);
+        mesh.SetTriangles(triangles, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        EnsureFolder(Folder + "/Meshes");
+        string meshPath = Folder + "/Meshes/" + name + ".asset";
+        AssetDatabase.DeleteAsset(meshPath);
+        AssetDatabase.CreateAsset(mesh, meshPath); // un prefab ne garde pas un maillage créé par code : on le sauve en asset
+
+        var band = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+        band.GetComponent<MeshFilter>().sharedMesh = mesh;
+        band.GetComponent<MeshRenderer>().sharedMaterial = mat;
+        band.transform.SetParent(bone, true); // le maillage est déjà en coordonnées monde
     }
 
     // Tranche horizontale d'un maillage animé (pose actuelle) : centre et largeur/profondeur totales à la hauteur y.

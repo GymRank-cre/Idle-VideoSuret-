@@ -21,6 +21,11 @@ public static class PrototypeSetup
     static readonly Vector3 CameraOffset = new Vector3(0f, 12f, -8f);
     const float CameraFov = 65f;
 
+    // ---- Échelle de la pile et vitesse du joueur (4e) ----
+    const float CrateScale = 0.75f;      // taille des caisses portées
+    const float StackItemHeight = 0.26f; // écart vertical entre deux caisses de la pile
+    const float PlayerMoveSpeed = 4.2f;  // m/s à fond (valeur du [SerializeField] de PlayerController)
+
     [MenuItem("Tools/Idle Prototype/Build scene")]
     static void Build()
     {
@@ -44,7 +49,7 @@ public static class PrototypeSetup
         // Prefab de caisse
         GameObject crate = GameObject.CreatePrimitive(PrimitiveType.Cube);
         crate.name = "Crate";
-        crate.transform.localScale = new Vector3(0.5f, 0.3f, 0.4f);
+        crate.transform.localScale = new Vector3(0.5f, 0.3f, 0.4f) * CrateScale;
         crate.GetComponent<Renderer>().sharedMaterial = crateMat;
         Object.DestroyImmediate(crate.GetComponent<Collider>());
         GameObject cratePrefab = PrefabUtility.SaveAsPrefabAsset(crate, Root + "/Crate.prefab");
@@ -57,17 +62,20 @@ public static class PrototypeSetup
         player.GetComponent<Renderer>().sharedMaterial = playerMat;
         Object.DestroyImmediate(player.GetComponent<Collider>());
         player.AddComponent<CharacterController>();
-        player.AddComponent<PlayerController>();
+        PlayerController playerController = player.AddComponent<PlayerController>();
+        var playerSo = new SerializedObject(playerController);
+        playerSo.FindProperty("moveSpeed").floatValue = PlayerMoveSpeed; // valeur sérialisée, le code ne change pas
+        playerSo.ApplyModifiedPropertiesWithoutUndo();
         StackCarrier carrier = player.AddComponent<StackCarrier>();
 
         GameObject anchor = new GameObject("StackAnchor");
         anchor.transform.SetParent(player.transform, false);
-        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.55f); // dans le dos du technicien humain (0,7 avec l'ancien visuel)
+        anchor.transform.localPosition = new Vector3(0f, -0.2f, -0.38f); // collée au dos, à hauteur de hanches (0,7 avec l'ancien visuel)
 
         GameObject maxIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
         maxIndicator.name = "MaxIndicator";
         maxIndicator.transform.SetParent(player.transform, false);
-        maxIndicator.transform.localPosition = new Vector3(0f, 3.25f, 0f); // au-dessus de la pile pleine (8 caisses)
+        maxIndicator.transform.localPosition = new Vector3(0f, 2.35f, 0f); // juste au-dessus de la pile pleine (8 caisses)
         maxIndicator.transform.localScale = new Vector3(0.8f, 0.3f, 0.05f);
         maxIndicator.GetComponent<Renderer>().sharedMaterial = maxMat;
         Object.DestroyImmediate(maxIndicator.GetComponent<Collider>());
@@ -76,6 +84,7 @@ public static class PrototypeSetup
         var carrierSo = new SerializedObject(carrier);
         carrierSo.FindProperty("stackAnchor").objectReferenceValue = anchor.transform;
         carrierSo.FindProperty("maxIndicator").objectReferenceValue = maxIndicator;
+        carrierSo.FindProperty("itemHeight").floatValue = StackItemHeight;
         carrierSo.ApplyModifiedPropertiesWithoutUndo();
 
         // Caméra
@@ -103,6 +112,7 @@ public static class PrototypeSetup
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
         pileSo.ApplyModifiedPropertiesWithoutUndo();
 
+        FeedbackBuilder.Build(); // retour d'information (chiffres flottants, éclats), relié ensuite aux postes et au joueur
         StationConfig stationConfig = LoadOrCreateStationConfig();
         GameObject billPrefab = BuildBillPrefab();
         BuildStation("InstallStation", Station1Position, resourcePile, stationConfig, billPrefab);
@@ -209,6 +219,7 @@ public static class PrototypeSetup
         so.FindProperty("billPrefab").objectReferenceValue = billPrefab;
         so.FindProperty("progressBar").objectReferenceValue = progressBar;
         so.FindProperty("billExit").objectReferenceValue = exit.transform;
+        so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         so.ApplyModifiedPropertiesWithoutUndo();
         return station;
     }
@@ -280,6 +291,7 @@ public static class PrototypeSetup
         BillCollector collector = player.AddComponent<BillCollector>();
         var collectorSo = new SerializedObject(collector);
         collectorSo.FindProperty("wallet").objectReferenceValue = wallet;
+        collectorSo.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         collectorSo.ApplyModifiedPropertiesWithoutUndo();
 
         Transform canvas = GameObject.Find("Canvas").transform;
@@ -316,6 +328,7 @@ public static class PrototypeSetup
         var crateSo = new SerializedObject(crateHud);
         crateSo.FindProperty("carrier").objectReferenceValue = carrier;
         crateSo.FindProperty("label").objectReferenceValue = crateText;
+        crateSo.FindProperty("config").objectReferenceValue = FeedbackBuilder.LoadOrCreateConfig();
         crateSo.ApplyModifiedPropertiesWithoutUndo();
     }
 

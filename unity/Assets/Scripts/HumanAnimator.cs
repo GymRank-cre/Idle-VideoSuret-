@@ -12,7 +12,7 @@ public class HumanAnimator : MonoBehaviour
     [SerializeField] float smoothing = 12f;
     [SerializeField] float runThreshold = 0.45f; // en dessous : marche ; au-dessus : course
     [SerializeField] float walkClipSpeed = 1.4f; // m/s couverts par l'animation de marche
-    [SerializeField] float runClipSpeed = 3.4f;  // m/s couverts par l'animation de course (mesuré sur le pied d'appui)
+    [SerializeField] float runClipSpeed = 4.2f;  // m/s de course du joueur : l'animation tourne alors à sa vitesse d'origine
 
     float speed;
 

@@ -6,6 +6,7 @@ using UnityEngine;
 public class BillCollector : MonoBehaviour
 {
     [SerializeField] Wallet wallet;
+    [SerializeField] FeedbackSpawner feedback; // facultatif : "+valeur" et éclat à chaque billet
     [SerializeField] float pickupRadius = 1.4f;
     [SerializeField] float flightDuration = 0.2f;
     [SerializeField] float targetHeight = 1f;
@@ -55,6 +56,7 @@ public class BillCollector : MonoBehaviour
             if (t >= 1f)
             {
                 wallet.Add(f.bill.Value);
+                if (feedback != null) feedback.BillCollected(target, f.bill.Value);
                 f.bill.Recycle();
                 flights.RemoveAt(i);
             }
