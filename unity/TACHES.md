@@ -85,10 +85,23 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 4b)_
+**Étape 4b — Habillage visuel : compile, gameplay intact, 9 captures dans `unity/captures/`.**
+- Nouveau menu `Tools > Idle Prototype > Build workshop` (`Editor/WorkshopBuilder.cs`), appelé aussi à la fin de `Build scene`. Relançable (testé 2 fois) : il refait le dossier `Workshop` et l'habillage, sans toucher aux scripts de jeu.
+- Aucun asset externe, aucun package. Matériaux `WS_*` dans `Assets/Prototype/Materials`, 3 textures générées par code dans `Assets/Prototype/Textures` (damier, bandes de danger, dégradé radial pour ombres et halo).
+- Ambiance URP : lumière directionnelle chaude (ombres douces), ambiance plate chaude, ciel uni, pas de fog. Volume global `Assets/Prototype/PostFX.asset` : Tonemapping ACES, Bloom léger (seuil 1, intensité 0,25), Vignette 0,22, Contraste +10, Saturation +10. Une seule lumière temps réel. Décor fixe en `BatchingStatic`.
+- Atelier : sol en damier de dalles de 2 m (le plan `Ground` garde son collider), murs du fond et de gauche avec plinthe, bande acier et liseré jaune, aucun mur côté caméra. Décor : fenêtre, enseigne néon « SÉCURITÉ » (TextMesh + cadre émissif), tableau d'outils, mur de 6 caméras dôme, armoire électrique avec voyants, poster, 3 étagères avec cartons, bobines de câble, cartons isolés.
+- Palette de ramassage : palette en bois + 5 cartons à ruban (le tas gris est masqué, son trigger est gardé). Postes : établi (plateau bois, pieds métal, étagère basse) avec écran, caméra dôme en assemblage, vis, tournevis, tapis de travail ; l'établi est au fond du poste pour que les caisses arrivent devant. Dalle : texture à bandes noires en biais + halo jaune doux. Les positions de jeu n'ont pas changé.
+- Technicien : gilet orange avec 2 bandes réfléchissantes, casque jaune, tête, yeux, cou, bras, jambes et bottes noires, ceinture d'outils, ombre ronde. La capsule d'origine est masquée (renderer désactivé), `CharacterController`, `StackCarrier` et `StackAnchor` inchangés. `CharacterAnimator` (lit `PlayerController.IsMoving`) : balancement des jambes et bras (40°), rebond 0,07 m, inclinaison 10°, souffle à l'arrêt. Mesuré en Play : valeurs atteintes à la marche, retour à 0 à l'arrêt.
+- Détails : caisse en carton avec ruban, billet vert avec liseré et sceau qui flotte (`Bobbing`, vertical seulement car le parent est écrasé), ombre ronde sous le joueur, la palette et l'établi, prix de la dalle avec contour sombre (`TextMirror`, taille réduite à 0,075).
+- Gameplay étapes 1 à 4 vérifié en Play après l'habillage : 8 caisses ramassées (MAX), dépôt au poste, 10 billets ramassés (argent 100), dalle payée en 60 pas, poste 2 actif à l'échelle 1. 0 erreur, 0 warning dans la Console.
+- Captures (1080×1920, caméra du jeu rendue dans une texture) : `4b-atelier-01-depart`, `02-poste` (barre mi-chemin), `02b-billets`, `03-dalle` (prix visible), `04-palette`, `05-perso-dos` (8 caisses dans le dos), `06-perso-face`, `07-mur-fond`, et `09-hud-paysage` (vue Game de l'éditeur, avec le HUD).
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Cadrage portrait** : en 1080×1920, la caméra (0, 12, -8) voit seulement environ ±5 m en largeur. La palette (x = 6) et les postes (x = -6) sont sur les bords de l'écran quand le joueur est au centre. Je n'ai pas touché `CameraFollow` (gameplay). À décider : monter un peu la caméra ou élargir le champ de vision ?
+- **HUD en portrait** : la capture caméra n'inclut pas le Canvas (overlay). Le HUD est montré dans `09-hud-paysage` (vue Game de l'éditeur en paysage). Une capture portrait avec HUD demande de régler la vue Game en 1080×1920 à la main.
+- **Ombre sous les caisses** : faite sous la palette et l'établi, pas sous chaque caisse portée (les caisses de la pile sont déjà dans l'ombre du joueur, et une ombre par caisse se superposerait).
+- **Performance** : non mesurée sur téléphone. Côté éditeur : 1 lumière temps réel, décor fixe batché, pas de lumière ajoutée. Les ombres douces dépendent de l'asset URP du projet.
+- Tâche parallèle (dépôt iOS) : non faite, toujours REPORTÉE.
 
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
@@ -130,3 +143,4 @@ _(vide)_
 - Étape 3 (billets, argent, HUD) relue côté cloud : validée. Étape 4 spécifiée. Build iOS cloud reporté.
 - Étape 4 : dalle de déblocage à prix décroissant, 2e poste, Wallet.TrySpend ; compilé et testé via MCP, rendu à confirmer par Sébastien.
 - Étape 4 (dalles de déblocage) validée par Sébastien et relue côté cloud. Étape 4b (habillage visuel) spécifiée.
+- Étape 4b : habillage visuel (Build workshop, technicien animé, atelier, post-traitement) fait ; 9 captures dans unity/captures ; à relire côté cloud.

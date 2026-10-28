@@ -103,6 +103,8 @@ public static class PrototypeSetup
         BuildHud(player, carrier);
         BuildUnlockPad(station2);
 
+        WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
+
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
         Selection.activeGameObject = player;
