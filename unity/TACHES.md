@@ -20,31 +20,41 @@ Une responsabilité par script, champs en `[SerializeField]`, valeurs d'économi
 
 ---
 
-## Tâche en cours : étape 2 — Poste d'installation
+## Relecture cloud de l'étape 2 : validée
+Code conforme à CLAUDE.md (une responsabilité par script, SerializeField, économie dans StationConfig, pooling). Rien à corriger, deux remarques pour l'étape 3 :
+- `ResourcePile` fait encore `Instantiate` à chaque caisse alors que les caisses déposées au poste partent dans un pool : brancher `ResourcePile` sur un `ObjectPool` pour que les caisses soient réellement recyclées.
+- Les billets restent au sol sans limite : normal jusqu'au ramassage (étape 3), qui doit les rendre au pool.
 
-**Objectif :** le joueur dépose ses caisses à un poste ; une barre de progression se remplit ; des billets apparaissent.
+## Tâche en cours : étape 3 — Billets à ramasser, argent, HUD
+
+**Objectif :** le joueur ramasse les billets du poste, l'argent s'affiche en haut à gauche, le stock de caisses en haut à droite.
 
 **À créer**
-1. `StationConfig` (ScriptableObject) : `cratesPerJob` (caisses nécessaires pour un travail, défaut 3), `jobDuration` (secondes par travail, défaut 2), `billsPerJob` (défaut 5), `billValue` (défaut 10), `depositInterval` (délai entre deux caisses déposées, défaut 0,15), `inputCapacity` (caisses stockées au poste, défaut 6).
-2. `InstallStation` (MonoBehaviour, zone trigger comme `ResourcePile`) :
-   - tant que le joueur est dans la zone et que `inputCapacity` n'est pas atteint : prend une caisse avec `StackCarrier.RemoveLast()` toutes les `depositInterval` secondes ; la caisse vole vers le poste puis est recyclée (pool) ;
-   - quand le stock du poste atteint `cratesPerJob` et qu'aucun travail n'est en cours : démarre un travail de `jobDuration` secondes, consomme `cratesPerJob` caisses ;
-   - à la fin du travail : fait apparaître `billsPerJob` billets (cubes verts plats) autour d'un point de sortie. Les billets restent au sol pour l'instant (ramassage = étape 3).
-3. `ProgressBar3D` : petite barre au-dessus du poste (deux cubes, face à la caméra, comme l'indicateur MAX) qui affiche la progression du travail.
-4. `ObjectPool` générique simple (liste de GameObjects inactifs), utilisé pour les caisses déposées et les billets. Ne pas modifier `ResourcePile` pour l'instant.
-5. Mettre à jour `PrototypeSetup` : placer le poste à gauche de la zone de ramassage (ex. position `(-6, 0.1, 0)`, cube bleu foncé de 3×0.2×3, collider trigger), créer l'asset `Assets/Prototype/StationConfig.asset`, relier tout par `SerializedObject`.
+1. `Wallet` (MonoBehaviour, une seule instance dans la scène) : `Money` (int), `Add(int)`, événement `OnChanged`. Rien d'autre.
+2. `Bill` (MonoBehaviour sur le prefab de billet) : porte sa `Value`, fixée à l'apparition par `InstallStation` depuis `config.BillValue` (le poste continue de lire la config en direct).
+3. `BillCollector` (sur le joueur) : quand le joueur touche un billet (zone de ramassage autour du joueur, rayon dans un `[SerializeField]`), le billet vole vers lui (~0,2 s), puis `Wallet.Add(Value)` et retour au pool de billets. Pas de limite de capacité pour les billets.
+4. `MoneyHud` : texte en haut à gauche, valeur de `Wallet`, léger effet de gonflement à chaque gain. `CrateHud` : en haut à droite, `Count/Capacity` de `StackCarrier`. Pour cela, ajouter à `StackCarrier` : `public int Capacity` et un événement `OnCountChanged`.
+5. `PrototypeSetup` : ajouter Wallet, BillCollector, les deux textes dans le Canvas existant (joystick). Utiliser le composant texte de Unity UI déjà installé, pas de package externe ; si TextMeshPro oblige à importer des ressources, préférer le texte UI classique et le dire dans Résultats.
+6. Nettoyage : `ResourcePile` utilise un `ObjectPool` pour les caisses (voir relecture).
 
-**Critères de réussite (à tester via MCP, puis par Sébastien)**
-- Aucune erreur de compilation ni dans la Console au lancement.
-- Ramasser 8 caisses, aller au poste : les caisses partent une par une ; le MAX disparaît dès qu'il y a de la place dans la pile.
-- La barre de progression se remplit pendant `jobDuration`, puis 5 billets apparaissent.
-- Changer `StationConfig` dans l'Inspector change le comportement sans toucher au code.
+**Critères de réussite (test MCP, puis Sébastien)**
+- 0 erreur de compilation, 0 erreur en Play.
+- Déposer 3 caisses au poste, attendre la fin du travail : 5 billets au sol, le joueur les ramasse en passant dessus, l'argent monte de 5 × `billValue`.
+- Le compteur de caisses en haut à droite suit la pile (0/8 à 8/8) ; l'argent est en haut à gauche, lisible sur un écran de téléphone (Canvas 1080×1920).
+- Changer `billValue` dans `StationConfig` change le gain sans toucher au code.
 
-**Hors périmètre :** compteur d'argent, ramassage des billets, clients, employés, joystick (déjà fait).
+**Hors périmètre :** dalles de déblocage, clients, employés, sauvegarde.
 
 ---
 
 ## Résultats (à remplir par Claude Code local)
+_(vide — étape 3)_
+
+## Questions (à remplir par Claude Code local)
+_(vide)_
+
+
+## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
 - Ajoutés : `StationConfig`, `ObjectPool`, `ProgressBar3D`, `InstallStation` ; `PrototypeSetup` construit le poste en `(-6, 0.1, 0)`, `Assets/Prototype/StationConfig.asset` (conservé s'il existe), prefab `Bill`, barre au-dessus du poste. `ResourcePile` non modifié.
 - Console : 0 erreur, 0 warning (hors message de connexion du pont MCP).
@@ -55,10 +65,8 @@ Une responsabilité par script, champs en `[SerializeField]`, valeurs d'économi
 - Non vérifié visuellement : le rendu de la barre (remplissage jaune) et le vol des caisses ; à confirmer par Sébastien en Play.
 - Le test a eu besoin de `EditorApplication.Step()` car l'éditeur non focalisé n'avance pas les frames.
 
-## Questions (à remplir par Claude Code local)
-_(vide)_
-
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
 - Étape 2 : poste d'installation (StationConfig, InstallStation, ProgressBar3D, ObjectPool) compilé et testé via MCP ; rendu visuel à confirmer par Sébastien.
+- Étape 2 relue côté cloud : validée. Étape 3 spécifiée.
