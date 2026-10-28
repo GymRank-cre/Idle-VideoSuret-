@@ -1,13 +1,15 @@
 using UnityEngine;
+using UnityEngine.AI;
 
-// Pilote l'Animator du technicien humain (Idle / Walk / Run) à partir de la
-// vitesse du PlayerController. Ne touche ni au déplacement ni aux règles.
+// Pilote l'Animator d'un humain (Idle / Walk / Run) à partir de sa vitesse : celle du PlayerController pour le
+// technicien, celle du NavMeshAgent pour un employé. Ne touche ni au déplacement ni aux règles.
 public class HumanAnimator : MonoBehaviour
 {
     static readonly int SpeedHash = Animator.StringToHash("Speed");
     static readonly int AnimSpeedHash = Animator.StringToHash("AnimSpeed");
 
     [SerializeField] PlayerController player;
+    [SerializeField] NavMeshAgent agent;         // à la place du joueur : un employé
     [SerializeField] Animator animator;
     [SerializeField] float smoothing = 12f;
     [SerializeField] float runThreshold = 0.45f; // en dessous : marche ; au-dessus : course
@@ -24,15 +26,32 @@ public class HumanAnimator : MonoBehaviour
 
     void Update()
     {
-        if (player == null || animator == null) return;
+        if (animator == null) return;
 
-        // Speed (0 à 1) suit l'intensité de l'entrée, adoucie.
-        speed = Mathf.Lerp(speed, player.MoveAmount, 1f - Mathf.Exp(-smoothing * Time.deltaTime));
+        float moveAmount, planarSpeed;
+        if (player != null)
+        {
+            moveAmount = player.MoveAmount;
+            planarSpeed = player.PlanarSpeed;
+        }
+        else if (agent != null)
+        {
+            // même échelle que le joueur : la vitesse de course du joueur correspond à Speed = 1
+            planarSpeed = agent.velocity.magnitude;
+            moveAmount = Mathf.Clamp01(planarSpeed / runClipSpeed);
+        }
+        else
+        {
+            return;
+        }
+
+        // Speed (0 à 1) suit l'intensité du mouvement, adoucie.
+        speed = Mathf.Lerp(speed, moveAmount, 1f - Mathf.Exp(-smoothing * Time.deltaTime));
         animator.SetFloat(SpeedHash, speed);
 
         // La vitesse de lecture suit la vitesse réelle pour que les pieds ne glissent pas.
         float reference = speed < runThreshold ? walkClipSpeed : runClipSpeed;
-        float playback = player.PlanarSpeed > 0.05f ? player.PlanarSpeed / reference : 1f;
+        float playback = planarSpeed > 0.05f ? planarSpeed / reference : 1f;
         animator.SetFloat(AnimSpeedHash, Mathf.Clamp(playback, 0.5f, 1.6f));
     }
 }

@@ -77,11 +77,12 @@ public static class CustomerBuilder
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
 
             // Matériaux : ceux du technicien, mais pas de casque ni de gilet.
-            SkinnedMeshRenderer shirt = null, hair = null;
+            SkinnedMeshRenderer shirt = null, hair = null, torso = null;
             foreach (SkinnedMeshRenderer r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 string n = r.name.ToLowerInvariant();
-                if (n.Contains("helmet") || n.Contains("vest")) { r.gameObject.SetActive(false); continue; }
+                if (n.Contains("helmet")) { r.gameObject.SetActive(false); continue; }
+                if (n.Contains("vest")) torso = r; // le maillage « gilet » est en fait le torse du modèle : sans lui on voit à travers
 
                 foreach (SkinnedMeshRenderer src in equipped.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                     if (src.name == r.name) { r.sharedMaterials = src.sharedMaterials; break; }
@@ -100,6 +101,9 @@ public static class CustomerBuilder
             float scale = HumanHeight / Mathf.Max(0.1f, b.size.y);
 
             HumanCharacterBuilder.AddFace(go, animator);
+            if (hair != null) hair.gameObject.SetActive(false); // le maillage de cheveux du modèle est déchiqueté sans casque
+            CustomerHair hairStyles = AddHair(go, animator);
+            Renderer[] collar = torso != null ? new Renderer[] { torso } : new Renderer[0]; // le torse prend la couleur de la chemise
             go.transform.localScale = Vector3.one * scale;
 
             // Bulle de commande au-dessus de la tête (taille réelle, malgré l'échelle du parent)
@@ -115,6 +119,9 @@ public static class CustomerBuilder
             var lso = new SerializedObject(look);
             lso.FindProperty("shirt").objectReferenceValue = shirt;
             lso.FindProperty("hair").objectReferenceValue = hair;
+            SerializedProperty extras = lso.FindProperty("shirtExtras");
+            extras.arraySize = collar.Length;
+            for (int i = 0; i < collar.Length; i++) extras.GetArrayElementAtIndex(i).objectReferenceValue = collar[i];
             SetColors(lso.FindProperty("shirtColors"), ShirtColors);
             SetColors(lso.FindProperty("hairColors"), HairColors);
             lso.ApplyModifiedPropertiesWithoutUndo();
@@ -126,6 +133,59 @@ public static class CustomerBuilder
             Object.DestroyImmediate(go);
         }
         return AssetDatabase.LoadAssetAtPath<GameObject>(CustomerPrefabPath);
+    }
+
+    // Coiffure en formes simples posée sur le crâne (mesuré sur le maillage) : 3 formes, 4 couleurs.
+    static CustomerHair AddHair(GameObject go, Animator animator)
+    {
+        Transform head = animator.GetBoneTransform(HumanBodyBones.Head);
+        float top = HumanCharacterBuilder.TopOf(go, "body");
+        HumanCharacterBuilder.SliceOf(go, "body", top - 0.06f, 0.03f, out Vector3 c, out float w, out float d);
+        Material mat = HumanCharacterBuilder.Mat("Cust_Hair", new Color(0.2f, 0.12f, 0.07f), 0.3f);
+
+        var styles = new GameObject[3];
+        string[] names = { "HairShort", "HairMid", "HairSpiky" };
+        for (int i = 0; i < 3; i++)
+        {
+            styles[i] = new GameObject(names[i]);
+            styles[i].transform.SetParent(head, false);
+        }
+        Transform shortS = styles[0].transform, mid = styles[1].transform, spiky = styles[2].transform;
+
+        // courte : calotte arrondie
+        HumanCharacterBuilder.Part(PrimitiveType.Sphere, "Cap", shortS, new Vector3(c.x, top - 0.03f, c.z), new Vector3(w * 1.08f, 0.13f, d * 1.08f), mat);
+
+        // mi-longue : calotte, retombée dans le dos et sur les côtés
+        HumanCharacterBuilder.Part(PrimitiveType.Sphere, "Cap", mid, new Vector3(c.x, top - 0.03f, c.z), new Vector3(w * 1.1f, 0.14f, d * 1.1f), mat);
+        HumanCharacterBuilder.Part(PrimitiveType.Sphere, "Back", mid, new Vector3(c.x, top - 0.115f, c.z - d * 0.36f), new Vector3(w * 1.12f, 0.2f, d * 0.45f), mat);
+        foreach (float sx in new[] { -1f, 1f })
+            HumanCharacterBuilder.Part(PrimitiveType.Sphere, "Side", mid, new Vector3(c.x + sx * w * 0.52f, top - 0.085f, c.z - 0.01f), new Vector3(0.04f, 0.13f, d * 0.6f), mat);
+
+        // hérissée : calotte basse + petites pointes
+        HumanCharacterBuilder.Part(PrimitiveType.Sphere, "Cap", spiky, new Vector3(c.x, top - 0.035f, c.z), new Vector3(w * 1.05f, 0.1f, d * 1.05f), mat);
+        HumanCharacterBuilder.Part(PrimitiveType.Capsule, "Spike", spiky, new Vector3(c.x, top + 0.012f, c.z), new Vector3(0.024f, 0.05f, 0.024f), mat);
+        for (int k = 0; k < 6; k++)
+        {
+            float a = k * Mathf.PI / 3f;
+            Vector3 p = new Vector3(c.x + Mathf.Cos(a) * w * 0.3f, top - 0.002f, c.z + Mathf.Sin(a) * d * 0.3f);
+            HumanCharacterBuilder.Part(PrimitiveType.Capsule, "Spike", spiky, p, new Vector3(0.022f, 0.042f, 0.022f), mat);
+        }
+
+        var hairComp = go.AddComponent<CustomerHair>();
+        var so = new SerializedObject(hairComp);
+        SerializedProperty list = so.FindProperty("styles");
+        list.arraySize = 3;
+        for (int i = 0; i < 3; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = styles[i];
+        Color[] hairPalette =
+        {
+            new Color(0.06f, 0.05f, 0.05f), new Color(0.32f, 0.20f, 0.10f),
+            new Color(0.85f, 0.70f, 0.35f), new Color(0.65f, 0.65f, 0.65f),
+        };
+        SerializedProperty cols = so.FindProperty("colors");
+        cols.arraySize = hairPalette.Length;
+        for (int i = 0; i < hairPalette.Length; i++) cols.GetArrayElementAtIndex(i).colorValue = hairPalette[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return hairComp;
     }
 
     static void SetColors(SerializedProperty array, Color[] colors)
@@ -141,7 +201,11 @@ public static class CustomerBuilder
         GameObject root = new GameObject("OrderBubble", typeof(FaceCamera));
         root.transform.SetParent(customer, false);
         root.transform.localPosition = new Vector3(0f, 2.4f / parentScale, 0f);
-        root.transform.localScale = Vector3.one / parentScale;
+        root.transform.localScale = Vector3.one * (0.75f / parentScale); // pastille 25 % plus petite que sa première version
+        var faceSo = new SerializedObject(root.GetComponent<FaceCamera>());
+        faceSo.FindProperty("keepScreenSize").boolValue = true;   // même taille à l'écran quelle que soit la distance
+        faceSo.FindProperty("referenceDistance").floatValue = 14.3f; // distance de la caméra de jeu
+        faceSo.ApplyModifiedPropertiesWithoutUndo();
 
         GameObject pill = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         pill.name = "Pill";

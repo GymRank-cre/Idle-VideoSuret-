@@ -74,11 +74,18 @@ public static class WorkshopBuilder
         foreach (InstallStation st in Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             BuildBench(st);
 
-        UnlockPad pad = Object.FindFirstObjectByType<UnlockPad>(FindObjectsInactive.Include);
-        if (pad != null) DressPad(pad);
+        foreach (UnlockPad pad in Object.FindObjectsByType<UnlockPad>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            DressPad(pad); // dalle du 2e poste et dalle d'embauche
 
         PlayerController player = Object.FindFirstObjectByType<PlayerController>();
         if (player != null) BuildTechnician(player);
+
+        Employee employee = Object.FindFirstObjectByType<Employee>(FindObjectsInactive.Include);
+        if (employee != null)
+        {
+            Clear(employee.transform, "ShadowBlob");
+            Shadow(employee.transform, new Vector3(0f, 0.015f, 0f), 1.4f).name = "ShadowBlob";
+        }
 
         DressPrefabs();
 
@@ -251,7 +258,8 @@ public static class WorkshopBuilder
     static void BuildFloorLines(Transform parent)
     {
         ResourcePile pile = Object.FindFirstObjectByType<ResourcePile>();
-        UnlockPad pad = Object.FindFirstObjectByType<UnlockPad>(FindObjectsInactive.Include);
+        GameObject padGo = GameObject.Find("UnlockPad"); // la dalle du 2e poste (pas celle de l'embauche)
+        UnlockPad pad = padGo != null ? padGo.GetComponent<UnlockPad>() : null;
         InstallStation station1 = null, station2 = null;
         foreach (InstallStation st in Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
@@ -290,24 +298,24 @@ public static class WorkshopBuilder
         const float z = RoomBack - 0.05f; // face intérieure du mur du fond
 
         // Fenêtre
-        Prim(PrimitiveType.Cube, "WindowFrame", parent, new Vector3(3.2f, 1.85f, z - 0.03f), new Vector3(2.8f, 1.7f, 0.12f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowGlass", parent, new Vector3(3.2f, 1.85f, z - 0.09f), new Vector3(2.5f, 1.4f, 0.05f), mGlass);
-        Prim(PrimitiveType.Cube, "WindowBarV", parent, new Vector3(3.2f, 1.85f, z - 0.11f), new Vector3(0.08f, 1.4f, 0.05f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowBarH", parent, new Vector3(3.2f, 1.85f, z - 0.11f), new Vector3(2.5f, 0.08f, 0.05f), mWhite);
-        Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(3.2f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
+        Prim(PrimitiveType.Cube, "WindowFrame", parent, new Vector3(-0.9f, 1.85f, z - 0.03f), new Vector3(2.8f, 1.7f, 0.12f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowGlass", parent, new Vector3(-0.9f, 1.85f, z - 0.09f), new Vector3(2.5f, 1.4f, 0.05f), mGlass);
+        Prim(PrimitiveType.Cube, "WindowBarV", parent, new Vector3(-0.9f, 1.85f, z - 0.11f), new Vector3(0.08f, 1.4f, 0.05f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowBarH", parent, new Vector3(-0.9f, 1.85f, z - 0.11f), new Vector3(2.5f, 0.08f, 0.05f), mWhite);
+        Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(-0.9f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
 
         // Enseigne néon "SÉCURITÉ"
-        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(-4.3f, 1.8f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
-        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(-4.3f, 2.22f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(-4.3f, 1.38f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(-6.38f, 1.8f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(-2.22f, 1.8f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(-4.3f, 1.8f, z - 0.13f), 0.09f, 100,
+        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(2.75f, 1.35f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
+        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(2.75f, 1.77f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(2.75f, 0.93f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(0.65f, 1.35f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(4.85f, 1.35f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(2.75f, 1.35f, z - 0.13f), 0.09f, 100,
             new Color(0.45f, 1f, 0.85f));
         sign.fontStyle = FontStyle.Bold;
 
         // Tableau d'outils
-        Transform board = Group(parent, "ToolBoard", new Vector3(-0.3f, 1.7f, z - 0.05f));
+        Transform board = Group(parent, "ToolBoard", new Vector3(-4.6f, 1.7f, z - 0.05f));
         Prim(PrimitiveType.Cube, "Board", board, Vector3.zero, new Vector3(2.6f, 1.5f, 0.08f), mWood);
         for (int i = 0; i < 3; i++) // tournevis
         {
@@ -325,12 +333,12 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cylinder, "CableHang2", board, new Vector3(0.95f, -0.05f, -0.07f), new Vector3(0.03f, 0.3f, 0.03f), mYellow);
 
         // Mur de caméras dôme (2 x 3)
-        Prim(PrimitiveType.Cube, "CamPanel", parent, new Vector3(7.0f, 1.8f, z - 0.03f), new Vector3(3.6f, 1.7f, 0.06f), mDark);
+        Prim(PrimitiveType.Cube, "CamPanel", parent, new Vector3(7.4f, 1.8f, z - 0.03f), new Vector3(3.6f, 1.7f, 0.06f), mDark);
         for (int row = 0; row < 2; row++)
         {
             for (int col = 0; col < 3; col++)
             {
-                Vector3 p = new Vector3(5.9f + col * 1.1f, 1.45f + row * 0.75f, z - 0.1f);
+                Vector3 p = new Vector3(6.3f + col * 1.1f, 1.45f + row * 0.75f, z - 0.1f);
                 Prim(PrimitiveType.Cylinder, "DomeBase", parent, p, new Vector3(0.42f, 0.02f, 0.42f), mWhite, new Vector3(90, 0, 0));
                 Prim(PrimitiveType.Sphere, "Dome", parent, p + new Vector3(0, 0, -0.04f), new Vector3(0.36f, 0.36f, 0.22f), mGlass);
                 Prim(PrimitiveType.Sphere, "DomeLens", parent, p + new Vector3(0, -0.02f, -0.1f), new Vector3(0.1f, 0.1f, 0.06f), mDark);

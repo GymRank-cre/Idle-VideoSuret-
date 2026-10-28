@@ -99,7 +99,7 @@ public static class PrototypeSetup
         pile.GetComponent<Renderer>().sharedMaterial = pileMat;
         BoxCollider box = pile.GetComponent<BoxCollider>();
         box.isTrigger = true;
-        box.size = new Vector3(1f, 10f, 1f); // assez haute pour englober le joueur
+        box.size = new Vector3(1.4f, 10f, 1.4f); // assez haute pour englober le joueur ; 4,2 m de côté pour que l'employé s'y place à côté de la palette
         ResourcePile resourcePile = pile.AddComponent<ResourcePile>();
         var pileSo = new SerializedObject(resourcePile);
         pileSo.FindProperty("itemPrefab").objectReferenceValue = cratePrefab;
@@ -114,10 +114,12 @@ public static class PrototypeSetup
 
         BuildJoystick(player.GetComponent<PlayerController>());
         BuildHud(player, carrier);
-        BuildUnlockPad(station2);
+        BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
+        EmployeeBuilder.Build(); // dalle d'embauche et employé automatique (étape 6a)
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
+        EmployeeBuilder.BakeNavMesh(); // après le décor : le NavMesh voit tous les obstacles
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
         AssetDatabase.SaveAssets();
@@ -271,12 +273,14 @@ public static class PrototypeSetup
         return station;
     }
 
-    // Dalle de déblocage jaune : le joueur y paie, puis le poste `target` apparaît.
-    static void BuildUnlockPad(GameObject target)
+    // Dalle de déblocage jaune : le joueur y paie, puis `target` apparaît (avec un gonflement sur `popObject`).
+    // Sert au 2e poste et à l'embauche ; `title` (facultatif) s'affiche au-dessus du prix.
+    internal static UnlockPad BuildUnlockPad(GameObject target, GameObject popObject, Vector3 position,
+        string padName, string configName, string title)
     {
         Material padMat = MakeMaterial("UnlockPad", new Color(0.95f, 0.8f, 0.15f));
 
-        string configPath = Root + "/UnlockConfig.asset";
+        string configPath = Root + "/" + configName + ".asset";
         UnlockConfig config = AssetDatabase.LoadAssetAtPath<UnlockConfig>(configPath);
         if (config == null)
         {
@@ -284,8 +288,8 @@ public static class PrototypeSetup
             AssetDatabase.CreateAsset(config, configPath);
         }
 
-        GameObject pad = new GameObject("UnlockPad");
-        pad.transform.position = PadPosition;
+        GameObject pad = new GameObject(padName);
+        pad.transform.position = position;
 
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
         visual.name = "Visual";
@@ -300,10 +304,10 @@ public static class PrototypeSetup
         box.center = new Vector3(0f, 5f, 0f);
 
         // Prix affiché au-dessus de la dalle (TextMesh intégré, face à la caméra)
+        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         GameObject labelGo = new GameObject("PriceLabel", typeof(TextMesh), typeof(FaceCamera));
         labelGo.transform.SetParent(pad.transform, false);
         labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         TextMesh label = labelGo.GetComponent<TextMesh>();
         label.font = font;
         label.fontSize = 100;
@@ -313,7 +317,10 @@ public static class PrototypeSetup
         label.color = Color.white;
         labelGo.GetComponent<MeshRenderer>().sharedMaterial = font.material;
 
-        target.AddComponent<PopIn>();
+        if (!string.IsNullOrEmpty(title))
+            BuildPadTitle(pad.transform, font, title);
+
+        if (popObject.GetComponent<PopIn>() == null) popObject.AddComponent<PopIn>();
 
         Wallet wallet = Object.FindFirstObjectByType<Wallet>();
         UnlockPad unlockPad = pad.AddComponent<UnlockPad>();
@@ -323,6 +330,31 @@ public static class PrototypeSetup
         so.FindProperty("target").objectReferenceValue = target;
         so.FindProperty("priceLabel").objectReferenceValue = label;
         so.ApplyModifiedPropertiesWithoutUndo();
+        return unlockPad;
+    }
+
+    // Titre fixe au-dessus du prix (« EMBAUCHE ») : texte jaune avec un contour sombre décalé.
+    static void BuildPadTitle(Transform pad, Font font, string title)
+    {
+        GameObject root = new GameObject("Title", typeof(FaceCamera));
+        root.transform.SetParent(pad, false);
+        root.transform.localPosition = new Vector3(0f, 2.2f, 0f);
+        foreach (bool shadow in new[] { true, false })
+        {
+            GameObject t = new GameObject(shadow ? "Shadow" : "Text", typeof(TextMesh));
+            t.transform.SetParent(root.transform, false);
+            t.transform.localPosition = shadow ? new Vector3(0.025f, -0.025f, 0.02f) : Vector3.zero;
+            TextMesh tm = t.GetComponent<TextMesh>();
+            tm.font = font;
+            tm.text = title;
+            tm.fontSize = 100;
+            tm.characterSize = 0.075f;
+            tm.fontStyle = FontStyle.Bold;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.color = shadow ? new Color(0.05f, 0.07f, 0.1f) : new Color(1f, 0.85f, 0.2f);
+            t.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+        }
     }
 
     // Porte-monnaie, ramassage des billets et HUD (argent en haut à gauche,

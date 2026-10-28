@@ -25,6 +25,7 @@ public class CustomerQueue : MonoBehaviour
     readonly List<Leaving> leaving = new List<Leaving>();
     ObjectPool pool;
     float timer;
+    bool firstCustomerDone;
 
     public int Waiting => line.Count;
 
@@ -82,7 +83,11 @@ public class CustomerQueue : MonoBehaviour
 
         GameObject go = pool.Get(spawnPoint.position, Quaternion.LookRotation(Vector3.left));
         Customer c = go.GetComponent<Customer>();
-        c.StartOrder(types[Random.Range(0, types.Length)], Random.Range(config.MinQuantity, config.MaxQuantity + 1));
+        if (config.ForceFirstOrder && !firstCustomerDone)
+            c.StartOrder(types[Mathf.Clamp(config.FirstOrderProductIndex, 0, types.Length - 1)], config.FirstOrderQuantity); // le joueur apprend
+        else
+            c.StartOrder(types[Random.Range(0, types.Length)], Random.Range(config.MinQuantity, config.MaxQuantity + 1));
+        firstCustomerDone = true;
 
         int slot = line.Count;
         line.Add(c);

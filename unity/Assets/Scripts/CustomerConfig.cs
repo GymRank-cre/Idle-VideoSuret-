@@ -17,10 +17,19 @@ public class CustomerConfig : ScriptableObject
     [SerializeField, Min(1)] int minQuantity = 1;
     [SerializeField, Min(1)] int maxQuantity = 2;
 
+    [Header("Premier client (le joueur apprend)")]
+    [SerializeField] bool forceFirstOrder = true;               // le tout premier client commande toujours le même produit
+    [SerializeField, Min(0)] int firstOrderProductIndex = 0;    // 0 = caméra dôme (1er produit de la liste du poste)
+    [SerializeField, Min(1)] int firstOrderQuantity = 1;
+
     [Header("Livraison et paiement")]
     [SerializeField, Min(0.05f)] float deliveryInterval = 0.25f; // délai entre deux produits livrés
     [SerializeField, Min(0.05f)] float deliveryFlight = 0.25f;   // durée du vol d'un produit vers le client
     [SerializeField, Min(1)] int maxBillValue = 10;              // valeur maximale d'un billet (le prix est découpé en billets)
+
+    public bool ForceFirstOrder => forceFirstOrder;
+    public int FirstOrderProductIndex => firstOrderProductIndex;
+    public int FirstOrderQuantity => firstOrderQuantity;
 
     public float SpawnInterval => spawnInterval;
     public int MaxWaiting => maxWaiting;

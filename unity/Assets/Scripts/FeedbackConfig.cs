@@ -13,7 +13,7 @@ public class FeedbackConfig : ScriptableObject
     [SerializeField, Min(1)] int burstCount = 10;
     [SerializeField, Min(0.1f)] float burstLifetime = 0.5f;
     [SerializeField, Min(0f)] float burstSpeed = 2.5f;
-    [SerializeField, Min(0.01f)] float burstSize = 0.1f;
+    [SerializeField, Min(0.01f)] float burstSize = 0.17f;
     [SerializeField] Color crateBurstColor = new Color(0.95f, 0.75f, 0.45f); // caisse arrivée au poste
     [SerializeField] Color billBurstColor = new Color(0.5f, 1f, 0.5f);       // billet ramassé
 

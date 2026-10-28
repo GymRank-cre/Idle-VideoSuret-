@@ -285,7 +285,7 @@ public static class HumanCharacterBuilder
     }
 
     // Crée une pièce à la position MONDE donnée (modèle non animé, en pose de référence) puis l'attache à l'os.
-    static void Part(PrimitiveType type, string name, Transform bone, Vector3 worldPos, Vector3 worldScale, Material mat)
+    public static void Part(PrimitiveType type, string name, Transform bone, Vector3 worldPos, Vector3 worldScale, Material mat)
     {
         GameObject p = GameObject.CreatePrimitive(type);
         p.name = name;
@@ -399,7 +399,7 @@ public static class HumanCharacterBuilder
     }
 
     // Tranche horizontale d'un maillage animé (pose actuelle) : centre et largeur/profondeur totales à la hauteur y.
-    static void SliceOf(GameObject go, string nameContains, float y, float halfThickness, out Vector3 center, out float width, out float depth)
+    public static void SliceOf(GameObject go, string nameContains, float y, float halfThickness, out Vector3 center, out float width, out float depth)
     {
         center = new Vector3(0f, y, 0f);
         width = depth = 0.3f;
@@ -429,7 +429,7 @@ public static class HumanCharacterBuilder
     }
 
     // Sommet réel du casque : hauteur max des sommets, centre et profondeur de la calotte près du sommet.
-    static void HelmetTop(GameObject go, out float topY, out float topZ, out float depthZ)
+    public static void HelmetTop(GameObject go, out float topY, out float topZ, out float depthZ)
     {
         Bounds b = BoundsOf(go, "helmet");
         topY = b.max.y; topZ = b.center.z; depthZ = 0.2f;
@@ -452,6 +452,22 @@ public static class HumanCharacterBuilder
             if (minZ < maxZ) { topZ = (minZ + maxZ) * 0.5f; depthZ = Mathf.Max(0.12f, (maxZ - minZ) * 1.8f); }
             return;
         }
+    }
+
+    // Sommet réel d'un maillage animé (hauteur max des sommets), par exemple le haut du crâne.
+    public static float TopOf(GameObject go, string nameContains)
+    {
+        foreach (SkinnedMeshRenderer r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            if (!r.name.ToLowerInvariant().Contains(nameContains)) continue;
+            var baked = new Mesh();
+            r.BakeMesh(baked);
+            float top = float.MinValue;
+            foreach (Vector3 v in baked.vertices) top = Mathf.Max(top, r.transform.TransformPoint(v).y);
+            Object.DestroyImmediate(baked);
+            return top;
+        }
+        return 1.7f;
     }
 
     public static Bounds BoundsOf(GameObject go, string nameContains)

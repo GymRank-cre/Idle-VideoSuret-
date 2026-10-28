@@ -105,6 +105,15 @@ public static class FeedbackBuilder
         sizeOverLife.enabled = true;
         sizeOverLife.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
 
+        // léger fondu : opaque au début, transparent à la fin
+        var colorOverLife = ps.colorOverLifetime;
+        colorOverLife.enabled = true;
+        var fade = new Gradient();
+        fade.SetKeys(
+            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+            new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.9f, 0.5f), new GradientAlphaKey(0f, 1f) });
+        colorOverLife.color = new ParticleSystem.MinMaxGradient(fade);
+
         var renderer = root.GetComponent<ParticleSystemRenderer>();
         renderer.sharedMaterial = SparkMaterial();
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -115,6 +124,7 @@ public static class FeedbackBuilder
         return prefab;
     }
 
+    // Points ronds doux : la texture radiale générée pour les ombres, en matériau transparent sans lumière.
     static Material SparkMaterial()
     {
         string path = Root + "/Materials/FX_Spark.mat";
@@ -126,7 +136,18 @@ public static class FeedbackBuilder
             mat = new Material(shader);
             AssetDatabase.CreateAsset(mat, path);
         }
+
+        var radial = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "/Textures/Radial.png");
+        if (radial != null) mat.SetTexture("_BaseMap", radial);
         mat.SetColor("_BaseColor", Color.white); // la couleur vient de la particule
+        mat.SetFloat("_Surface", 1f);            // transparent
+        mat.SetFloat("_Blend", 0f);
+        mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetFloat("_ZWrite", 0f);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.SetOverrideTag("RenderType", "Transparent");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         EditorUtility.SetDirty(mat);
         return mat;
     }

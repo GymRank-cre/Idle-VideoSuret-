@@ -84,10 +84,33 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étapes 5c et 6a)_
+**Étapes 5c et 6a : compilent, 0 erreur et 0 warning en Play ; gameplay des étapes 1 à 5 inchangé tant que l'employé n'est pas embauché. Captures `5c-*` et `6a-*` (1080×1920).**
+
+### Package installé
+- **Aucun package ajouté** : `com.unity.ai.navigation` 2.0.15 (package officiel Unity, AI Navigation) était **déjà dans `manifest.json`** (il vient avec le modèle de projet Unity 6). Rien n'a été téléchargé ni installé pour la 6a.
+
+### 5c — corrections
+1. **Clients (cheveux et col)** : cause réelle trouvée au test : le maillage « gilet » du modèle **est son torse** ; sans lui (je l'avais caché) on voit le pantalon à travers la chemise, d'où le col « déchiré ». Il est donc **gardé, coloré comme la chemise** (`CustomerAppearance.shirtExtras`), plus aucun triangle déchiré (`5c-02`, `5c-02b`). Le maillage de cheveux du modèle est caché et remplacé par **une coiffure en formes simples** (`CustomerHair`) : 3 formes (courte, mi-longue, hérissée) × 4 couleurs, tirées à chaque apparition, calées sur les vrais sommets du crâne.
+2. **Éclats** : points ronds doux (texture radiale générée, matériau transparent sans lumière) avec fondu de l'opacité sur la durée de vie ; taille par défaut 0,17 dans `FeedbackConfig` (`5c-04`).
+3. **Bulle de commande** : pastille 25 % plus petite et **taille d'écran constante** (`FaceCamera.keepScreenSize`, distance de référence 14,3 m). Mesuré : la bulle fait 21 px de large à l'écran avec la caméra à 6 m, 14,3 m et 22 m (`5c-03-bulle-pres` / `5c-03b-bulle-loin`).
+4. **Enseigne** : au milieu du mur du fond (`x = 2,75`), abaissée à `y = 1,35` ; la fenêtre, le tableau d'outils et le mur de caméras ont été redistribués de chaque côté. Elle ne chevauche plus aucune pastille (`5c-01`, `6a-04`).
+5. **Premier client** : toujours une **caméra dôme ×1** (`CustomerConfig.forceFirstOrder`, `firstOrderProductIndex`, `firstOrderQuantity`) ; mesuré, les suivants sont au hasard.
+
+### 6a — premier employé automatique
+- **Scripts** : `EmployeeConfig` (ScriptableObject : vitesse 3, capacité 6, repos 0,4 s, prix d'embauche 150), `Employee` (états : aller au tas → attendre d'être plein + repos → aller au poste → déposer → repos), `HumanAnimator` étendu pour suivre la vitesse d'un `NavMeshAgent` (mêmes Idle/Walk/Run que le joueur). Il **réutilise `StackCarrier`** (6 caisses, pile dans le dos) : `ResourcePile` et `InstallStation` n'ont **pas été modifiés**, ils le détectent comme le joueur. Il n'a aucun accès aux billets ni aux produits.
+- **Visuel** : même modèle humain équipé que le technicien, **gilet bleu et casque blanc** (arête du casque blanche aussi), pile de caisses dans le dos, ombre ronde ; apparition par `PopIn` sur le modèle.
+- **NavMesh** (`EmployeeBuilder.BakeNavMesh`, relançable) : `NavMeshSurface` sur la géométrie de la pièce (établis, comptoir, étagères, palette, murs sont des obstacles), voxels de 0,08 m, sauvé en asset `Assets/Prototype/NavMesh.asset`. Le joueur, l'employé et les textes 3D sont exclus de la cuisson. Le poste 2 est désactivé à la cuisson : il n'est pas dans le NavMesh (l'employé ne va qu'au poste 1).
+- **Dalle d'embauche** : `UnlockPad` réutilisé (`BuildUnlockPad` généralisé), en `(4,5; 0,01; 4,4)` près du tas, titre « EMBAUCHE » + prix « $ 150 » (`HireConfig.asset`, prix recopié depuis `EmployeeConfig`). La zone de ramassage du tas passe de 3 m à **4,2 m** de côté pour que l'employé s'y tienne à côté de la palette (le joueur ramasse un peu plus tôt, sans autre changement).
+- **Mesures en Play** : NavMesh de 79 triangles, trajet tas → poste `PathComplete`. Dalle payée en 90 pas, argent 150 → 0, employé actif et sur le NavMesh. **60 s sans toucher au joueur** : 6 caisses portées, **4 produits fabriqués** (puis le plateau est plein et il attend au poste, comme prévu), **0 position dans un meuble**, 0 hors NavMesh, distance minimale à un client **7,2 m**, hauteur 0,03 à 0,27 m (le sol et la dalle du poste, à ±5 cm).
+- **Captures** : `6a-01-employe-porte`, `6a-01b-employe-porte-jeu-hud`, `6a-02-employe-au-tas`, `6a-03-employe-au-poste`, `6a-04-dalle-embauche-jeu-hud`, `6a-04b-dalle-embauche`, `6a-05-embauche-apparition`.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **L'employé s'arrête quand le plateau de sortie est plein** (4 produits) : le poste attend que le joueur prenne les produits. C'est le comportement demandé (« il attend à côté »), mais le joueur doit vider le plateau pour que l'atelier tourne. Veux-tu que le plateau reste à 4, ou qu'une capacité plus grande ou un 2e employé qui livre aux clients soit prévu pour l'étape suivante ?
+- **Poste 2** : il n'est pas dans le NavMesh (désactivé à la cuisson). Pour qu'un employé le serve plus tard, il faudra le cuire activé (ou faire un NavMesh dynamique). À prévoir à l'étape 6b ?
+- **Joueur et employé** : l'employé ne fait pas attention au joueur (les agents s'évitent entre eux, pas le joueur) ; il peut passer à travers lui. Visible seulement si le joueur se place sur son trajet. À corriger (obstacle dynamique) ?
+- **Course** : toujours en attente de « Jog Forward ».
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
+
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -278,3 +301,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étapes 4f et 5a relues sur captures : validées. Étape 5b (clients, comptoir, paiement) spécifiée.
 - Étape 5b : clients (modèle humain, pool de 6), file avec bulle de commande, comptoir et caisse, livraison, billets, corbeille, porte ; 5a-bis (2 x 2 à plat, le travail attend) ; testé via MCP, captures 5b-*.
 - Étape 5b relue sur captures : validée (boucle complète). Étapes 5c (corrections) et 6a (premier employé, NavMesh) spécifiées.
+- Étapes 5c et 6a : torse des clients conservé et coiffures simples, éclats ronds, bulle à taille d'écran constante, enseigne au centre, premier client forcé ; NavMesh (AI Navigation 2.0.15 déjà installé), employé automatique (gilet bleu), dalle d'embauche ; testé via MCP, captures 5c-* et 6a-*.

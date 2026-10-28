@@ -5,6 +5,7 @@ public class CustomerAppearance : MonoBehaviour
 {
     [SerializeField] SkinnedMeshRenderer shirt;
     [SerializeField] SkinnedMeshRenderer hair;
+    [SerializeField] Renderer[] shirtExtras;   // col ajouté : même matériau (et donc même couleur) que la chemise
     [SerializeField] Color[] shirtColors;
     [SerializeField] Color[] hairColors;
 
@@ -15,6 +16,8 @@ public class CustomerAppearance : MonoBehaviour
     {
         if (shirt != null) shirtMaterial = shirt.material; // crée une copie : les autres clients ne changent pas
         if (hair != null) hairMaterial = hair.material;
+        if (shirtMaterial != null && shirtExtras != null)
+            foreach (Renderer r in shirtExtras) r.sharedMaterial = shirtMaterial;
     }
 
     void OnEnable()
