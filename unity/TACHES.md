@@ -38,20 +38,33 @@ Défauts vus sur les captures :
 2. **Le vide en bas de l'écran** : sur `4e-05-plus10-jeu-hud`, le bas de l'image est noir quand le joueur est près du bord sud (la pièce s'arrête et on voit en dehors). La caméra ne doit jamais voir le vide : prolonger le sol et les murs (ou un mur bas au sud) pour couvrir tout ce que la caméra peut voir quand le joueur est dans la zone jouable, et poser des limites invisibles à la zone jouable.
 3. **Les bandes de la ceinture/gilet vues de dos** sont un peu irrégulières (morceaux décalés, `4e-01b-bandes-dos`) : acceptable à la distance du jeu, à lisser si c'est rapide, sinon laisser.
 
-## Tâche en cours : étape 4f (corrections ci-dessus) puis étape 5a — Produits finis et plateau
+## Relecture cloud de 4f et 5a : validées
+4f : pile pleine à 2,16 m (bon compromis), vrai panneau « MAX » en pastille rouge au-dessus de la pile, plus de vide, limites jouables, très bon. 5a : le plateau à 4 places avec les trois produits (dôme, badgeuse, alarme) est très lisible ; la fabrication, le ramassage et le HUD « Produits » marchent. Réponses :
+- **Produits portés** : les poser **en 2 × 2 à plat** sur le petit plateau (un seul niveau), pas empilés (la pile cache le visage, `5a-03`).
+- **Plateau plein** : le travail **attend** qu'une place se libère (le poste affiche sa barre pleine, aucun produit perdu).
+- **Billets** : confirmé, on les **retire du poste** dès que les clients paient (5b) ; garder le code et `billsPerJob` pour le repli `produceProducts = faux`.
+- **Course** : on attend « Jog Forward » de Sébastien, ne pas bloquer.
+- Remarque visuelle : la pastille d'argent chevauche l'enseigne néon « SÉCURITÉ » sur `4f-01c` ; décaler l'enseigne vers le centre du mur ou la baisser.
 
-**4f :** faire les 3 corrections ci-dessus + le réglage de la pile. Captures `4f-`.
+## Tâche en cours : étape 5b — Clients, comptoir et paiement
 
-**5a — Le poste fabrique de vrais produits (avant les clients).** Objectif : la boucle devient *caisses → poste → produit fini à livrer*. Les billets viendront des clients à l'étape 5b. Pour l'instant, **ajouter** les produits sans retirer les billets (le jeu reste jouable) : un champ de config `produceProducts` dans `StationConfig` (défaut vrai) ; les billets sortent encore quand il est faux.
-1. `ProductType` (ScriptableObject) : nom, forme/couleur, valeur. Trois produits en formes simples : **caméra dôme** (cylindre blanc + demi-sphère sombre), **badgeuse** (boîte noire avec voyant vert), **alarme** (boîte rouge avec sirène jaune).
-2. `StationConfig` : `productsPerJob` (défaut 1), liste des produits fabriqués (en rotation). Valeurs dans les ScriptableObjects, rien en dur.
-3. `InstallStation` : à la fin d'un travail, un produit apparaît sur un **plateau de sortie** devant le poste (pool d'objets, jusqu'à `outputCapacity` = 4).
-4. `ProductCarrier` (sur le joueur) : ramassage automatique des produits du plateau par proximité (comme les billets), portés **à la main, devant le torse** (petit plateau empilé, capacité 4), distinct de la pile de caisses dans le dos. Compteur `Produits x/4` dans le HUD sous le compteur de caisses (même style de pastille).
-5. Les produits portés ne retournent nulle part pour l'instant (la livraison arrive en 5b) : prévoir une action de test `Tools > Idle Prototype > Vider les produits`.
-6. Captures `5a-` : un produit sur le plateau, joueur portant 4 produits, HUD.
+**Objectif :** des clients arrivent, font la queue avec une bulle de commande ; le joueur leur livre les produits, ils paient en billets. C'est la première boucle complète : caisses → produit → client → argent → déblocage.
 
-**Critères de réussite :** 0 erreur ; gameplay étapes 1 à 4 inchangé tant que `produceProducts` est faux ; avec `produceProducts` vrai, 3 caisses déposées → après la durée du travail, un produit sur le plateau, ramassé par le joueur, visible dans ses mains et dans le HUD.
-**Hors périmètre :** clients, comptoir, paiement (5b), employés (6).
+**Retouches d'abord (5a-bis) :** produits portés en 2 × 2 à plat ; le travail du poste attend si le plateau est plein.
+
+**À créer**
+1. `CustomerConfig` (ScriptableObject) : `spawnInterval` (8 s), `maxWaiting` (3), `walkSpeed` (1,8), `minQuantity`/`maxQuantity` (1 et 2), `exitPause` (0,6). Prix = `ProductType.value × quantité`. Aucune valeur en dur.
+2. **Personnage client** (`CustomerBuilder`, éditeur) : même modèle humain `Technicien.fbx` et même `Technicien.controller`, **sans casque ni gilet**, avec une chemise et des cheveux de couleurs tirées au hasard dans une liste de 6 (matériaux par instance). Pool de 6 clients. Animation Idle/Walk pilotée par la vitesse de déplacement du client.
+3. `ServiceCounter` : comptoir en bois avec une caisse enregistreuse (formes simples), zone trigger devant. Position : à droite, au sud de la palette, hors des couloirs existants ; vérifier sur capture que le centre reste libre.
+4. `CustomerQueue` : fait apparaître les clients à une **porte** du mur de droite (cadre de porte en formes simples), les fait marcher en ligne droite (waypoints, **pas de NavMesh** : il viendra à l'étape 6) jusqu'à la file devant le comptoir (places espacées de 1 m, `maxWaiting`), puis vers la sortie après paiement. Le client en tête de file porte la **bulle de commande**.
+5. `OrderBubble` : pastille blanche arrondie au-dessus de la tête, face caméra, avec une petite copie du produit (le prefab de `ProductType`, échelle ~0,4) et « x2 » ; se met à jour quand une partie est livrée ; clignote en vert à la fin.
+6. **Livraison** : quand le joueur est dans la zone du comptoir avec un `ProductCarrier` portant un produit du bon type, les produits volent (0,25 s) vers le client, un par un. À la commande complète : pop de bonheur, **billets** (réutiliser `Bill` et son pool) qui apparaissent sur le comptoir pour une valeur `valeur × quantité`, ramassés par le `BillCollector` existant ; le client part ; le suivant avance.
+7. **Corbeille** : bac près du comptoir où le joueur peut vider tous ses produits portés (pas de pénalité), pour ne pas se bloquer avec un produit inutile. Retour au pool.
+8. **Retirer les billets du poste** quand `produceProducts` est vrai (l'argent vient des clients). Garder le comportement d'avant quand il est faux.
+9. Captures `5b-` (1080×1920) : file avec bulle, moment de la livraison, billets sur le comptoir, HUD.
+
+**Critères de réussite :** 0 erreur ; boucle complète en Play : 3 caisses déposées → produit → livraison à un client → billets → argent → dalle de déblocage payable avec cet argent ; les clients ne se bloquent pas et ne se chevauchent pas ; le gameplay des étapes 1 à 4 reste jouable avec `produceProducts` faux.
+**Hors périmètre :** NavMesh, employés (6), patience des clients, sons.
 
 ---
 
@@ -65,33 +78,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étapes 4f et 5a : compilent, 0 erreur en Play, gameplay des étapes 1 à 4 inchangé. Captures `4f-*` et `5a-*` (1080×1920).**
-
-### 4f — corrections
-- **Pile** : caisses ×0,6 (`CrateScale`), pas 0,17 (`StackItemHeight`), point d'accroche collé au dos (`z = -0,3`). **Mesuré : sommet de la pile pleine à 2,16 m, soit 0,46 m au-dessus de la tête (1,7 m)** ; la cible était ≈ 2,3 m, donc un peu plus bas, ce qui convient.
-- **Panneau MAX** : vraie pastille rouge arrondie avec le mot « MAX » en blanc à contour sombre, face caméra (`FaceCamera`, rotation = caméra), placée par `StackCarrier` à **sommet de la dernière caisse + 0,4 m** (mesuré : écart 0,40 m), plus de hauteur fixe. Texte ajusté pour tenir dans la pastille.
-- **Plus de vide** : la pièce couvre tout ce que la caméra voit (sol jusqu'à `z = -14`, mur de droite, mur bas de 0,9 m au sud avec liseré jaune) ; l'écran de bord sud, de coin sud-est et de coin nord-ouest montre toujours du sol (`4f-02*`). **Limites invisibles** de la zone jouable : `x` de -7,2 à 8,2, `z` de -5 à 10,8 (4 BoxColliders `PlayBounds`) ; mesuré en poussant le joueur : `z` min atteint -4,42, `x` min -6,62.
-- **Bandes de gilet vues de dos** : lissées (moyenne sur 3 secteurs, 2 passes), voir `4f-03-bandes-dos`.
-- **Jog Forward** : absent de `Assets/Characters/`, la course reste telle quelle comme demandé.
-
-### 5a — produits finis et plateau
-- **Scripts** : `ProductType` (ScriptableObject : nom, prefab, valeur, couleur), `Product` (collider trigger, pool, libère sa place du plateau quand il est pris), `ProductCarrier` (sur le joueur), `ProductHud`. `StationConfig` : `produceProducts` (défaut vrai), `productsPerJob` (1), `products` (liste, en rotation), `outputCapacity` (4). `InstallStation` : champ `outputTray` ; à la fin d'un travail, après les billets, un produit apparaît sur la première place libre du plateau (un pool par type de produit).
-- **3 produits en formes simples** (`Assets/Prototype/Products`, assets conservés s'ils existent) : caméra dôme (disque blanc + demi-sphère sombre + objectif, valeur 25), badgeuse (boîte noire, écran bleu, voyant vert, valeur 40), alarme (boîte rouge + sirène jaune, valeur 60).
-- **Plateau de sortie** : plateau acier à 4 places marquées, liseré jaune, sur le côté ouest de chaque poste (`x` local -2,1), donc le produit se ramasse en se plaçant près de lui ; le poste 2 en a un aussi.
-- **Portage à la main** : ramassage automatique par proximité (rayon 1,4 m, vol de 0,2 s), produits empilés sur un petit plateau devant le torse (`CarryAnchor`, capacité 4, écart 0,22), distinct de la pile de caisses dans le dos ; le petit plateau n'est visible que si on porte quelque chose. Pastille de HUD `Produits x/4` sous celle des caisses (icône de dôme, pop à chaque ajout).
-- **Action de test** : `Tools > Idle Prototype > Vider les produits` (en Play) rend les produits portés à leur pool.
-- **Tests Play (mesurés)** : 3 caisses déposées → après le travail 1 produit sur le plateau + 5 billets ; 4 travaux → 4 produits (plateau plein) ; un 5e travail → toujours 4 produits (le 5e est perdu) et 5 billets quand même ; en se plaçant près du plateau → porté 4/4, plateau vide ; avec les mains pleines un 6e produit reste sur le plateau ; `Vider les produits` → 0 porté (puis le produit du plateau est ramassé → 1) ; `produceProducts` faux → 0 produit et 5 billets comme avant (remis à vrai ensuite).
-- **Décision** : avec `produceProducts` vrai, les **billets sortent toujours aussi** (« ajouter sans retirer »). Les produits portés ne retournent nulle part avant 5b.
-- Captures : `4f-01-pile-max-trois-quarts`, `4f-01c-pile-max-jeu-hud`, `4f-02-bord-sud-jeu-hud`, `4f-02b-coin-sud-est-jeu-hud`, `4f-03-bandes-dos` ; `5a-01-produit-sur-plateau`, `5a-02-plateau-plein`, `5a-03-porte-4-produits-face`, `5a-03b-porte-4-produits-profil`, `5a-04-hud-produits`.
+_(vide — étape 5b)_
 
 ## Questions (à remplir par Claude Code local)
-- **Produits portés** : empilés sur 4 niveaux ils montent jusqu'au visage (`5a-03`). Veux-tu les poser en 2 × 2 sur le plateau (moins haut) ou garder la pile ?
-- **Plateau plein** : un produit fabriqué quand le plateau est plein est perdu. Préfères-tu que le travail attende qu'une place se libère ?
-- **Billets et produits** : les deux sortent pour l'instant. À l'étape 5b, on retire les billets du poste (l'argent viendra des clients) : confirmes-tu ?
-- **Course** : toujours le clip « Running » (glissement léger), en attente de « Jog Forward ».
-- **Captures anciennes** : `4f-02` et `4f-02b` ont été prises avant l'ajustement final du texte MAX (le texte débordait de la pastille) ; `4f-01*` montrent la version finale.
-- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
-
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -204,6 +194,34 @@ Questions posées à l'époque (répondues plus haut) :
 - **Chiffre flottant fusionné** : est-ce que tu préfères un « +10 » par billet (étalés dans le temps) ? Cela demanderait d'échelonner l'arrivée des billets au joueur.
 - Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
 
+## Archive : résultats des étapes 4f et 5a (Claude Code local)
+**Étapes 4f et 5a : compilent, 0 erreur en Play, gameplay des étapes 1 à 4 inchangé. Captures `4f-*` et `5a-*` (1080×1920).**
+
+### 4f — corrections
+- **Pile** : caisses ×0,6 (`CrateScale`), pas 0,17 (`StackItemHeight`), point d'accroche collé au dos (`z = -0,3`). **Mesuré : sommet de la pile pleine à 2,16 m, soit 0,46 m au-dessus de la tête (1,7 m)** ; la cible était ≈ 2,3 m, donc un peu plus bas, ce qui convient.
+- **Panneau MAX** : vraie pastille rouge arrondie avec le mot « MAX » en blanc à contour sombre, face caméra (`FaceCamera`, rotation = caméra), placée par `StackCarrier` à **sommet de la dernière caisse + 0,4 m** (mesuré : écart 0,40 m), plus de hauteur fixe. Texte ajusté pour tenir dans la pastille.
+- **Plus de vide** : la pièce couvre tout ce que la caméra voit (sol jusqu'à `z = -14`, mur de droite, mur bas de 0,9 m au sud avec liseré jaune) ; l'écran de bord sud, de coin sud-est et de coin nord-ouest montre toujours du sol (`4f-02*`). **Limites invisibles** de la zone jouable : `x` de -7,2 à 8,2, `z` de -5 à 10,8 (4 BoxColliders `PlayBounds`) ; mesuré en poussant le joueur : `z` min atteint -4,42, `x` min -6,62.
+- **Bandes de gilet vues de dos** : lissées (moyenne sur 3 secteurs, 2 passes), voir `4f-03-bandes-dos`.
+- **Jog Forward** : absent de `Assets/Characters/`, la course reste telle quelle comme demandé.
+
+### 5a — produits finis et plateau
+- **Scripts** : `ProductType` (ScriptableObject : nom, prefab, valeur, couleur), `Product` (collider trigger, pool, libère sa place du plateau quand il est pris), `ProductCarrier` (sur le joueur), `ProductHud`. `StationConfig` : `produceProducts` (défaut vrai), `productsPerJob` (1), `products` (liste, en rotation), `outputCapacity` (4). `InstallStation` : champ `outputTray` ; à la fin d'un travail, après les billets, un produit apparaît sur la première place libre du plateau (un pool par type de produit).
+- **3 produits en formes simples** (`Assets/Prototype/Products`, assets conservés s'ils existent) : caméra dôme (disque blanc + demi-sphère sombre + objectif, valeur 25), badgeuse (boîte noire, écran bleu, voyant vert, valeur 40), alarme (boîte rouge + sirène jaune, valeur 60).
+- **Plateau de sortie** : plateau acier à 4 places marquées, liseré jaune, sur le côté ouest de chaque poste (`x` local -2,1), donc le produit se ramasse en se plaçant près de lui ; le poste 2 en a un aussi.
+- **Portage à la main** : ramassage automatique par proximité (rayon 1,4 m, vol de 0,2 s), produits empilés sur un petit plateau devant le torse (`CarryAnchor`, capacité 4, écart 0,22), distinct de la pile de caisses dans le dos ; le petit plateau n'est visible que si on porte quelque chose. Pastille de HUD `Produits x/4` sous celle des caisses (icône de dôme, pop à chaque ajout).
+- **Action de test** : `Tools > Idle Prototype > Vider les produits` (en Play) rend les produits portés à leur pool.
+- **Tests Play (mesurés)** : 3 caisses déposées → après le travail 1 produit sur le plateau + 5 billets ; 4 travaux → 4 produits (plateau plein) ; un 5e travail → toujours 4 produits (le 5e est perdu) et 5 billets quand même ; en se plaçant près du plateau → porté 4/4, plateau vide ; avec les mains pleines un 6e produit reste sur le plateau ; `Vider les produits` → 0 porté (puis le produit du plateau est ramassé → 1) ; `produceProducts` faux → 0 produit et 5 billets comme avant (remis à vrai ensuite).
+- **Décision** : avec `produceProducts` vrai, les **billets sortent toujours aussi** (« ajouter sans retirer »). Les produits portés ne retournent nulle part avant 5b.
+- Captures : `4f-01-pile-max-trois-quarts`, `4f-01c-pile-max-jeu-hud`, `4f-02-bord-sud-jeu-hud`, `4f-02b-coin-sud-est-jeu-hud`, `4f-03-bandes-dos` ; `5a-01-produit-sur-plateau`, `5a-02-plateau-plein`, `5a-03-porte-4-produits-face`, `5a-03b-porte-4-produits-profil`, `5a-04-hud-produits`.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Produits portés** : empilés sur 4 niveaux ils montent jusqu'au visage (`5a-03`). Veux-tu les poser en 2 × 2 sur le plateau (moins haut) ou garder la pile ?
+- **Plateau plein** : un produit fabriqué quand le plateau est plein est perdu. Préfères-tu que le travail attende qu'une place se libère ?
+- **Billets et produits** : les deux sortent pour l'instant. À l'étape 5b, on retire les billets du poste (l'argent viendra des clients) : confirmes-tu ?
+- **Course** : toujours le clip « Running » (glissement léger), en attente de « Jog Forward ».
+- **Captures anciennes** : `4f-02` et `4f-02b` ont été prises avant l'ajustement final du texte MAX (le texte débordait de la pastille) ; `4f-01*` montrent la version finale.
+- Tâche parallèle (dépôt iOS) : toujours REPORTÉE.
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -223,3 +241,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 4e : bandes collées au gilet, pile ×0,75, vitesse 4,2 m/s, prix en vrai billboard, retour d'information (+valeur, éclats, pop) ; testé via MCP, 9 captures 4e-*.
 - Étape 4e relue sur captures : validée avec 3 défauts. Étapes 4f (corrections) et 5a (produits finis) spécifiées.
 - Étapes 4f et 5a : pile ×0,6, panneau MAX avec texte au sommet de la pile, sol/murs/limites sans vide ; produits finis (3 types), plateau de sortie, portage à la main, HUD Produits ; testé via MCP, captures 4f-* et 5a-*.
+- Étapes 4f et 5a relues sur captures : validées. Étape 5b (clients, comptoir, paiement) spécifiée.
