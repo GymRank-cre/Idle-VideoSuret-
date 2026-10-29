@@ -143,6 +143,12 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - **E (WebGL)** : la mesure fine (hanches, rotation) n'a été faite que dans l'éditeur ; dans le navigateur j'ai seulement constaté que la scène, le joystick et la course fonctionnent (pas de mesure des hanches). Les employés et clients partagent le même contrôleur : ils n'ont plus le balancement de hanches, sans autre changement visible.
 - **Question à trancher après la vidéo de Sébastien** : si le balancement persiste sur iPhone, c'est sans doute la pile (D) ou un réglage d'animation (remplacer la course par une course « en place »).
 
+## Relecture cloud des étapes 9a et 9b (lecture du code et des captures `9a-*` / `9b-*`)
+- **9b : validée.** Planche « avant » : le technicien saute d'un côté à l'autre d'une image à l'autre ; planche « après » : il reste au même endroit à l'écran en courant, et le correctif est propre (`lockRootPositionXZ = false`, réimport forcé, entrée lissée, hystérésis de virage). Bonne décision d'avoir mesuré avant de corriger.
+- **9a : validée.** Joystick plein écran visible à droite, textes `LIVREUR` / `$ 250` et `EMBAUCHE` / `$ 150` séparés, cadrage identique aux trois formats. **Écran gris (caméra `NaN`)** : excellente trouvaille, correctif et garde-fou relus, rien à redire.
+- **À surveiller (ne rien changer avant le retour de Sébastien) :** (1) avec la largeur de vue conservée à 390×844 (champ de vision 75,6°), le technicien est **plus petit à l'écran qu'avant** (~6 % de la largeur sur `9a-01-joystick-droite-390x844.png`) ; si Sébastien le trouve trop petit, rapprocher la caméra (`offset`) plutôt que toucher au champ de vision ; (2) le dépôt pèse maintenant **152 Mo** (`.git`), chaque remplacement de `webgl/` ajoute environ 17 Mo : prévenir à 180 Mo, on passera alors à un déploiement direct depuis le PC (`vercel` en ligne de commande) sans historique.
+- **Prochaine étape :** attendre la **vidéo iPhone** de Sébastien (balancement, joystick à droite, plus d'écran gris). Selon son retour : pile de caisses (piste D), taille du personnage, puis nouveau monde.
+
 ## Questions (à remplir par Claude Code local)
 - **Nouvelle vidéo iPhone** : peux-tu rejouer (ouvrir l'adresse d'aperçu Vercel + `/webgl/`, vider les données du site Safari si besoin) et envoyer une vidéo ? Le balancement des hanches (108 cm -> 1,2 cm) et l'écran gris après la première dalle devraient avoir disparu.
 - **Pile de caisses** : si elle te semble encore balancer, je la mesurerai et limiterai son oscillation latérale (piste D).
