@@ -231,7 +231,7 @@ public static class WebGLBuilder
     <meta charset=""utf-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"">
     <meta name=""apple-mobile-web-app-capable"" content=""yes"">
-    <script>if (!location.pathname.endsWith(""/"") && !location.pathname.endsWith("".html"")) location.replace(location.pathname + ""/"" + location.search);</script>
+    <script>if (!location.pathname.endsWith(""/"") && !location.pathname.endsWith("".html"")) { var p = location.pathname.replace(/^\/+/, ""/""); location.replace(p + ""/"" + location.search + location.hash); }</script>
     <title>{{{ PRODUCT_NAME }}}</title>
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d12; overscroll-behavior: none; }
