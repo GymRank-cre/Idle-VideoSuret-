@@ -465,3 +465,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Cloud, à propos du build WebGL (qui compile lentement les shaders du paquet d'IA Sentis) : si la taille ou la durée est mauvaise, proposer à Sébastien de **retirer les packages Unity AI inutilisés** (`com.unity.ai.assistant`, Sentis/Inference Engine et dépendances) du `manifest.json` : ils n'apportent rien au jeu, alourdissent le build et inondent la Console de messages `NoSubscription`. Ne le faire qu'avec son accord, après le premier build mesuré, et refaire un test complet ensuite.
 - Sébastien : Unity relancé, retrait de Sentis et des packages Unity AI inutilisés autorisé.
 - Étape 8c relue : validée (build WebGL 17 Mo fonctionnel dans Chrome mobile). Étape 8d : mise en ligne du build via l'intégration Git de Vercel (Sébastien sur téléphone).
+- Sébastien a importé le dépôt dans Vercel : commit de déclenchement de l'aperçu de la branche (test du build WebGL sur iPhone, URL `<aperçu>/webgl/`).
