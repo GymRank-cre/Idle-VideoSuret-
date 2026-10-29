@@ -168,6 +168,14 @@ Le personnage fait maintenant ~9 % de l'écran et le déblocage a de la fête (s
 4. **Sol vide dans le bas de l'écran** : déjà noté pour 10b ; en attendant, K1 peut ajouter des marquages/tapis simples si c'est rapide.
 Le jeu republié dans l'Artifact Claude = build 10a.
 
+## Relecture cloud de l'étape K1 : validée avec 3 retouches (K1b), à faire en même temps que Q1
+**Réussi** (vu sur `K1-jeu-390x844.png` et sur le build republié dans l'Artifact) : pastilles du HUD **opaques, ardoise, avec socle**, police Lilita partout, chiffres lisibles ; consigne du guide en pastille sombre ; **écran titre** « Idle Sécurité » + bouton vert « Jouer » (très proche de la maquette) ; page de chargement dans le même style ; 18 tests unitaires des nombres. Le build tourne bien (testé dans un navigateur sans interface).
+**À retoucher (K1b, petit)** :
+1. **La pile de caisses penche encore beaucoup** quand il court (une tour de 8 caisses inclinée à ~30° qui part vers le haut de l'écran). Objectif : **colonne presque verticale** (≤ 15° d'inclinaison) qui se lit comme une pile sur son dos. Piste : appliquer le retard seulement sur l'horizontale (écart latéral ≤ 0,12 m, vers l'arrière ≤ 0,25 m), sans étirer la hauteur ; recalculer chaque caisse dans le repère du joueur pour qu'elle ne suive pas la caméra ; garder le petit rebond.
+2. **Écran titre** : le sous-titre « Installation de sécurité électronique » touche l'ombre du logo ; ajouter ~16 px d'espace au-dessus et un peu d'espace sous le logo.
+3. **Captures manquantes** (demandées en K1, non fournies) : écran titre (via `forceInEditor`), **dalle en gros plan** (titre sur ruban + prix + icône billet), « +N » flottant, **430×932**, et une **planche côte à côte avec `ui-01-jeu.png`** ; vérifier qu'aucun texte n'est coupé au bord.
+**Rappel d'ordre** : K1b (30 minutes maximum) puis Q1 puis 11a. Le sol vide du bas de l'écran reste prévu pour 10b.
+
 ## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
 1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
 2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.
@@ -179,7 +187,7 @@ Le jeu republié dans l'Artifact Claude = build 10a.
 ## FILE D'ATTENTE — mode autonome (Sébastien est absent jusqu'à demain matin ; **ne pas attendre de réponse, avancer**)
 **Lire d'abord `unity/QUALITE.md` (barre de qualité, bible artistique, budgets, règles de travail) et regarder `unity/maquettes/ui-01-jeu.png` et `ui-02-commandes.png` (cible du kit d'interface ; source `ui-kit.html`).** Faire les chantiers **dans cet ordre, un par un, en poussant après chacun** (un build WebGL par chantier terminé) ; le cloud relit chaque poussée, republie l'Artifact et écrit les corrections ici. En cas de décision à prendre : valeur « (défaut) », la noter, continuer.
 1. ~~**10a**~~ — faite et relue (voir la relecture ci-dessus). **Commencer par K1.**
-2. **K1 — Police et kit d'interface** (spécifié ci-dessous) : le plus gros gain visuel pour un petit travail.
+2. ~~**K1**~~ — faite et relue ; **K1b (retouches) à faire d'abord, 30 minutes maximum** (voir la relecture ci-dessus).
 3. **Q1 — Fondations qualité** : menu `Tools > Idle Prototype > Test de fumée` (90 s de Play automatisé : 0 erreur/avertissement, l'argent augmente, sauvegarde -> rechargement = même état), tests EditMode de l'économie et de la migration de sauvegarde, table de chaînes `Loc` (FR, tout nouveau texte passe par elle, migrer les textes existants du HUD et des panneaux), journal d'événements local affiché dans le Diagnostic (temps jusqu'à chaque déblocage, durée de session).
 4. **11a** — la chaîne de production qui tourne toute seule (spécifiée plus bas).
 5. **11b** — améliorations par machine ; **11c** — commandes de clients (panneau selon `ui-02-commandes.png`, camionnettes avec bulles d'humeur) ; détails à écrire par le cloud après la relecture de 11a (si 11a n'est pas relue, lancer 11b selon l'aperçu ci-dessous).
