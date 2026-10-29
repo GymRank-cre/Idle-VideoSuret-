@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Idle Sécurité — maquette du kit d'interface</title>
+<style>
+  /* Maquette cible (pas du code de jeu) : palette, police Lilita One (OFL), formes et tailles du kit d'interface.
+     Les valeurs en px sont à 390 px de large ; en jeu : x 2,77 (Canvas 1080 x 1920). */
+  @font-face { font-family: "Lilita One"; src: url("../Assets/Fonts/LilitaOne-Regular.ttf"); }
+  :root {
+    --yellow:#FFC400; --yellow-d:#C99700; --orange:#FF7A1A; --orange-d:#C9540B; --blue:#1FA0FF; --cyan:#27D3E6;
+    --green:#3DDC5A; --green-d:#1E9B3A; --red:#F2453D; --slate:#1E2A38; --slate-2:#2A3A4D; --cream:#F6EFE2;
+    --floor-a:#D5DCE4; --floor-b:#C3CCD7; --ink:#0E1620; --white:#fff;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background:#101820; font-family:"Lilita One", system-ui, sans-serif; color:#fff; display:flex; gap:24px; padding:24px; }
+  .screen { position:relative; width:390px; height:844px; overflow:hidden; border-radius:36px; background:var(--floor-a); flex:none; }
+  /* texte « jeu » : blanc, contour sombre, ombre portée */
+  .t { color:#fff; -webkit-text-stroke:3px var(--ink); paint-order:stroke fill; text-shadow:0 3px 0 var(--ink); letter-spacing:.02em; }
+  .t.green { color:#8CFF9E; } .t.yellow { color:var(--yellow); }
+  /* sol */
+  .floor { position:absolute; inset:0; background:
+    conic-gradient(var(--floor-a) 25%, var(--floor-b) 0 50%, var(--floor-a) 0 75%, var(--floor-b) 0) 0 0/64px 64px; }
+  .wall { position:absolute; left:0; right:0; top:0; height:190px; background:linear-gradient(#EFE3CC,#F6EFE2); border-bottom:10px solid #8A97A6; }
+  .wall:after { content:""; position:absolute; left:0; right:0; bottom:-22px; height:12px; background:#FFC400; opacity:.9; }
+  .shadow { position:absolute; background:rgba(14,22,32,.18); filter:blur(6px); border-radius:50%; }
+  /* machines */
+  .machine { position:absolute; border-radius:18px; background:linear-gradient(#6F8CA8,#4F6A86); box-shadow:0 10px 0 #364B63, 0 18px 18px rgba(14,22,32,.3); }
+  .machine:before { content:""; position:absolute; left:14%; right:14%; top:-10px; height:20px; border-radius:10px; background:var(--yellow); box-shadow:0 4px 0 var(--yellow-d); }
+  .belt { position:absolute; height:54px; border-radius:12px; background:repeating-linear-gradient(90deg,#2F3B4A 0 16px,#3A4959 16px 32px); box-shadow:0 6px 0 #1B2430; }
+  .crate { position:absolute; width:34px; height:28px; border-radius:6px; background:linear-gradient(#E0A25A,#C07F36); box-shadow:0 4px 0 #8E5A22; }
+  .crate:after { content:""; position:absolute; left:14px; width:6px; top:0; bottom:0; background:rgba(255,255,255,.55); }
+  /* barre du haut : pastilles sombres */
+  .pill { position:absolute; height:42px; border-radius:21px; background:var(--slate); box-shadow:0 4px 0 rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.08);
+          display:flex; align-items:center; gap:8px; padding:0 14px 0 8px; font-size:24px; }
+  .pill svg { width:28px; height:28px; flex:none; }
+  .pill .plus { margin-left:auto; width:26px; height:26px; border-radius:9px; background:var(--green); color:#fff; font-size:22px; line-height:26px; text-align:center; box-shadow:0 3px 0 var(--green-d); }
+  .round { position:absolute; width:42px; height:42px; border-radius:50%; background:var(--slate); display:grid; place-items:center; box-shadow:0 4px 0 rgba(0,0,0,.35); }
+  /* boutons carrés orange (améliorations, commandes) */
+  .sq { position:absolute; width:54px; height:54px; border-radius:16px; background:linear-gradient(#FF9A4A,var(--orange)); box-shadow:0 5px 0 var(--orange-d), 0 9px 10px rgba(14,22,32,.25);
+        display:grid; place-items:center; }
+  .sq svg { width:32px; height:32px; }
+  .badge { position:absolute; right:-6px; top:-8px; min-width:22px; height:22px; border-radius:11px; background:var(--red); border:2px solid #fff; font-size:14px; line-height:18px; text-align:center; }
+  /* consigne du guide */
+  .guide { position:absolute; left:14px; right:14px; height:40px; border-radius:20px; background:rgba(30,42,56,.9); display:grid; place-items:center; font-size:19px; }
+  /* dalle d'achat : plaque sombre, bords jaune/noir, gros prix */
+  .pad { position:absolute; width:170px; height:134px; border-radius:22px; background:var(--slate); border:8px solid transparent;
+         background-image:linear-gradient(var(--slate),var(--slate)), repeating-linear-gradient(135deg,var(--yellow) 0 14px,#17202B 14px 28px);
+         background-origin:border-box; background-clip:padding-box, border-box; box-shadow:0 8px 0 #0E1620, 0 0 28px rgba(255,196,0,.55);
+         display:grid; place-items:center; }
+  .pad .price { font-size:44px; display:flex; align-items:center; gap:8px; }
+  .pad .price svg { width:36px; height:36px; }
+  .ribbon { position:absolute; padding:2px 22px 4px; border-radius:10px; background:var(--orange); box-shadow:0 4px 0 var(--orange-d); font-size:24px; }
+  .float { position:absolute; font-size:30px; display:flex; align-items:center; gap:4px; }
+  .bubble { position:absolute; width:40px; height:40px; border-radius:50%; background:#fff; box-shadow:0 4px 0 rgba(14,22,32,.35); display:grid; place-items:center; }
+  .bubble:after { content:""; position:absolute; bottom:-7px; left:15px; border:7px solid transparent; border-top-color:#fff; border-bottom:0; }
+  /* barre d'amélioration d'une machine (en bas) */
+  .upg { position:absolute; bottom:22px; width:150px; height:132px; border-radius:24px; background:linear-gradient(#FFE27A,#FFC400); box-shadow:0 7px 0 var(--yellow-d), 0 14px 16px rgba(14,22,32,.3);
+         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
+  .upg .lvl { position:absolute; left:-8px; top:-12px; width:40px; height:40px; border-radius:12px; background:var(--slate); border:3px solid #fff; display:grid; place-items:center; font-size:22px; }
+  .upg .name { font-size:26px; color:var(--ink); } .upg .cost { display:flex; align-items:center; gap:6px; font-size:26px; background:var(--slate); padding:2px 12px 2px 6px; border-radius:16px; }
+  .upg .cost svg { width:26px; height:26px; }
+  /* panneau de commandes */
+  .dim { position:absolute; inset:0; background:rgba(14,22,32,.62); }
+  .panel { position:absolute; left:16px; right:16px; top:96px; bottom:96px; border-radius:30px; background:linear-gradient(#FFA14E,var(--orange)); box-shadow:0 10px 0 var(--orange-d), 0 22px 30px rgba(0,0,0,.4); padding:70px 16px 16px; }
+  .panel h1 { position:absolute; left:50%; top:-18px; transform:translateX(-50%); font-size:30px; font-weight:400; padding:8px 28px 10px; border-radius:18px; background:var(--slate); box-shadow:0 5px 0 #0E1620; white-space:nowrap; }
+  .close { position:absolute; right:-6px; top:-16px; width:42px; height:42px; border-radius:13px; background:var(--red); box-shadow:0 4px 0 #A82019; display:grid; place-items:center; font-size:26px; border:3px solid #fff; }
+  .card { background:#FFF7E8; border-radius:22px; padding:12px; color:var(--ink); display:flex; gap:12px; box-shadow:inset 0 -5px 0 #EBD9B8; margin-bottom:14px; }
+  .avatar { width:84px; height:104px; border-radius:16px; background:linear-gradient(#BFE6FF,#8CC8F2); position:relative; flex:none; overflow:hidden; }
+  .avatar i { position:absolute; left:50%; transform:translateX(-50%); }
+  .info { flex:1; font-size:20px; }
+  .info .who { font-size:24px; } .info .row { display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .info .row svg { width:22px; height:22px; }
+  .btns { display:flex; gap:8px; margin-top:10px; }
+  .btn { flex:1; height:42px; border-radius:14px; display:grid; place-items:center; font-size:22px; }
+  .btn.ok { background:var(--green); box-shadow:0 4px 0 var(--green-d); } .btn.no { background:var(--red); box-shadow:0 4px 0 #A82019; flex:.7; } .btn.x2 { background:var(--blue); box-shadow:0 4px 0 #0F6DB3; }
+  .legend { align-self:flex-end; font:12px/1.4 system-ui,sans-serif; color:#9AA7B6; width:300px; }
+  .legend b { color:#fff; }
+</style>
+
+<!-- ======================= ÉCRAN 1 : le jeu ======================= -->
+<div class="screen" id="s1">
+  <div class="floor"></div><div class="wall"></div>
+  <!-- chaîne : réception -> assemblage -> emballage -->
+  <div class="belt" style="left:-10px;top:300px;width:410px"></div>
+  <div class="crate" style="left:40px;top:288px"></div><div class="crate" style="left:132px;top:288px"></div><div class="crate" style="left:300px;top:288px"></div>
+  <div class="shadow" style="left:150px;top:350px;width:110px;height:26px"></div>
+  <div class="machine" style="left:168px;top:214px;width:92px;height:112px"></div>
+  <div class="machine" style="left:292px;top:226px;width:78px;height:96px"></div>
+  <!-- étiquettes de stock -->
+  <div class="pill" style="left:186px;top:250px;height:30px;padding:0 10px;font-size:18px;border-radius:15px">3/10</div>
+  <!-- dalle d'achat -->
+  <div class="shadow" style="left:100px;top:560px;width:190px;height:34px"></div>
+  <div class="ribbon t" style="left:140px;top:420px;font-size:24px;-webkit-text-stroke:2px var(--ink)">LIVREUR</div>
+  <div class="pad" style="left:110px;top:458px"><div class="price t">
+    <svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg>250</div></div>
+  <!-- retour flottant -->
+  <div class="float t green" style="left:250px;top:384px">+256
+    <svg width="30" height="30" viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg></div>
+  <!-- clients qui attendent : bulles d'humeur -->
+  <div class="bubble" style="left:60px;top:640px"><svg width="28" height="28" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#FFC400" stroke="#0E1620" stroke-width="2.5"/><circle cx="11" cy="13" r="2" fill="#0E1620"/><circle cx="21" cy="13" r="2" fill="#0E1620"/><path d="M9 21q7 6 14 0" stroke="#0E1620" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+  <div class="bubble" style="left:110px;top:652px"><svg width="28" height="28" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#F2453D" stroke="#0E1620" stroke-width="2.5"/><path d="M8 10l6 3M24 10l-6 3" stroke="#0E1620" stroke-width="2.5" stroke-linecap="round"/><circle cx="11" cy="15" r="2" fill="#0E1620"/><circle cx="21" cy="15" r="2" fill="#0E1620"/><path d="M10 24q6-5 12 0" stroke="#0E1620" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+  <!-- barre du haut -->
+  <div class="pill" style="left:12px;top:50px;width:120px"><svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg><span class="t" style="-webkit-text-stroke:2px var(--ink)">1,2K</span><span class="plus">+</span></div>
+  <div class="round" style="left:174px;top:50px"><svg width="26" height="26" viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="3.5 3.5"/><circle cx="16" cy="16" r="10" fill="none" stroke="#fff" stroke-width="4"/><circle cx="16" cy="16" r="4" fill="#1E2A38"/></svg></div>
+  <div class="pill" style="right:12px;top:50px;width:128px"><svg viewBox="0 0 32 32"><path d="M16 3l4 9 10 1-7.5 6.5L25 30l-9-5-9 5 2.5-10.500L2 13l10-1z" fill="#27D3E6" stroke="#0E1620" stroke-width="2.5" stroke-linejoin="round"/></svg><span class="t" style="-webkit-text-stroke:2px var(--ink)">128</span></div>
+  <div class="pill" style="right:12px;top:100px;width:128px"><svg viewBox="0 0 32 32"><rect x="3" y="7" width="26" height="20" rx="4" fill="#C07F36" stroke="#0E1620" stroke-width="2.5"/><rect x="14" y="7" width="4" height="20" fill="#F6D9A8"/></svg><span class="t" style="-webkit-text-stroke:2px var(--ink)">3/8</span></div>
+  <div class="guide t" style="top:152px;font-size:19px;-webkit-text-stroke:2px var(--ink);background:rgba(30,42,56,.9);text-shadow:none">Embauche un livreur sur la dalle LIVREUR</div>
+  <!-- boutons carrés à droite -->
+  <div class="sq" style="right:12px;top:208px"><svg viewBox="0 0 32 32"><path d="M16 4l11 12h-7v12h-8V16H5z" fill="#fff" stroke="#8A3A07" stroke-width="2" stroke-linejoin="round"/></svg><span class="badge t" style="-webkit-text-stroke:0;text-shadow:none">!</span></div>
+  <div class="sq" style="right:12px;top:276px"><svg viewBox="0 0 32 32"><rect x="6" y="5" width="20" height="24" rx="4" fill="#fff" stroke="#8A3A07" stroke-width="2"/><path d="M11 12h10M11 17h10M11 22h6" stroke="#FF7A1A" stroke-width="2.5" stroke-linecap="round"/></svg><span class="badge t" style="-webkit-text-stroke:0;text-shadow:none">2</span></div>
+  <!-- barre d'amélioration de la machine touchée -->
+  <div class="upg" style="left:30px"><div class="lvl t" style="-webkit-text-stroke:2px var(--ink)">4</div><div class="name">Ajouter</div><div class="cost t" style="-webkit-text-stroke:2px var(--ink)"><svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg>340</div></div>
+  <div class="upg" style="right:30px"><div class="lvl t" style="-webkit-text-stroke:2px var(--ink)">7</div><div class="name">Vitesse</div><div class="cost t" style="-webkit-text-stroke:2px var(--ink)"><svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg>1,1K</div></div>
+</div>
+
+<!-- ======================= ÉCRAN 2 : commandes ======================= -->
+<div class="screen" id="s2">
+  <div class="floor"></div><div class="wall"></div><div class="dim"></div>
+  <div class="panel">
+    <h1 class="t" style="-webkit-text-stroke:3px var(--ink)">COMMANDES</h1><div class="close t">X</div>
+    <div class="card">
+      <div class="avatar"><i style="top:18px;width:46px;height:46px;border-radius:50%;background:#F2C9A0"></i><i style="top:62px;width:70px;height:60px;border-radius:30px 30px 0 0;background:#2F5D8C"></i><i style="top:12px;width:50px;height:20px;border-radius:25px 25px 0 0;background:#6B4A2B"></i></div>
+      <div class="info"><div class="who">Karim, Banque du Nord</div>
+        <div class="row">3 caméras dôme</div><div class="row">2 badgeuses</div>
+        <div class="row t green" style="-webkit-text-stroke:2px var(--ink);font-size:22px"><svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg>2,4K
+          <svg viewBox="0 0 32 32" style="margin-left:8px"><path d="M16 3l4 9 10 1-7.5 6.5L25 30l-9-5-9 5 2.5-10.500L2 13l10-1z" fill="#27D3E6" stroke="#0E1620" stroke-width="2.5" stroke-linejoin="round"/></svg><span style="color:#8DF1FF">+12</span></div></div>
+    </div>
+    <div class="btns" style="margin:-4px 0 14px"><div class="btn no t" style="-webkit-text-stroke:2px var(--ink)">Refuser</div><div class="btn ok t" style="-webkit-text-stroke:2px var(--ink)">Accepter</div><div class="btn x2 t" style="-webkit-text-stroke:2px var(--ink)">x2</div></div>
+    <div class="card">
+      <div class="avatar" style="background:linear-gradient(#FFE0F0,#F6B3D6)"><i style="top:18px;width:46px;height:46px;border-radius:50%;background:#E9B48C"></i><i style="top:62px;width:70px;height:60px;border-radius:30px 30px 0 0;background:#B8325E"></i><i style="top:10px;width:56px;height:30px;border-radius:28px 28px 8px 8px;background:#2B1A12"></i></div>
+      <div class="info"><div class="who">Léa, Mairie de Brest</div><div class="row">5 alarmes</div><div class="row">1 caméra dôme</div>
+        <div class="row t green" style="-webkit-text-stroke:2px var(--ink);font-size:22px"><svg viewBox="0 0 32 32"><rect x="2" y="7" width="28" height="18" rx="5" fill="#3DDC5A" stroke="#0E1620" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="#8CFF9E" stroke="#0E1620" stroke-width="2"/></svg>1,8K
+          <svg viewBox="0 0 32 32" style="margin-left:8px"><path d="M16 3l4 9 10 1-7.5 6.5L25 30l-9-5-9 5 2.5-10.500L2 13l10-1z" fill="#27D3E6" stroke="#0E1620" stroke-width="2.5" stroke-linejoin="round"/></svg><span style="color:#8DF1FF">+9</span></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend"><b>Kit d'interface cible (maquette)</b><br>
+Police : Lilita One (OFL), blanc + contour <b>#0E1620</b> 3 px (en jeu ~8 px sur 1080) + ombre portée.<br>
+Palette : jaune sécurité <b>#FFC400</b> · orange <b>#FF7A1A</b> · bleu techno <b>#1FA0FF</b> / cyan <b>#27D3E6</b> (Points Pro) · vert argent <b>#3DDC5A</b> · rouge <b>#F2453D</b> · ardoise <b>#1E2A38</b>.<br>
+Formes : pastilles (rayon 999), boutons carrés 54 px (rayon 16), panneaux (rayon 30), ombre « socle » pleine de 4 à 10 px sous chaque élément.<br>
+Zones tactiles ≥ 44 px (≥ 122 px sur le Canvas 1080).</div>
