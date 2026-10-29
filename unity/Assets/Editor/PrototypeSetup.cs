@@ -118,6 +118,7 @@ public static class PrototypeSetup
         UnlockPad station2Pad = BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
+        MachineBuilder.Build(); // voyant et stocks au-dessus des machines (11a)
         DemandBuilder.Build(); // production à la demande des clients (étape 6c)
         UpgradeBuilder.Build(); // améliorations : état, bouton et panneau (étape 7b)
         AudioBuilder.Build(); // sons, musique, réglages (étape 8a)

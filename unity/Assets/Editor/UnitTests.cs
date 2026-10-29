@@ -66,6 +66,33 @@ public static class UnitTests
             break;
         }
 
+        // Machine de production : cycle, sortie pleine = bloquée, rien n'est perdu
+        var cfg2 = ScriptableObject.CreateInstance<MachineConfig>();
+        var so2 = new SerializedObject(cfg2);
+        so2.FindProperty("cycleSeconds").floatValue = 2f;
+        so2.FindProperty("inputCapacity").intValue = 3;
+        so2.FindProperty("outputCapacity").intValue = 1;
+        so2.ApplyModifiedPropertiesWithoutUndo();
+        var go2 = new GameObject("MachineTest");
+        var machine = go2.AddComponent<ProductionMachine>();
+        machine.Configure(cfg2);
+        Eq("WaitingInput", machine.State.ToString(), "machine vide : entrée vide");
+        machine.TryAddInput(2);
+        Eq("False", machine.TryAddInput(2).ToString(), "entrée pleine refusée (3 max)");
+        machine.Step(1f);
+        Eq("Running", machine.State.ToString(), "machine en cycle");
+        machine.Step(1.5f);
+        Eq("1", machine.OutputCount.ToString(), "un objet sorti après le cycle");
+        machine.Step(2.5f); // 2e cycle : la sortie (1 place) est pleine
+        Eq("Blocked", machine.State.ToString(), "sortie pleine : goulot");
+        Eq("1", machine.OutputCount.ToString(), "sortie plafonnée");
+        machine.TryTakeOutput(1);
+        machine.Step(0.1f);
+        Eq("1", machine.OutputCount.ToString(), "le cycle bloqué se termine dès qu'une place se libère");
+        Eq("1,2K > 3/10", StockLabel.Format(1234, 1250, 3, 10).Replace("/1,2K", "").Replace(" ", " "), "format du stock (entrée tronquée)");
+        Object.DestroyImmediate(go2);
+        Object.DestroyImmediate(cfg2);
+
         if (failures.Count == 0)
             Debug.Log("Tests unitaires : " + count + " vérifications, toutes réussies.");
         else

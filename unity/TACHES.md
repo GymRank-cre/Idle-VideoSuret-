@@ -116,6 +116,13 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**11a-1 + K1c — faits (code poussé, `webgl/` NON reconstruit : build WebGL unique prévu à la fin de 11a-4). Compilation 0 erreur, tests unitaires 46/46, test de fumée OK (argent max 270).**
+- **K1c** : le prix de dalle reste dans la plaque (plaque 2,7 m, composant `PriceFit` : texte + icône de billet centrés, texte réduit si l'ensemble dépasse 2,35 m ; vérifié avec « 100 » ; « 1,2K » et « 250 » non vérifiés visuellement). Capture `11a1-dalle-prix.png`. Le prix reste gris pâle (le matériau de police est éclairé) : à reprendre avec un matériau non éclairé.
+- **`MachineConfig`** (ScriptableObject : cycle, entrée/sortie par cycle, capacités, multiplicateur de valeur), **`ProductionMachine`** (stock d'entrée -> cycle -> stock de sortie, sortie pleine = bloquée, `Step(dt)` testable), **`IMachineStatus`/`MachineState`** (Running / WaitingInput / Blocked), **`StockLabel`** (« entrée > sortie » au-dessus de la machine + voyant : vert marche, orange entrée vide, rouge clignotant sortie pleine), `MachineBuilder`.
+- Le poste d'installation actuel **implémente `IMachineStatus`** et reçoit voyant + étiquette (« 0/6 > 0/4 ») : son comportement n'est pas touché. **Écart au plan** : je n'ai pas réécrit le poste comme `ProductionMachine` (risque de régression sur la boucle livrée) ; `ProductionMachine` sera utilisée pour Test et Emballage en 11a-2.
+- 8 tests unitaires ajoutés (cycle, entrée pleine refusée, goulot, reprise après libération, format du stock).
+**Tableau des débits et valeurs (à valider)** : prévu en 11a-2 avec les `MachineConfig` de Test et Emballage ; aujourd'hui l'assemblage = 3 caisses / 2 s.
+
 **11a — PLAN (10 lignes, aucun code écrit encore ; le cloud peut corriger avant que je code)**
 1. **Existant réutilisé** : `ResourcePile` (réception : palette qui produit des caisses), `InstallStation` + `StationConfig` (assemblage : consomme N caisses, durée, plateau de sortie, billets), `ServiceCounter` (expédition : livre au client), porteur et livreur (employés), `ProductType` (caméra dôme / badgeuse / alarme), `ObjectPool`, `ProgressBar3D`, `OfflineEarnings`.
 2. **Nouveau** : `ProductionMachine` (une machine générique : stock d'entrée, cycle, stock de sortie, voyant), `MachineConfig` (ScriptableObject : nom, entrée requise, sortie, durée, capacités d'entrée/sortie), `Conveyor` (bande entre deux machines : objets poolés qui glissent, plafond d'objets visibles), `StockLabel` (« 3/10 » au-dessus de chaque machine, `NumberFormat`), `ChainState` (état sérialisable pour la sauvegarde et le calcul hors ligne).

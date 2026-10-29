@@ -547,15 +547,16 @@ public static class WorkshopBuilder
 
         // plaque sombre arrondie au centre : les bords jaune/noir restent visibles
         Clear(t, "Plate");
-        GameObject plate = Prim(PrimitiveType.Cube, "Plate", t, new Vector3(0f, 0.032f, 0f), new Vector3(2.3f, 0.03f, 2.3f),
+        GameObject plate = Prim(PrimitiveType.Cube, "Plate", t, new Vector3(0f, 0.032f, 0f), new Vector3(2.7f, 0.03f, 2.7f),
             Mat("WS_PadPlate", UiTheme.Slate, 0.1f), Vector3.zero);
         SetNoShadows(plate);
 
         // icône de billet à gauche du prix
-        Clear(label.transform, "BillIcon");
+        Clear(t, "BillIcon");
         GameObject billIcon = new GameObject("BillIcon", typeof(SpriteRenderer));
-        billIcon.transform.SetParent(label.transform, false);
-        billIcon.transform.localPosition = new Vector3(-0.5f, 0f, 0f);
+        billIcon.transform.SetParent(t, false); // frère du texte : PriceFit la place sans la réduire
+        billIcon.transform.localPosition = new Vector3(-0.9f, label.transform.localPosition.y, label.transform.localPosition.z);
+        billIcon.transform.localRotation = label.transform.localRotation;
         billIcon.transform.localScale = Vector3.one * 0.9f;
         SpriteRenderer bsr = billIcon.GetComponent<SpriteRenderer>();
         bsr.sprite = UiSprites.Bill();
@@ -576,6 +577,15 @@ public static class WorkshopBuilder
         so.FindProperty("source").objectReferenceValue = label;
         so.FindProperty("copy").objectReferenceValue = outline;
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        // le prix reste entièrement dans la plaque (K1c)
+        PriceFit fit = t.GetComponent<PriceFit>();
+        if (fit == null) fit = t.gameObject.AddComponent<PriceFit>();
+        var fso = new SerializedObject(fit);
+        fso.FindProperty("label").objectReferenceValue = label;
+        fso.FindProperty("icon").objectReferenceValue = billIcon.transform;
+        fso.FindProperty("maxWidth").floatValue = 2.35f;
+        fso.ApplyModifiedPropertiesWithoutUndo();
     }
 
     static void CopyTextSettings(TextMesh from, TextMesh to)

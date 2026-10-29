@@ -5,7 +5,7 @@ using UnityEngine;
 // caisses une à une. Quand il y en a assez, un travail démarre (barre de
 // progression), puis des billets apparaissent au point de sortie.
 [RequireComponent(typeof(Collider))]
-public class InstallStation : MonoBehaviour
+public class InstallStation : MonoBehaviour, IMachineStatus
 {
     [SerializeField] StationConfig config;
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
@@ -147,6 +147,20 @@ public class InstallStation : MonoBehaviour
             // Les billets viennent des clients quand le poste fabrique des produits (repli : produceProducts faux).
             if (!MakesProducts) SpawnBills();
             SpawnProducts();
+        }
+    }
+
+    // État pour l'étiquette de stock et le voyant (IMachineStatus).
+    public int InputCount => storedCrates;
+    public int InputCapacity => config.InputCapacity;
+    public int OutputCount => MakesProducts ? ProductsOnTray : 0;
+    public int OutputCapacity => MakesProducts ? config.OutputCapacity : 0;
+    public MachineState State
+    {
+        get
+        {
+            if (working) return jobTimer >= JobDuration ? MachineState.Blocked : MachineState.Running;
+            return storedCrates >= config.CratesPerJob ? MachineState.Running : MachineState.WaitingInput;
         }
     }
 
