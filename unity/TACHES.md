@@ -466,3 +466,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Sébastien : Unity relancé, retrait de Sentis et des packages Unity AI inutilisés autorisé.
 - Étape 8c relue : validée (build WebGL 17 Mo fonctionnel dans Chrome mobile). Étape 8d : mise en ligne du build via l'intégration Git de Vercel (Sébastien sur téléphone).
 - Sébastien a importé le dépôt dans Vercel : commit de déclenchement de l'aperçu de la branche (test du build WebGL sur iPhone, URL `<aperçu>/webgl/`).
+- **Jalon : le build WebGL fonctionne sur l'iPhone de Sébastien** (Safari, aperçu Vercel `/webgl/`). Prochaine étape : retours de jeu de Sébastien (rythme, joystick, lisibilité, son) avant toute nouvelle fonction. Ne rien commencer sans spécification du cloud dans ce fichier.
