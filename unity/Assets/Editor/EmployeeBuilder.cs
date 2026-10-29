@@ -1,27 +1,43 @@
+using System.Linq;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
 
-// Étape 6a : dalle d'embauche et premier employé automatique (même modèle humain, gilet bleu, casque blanc),
-// et NavMesh de la pièce (package officiel Unity AI Navigation). Relançable.
+// Employés automatiques (même modèle humain que le technicien) et leurs dalles d'embauche, plus le NavMesh de la pièce
+// (package officiel Unity AI Navigation) :
+//  - 6a : le porteur de caisses (gilet bleu) : tas de cartons -> poste ;
+//  - 6b : le livreur (gilet vert) : plateau de sortie -> comptoir des clients.
+// Relançable.
 public static class EmployeeBuilder
 {
     const string Root = "Assets/Prototype";
     const float HumanHeight = 1.7f;
 
-    // La dalle d'embauche est près du tas (au nord), l'employé apparaît à côté.
-    static readonly Vector3 HirePadPosition = new Vector3(4.5f, 0.01f, 4.4f);
-    static readonly Vector3 EmployeeSpawn = new Vector3(2.2f, 0f, 2.6f);
+    // Dalle d'embauche du porteur : près du tas (au nord). Dalle du livreur : près du comptoir.
+    static readonly Vector3 HaulerPadPosition = new Vector3(4.5f, 0.01f, 4.4f);
+    static readonly Vector3 HaulerSpawn = new Vector3(2.2f, 0f, 2.6f);
+    static readonly Vector3 CourierPadPosition = new Vector3(1.0f, 0.01f, -3.9f);
+    static readonly Vector3 CourierSpawn = new Vector3(-0.8f, 0f, -2.6f);
 
     public static EmployeeConfig LoadOrCreateConfig()
     {
-        string path = Root + "/EmployeeConfig.asset";
+        return LoadOrCreateConfig("EmployeeConfig", 6, 150);
+    }
+
+    // Une config par type d'employé (conservée si elle existe : les réglages modifiés ne sont pas écrasés).
+    static EmployeeConfig LoadOrCreateConfig(string file, int capacity, int hirePrice)
+    {
+        string path = Root + "/" + file + ".asset";
         EmployeeConfig config = AssetDatabase.LoadAssetAtPath<EmployeeConfig>(path);
         if (config == null)
         {
             config = ScriptableObject.CreateInstance<EmployeeConfig>();
-            AssetDatabase.CreateAsset(config, path); // conservé s'il existe
+            AssetDatabase.CreateAsset(config, path);
+            var so = new SerializedObject(config);
+            so.FindProperty("capacity").intValue = capacity;
+            so.FindProperty("hirePrice").intValue = hirePrice;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
         return config;
     }
@@ -31,17 +47,25 @@ public static class EmployeeBuilder
         GameObject equipped = HumanCharacterBuilder.EnsurePrefab();
         if (equipped == null) return;
 
-        EmployeeConfig config = LoadOrCreateConfig();
         ResourcePile pile = Object.FindFirstObjectByType<ResourcePile>();
         GameObject station = GameObject.Find("InstallStation");
         if (pile == null || station == null) return;
 
-        foreach (string old in new[] { "Employee", "EmployeeStands", "HirePad" })
+        foreach (string old in new[] { "Employee", "Courier", "EmployeeStands", "HirePad", "HirePadCourier" })
         {
             GameObject g = GameObject.Find(old);
             if (g != null) Object.DestroyImmediate(g);
         }
 
+        BuildHauler(equipped, LoadOrCreateConfig(), pile, station);
+        BuildCourier(equipped, LoadOrCreateConfig("CourierConfig", 4, 250), station);
+        AddPlayerObstacle();
+    }
+
+    // ------------------------------------------------------------------ porteur de caisses (6a)
+
+    static void BuildHauler(GameObject equipped, EmployeeConfig config, ResourcePile pile, GameObject station)
+    {
         // Points où l'employé se tient : à côté du tas (dans sa zone) et au poste, de côté pour laisser le centre au joueur
         Transform stands = new GameObject("EmployeeStands").transform;
         Transform pileStand = Marker(stands, "PileStand", pile.transform.position + new Vector3(-2.0f, 0f, 0f));
@@ -49,32 +73,14 @@ public static class EmployeeBuilder
         Transform stationStand = Marker(stands, "StationStand", station.transform.position + new Vector3(0.9f, 0f, -0.7f));
         Transform stationLook = Marker(stands, "StationLook", station.transform.position);
 
-        // --- l'employé (désactivé : la dalle d'embauche l'active)
         GameObject root = new GameObject("Employee");
-        root.transform.position = EmployeeSpawn;
-
-        GameObject model = BuildModel(root.transform, equipped);
+        root.transform.position = HaulerSpawn;
+        GameObject model = BuildModel(root.transform, equipped, new Color(0.15f, 0.40f, 0.95f), "Emp_Vest"); // gilet bleu
+        NavMeshAgent agent = AddAgentBody(root, config, 40);
 
         Transform anchor = new GameObject("StackAnchor").transform;
         anchor.SetParent(root.transform, false);
         anchor.localPosition = new Vector3(0f, 0.88f, -0.3f); // pile dans le dos, à hauteur de hanches, comme le joueur
-
-        var capsule = root.AddComponent<CapsuleCollider>(); // non trigger : c'est lui que les zones du tas et du poste détectent
-        capsule.center = new Vector3(0f, 0.85f, 0f);
-        capsule.radius = 0.3f;
-        capsule.height = HumanHeight;
-        var body = root.AddComponent<Rigidbody>();
-        body.isKinematic = true;
-        body.useGravity = false;
-
-        var agent = root.AddComponent<NavMeshAgent>();
-        agent.speed = config.MoveSpeed;
-        agent.angularSpeed = 540f;
-        agent.acceleration = 14f;
-        agent.stoppingDistance = 0.1f;
-        agent.radius = 0.4f;
-        agent.height = HumanHeight;
-        agent.avoidancePriority = 40;
 
         var carrier = root.AddComponent<StackCarrier>();
         var cso = new SerializedObject(carrier);
@@ -92,26 +98,102 @@ public static class EmployeeBuilder
         eso.FindProperty("stationLookAt").objectReferenceValue = stationLook;
         eso.ApplyModifiedPropertiesWithoutUndo();
 
+        AddHumanAnimator(model, agent);
+        root.SetActive(false); // la dalle d'embauche l'active
+
+        PrototypeSetup.BuildUnlockPad(root, model, HaulerPadPosition, "HirePad", "HireConfig", "EMBAUCHE", config.HirePrice);
+    }
+
+    // ------------------------------------------------------------------ livreur (6b)
+
+    static void BuildCourier(GameObject equipped, EmployeeConfig config, GameObject station)
+    {
+        Transform tray = station.transform.Find("OutputTray");
+        GameObject counterGo = GameObject.Find("ServiceCounter");
+        GameObject binGo = GameObject.Find("TrashBin");
+        CustomerQueue queue = Object.FindFirstObjectByType<CustomerQueue>();
+        if (tray == null || counterGo == null || binGo == null || queue == null) return; // pas de clients : pas de livreur
+
+        Transform stands = new GameObject("CourierStands").transform;
+        stands.SetParent(GameObject.Find("EmployeeStands").transform, false);
+        // plateau : à l'ouest du poste ; comptoir : sur sa gauche (le joueur se tient au centre) ; corbeille : à sa gauche
+        Transform trayStand = Marker(stands, "TrayStand", tray.position + new Vector3(-0.5f, 0f, 0f));
+        Transform trayLook = Marker(stands, "TrayLook", tray.position);
+        Transform counterStand = Marker(stands, "CounterStand", counterGo.transform.position + new Vector3(-1.1f, 0f, 1.7f));
+        Transform counterLook = Marker(stands, "CounterLook", counterGo.transform.position);
+        Transform binStand = Marker(stands, "BinStand", binGo.transform.position + new Vector3(-0.1f, 0f, 0.6f));
+
+        GameObject root = new GameObject("Courier");
+        root.transform.position = CourierSpawn;
+        GameObject model = BuildModel(root.transform, equipped, new Color(0.20f, 0.70f, 0.30f), "Emp2_Vest"); // gilet vert
+        NavMeshAgent agent = AddAgentBody(root, config, 50);
+
+        // Produits portés à la main, devant le torse, comme le joueur
+        Transform anchor = new GameObject("CarryAnchor").transform;
+        anchor.SetParent(root.transform, false);
+        anchor.localPosition = new Vector3(0f, 0.9f, 0.5f);
+        var carrier = root.AddComponent<ProductCarrier>();
+        var pso = new SerializedObject(carrier);
+        pso.FindProperty("carryAnchor").objectReferenceValue = anchor;
+        pso.FindProperty("capacity").intValue = config.Capacity;
+        pso.ApplyModifiedPropertiesWithoutUndo();
+
+        var courier = root.AddComponent<Courier>();
+        var cso = new SerializedObject(courier);
+        cso.FindProperty("config").objectReferenceValue = config;
+        cso.FindProperty("station").objectReferenceValue = station.GetComponent<InstallStation>();
+        cso.FindProperty("queue").objectReferenceValue = queue;
+        cso.FindProperty("trayStand").objectReferenceValue = trayStand;
+        cso.FindProperty("trayLook").objectReferenceValue = trayLook;
+        cso.FindProperty("counterStand").objectReferenceValue = counterStand;
+        cso.FindProperty("counterLook").objectReferenceValue = counterLook;
+        cso.FindProperty("binStand").objectReferenceValue = binStand;
+        cso.ApplyModifiedPropertiesWithoutUndo();
+
+        AddHumanAnimator(model, agent);
+        root.SetActive(false);
+
+        PrototypeSetup.BuildUnlockPad(root, model, CourierPadPosition, "HirePadCourier", "HireCourierConfig", "LIVREUR", config.HirePrice);
+    }
+
+    // ------------------------------------------------------------------ éléments communs
+
+    // Corps de l'agent : capsule non trigger (les zones du tas, du poste, du comptoir détectent ce collider),
+    // Rigidbody cinématique, NavMeshAgent, exclu de la cuisson du NavMesh.
+    static NavMeshAgent AddAgentBody(GameObject root, EmployeeConfig config, int avoidancePriority)
+    {
+        var capsule = root.AddComponent<CapsuleCollider>();
+        capsule.center = new Vector3(0f, 0.85f, 0f);
+        capsule.radius = 0.3f;
+        capsule.height = HumanHeight;
+        var body = root.AddComponent<Rigidbody>();
+        body.isKinematic = true;
+        body.useGravity = false;
+
+        var agent = root.AddComponent<NavMeshAgent>();
+        agent.speed = config.MoveSpeed;
+        agent.angularSpeed = 540f;
+        agent.acceleration = 14f;
+        agent.stoppingDistance = 0.1f;
+        agent.radius = 0.4f;
+        agent.height = HumanHeight;
+        agent.avoidancePriority = avoidancePriority; // priorités différentes : deux employés ne se traversent pas
+
+        root.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+        return agent;
+    }
+
+    static void AddHumanAnimator(GameObject model, NavMeshAgent agent)
+    {
         var hum = model.AddComponent<HumanAnimator>();
         var hso = new SerializedObject(hum);
         hso.FindProperty("animator").objectReferenceValue = model.GetComponent<Animator>();
         hso.FindProperty("agent").objectReferenceValue = agent;
         hso.ApplyModifiedPropertiesWithoutUndo();
-
-        root.AddComponent<NavMeshModifier>().ignoreFromBuild = true; // le NavMesh ne se cuit pas sur l'employé lui-même
-        root.SetActive(false);
-
-        // --- dalle d'embauche : même UnlockPad que le 2e poste, prix venant de l'EmployeeConfig
-        UnlockPad pad = PrototypeSetup.BuildUnlockPad(root, model, HirePadPosition, "HirePad", "HireConfig", "EMBAUCHE");
-        var hireConfig = AssetDatabase.LoadAssetAtPath<UnlockConfig>(Root + "/HireConfig.asset");
-        var pso = new SerializedObject(hireConfig);
-        pso.FindProperty("price").intValue = config.HirePrice;
-        pso.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(hireConfig);
     }
 
-    // Même modèle humain que le technicien ; gilet bleu et casque blanc pour le distinguer du joueur et des clients.
-    static GameObject BuildModel(Transform parent, GameObject equipped)
+    // Même modèle humain que le technicien ; gilet de couleur et casque blanc pour le distinguer du joueur et des clients.
+    static GameObject BuildModel(Transform parent, GameObject equipped, Color vestColor, string vestMaterial)
     {
         var model = (GameObject)PrefabUtility.InstantiatePrefab(equipped, parent);
         model.name = "Model";
@@ -128,7 +210,7 @@ public static class EmployeeBuilder
         }
         model.transform.localScale = Vector3.one * (HumanHeight / Mathf.Max(0.1f, b.size.y));
 
-        Material vest = HumanCharacterBuilder.Mat("Emp_Vest", new Color(0.15f, 0.40f, 0.95f), 0.25f);
+        Material vest = HumanCharacterBuilder.Mat(vestMaterial, vestColor, 0.25f);
         Material helmet = HumanCharacterBuilder.Mat("Emp_Helmet", new Color(0.95f, 0.95f, 0.95f), 0.55f);
         foreach (Renderer r in model.GetComponentsInChildren<Renderer>(true))
         {
@@ -137,6 +219,21 @@ public static class EmployeeBuilder
             else if (n.Contains("helmet")) r.sharedMaterial = helmet; // coque et arête
         }
         return model;
+    }
+
+    // Le joueur est un obstacle mobile sans découpe : les employés le contournent au lieu de le traverser.
+    static void AddPlayerObstacle()
+    {
+        PlayerController player = Object.FindFirstObjectByType<PlayerController>();
+        if (player == null) return;
+
+        var obstacle = player.GetComponent<NavMeshObstacle>();
+        if (obstacle == null) obstacle = player.gameObject.AddComponent<NavMeshObstacle>();
+        obstacle.shape = NavMeshObstacleShape.Capsule;
+        obstacle.carving = false;      // évitement local seulement, le NavMesh n'est pas découpé
+        obstacle.radius = 0.4f;
+        obstacle.height = HumanHeight;
+        obstacle.center = Vector3.zero;
     }
 
     static Transform Marker(Transform parent, string name, Vector3 worldPos)
@@ -150,6 +247,7 @@ public static class EmployeeBuilder
     // ------------------------------------------------------------------ NavMesh
 
     // Cuit le NavMesh sur le sol de la pièce : établis, comptoir, étagères et murs sont des obstacles.
+    // Le poste 2 est activé le temps de la cuisson pour que les employés puissent le servir plus tard.
     public static void BakeNavMesh()
     {
         GameObject old = GameObject.Find("NavMesh");
@@ -165,12 +263,17 @@ public static class EmployeeBuilder
         }
 
         // Les textes 3D (enseigne, prix, titres) n'ont pas de vrai maillage : on les exclut aussi.
-        foreach (TextMesh text in Object.FindObjectsByType<TextMesh>(FindObjectsSortMode.None))
+        foreach (TextMesh text in Object.FindObjectsByType<TextMesh>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             var mod = text.GetComponent<NavMeshModifier>();
             if (mod == null) mod = text.gameObject.AddComponent<NavMeshModifier>();
             mod.ignoreFromBuild = true;
         }
+
+        InstallStation station2 = Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            .FirstOrDefault(s => s.name == "InstallStation2");
+        bool wasActive = station2 != null && station2.gameObject.activeSelf;
+        if (station2 != null) station2.gameObject.SetActive(true);
 
         GameObject go = new GameObject("NavMesh");
         var surface = go.AddComponent<NavMeshSurface>();
@@ -178,8 +281,10 @@ public static class EmployeeBuilder
         surface.useGeometry = NavMeshCollectGeometry.RenderMeshes;
         surface.layerMask = ~0;
         surface.overrideVoxelSize = true;
-        surface.voxelSize = 0.08f; // précision verticale ~4 cm (par défaut ~10 cm : l'employé flottait)
+        surface.voxelSize = 0.08f; // précision verticale ~4 cm
         surface.BuildNavMesh();
+
+        if (station2 != null) station2.gameObject.SetActive(wasActive);
 
         if (surface.navMeshData != null)
         {

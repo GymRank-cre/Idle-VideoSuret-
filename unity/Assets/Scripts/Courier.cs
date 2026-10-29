@@ -1,0 +1,157 @@
+using UnityEngine;
+using UnityEngine.AI;
+
+// Employé livreur : va au plateau de sortie du poste, prend les produits (ProductCarrier, comme le joueur),
+// les apporte au comptoir (ServiceCounter les prend, comme pour le joueur) et revient.
+// Si le client en tête commande un produit qu'il n'a pas, il retourne en chercher ; mains pleines, il vide à la corbeille.
+[RequireComponent(typeof(NavMeshAgent), typeof(ProductCarrier))]
+public class Courier : MonoBehaviour
+{
+    enum State { GoToTray, Collect, GoToCounter, Deliver, GoToBin }
+
+    [SerializeField] EmployeeConfig config;
+    [SerializeField] InstallStation station;     // pour savoir s'il reste des produits sur le plateau
+    [SerializeField] CustomerQueue queue;
+    [SerializeField] Transform trayStand;
+    [SerializeField] Transform trayLook;
+    [SerializeField] Transform counterStand;
+    [SerializeField] Transform counterLook;
+    [SerializeField] Transform binStand;
+    [SerializeField] float arriveTolerance = 0.25f;
+    [SerializeField] float turnSpeed = 360f;
+    [SerializeField] float mismatchTimeout = 4f; // sans le bon produit pour le client en tête, il repart chercher
+    [SerializeField] float collectPatience = 2.5f; // attente d'un produit de plus au plateau avant de partir livrer
+    [SerializeField] float stuckTimeout = 12f;
+
+    NavMeshAgent agent;
+    ProductCarrier carrier;
+    State state;
+    float timer;
+    float mismatchTimer;
+    float travelTime;
+
+    void Awake()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        carrier = GetComponent<ProductCarrier>();
+    }
+
+    void OnEnable()
+    {
+        agent.speed = config.MoveSpeed;
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+            agent.Warp(hit.position);
+        Begin(State.GoToTray);
+    }
+
+    void Begin(State next)
+    {
+        state = next;
+        timer = 0f;
+        mismatchTimer = 0f;
+        travelTime = 0f;
+        switch (next)
+        {
+            case State.GoToTray: MoveTo(trayStand); break;
+            case State.GoToCounter: MoveTo(counterStand); break;
+            case State.GoToBin: MoveTo(binStand); break;
+        }
+    }
+
+    void MoveTo(Transform target)
+    {
+        if (!agent.isOnNavMesh) return;
+        Vector3 point = target.position;
+        if (NavMesh.SamplePosition(point, out NavMeshHit hit, 3f, NavMesh.AllAreas)) point = hit.position;
+        agent.SetDestination(point);
+    }
+
+    bool Arrived()
+    {
+        return agent.isOnNavMesh && !agent.pathPending
+            && agent.remainingDistance <= agent.stoppingDistance + arriveTolerance;
+    }
+
+    void Update()
+    {
+        switch (state)
+        {
+            case State.GoToTray:
+                if (Arrived()) { state = State.Collect; timer = 0f; }
+                else CheckStuck(trayStand);
+                break;
+
+            case State.Collect:
+                Face(trayLook);
+                if (carrier.IsFull) { Begin(State.GoToCounter); break; }
+                // des produits sont portés et le plateau est vide : après une courte attente, il part livrer
+                if (carrier.Count > 0 && station.ProductsOnTray == 0)
+                {
+                    timer += Time.deltaTime;
+                    if (timer >= collectPatience) Begin(State.GoToCounter);
+                }
+                else
+                {
+                    timer = 0f;
+                }
+                break;
+
+            case State.GoToCounter:
+                if (Arrived()) { state = State.Deliver; timer = 0f; mismatchTimer = 0f; }
+                else CheckStuck(counterStand);
+                break;
+
+            case State.Deliver:
+                Face(counterLook);
+                if (carrier.Count == 0)
+                {
+                    timer += Time.deltaTime;
+                    if (timer >= config.RestDuration) Begin(State.GoToTray);
+                    break;
+                }
+                timer = 0f;
+                Customer head = queue.Head;
+                if (head != null && !carrier.Has(head.OrderType))
+                {
+                    mismatchTimer += Time.deltaTime;
+                    if (mismatchTimer >= mismatchTimeout)
+                        Begin(carrier.IsFull ? State.GoToBin : State.GoToTray);
+                }
+                else
+                {
+                    mismatchTimer = 0f;
+                }
+                break;
+
+            case State.GoToBin:
+                if (Arrived())
+                {
+                    // la corbeille vide les produits portés dès qu'il est dans sa zone
+                    if (carrier.Count == 0) Begin(State.GoToTray);
+                }
+                else
+                {
+                    CheckStuck(binStand);
+                }
+                break;
+        }
+    }
+
+    void CheckStuck(Transform target)
+    {
+        travelTime += Time.deltaTime;
+        if (travelTime < stuckTimeout) return;
+        travelTime = 0f;
+        MoveTo(target);
+    }
+
+    void Face(Transform target)
+    {
+        if (target == null || agent.velocity.sqrMagnitude > 0.05f) return;
+        Vector3 dir = target.position - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) return;
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation, Quaternion.LookRotation(dir, Vector3.up), turnSpeed * Time.deltaTime);
+    }
+}

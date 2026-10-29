@@ -116,7 +116,8 @@ public static class PrototypeSetup
         BuildHud(player, carrier);
         BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
-        EmployeeBuilder.Build(); // dalle d'embauche et employé automatique (étape 6a)
+        EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
+        GuideBuilder.Build(); // flèche et phrase d'objectif du début de partie (étape 6b)
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
         EmployeeBuilder.BakeNavMesh(); // après le décor : le NavMesh voit tous les obstacles
@@ -276,7 +277,7 @@ public static class PrototypeSetup
     // Dalle de déblocage jaune : le joueur y paie, puis `target` apparaît (avec un gonflement sur `popObject`).
     // Sert au 2e poste et à l'embauche ; `title` (facultatif) s'affiche au-dessus du prix.
     internal static UnlockPad BuildUnlockPad(GameObject target, GameObject popObject, Vector3 position,
-        string padName, string configName, string title)
+        string padName, string configName, string title, int priceOverride = 0)
     {
         Material padMat = MakeMaterial("UnlockPad", new Color(0.95f, 0.8f, 0.15f));
 
@@ -286,6 +287,13 @@ public static class PrototypeSetup
         {
             config = ScriptableObject.CreateInstance<UnlockConfig>();
             AssetDatabase.CreateAsset(config, configPath);
+        }
+        if (priceOverride > 0) // le prix vient de l'EmployeeConfig (une seule source)
+        {
+            var priceSo = new SerializedObject(config);
+            priceSo.FindProperty("price").intValue = priceOverride;
+            priceSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(config);
         }
 
         GameObject pad = new GameObject(padName);

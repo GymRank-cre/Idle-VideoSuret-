@@ -88,10 +88,19 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 6b)_
+**Étape 6b — compile (0 erreur, 0 warning), Build scene OK, testée via MCP en Play. Captures `6b-*` dans `unity/captures/`.**
+- Ajoutés : `GuideConfig` (7 phrases, hauteur/oscillation de la flèche, `cratesToCollect` = 5, clé `guide_done`), `ObjectiveGuide`, `Courier`, `Editor/GuideBuilder.cs` (flèche 3D = tige + losange jaune émissif, phrase dans une pastille sous le HUD, menu `Tools > Idle Prototype > Réinitialiser le guide` qui efface la clé PlayerPrefs). `EmployeeBuilder` réécrit (porteur + livreur, `CourierConfig` capacité 4 / prix 250, `HireConfig` 150). `ProductCarrier.Has`, `InstallStation.ProductsOnTray` ajoutés. Aucun package nouveau (NavMesh = `com.unity.ai.navigation` 2.0.15, déjà dans le manifest).
+- **Guide** : testé de bout en bout par un bot qui joue au joystick (`SetMoveInput`, sans téléportation) : caisses -> poste -> produit -> livraison -> billets -> dalle -> embauche, chaque étape se valide seule ; à la fin `guide_done` = 1, flèche et phrase masquées. Captures `6b-guide-1-caisses`, `6b-guide-2-poste`, `6b-guide-3-dalle`.
+- **Livreur** : dalle « LIVREUR $ 250 » près du comptoir, gilet vert + casque blanc ; il prend les produits au plateau, les apporte au comptoir, repart chercher si le client veut un produit qu'il n'a pas, vide à la corbeille si mains pleines. Captures `6b-livreur`, `6b-atelier-deux-employes`.
+- **Évitement / NavMesh** : `NavMeshObstacle` sans découpe sur le joueur ; priorités d'évitement 40/50 pour les employés ; poste 2 activé pendant la cuisson (143 triangles) ; bobine déplacée en (0,6 ; 0 ; 9,4).
+- **Test 2 minutes, les deux employés, joueur immobile** : 81 billets produits au sol, aucun meuble traversé, pas de blocage (arrêts maximum : 16 s du porteur qui attend des caisses au tas, 12 s du livreur qui attend au plateau/comptoir = attentes normales). Sans employés, la boucle reste jouable (testé).
+- **Équilibre (valeurs dans `StationConfig.asset` et `GuideConfig.asset`)** : avant : `cratesPerJob` 3, `jobDuration` 2 s -> 1er billet à ~13 s. Maintenant : `cratesPerJob` **5**, `jobDuration` **10 s**. Mesure avec le bot (parcours parfait) : 5 caisses à 1,3 s, produit pris à 14,2 s, 1er billet encaissé à **23,3 s** ; un humain sera vers 28-32 s : dans la cible 25-35 s. La mesure automatique des 100 premiers (1re dalle) n'a pas été concluante (le bot se bloquait quand les produits ne correspondaient pas à la commande) ; estimation : 1 produit / 10 s, ~10-25 $ par client -> 1re dalle vers 2 min, embauche (150) vers 4-5 min : un peu au-dessus de la cible 3-4 min.
+- Constats : (1) les billets tombent à 1,7-2 m du joueur debout devant le comptoir : il faut marcher dessus (le guide le dit : « Ramasse tes billets »). (2) L'enseigne néon « SÉCURITÉ » passe sous la phrase du guide en portrait (léger chevauchement).
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Embauche trop tardive ?** Pour tomber à 3-4 min, je propose de baisser le prix du porteur à 120 ou de passer `billValue` à 12 ; à toi de choisir.
+- **Néon** : le déplacer plus bas ou plus à gauche pour qu'il ne touche pas la phrase du guide ?
+- **Mismatch client/produit** : les 3 types sortent en rotation alors que le client choisit au hasard ; faut-il que le poste fabrique d'abord ce que demande le premier client (ou une file visible) ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

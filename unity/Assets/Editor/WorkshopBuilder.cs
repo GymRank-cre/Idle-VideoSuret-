@@ -2,6 +2,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -80,11 +81,10 @@ public static class WorkshopBuilder
         PlayerController player = Object.FindFirstObjectByType<PlayerController>();
         if (player != null) BuildTechnician(player);
 
-        Employee employee = Object.FindFirstObjectByType<Employee>(FindObjectsInactive.Include);
-        if (employee != null)
+        foreach (NavMeshAgent agent in Object.FindObjectsByType<NavMeshAgent>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
-            Clear(employee.transform, "ShadowBlob");
-            Shadow(employee.transform, new Vector3(0f, 0.015f, 0f), 1.4f).name = "ShadowBlob";
+            Clear(agent.transform, "ShadowBlob");
+            Shadow(agent.transform, new Vector3(0f, 0.015f, 0f), 1.4f).name = "ShadowBlob"; // chaque employé a son ombre
         }
 
         DressPrefabs();
@@ -388,7 +388,7 @@ public static class WorkshopBuilder
         Shadow(parent, new Vector3(10.2f, 0.01f, 4.0f), 2.4f);
 
         // Deux détails autour du centre vide
-        BuildReel(parent, new Vector3(2.2f, 0f, 6.2f), mOrange);
+        BuildReel(parent, new Vector3(0.6f, 0f, 9.4f), mOrange); // loin de la dalle d'embauche
         BuildCarton(parent, new Vector3(7.2f, 0.3f, 3.2f), new Vector3(0.9f, 0.6f, 0.7f), 20f);
         BuildCarton(parent, new Vector3(7.9f, 0.3f, 3.6f), new Vector3(0.7f, 0.5f, 0.6f), -12f);
         Shadow(parent, new Vector3(7.5f, 0.01f, 3.4f), 2.2f);

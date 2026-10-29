@@ -144,6 +144,18 @@ public class InstallStation : MonoBehaviour
         }
     }
 
+    // Produits actuellement posés sur le plateau de sortie (le livreur s'en sert pour savoir s'il en reste).
+    public int ProductsOnTray
+    {
+        get
+        {
+            if (slots == null) return 0;
+            int n = 0;
+            for (int i = 0; i < slots.Length; i++) if (slots[i] != null) n++;
+            return n;
+        }
+    }
+
     bool MakesProducts => config.ProduceProducts && outputTray != null
         && config.Products != null && config.Products.Length > 0;
 

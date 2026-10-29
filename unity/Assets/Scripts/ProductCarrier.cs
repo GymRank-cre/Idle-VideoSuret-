@@ -114,6 +114,13 @@ public class ProductCarrier : MonoBehaviour
         }
     }
 
+    public bool Has(ProductType type)
+    {
+        foreach (Product p in carried)
+            if (p.Type == type) return true;
+        return false;
+    }
+
     // Retire un produit du type demandé (livraison à un client) ; renvoie null si le joueur n'en porte pas.
     public Product TryTake(ProductType type)
     {
