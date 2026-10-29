@@ -168,6 +168,14 @@ Le personnage fait maintenant ~9 % de l'écran et le déblocage a de la fête (s
 4. **Sol vide dans le bas de l'écran** : déjà noté pour 10b ; en attendant, K1 peut ajouter des marquages/tapis simples si c'est rapide.
 Le jeu republié dans l'Artifact Claude = build 10a.
 
+## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
+1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
+2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.
+3. **Git** : toujours `git pull --rebase` avant `git push`, **jamais `--force`**. Conflit sur `TACHES.md` : garder les deux versions (le cloud n'écrit que les sections « Relecture » et « FILE D'ATTENTE »). Ne toucher qu'à `unity/`.
+4. **Panne** (MCP Unity déconnecté, erreur qui bloque) : écrire `bloqué : <raison>` dans `STATUT_LOCAL.md`, **réessayer toutes les 5 minutes**, ne pas abandonner ; si rien ne revient au bout de 30 minutes, s'arrêter proprement avec un message clair (Sébastien tapera `/mcp` puis « Reconnect » demain).
+5. **File vide** : ne pas inventer de gros chantier ; prendre la première idée de priorité A non faite de `QUALITE.md` §8 et l'annoncer dans `STATUT_LOCAL.md`.
+6. **Résumé du matin** : le cloud tient `unity/RESUME_MATIN.md` à jour pour Sébastien (ce qui est fait, ce qu'il doit tester, ce qui l'attend) ; ne pas l'éditer.
+
 ## FILE D'ATTENTE — mode autonome (Sébastien est absent jusqu'à demain matin ; **ne pas attendre de réponse, avancer**)
 **Lire d'abord `unity/QUALITE.md` (barre de qualité, bible artistique, budgets, règles de travail) et regarder `unity/maquettes/ui-01-jeu.png` et `ui-02-commandes.png` (cible du kit d'interface ; source `ui-kit.html`).** Faire les chantiers **dans cet ordre, un par un, en poussant après chacun** (un build WebGL par chantier terminé) ; le cloud relit chaque poussée, republie l'Artifact et écrit les corrections ici. En cas de décision à prendre : valeur « (défaut) », la noter, continuer.
 1. ~~**10a**~~ — faite et relue (voir la relecture ci-dessus). **Commencer par K1.**
