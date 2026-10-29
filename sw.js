@@ -1,6 +1,6 @@
 // Service worker minimal : cache applicatif, réseau d'abord pour rester à jour.
 
-const CACHE = 'surete-tycoon-v3';
+const CACHE = 'surete-tycoon-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -38,6 +38,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || !req.url.startsWith(self.location.origin)) return;
+  // Le jeu Unity (WebGL) vit sous /webgl/ : le service worker de la maquette web ne doit pas s'en mêler.
+  if (new URL(req.url).pathname.startsWith('/webgl')) return;
 
   event.respondWith(
     fetch(req)
