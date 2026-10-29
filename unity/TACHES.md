@@ -116,6 +116,19 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**11a — PLAN (10 lignes, aucun code écrit encore ; le cloud peut corriger avant que je code)**
+1. **Existant réutilisé** : `ResourcePile` (réception : palette qui produit des caisses), `InstallStation` + `StationConfig` (assemblage : consomme N caisses, durée, plateau de sortie, billets), `ServiceCounter` (expédition : livre au client), porteur et livreur (employés), `ProductType` (caméra dôme / badgeuse / alarme), `ObjectPool`, `ProgressBar3D`, `OfflineEarnings`.
+2. **Nouveau** : `ProductionMachine` (une machine générique : stock d'entrée, cycle, stock de sortie, voyant), `MachineConfig` (ScriptableObject : nom, entrée requise, sortie, durée, capacités d'entrée/sortie), `Conveyor` (bande entre deux machines : objets poolés qui glissent, plafond d'objets visibles), `StockLabel` (« 3/10 » au-dessus de chaque machine, `NumberFormat`), `ChainState` (état sérialisable pour la sauvegarde et le calcul hors ligne).
+3. **Chaîne** : Réception (palette actuelle) -> **Assemblage** (le poste bleu actuel, devient une `ProductionMachine`) -> **Test** (nouvelle, boîtier -> produit testé) -> **Emballage** (nouvelle, produit -> colis) -> **Expédition** (comptoir actuel). Objets : caisse -> boîtier -> produit testé -> colis ; le type final (dôme / badgeuse / alarme) reste celui de la demande du client.
+4. **Formes simples d'abord** : machines en cubes colorés (bleu, vert, orange) avec voyant sphère (vert = marche, rouge = sortie pleine), tapis en boîtes plates avec texture à rayures qui défile ; aucun asset externe.
+5. **Placement** : l'atelier est un couloir de 9 m (x de -6 à +6 environ) avec le poste en (-4,5 ; 0 ; 0) ; je pose Test et Emballage **le long du mur du fond (z > 3,5)**, en ligne vers la droite, tapis compris, **sans toucher la bande z de -2 à +2** où se déplace le joueur ; le comptoir reste où il est. Les dalles de déblocage ouvrent Test, puis Emballage, puis chaque tapis.
+6. **Phase manuelle conservée** : au départ Réception + Assemblage + comptoir comme aujourd'hui (le joueur porte tout) ; acheter le tapis Assemblage -> Test retire le portage de produits pour ce maillon, etc. Porteur et livreur gardent leur rôle tant que le tapis correspondant n'est pas acheté.
+7. **Goulot** : une machine dont la sortie est pleine s'arrête (voyant rouge + icône « ! ») ; le stock d'entrée vide donne un voyant orange. Les capacités viennent de `MachineConfig`, jamais du code.
+8. **Hors ligne** : `OfflineEarnings` calcule le débit = **le plus lent des maillons** (cycle / quantité), stocks plafonnés ; test chiffré en Play (60 s de jeu automatique via le test de fumée étendu), écart attendu <= 10 %.
+9. **Sauvegarde** : version 4 (liste des machines et tapis débloqués + stocks) avec migration v3 -> v4 (tout verrouillé sauf Réception/Assemblage) ; test de migration ajouté aux tests unitaires.
+10. **Découpage** (pour pousser tôt) : **11a-1** `MachineConfig` + `ProductionMachine` + `StockLabel` (l'assemblage actuel en dépend, comportement identique) ; **11a-2** Test + Emballage + dalles ; **11a-3** tapis visibles ; **11a-4** hors ligne + sauvegarde v4 + mesures. Un seul build WebGL à la fin de 11a-4.
+**Défaut pris** : si le cloud ne répond pas, j'enchaîne sur 11a-1 sans attendre.
+
 **K1b + Q1 — faits. Éditeur : compilation 0 erreur, Play 0 erreur, tests unitaires 38/38, test de fumée OK. Build WebGL refait (1 seul), `webgl/` remplacé, 60 i/s navigateur à 390x844 et 430x932 (avant 60).**
 **K1b**
 1. **Pile** : retard plafonné à 0,12 m latéral / 0,25 m arrière (avant 0,25 / 0,5), hauteur non étirée. Mesuré en course à 4,2 m/s avec 8 caisses : décalage haut/bas 0,00 m (colonne verticale) ; plafond théorique 0,28 m sur 1,9 m = 8° (objectif <= 15°). Capture `K1b-jeu-390x844.png` et `K1b-jeu-430x932.png`.
