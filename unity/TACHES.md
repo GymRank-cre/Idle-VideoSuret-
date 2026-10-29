@@ -147,9 +147,17 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - **Nouveauté côté test** : le jeu est aussi publié comme **Artifact Claude** privé (https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X), ouvert sur l'iPhone de Sébastien : **ça marche** (« Ça marche sur mon iPhone »). Le cloud le republie à chaque nouveau `webgl/` poussé ; il lui faut donc que les builds restent **dans Git**.
 - **Réponse sur le poids** : **garder Git pour les builds** (le cloud en a besoin pour republier). Dans `E:\PROJET 1\sync`, lancer `git gc --prune=now` puis donner la **taille réelle de `.git`** et du dépôt distant (mon clone cloud fait 152 Mo). **Seuil d'alerte : 1 Go.** Si on l'atteint : branche orpheline `builds` à un seul commit (force-push à chaque build), avec l'accord de Sébastien ; pas avant. En attendant, **ne reconstruire `webgl/` qu'à la fin d'une étape**, pas à chaque essai.
 
+## Relecture cloud de l'étape 10a : validée (mesurée, rigoureuse), 4 remarques à traiter dans K1
+Le personnage fait maintenant ~9 % de l'écran et le déblocage a de la fête (secousse 8 cm, zoom, ressort) : c'est la bonne direction. Remarques de directeur artistique (capture `10a-05`, `10a-02-deblocage-2`) :
+1. **La pile de caisses ressemble à une échelle fine inclinée** quand il court : les caisses sont petites et le retard (`followSpeed 14 / (1 + i × 0,35)`) les étire en diagonale. À corriger dans K1 : **caisses plus grosses (≈ 0,5 m)**, retard **plafonné** (la pile reste groupée derrière le dos, écart latéral ≤ 0,25 m, écart vers l'arrière ≤ 0,5 m), rebond conservé. Mesure : capture en course, la pile doit se lire comme une pile.
+2. **Pastilles du HUD translucides et grises** sur le décor (peu lisibles) : fond ardoise opaque `#1E2A38` comme sur la maquette (K1 point 3-4).
+3. **Titre de dalle « EMBAUCHE » gris et coupé au bord** : blanc contouré, ruban orange, centré sur la dalle (K1 point 6) ; la **dalle doit rester visible en entier** même au bord de l'écran.
+4. **Sol vide dans le bas de l'écran** : déjà noté pour 10b ; en attendant, K1 peut ajouter des marquages/tapis simples si c'est rapide.
+Le jeu republié dans l'Artifact Claude = build 10a.
+
 ## FILE D'ATTENTE — mode autonome (Sébastien est absent jusqu'à demain matin ; **ne pas attendre de réponse, avancer**)
 **Lire d'abord `unity/QUALITE.md` (barre de qualité, bible artistique, budgets, règles de travail) et regarder `unity/maquettes/ui-01-jeu.png` et `ui-02-commandes.png` (cible du kit d'interface ; source `ui-kit.html`).** Faire les chantiers **dans cet ordre, un par un, en poussant après chacun** (un build WebGL par chantier terminé) ; le cloud relit chaque poussée, republie l'Artifact et écrit les corrections ici. En cas de décision à prendre : valeur « (défaut) », la noter, continuer.
-1. **10a** — la sensation de jeu (spécifiée plus bas).
+1. ~~**10a**~~ — faite et relue (voir la relecture ci-dessus). **Commencer par K1.**
 2. **K1 — Police et kit d'interface** (spécifié ci-dessous) : le plus gros gain visuel pour un petit travail.
 3. **Q1 — Fondations qualité** : menu `Tools > Idle Prototype > Test de fumée` (90 s de Play automatisé : 0 erreur/avertissement, l'argent augmente, sauvegarde -> rechargement = même état), tests EditMode de l'économie et de la migration de sauvegarde, table de chaînes `Loc` (FR, tout nouveau texte passe par elle, migrer les textes existants du HUD et des panneaux), journal d'événements local affiché dans le Diagnostic (temps jusqu'à chaque déblocage, durée de session).
 4. **11a** — la chaîne de production qui tourne toute seule (spécifiée plus bas).
@@ -164,7 +172,8 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. **Nombres abrégés** : `NumberFormat.Short` (1 234 -> 1,2K ; 1,2 M ; 3,4 B ; puis aa, ab, ac…), utilisé partout, **tests unitaires** (virgule française).
 6. **Dalles** : plaque sombre arrondie, bords jaune/noir conservés, **prix énorme blanc contouré avec icône billet**, ruban orange pour le titre, aucun chevauchement à 390×844 et 430×932 ; « +N » flottant avec icône billet.
 7. **Écran titre + chargement** : logo « Idle Sécurité » (Lilita One, contour, léger rebond) et bouton Jouer (fusionné avec « Touche pour jouer ») ; la page WebGL (`WebGLBuilder`, gabarit) charge la police en CSS (`@font-face`) pour que « Chargement x % » soit dans le même style, barre de progression arrondie jaune.
-8. **Preuves** : captures `K1-` côte à côte avec les maquettes (HUD, dalle, panneau des réglages, écran titre) ; vérifier 390×844 et 430×932 ; images par seconde avant/après ; aucun texte coupé ; 0 erreur.
+8. **Pile de caisses lisible** (remarque 1 de la relecture de 10a) : caisses plus grosses, retard plafonné, rebond conservé.
+9. **Preuves** : captures `K1-` côte à côte avec les maquettes (HUD, dalle, panneau des réglages, écran titre) ; vérifier 390×844 et 430×932 ; images par seconde avant/après ; aucun texte coupé ; 0 erreur.
 
 ## Nouveau cap (décidé avec Sébastien le 29/10) : jeu de gestion d'usine type « Idle Lumber », ouverture arcade
 Lire la section « Cap de jeu » de `unity/DESIGN.md`. Sébastien a dit : il aime **gérer l'usine, les commandes, la progression** ; le technicien doit servir **au début, puis tout devient automatique**. Ce qui change dans l'ordre des étapes :
