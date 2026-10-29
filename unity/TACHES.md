@@ -72,21 +72,32 @@ Le guide (flèche jaune 3D + phrase), le livreur au gilet vert, l'évitement, le
 
 Réponses à tes questions : **ne pas toucher aux prix** (100, 150, 250) ni à `billValue`. À la place, **rendre le début plus nerveux** : l'attente de 10 s par produit est trop longue (le joueur regarde sans rien faire). Essayer `cratesPerJob` = 6 et `jobDuration` = 4 s (la pile pleine de 8 reste utile, le joueur recharge pendant le travail). Cibles : premier billet encaissé en ≤ 25 s, première dalle vers 60 à 75 s, porteur vers 2 min, livreur vers 3 min 30 (au rythme d'un humain, pas d'un bot parfait : mesurer avec un bot qui ajoute des temps d'hésitation réalistes, par exemple 0,5 s à chaque changement de cible).
 
-## Tâche en cours : étape 6c (corrections ci-dessus) puis étape 7a — Sauvegarde et gains hors ligne
+## Relecture cloud de 6c et 7a : validées — le début est propre et la sauvegarde solide
+Le départ n'a plus qu'une dalle visible et la flèche guide bien ; titres/prix séparés ; néon sur le mur de gauche ; production à la demande ; sauvegarde atomique avec copie de secours, fichier abîmé géré, écran « Bon retour ! ». Mesures très utiles (premier billet à 20,8 s, première dalle à 54 s). Réponses :
+- **Première dalle à 54 s** : garder ce début nerveux.
+- **Gain hors ligne trop généreux** (2 h = 10 700 $ pour des dalles à 100-250) : en attendant les améliorations, passer le rendement à **20 %** et la durée max à **4 h** (valeurs dans `OfflineConfig`). Les gains seront re-calibrés quand l'économie montera (voir 7b).
+- **Dalle d'embauche hors cadre** : faire un **petit déplacement de caméra** (1,2 s, aller puis retour) vers la dalle qui vient d'apparaître, puis rendre la main au joueur ; pas de blocage des commandes.
+- **Écran « Bon retour ! »** : fonctionnel mais c'est un carré noir brut. Le mettre dans le même style que les pastilles (panneau arrondi semi-transparent, titre jaune, bouton vert arrondi, léger « pop » à l'ouverture).
 
-**6c :** les 4 points + l'équilibrage. Captures `6c-` (guide au départ avec une seule dalle visible ; apparition de la dalle d'embauche).
+## Tâche en cours : étape 7b — Améliorations (prix qui montent)
 
-**7a — Sauvegarde JSON et gains hors ligne.**
-1. `SaveData` (classe sérialisable `JsonUtility`) : `version` (1), `money`, `lastSaveUtc` (secondes Unix), prix restant de chaque dalle (par identifiant `saveId` stable ajouté à `UnlockPad`), employés embauchés (porteur, livreur), `guideDone`. Pas de client, pas de caisse en cours : on repart d'un atelier calme.
-2. `SaveSystem` (une responsabilité) : fichier `save.json` dans `Application.persistentDataPath`, écriture **atomique** (écrire un `.tmp` puis remplacer) avec une copie de secours `.bak` ; lecture tolérante (fichier absent ou abîmé → nouvelle partie, utiliser le `.bak` si possible) ; champ `version` et une fonction de migration vide prévue. Sauvegarde automatique toutes les 10 s si l'état a changé, à la mise en pause (`OnApplicationPause`) et à la sortie.
-3. Chargement au démarrage : restaure l'argent, les dalles (les dalles déjà payées sont déjà ouvertes, avec leur cible active), les employés embauchés (apparaissent directement) et le guide.
-4. **Gains hors ligne** : `OfflineConfig` (ScriptableObject) : durée maximale 8 h, rendement 50 % de la cadence théorique, durée minimale 60 s. `OfflineEarnings` calcule le gain d'après les employés embauchés (cadence de production et valeur moyenne des produits, lues dans `StationConfig` et `EmployeeConfig`), le temps écoulé (UTC, jamais négatif, plafonné) et le rendement. Rien si aucun employé n'est embauché.
-5. **Écran « Bon retour ! »** (Canvas, formes simples) : durée d'absence, « +$ X », bouton **Récupérer**. Un 2e bouton « ×2 » grisé avec la mention « bientôt » (futur emplacement d'une vidéo récompensée, aucune publicité ajoutée).
-6. Menus de test : `Tools > Idle Prototype > Effacer la sauvegarde` et `Simuler une absence de 2 h` (recule `lastSaveUtc`).
-7. Captures `7a-` : l'écran « Bon retour », une partie rechargée avec les dalles et employés restaurés.
+**Objectif :** donner une raison de dépenser à tout moment, sans fin : des améliorations achetables avec des prix croissants. C'est le moteur de rétention d'un idle.
+1. `UpgradeConfig` (ScriptableObject, liste) : pour chaque amélioration un identifiant stable, un nom, `kind`, `baseCost`, `costGrowth` (1,35), `maxLevel` (10), `effectPerLevel`. Cinq améliorations :
+   - **Capacité de la pile** (+1 caisse par niveau, max 8 → 18) ;
+   - **Vitesse du joueur** (+5 % par niveau) ;
+   - **Vitesse de fabrication** (−7 % sur `jobDuration` par niveau) ;
+   - **Paiement des clients** (+8 % par niveau sur la valeur des produits) ;
+   - **Vitesse des employés** (+8 % par niveau).
+   Coûts de base de 60 à 140. Viser un achat toutes les 60 à 90 s au début.
+2. `UpgradeState` (runtime, une responsabilité) : niveaux et multiplicateurs, **ne jamais modifier les assets ScriptableObject pendant le jeu** (les valeurs persisteraient dans l'éditeur). Les scripts concernés (`StackCarrier`, `PlayerController`, `InstallStation`, le paiement du `ServiceCounter`, `Employee`, `Courier`) lisent le multiplicateur à l'usage.
+3. **Interface** : bouton rond « Améliorations » en bas à droite de l'écran (zone sûre), qui ouvre un panneau arrondi : une ligne par amélioration (icône en formes simples, nom, niveau x/10, effet suivant, bouton « $ coût » grisé si argent insuffisant). Un petit point rouge/jaune sur le bouton quand un achat est possible. Le jeu continue derrière le panneau.
+4. **Retour d'information** à l'achat : pop de la ligne, étincelles, chiffre flottant d'effet (par exemple « +5 % vitesse »).
+5. **Sauvegarde** : niveaux dans `SaveData`, `version` 2, `Migrate()` de 1 vers 2 (niveaux à 0). Les gains hors ligne tiennent compte des niveaux (vitesse de fabrication, employés, paiement).
+6. **Guide** : une dernière étape « Ouvre les améliorations » après l'embauche du livreur.
+7. Captures `7b-` : le bouton avec le point, le panneau ouvert, un achat, l'écran « Bon retour » restylé, le mouvement de caméra vers la dalle d'embauche.
 
-**Critères de réussite :** 0 erreur ; relancer Play restaure l'état ; un fichier abîmé ne plante pas ; avec le porteur et le livreur et 2 h simulées, le gain est cohérent avec la cadence mesurée et plafonné ; sans employé, aucun gain ; **le gameplay reste inchangé** sans sauvegarde.
-**Hors périmètre :** sauvegarde cloud, vidéo récompensée réelle, sons (étape 8).
+**Critères de réussite :** 0 erreur ; chaque amélioration change vraiment le jeu et se mesure (par exemple la pile à 9 caisses, le travail à 3,7 s) ; sauvegarde et rechargement conservent les niveaux ; le jeu reste jouable sans toucher au panneau.
+**Hors périmètre :** sons (étape 8), nouveaux produits, nouveau monde, publicité.
 
 ---
 
@@ -100,29 +111,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étapes 6c et 7a — compile (0 erreur, 0 warning), Build scene OK, testées via MCP en Play. Captures `6c-*` et `7a-*` dans `unity/captures/`.**
-
-**6c**
-- **Dalles l'une après l'autre** : `UnlockPad` a un tableau `revealOnUnlock` : au départ seule la dalle du poste 2 (100) est visible ; la dalle « EMBAUCHE » apparaît quand elle est payée, la dalle « LIVREUR » quand le porteur est embauché (`PopIn` + étincelle `FeedbackSpawner`). Le guide tient compte des dalles cachées. Captures `6c-01-depart-une-dalle`, `6c-02-apparition-embauche`, `6c-03-dalles-titres`.
-- **Titres et prix séparés** : titre à 3,5 m, prix à 0,7 m (plus de chevauchement) ; dalle d'embauche du porteur déplacée en (3,2 ; 4,4) pour rester dans le cadre portrait.
-- **Néon** : déplacé sur le mur de gauche, près du coin du fond, tourné vers la pièce, au-dessus des étagères. Le mur du fond est libre pour les pastilles et la phrase (voir `6c-01`).
-- **Production à la demande** : `ProductDemand` (une responsabilité) lit `CustomerQueue.Line` : d'abord le produit du client en tête, puis ce qui manque aux suivants, en comptant les produits déjà sur les plateaux ou portés ; sinon rotation. `InstallStation` le lit (champ facultatif `demand`).
-- **Équilibre** (valeurs dans `StationConfig.asset` et `GuideConfig.asset`, prix et `billValue` inchangés) : `cratesPerJob` 6, `jobDuration` 4 s, `cratesToCollect` 6. Mesure avec un bot au joystick avec 0,5 s d'hésitation à chaque changement de cible : 1re caisse à 1,2 s, **1er billet encaissé à 20,8 s** (cible ≤ 25 s), **1re dalle à 54 s** (cible 60-75 s : un peu trop rapide), porteur vers 2 min (estimation à partir du débit mesuré ~2,6 $/s, la mesure continue a été faussée par une erreur du bot qui a perdu 150 s), **livreur 59 s après le porteur**, soit environ 3 min (cible 3 min 30). Avec les 2 employés et le joueur immobile : débit ~5,8 $/s (600 $ en 100 s).
-
-**7a**
-- Ajoutés : `SaveData`, `SaveSystem`, `OfflineConfig` (max 8 h, rendement 50 %, minimum 60 s, cadences mesurées 14 s / 14 s par aller-retour), `OfflineEarnings`, `OfflineWelcomeScreen`, `Editor/SaveBuilder.cs`, `DemandBuilder.cs`. `UnlockPad` : `saveId`, `Restore()`, `RemainingPrice`.
-- **Fichier** : `save.json` dans `Application.persistentDataPath` ; écriture atomique `.tmp` puis `File.Replace` avec copie de secours `.bak` ; sauvegarde toutes les 10 s si l'état a changé, à la pause et à la sortie ; champ `version` + `Migrate()` vide. Contenu : argent, `lastSaveUtc`, prix restant de chaque dalle, employés embauchés, `guideDone`, plus `pendingOffline`/`pendingSeconds` (gain calculé mais pas encore récupéré, pour ne pas le perdre si on quitte avant de cliquer).
-- **Tests** : relancer Play restaure argent 430, dalles payées, 2 employés actifs. Fichier abîmé + `.bak` valide : état restauré. Les deux abîmés : nouvelle partie propre (argent 0, 3 dalles intactes), pas d'exception. Sans sauvegarde : gameplay identique (la sauvegarde ne s'écrit qu'après).
-- **Hors ligne** (calcul pur sur les assets) : 2 h avec porteur ET livreur = **10 714 $** (écran réel : +$ 10 721) ; porteur seul, livreur seul ou aucun = 0 ; 20 h = 8 h (plafond) ; durée négative = 0 ; 30 s = 0. Formule : débit = le plus petit entre poste (`productsPerJob / jobDuration`), porteur (`capacity / cycle / cratesPerJob`), livreur (`capacity / cycle`) et clients (quantité moyenne / `spawnInterval`) x valeur moyenne des produits x durée plafonnée x 50 %. Le débit réel mesuré (~5,8 $/s) est cohérent avec le débit théorique brut (~6 $/s avant rendement).
-- **Écran « Bon retour ! »** : `7a-01-bon-retour` (durée, « +$ 10721 », bouton Récupérer, bouton ×2 grisé « bientôt »). Cliquer Récupérer ajoute le gain (60 -> 10 781). `7a-02-partie-rechargee` : dalles ouvertes, porteur et livreur présents.
-- Menus : `Tools > Idle Prototype > Effacer la sauvegarde` (efface aussi la clé du guide) et `Simuler une absence de 2 h` (modifie `save.json` ; arrêter puis relancer Play).
-- Guide : si une partie est rechargée après la dalle du poste 2, il reprend à « EMBAUCHE » au lieu de recommencer.
-- Pour tes tests : `Effacer la sauvegarde` avant une nouvelle partie, sinon Play reprend l'état précédent.
+_(vide — étape 7b)_
 
 ## Questions (à remplir par Claude Code local)
-- **Gain hors ligne trop généreux ?** 2 h = ~10 700 $ alors que les dalles coûtent 100 à 250. Soit baisser le rendement (par exemple 15-20 %), soit attendre les améliorations de l'étape 7b (prix qui montent). Je propose de ne rien changer d'ici là.
-- **1re dalle à 54 s** (cible 60-75 s) : ralentir un peu (par exemple `jobDuration` 5 s) ou garder ce début nerveux ?
-- **Apparition de la dalle d'embauche** : le poste 2 et la dalle d'embauche ne sont pas visibles ensemble à l'écran quand on paye la dalle 1 (la nouvelle dalle est à droite, hors cadre). Faut-il une flèche ou un léger déplacement de caméra qui la montre ?
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -334,6 +326,31 @@ Questions posées à l'époque (répondues plus haut) :
 - **Néon** : le déplacer plus bas ou plus à gauche pour qu'il ne touche pas la phrase du guide ?
 - **Mismatch client/produit** : les 3 types sortent en rotation alors que le client choisit au hasard ; faut-il que le poste fabrique d'abord ce que demande le premier client (ou une file visible) ?
 
+## Archive : résultats des étapes 6c et 7a (Claude Code local)
+**Étapes 6c et 7a — compile (0 erreur, 0 warning), Build scene OK, testées via MCP en Play. Captures `6c-*` et `7a-*` dans `unity/captures/`.**
+
+**6c**
+- **Dalles l'une après l'autre** : `UnlockPad` a un tableau `revealOnUnlock` : au départ seule la dalle du poste 2 (100) est visible ; la dalle « EMBAUCHE » apparaît quand elle est payée, la dalle « LIVREUR » quand le porteur est embauché (`PopIn` + étincelle `FeedbackSpawner`). Le guide tient compte des dalles cachées. Captures `6c-01-depart-une-dalle`, `6c-02-apparition-embauche`, `6c-03-dalles-titres`.
+- **Titres et prix séparés** : titre à 3,5 m, prix à 0,7 m (plus de chevauchement) ; dalle d'embauche du porteur déplacée en (3,2 ; 4,4) pour rester dans le cadre portrait.
+- **Néon** : déplacé sur le mur de gauche, près du coin du fond, tourné vers la pièce, au-dessus des étagères. Le mur du fond est libre pour les pastilles et la phrase (voir `6c-01`).
+- **Production à la demande** : `ProductDemand` (une responsabilité) lit `CustomerQueue.Line` : d'abord le produit du client en tête, puis ce qui manque aux suivants, en comptant les produits déjà sur les plateaux ou portés ; sinon rotation. `InstallStation` le lit (champ facultatif `demand`).
+- **Équilibre** (valeurs dans `StationConfig.asset` et `GuideConfig.asset`, prix et `billValue` inchangés) : `cratesPerJob` 6, `jobDuration` 4 s, `cratesToCollect` 6. Mesure avec un bot au joystick avec 0,5 s d'hésitation à chaque changement de cible : 1re caisse à 1,2 s, **1er billet encaissé à 20,8 s** (cible ≤ 25 s), **1re dalle à 54 s** (cible 60-75 s : un peu trop rapide), porteur vers 2 min (estimation à partir du débit mesuré ~2,6 $/s, la mesure continue a été faussée par une erreur du bot qui a perdu 150 s), **livreur 59 s après le porteur**, soit environ 3 min (cible 3 min 30). Avec les 2 employés et le joueur immobile : débit ~5,8 $/s (600 $ en 100 s).
+
+**7a**
+- Ajoutés : `SaveData`, `SaveSystem`, `OfflineConfig` (max 8 h, rendement 50 %, minimum 60 s, cadences mesurées 14 s / 14 s par aller-retour), `OfflineEarnings`, `OfflineWelcomeScreen`, `Editor/SaveBuilder.cs`, `DemandBuilder.cs`. `UnlockPad` : `saveId`, `Restore()`, `RemainingPrice`.
+- **Fichier** : `save.json` dans `Application.persistentDataPath` ; écriture atomique `.tmp` puis `File.Replace` avec copie de secours `.bak` ; sauvegarde toutes les 10 s si l'état a changé, à la pause et à la sortie ; champ `version` + `Migrate()` vide. Contenu : argent, `lastSaveUtc`, prix restant de chaque dalle, employés embauchés, `guideDone`, plus `pendingOffline`/`pendingSeconds` (gain calculé mais pas encore récupéré, pour ne pas le perdre si on quitte avant de cliquer).
+- **Tests** : relancer Play restaure argent 430, dalles payées, 2 employés actifs. Fichier abîmé + `.bak` valide : état restauré. Les deux abîmés : nouvelle partie propre (argent 0, 3 dalles intactes), pas d'exception. Sans sauvegarde : gameplay identique (la sauvegarde ne s'écrit qu'après).
+- **Hors ligne** (calcul pur sur les assets) : 2 h avec porteur ET livreur = **10 714 $** (écran réel : +$ 10 721) ; porteur seul, livreur seul ou aucun = 0 ; 20 h = 8 h (plafond) ; durée négative = 0 ; 30 s = 0. Formule : débit = le plus petit entre poste (`productsPerJob / jobDuration`), porteur (`capacity / cycle / cratesPerJob`), livreur (`capacity / cycle`) et clients (quantité moyenne / `spawnInterval`) x valeur moyenne des produits x durée plafonnée x 50 %. Le débit réel mesuré (~5,8 $/s) est cohérent avec le débit théorique brut (~6 $/s avant rendement).
+- **Écran « Bon retour ! »** : `7a-01-bon-retour` (durée, « +$ 10721 », bouton Récupérer, bouton ×2 grisé « bientôt »). Cliquer Récupérer ajoute le gain (60 -> 10 781). `7a-02-partie-rechargee` : dalles ouvertes, porteur et livreur présents.
+- Menus : `Tools > Idle Prototype > Effacer la sauvegarde` (efface aussi la clé du guide) et `Simuler une absence de 2 h` (modifie `save.json` ; arrêter puis relancer Play).
+- Guide : si une partie est rechargée après la dalle du poste 2, il reprend à « EMBAUCHE » au lieu de recommencer.
+- Pour tes tests : `Effacer la sauvegarde` avant une nouvelle partie, sinon Play reprend l'état précédent.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Gain hors ligne trop généreux ?** 2 h = ~10 700 $ alors que les dalles coûtent 100 à 250. Soit baisser le rendement (par exemple 15-20 %), soit attendre les améliorations de l'étape 7b (prix qui montent). Je propose de ne rien changer d'ici là.
+- **1re dalle à 54 s** (cible 60-75 s) : ralentir un peu (par exemple `jobDuration` 5 s) ou garder ce début nerveux ?
+- **Apparition de la dalle d'embauche** : le poste 2 et la dalle d'embauche ne sont pas visibles ensemble à l'écran quand on paye la dalle 1 (la nouvelle dalle est à droite, hors cadre). Faut-il une flèche ou un léger déplacement de caméra qui la montre ?
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -359,3 +376,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étapes 5c et 6a : torse des clients conservé et coiffures simples, éclats ronds, bulle à taille d'écran constante, enseigne au centre, premier client forcé ; NavMesh (AI Navigation 2.0.15 déjà installé), employé automatique (gilet bleu), dalle d'embauche ; testé via MCP, captures 5c-* et 6a-*.
 - Étapes 5c et 6a relues sur captures : validées. Étape 6b (guide du début, employé livreur) spécifiée.
 - Étape 6b relue : validée avec 4 points. Étapes 6c (dalles progressives, demande, équilibre) et 7a (sauvegarde, hors ligne) spécifiées.
+- Étapes 6c (dalles progressives, demande) et 7a (sauvegarde, hors ligne) relues : validées. Étape 7b (améliorations) spécifiée.
