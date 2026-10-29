@@ -19,6 +19,7 @@ public class ProcessStation : MonoBehaviour, IProductSource
     [SerializeField, Range(0, 1)] int inputStage;       // 0 = Test, 1 = Emballage
     [SerializeField] Transform outputTray;               // places alignées sur son axe x
     [SerializeField] FeedbackSpawner feedback;           // facultatif
+    [SerializeField] ProductType fallbackType;           // type des produits restaurés depuis la sauvegarde (le type n'est pas sauvé)
     [SerializeField, Min(1)] int traySlots = 4;
     [SerializeField] float depositInterval = 0.2f;
     [SerializeField] float flightDuration = 0.25f;
@@ -67,6 +68,17 @@ public class ProcessStation : MonoBehaviour, IProductSource
             return p;
         }
         return null;
+    }
+
+    // Sauvegarde : état des stocks (les produits posés sur le plateau et en vol ne sont pas conservés).
+    public int SavedInput => machine.InputCount;
+    public int SavedOutput => machine.OutputCount;
+
+    public void RestoreStocks(int input, int output)
+    {
+        machine.SetStocks(input, output);
+        pending.Clear();
+        for (int i = 0; i < machine.InputCount + machine.OutputCount; i++) pending.Enqueue(fallbackType);
     }
 
     void Reset() { GetComponent<Collider>().isTrigger = true; }
@@ -146,6 +158,7 @@ public class ProcessStation : MonoBehaviour, IProductSource
 
     void Spawn(ProductType type, int slot)
     {
+        if (type == null) type = fallbackType;
         if (type == null || type.Prefab == null) return;
         if (!pools.TryGetValue(type, out ObjectPool pool))
         {

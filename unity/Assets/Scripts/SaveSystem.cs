@@ -11,6 +11,11 @@ public class SaveSystem : MonoBehaviour
 
     [SerializeField] Wallet wallet;
     [SerializeField] UnlockPad[] pads;            // toutes les dalles, même cachées
+    [SerializeField] ProcessStation[] stations;   // machines de la chaîne (Test, Emballage)
+    [SerializeField] GameObject belt1;            // tapis (actif = acheté)
+    [SerializeField] GameObject belt2;
+    [SerializeField] MachineConfig testConfig;
+    [SerializeField] MachineConfig packConfig;
     [SerializeField] GameObject haulerObject;     // porteur de caisses (actif = embauché)
     [SerializeField] GameObject courierObject;    // livreur
     [SerializeField] UpgradeState upgradeState;
@@ -76,6 +81,13 @@ public class SaveSystem : MonoBehaviour
             if (state != null) pad.Restore(state.remaining);
         }
 
+        if (stations != null && loaded.machines != null)
+            foreach (ProcessStation st in stations)
+            {
+                SaveData.MachineStock stock = loaded.machines.Find(m => m.id == st.name);
+                if (stock != null && st.gameObject.activeInHierarchy) st.RestoreStocks(stock.input, stock.output);
+            }
+
         pending = loaded;
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         if (pending.pendingOffline <= 0)
@@ -86,7 +98,8 @@ public class SaveSystem : MonoBehaviour
                 upgradeState != null ? upgradeState.JobDuration : 1f,
                 upgradeState != null ? upgradeState.EmployeeSpeed : 1f,
                 upgradeState != null ? upgradeState.CustomerPay : 1f,
-                upgradeState != null ? upgradeState.EmployeeExtraCapacity : 0);
+                upgradeState != null ? upgradeState.EmployeeExtraCapacity : 0,
+                ChainOffline());
             pending.pendingSeconds = Math.Max(0, elapsed);
         }
 
@@ -100,6 +113,20 @@ public class SaveSystem : MonoBehaviour
             pending = null;
         }
         lastSavedJson = Snapshot();
+    }
+
+    // Chaîne de production pour le calcul hors ligne : seulement si les deux tapis sont achetés (livreur automatique au bout).
+    OfflineEarnings.Chain ChainOffline()
+    {
+        bool automated = belt1 != null && belt2 != null && belt1.activeInHierarchy && belt2.activeInHierarchy
+            && testConfig != null && packConfig != null;
+        return new OfflineEarnings.Chain
+        {
+            automated = automated,
+            testThroughput = automated ? testConfig.Throughput : 0f,
+            packThroughput = automated ? packConfig.Throughput : 0f,
+            valueMultiplier = automated ? packConfig.ValueMultiplier : 1f
+        };
     }
 
     void Claim()
@@ -147,6 +174,10 @@ public class SaveSystem : MonoBehaviour
                 data.upgrades.Add(new SaveData.UpgradeLevel { id = upgradeState.Config.Upgrades[i].id, level = upgradeState.Level(i) });
         foreach (UnlockPad pad in pads)
             data.pads.Add(new SaveData.PadState { id = pad.SaveId, remaining = pad.RemainingPrice });
+        if (stations != null)
+            foreach (ProcessStation st in stations)
+                if (st != null && st.gameObject.activeInHierarchy)
+                    data.machines.Add(new SaveData.MachineStock { id = st.name, input = st.SavedInput, output = st.SavedOutput });
         if (haulerObject != null && haulerObject.activeSelf) data.employees.Add("hauler");
         if (courierObject != null && courierObject.activeSelf) data.employees.Add("courier");
         return data;
@@ -258,6 +289,11 @@ public class SaveSystem : MonoBehaviour
         {
             data.settingsSaved = false; // v2 : pas de réglages, valeurs par défaut
             data.version = 3;
+        }
+        if (data.machines == null) data.machines = new System.Collections.Generic.List<SaveData.MachineStock>();
+        if (data.version < 4)
+        {
+            data.version = 4; // v3 : pas de chaîne, machines et tapis verrouillés (leurs dalles absentes = prix plein)
         }
         return data;
     }

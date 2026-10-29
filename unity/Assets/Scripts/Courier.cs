@@ -15,6 +15,12 @@ public class Courier : MonoBehaviour
     [SerializeField] CustomerQueue queue;
     [SerializeField] Transform trayStand;
     [SerializeField] Transform trayLook;
+    [Header("Chaîne de production (11a-4) : quand les deux tapis sont achetés, il prend au plateau d'Emballage")]
+    [SerializeField] ProcessStation chainEnd;
+    [SerializeField] GameObject chainBelt1;
+    [SerializeField] GameObject chainBelt2;
+    [SerializeField] Transform chainStand;
+    [SerializeField] Transform chainLook;
     [SerializeField] Transform counterStand;
     [SerializeField] Transform counterLook;
     [SerializeField] Transform binStand;
@@ -53,7 +59,7 @@ public class Courier : MonoBehaviour
         travelTime = 0f;
         switch (next)
         {
-            case State.GoToTray: MoveTo(trayStand); break;
+            case State.GoToTray: MoveTo(TrayStand); break;
             case State.GoToCounter: MoveTo(counterStand); break;
             case State.GoToBin: MoveTo(binStand); break;
         }
@@ -73,6 +79,12 @@ public class Courier : MonoBehaviour
             && agent.remainingDistance <= agent.stoppingDistance + arriveTolerance;
     }
 
+    public bool ChainAutomated => chainEnd != null && chainBelt1 != null && chainBelt2 != null
+        && chainEnd.gameObject.activeInHierarchy && chainBelt1.activeInHierarchy && chainBelt2.activeInHierarchy;
+    Transform TrayStand => ChainAutomated && chainStand != null ? chainStand : trayStand;
+    Transform TrayLook => ChainAutomated && chainLook != null ? chainLook : trayLook;
+    int ProductsOnTray => ChainAutomated ? chainEnd.ProductsOnTray : station.ProductsOnTray;
+
     float Speed => config.MoveSpeed * (upgrades != null ? upgrades.EmployeeSpeed : 1f);
 
     void Update()
@@ -82,14 +94,14 @@ public class Courier : MonoBehaviour
         {
             case State.GoToTray:
                 if (Arrived()) { state = State.Collect; timer = 0f; }
-                else CheckStuck(trayStand);
+                else CheckStuck(TrayStand);
                 break;
 
             case State.Collect:
-                Face(trayLook);
+                Face(TrayLook);
                 if (carrier.IsFull) { Begin(State.GoToCounter); break; }
                 // des produits sont portés et le plateau est vide : après une courte attente, il part livrer
-                if (carrier.Count > 0 && station.ProductsOnTray == 0)
+                if (carrier.Count > 0 && ProductsOnTray == 0)
                 {
                     timer += Time.deltaTime;
                     if (timer >= collectPatience) Begin(State.GoToCounter);

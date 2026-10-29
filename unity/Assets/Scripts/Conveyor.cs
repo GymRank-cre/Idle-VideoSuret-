@@ -25,7 +25,8 @@ public class Conveyor : MonoBehaviour
     [SerializeField] ProcessStation destination;
     [SerializeField] Transform[] waypoints;
     [SerializeField] Transform[] cleats;            // taquets de la bande (déplacés, jamais créés en jeu)
-    [SerializeField, Min(0.1f)] float speed = 1.6f; // mètres par seconde
+    [SerializeField, Min(0.1f)] float speed = 2.2f; // mètres par seconde
+    [SerializeField, Min(1f)] float productScale = 1.5f; // les produits grossissent sur la bande : le stade se lit de loin
     [SerializeField, Min(0.1f)] float spacing = 0.7f;
     [SerializeField] float height = 0.22f;          // hauteur de la bande
     [SerializeField] float cleatSpacing = 0.5f;
@@ -95,6 +96,7 @@ public class Conveyor : MonoBehaviour
         if (destination.FreeInputSlots - items.Count <= 0) return;                  // la machine n'aura pas de place
         Product p = productSource.TakeProduct();
         if (p == null) return;
+        p.SetScaleFactor(productScale);
         items.Add(new Item { product = p, from = p.transform.position, dist = 0f, blend = 0f });
     }
 

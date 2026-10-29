@@ -9,6 +9,8 @@ public class Product : MonoBehaviour
     Collider col;
     Action<GameObject> release;
     Action<Product> taken;
+    Vector3 baseScale;
+    bool scaleKnown;
     Transform testedMark;
     Transform packedMark;
     static readonly int ColorId = Shader.PropertyToID("_BaseColor");
@@ -21,6 +23,8 @@ public class Product : MonoBehaviour
     public void Init(ProductType type, Action<GameObject> releaseToPool, Action<Product> onTaken, int stage = 0)
     {
         if (col == null) col = GetComponent<Collider>();
+        if (!scaleKnown) { baseScale = transform.localScale; scaleKnown = true; }
+        transform.localScale = baseScale;
 
         Type = type;
         release = releaseToPool;
@@ -28,6 +32,13 @@ public class Product : MonoBehaviour
         IsCollecting = false;
         col.enabled = true;
         SetStage(stage);
+    }
+
+    // Agrandit le produit (tapis) ; Init le remet à sa taille.
+    public void SetScaleFactor(float factor)
+    {
+        if (!scaleKnown) { baseScale = transform.localScale; scaleKnown = true; }
+        transform.localScale = baseScale * factor;
     }
 
     // Change de stade : les repères visuels sont créés à la demande, puis réutilisés avec le pool.

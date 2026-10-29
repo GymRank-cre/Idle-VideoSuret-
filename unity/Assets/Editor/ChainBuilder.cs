@@ -3,12 +3,12 @@ using UnityEngine;
 
 // Chaîne de production (11a-2) : machines Test et Emballage, leurs dalles de déblocage, leurs réglages (MachineConfig)
 // et le branchement de la valeur par stade sur le comptoir. Appelé par PrototypeSetup après EmployeeBuilder.
-// Test et Emballage sont posés le long du mur du fond (z = 9), hors de la bande de déplacement du joueur.
+// Test et Emballage sont posés au nord de la bande de déplacement du joueur (z >= 3,5) ; trajets de tapis courts.
 public static class ChainBuilder
 {
     const string Root = "Assets/Prototype";
-    static readonly Vector3 TestPosition = new Vector3(-1.5f, 0.1f, 9f);
-    static readonly Vector3 PackPosition = new Vector3(3f, 0.1f, 9f);
+    static readonly Vector3 TestPosition = new Vector3(-1.5f, 0.1f, 5f);
+    static readonly Vector3 PackPosition = new Vector3(6.5f, 0.1f, 7f);
 
     public static void Build()
     {
@@ -20,8 +20,8 @@ public static class ChainBuilder
         MachineConfig testConfig = LoadOrCreate("TestMachineConfig", "Test", 2.5f, 8, 4, 1.6f);
         MachineConfig packConfig = LoadOrCreate("PackMachineConfig", "Emballage", 3f, 8, 4, 2.4f);
 
-        GameObject test = BuildMachine("TestMachine", TestPosition, testConfig, 0, new Color(0.12f, 0.5f, 0.85f));
-        GameObject pack = BuildMachine("PackMachine", PackPosition, packConfig, 1, new Color(0.95f, 0.55f, 0.12f));
+        GameObject test = BuildMachine("TestMachine", TestPosition, testConfig, 0, new Color(0.12f, 0.5f, 0.85f), 2.2f);
+        GameObject pack = BuildMachine("PackMachine", PackPosition, packConfig, 1, new Color(0.95f, 0.5f, 0.1f), -2.2f);
 
         UnlockPad testPad = PrototypeSetup.BuildUnlockPad(test, test, Flat(TestPosition), "TestPad", "TestPadConfig", "TEST", 400, true);
         UnlockPad packPad = PrototypeSetup.BuildUnlockPad(pack, pack, Flat(PackPosition), "PackPad", "PackPadConfig", "EMBALLAGE", 900, true);
@@ -34,21 +34,32 @@ public static class ChainBuilder
         InstallStation assembly = FindAssembly();
         GameObject belt1 = BuildBelt("Belt1", assembly, testStation, new[]
         {
-            new Vector3(-6.6f, 0f, 0f), new Vector3(-7.3f, 0f, 0f), new Vector3(-7.3f, 0f, 9.4f), new Vector3(-2.7f, 0f, 9.4f)
+            new Vector3(-6.6f, 0f, 0f), new Vector3(-6.6f, 0f, 5f), new Vector3(-2.7f, 0f, 5f)
         });
         GameObject belt2 = BuildBelt("Belt2", testStation, packStation, new[]
         {
-            new Vector3(-0.7f, 0f, 6.8f), new Vector3(0.75f, 0f, 6.8f), new Vector3(0.75f, 0f, 8.4f), new Vector3(1.85f, 0f, 8.4f)
+            new Vector3(-0.7f, 0f, 7.2f), new Vector3(5.3f, 0f, 7.2f)
         });
-        UnlockPad beltPad1 = PrototypeSetup.BuildUnlockPad(belt1, belt1.transform.Find("Pop").gameObject, new Vector3(-1.5f, 0.01f, 4f), "BeltPad1", "BeltPad1Config", "TAPIS", 600, true);
-        UnlockPad beltPad2 = PrototypeSetup.BuildUnlockPad(belt2, belt2.transform.Find("Pop").gameObject, new Vector3(7f, 0.01f, 7f), "BeltPad2", "BeltPad2Config", "TAPIS", 1200, true);
+        UnlockPad beltPad1 = PrototypeSetup.BuildUnlockPad(belt1, belt1.transform.Find("Pop").gameObject, new Vector3(-1.5f, 0.01f, 9.3f), "BeltPad1", "BeltPad1Config", "TAPIS", 600, true);
+        UnlockPad beltPad2 = PrototypeSetup.BuildUnlockPad(belt2, belt2.transform.Find("Pop").gameObject, new Vector3(2.5f, 0.01f, 9.5f), "BeltPad2", "BeltPad2Config", "TAPIS", 1200, true);
         belt1.SetActive(false);
         belt2.SetActive(false);
+
+        // type des produits restaurés depuis la sauvegarde ; livreur : plateau d'Emballage quand les deux tapis sont achetés
+        StationConfig stationConfig = AssetDatabase.LoadAssetAtPath<StationConfig>(Root + "/StationConfig.asset");
+        ProductType fallback = stationConfig != null && stationConfig.Products != null && stationConfig.Products.Length > 0 ? stationConfig.Products[0] : null;
+        foreach (ProcessStation st in new[] { testStation, packStation })
+        {
+            var fso = new SerializedObject(st);
+            fso.FindProperty("fallbackType").objectReferenceValue = fallback;
+            fso.ApplyModifiedPropertiesWithoutUndo();
+        }
+        WireCourier(packStation, belt1, belt2);
 
         // vue d'ensemble : le centre de l'atelier, actif seulement une fois la machine Test débloquée
         var focus = new GameObject("OverviewFocus").transform;
         focus.SetParent(test.transform, false);
-        focus.position = new Vector3(0.5f, 0f, 4.5f);
+        focus.position = new Vector3(1.5f, 0f, 3.5f);
         CameraFollow cameraFollow = Object.FindFirstObjectByType<CameraFollow>();
         if (cameraFollow != null)
         {
@@ -75,6 +86,33 @@ public static class ChainBuilder
         }
     }
 
+    static void WireCourier(ProcessStation chainEnd, GameObject belt1, GameObject belt2)
+    {
+        Courier courier = Object.FindFirstObjectByType<Courier>(FindObjectsInactive.Include);
+        Transform stands = GameObject.Find("CourierStands") != null ? GameObject.Find("CourierStands").transform : null;
+        if (courier == null || stands == null) return;
+        Transform tray = chainEnd.transform.Find("OutputTray");
+        foreach (string old in new[] { "ChainStand", "ChainLook" })
+        {
+            Transform t = stands.Find(old);
+            if (t != null) Object.DestroyImmediate(t.gameObject);
+        }
+        var stand = new GameObject("ChainStand").transform;
+        stand.SetParent(stands, false);
+        stand.position = tray.position + new Vector3(0f, 0f, -0.9f); // au sud du plateau d'Emballage
+        var look = new GameObject("ChainLook").transform;
+        look.SetParent(stands, false);
+        look.position = tray.position;
+
+        var so = new SerializedObject(courier);
+        so.FindProperty("chainEnd").objectReferenceValue = chainEnd;
+        so.FindProperty("chainBelt1").objectReferenceValue = belt1;
+        so.FindProperty("chainBelt2").objectReferenceValue = belt2;
+        so.FindProperty("chainStand").objectReferenceValue = stand;
+        so.FindProperty("chainLook").objectReferenceValue = look;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
     static InstallStation FindAssembly()
     {
         foreach (InstallStation s in Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
@@ -90,7 +128,7 @@ public static class ChainBuilder
         var root = new GameObject(beltName);
         Material bed = PrototypeSetup.MakeMaterial("BeltBed", new Color(0.17f, 0.2f, 0.25f));
         Material rail = PrototypeSetup.MakeMaterial("BeltRail", new Color32(0xFF, 0xC4, 0x00, 0xFF));
-        Material cleatMat = PrototypeSetup.MakeMaterial("BeltCleat", new Color32(0x3A, 0x45, 0x55, 0xFF));
+        Material cleatMat = PrototypeSetup.MakeMaterial("BeltCleatYellow", new Color32(0xE0, 0xA8, 0x10, 0xFF));
 
         var pop = new GameObject("Pop").transform;
         pop.SetParent(root.transform, false);
@@ -193,9 +231,10 @@ public static class ChainBuilder
         return config;
     }
 
-    // Machine en formes simples : corps coloré, plateau blanc, petit écran ; zone de dépôt, plateau de sortie au sud,
-    // voyant et stocks au-dessus. Créée désactivée : la dalle la fait apparaître.
-    static GameObject BuildMachine(string machineName, Vector3 position, MachineConfig config, int inputStage, Color bodyColor)
+    // Machine : corps arrondi bleu/blanc (Test) ou orange/blanc (Emballage), lampe cylindrique sur le dessus, petit écran de face,
+    // fente d'entrée côté tapis (ouest), zone de dépôt, plateau de sortie (`trayZ`, au nord ou au sud), pastille de stocks.
+    // Créée désactivée : la dalle la fait apparaître.
+    static GameObject BuildMachine(string machineName, Vector3 position, MachineConfig config, int inputStage, Color bodyColor, float trayZ)
     {
         var root = new GameObject(machineName);
         root.transform.position = position;
@@ -205,10 +244,22 @@ public static class ChainBuilder
         zone.size = new Vector3(3f, 10f, 3f); // assez haute pour englober le joueur
         zone.center = new Vector3(0f, 5f, 0f);
 
-        Part(root.transform, "Body", PrimitiveType.Cube, new Vector3(0f, 0.65f, 0f), new Vector3(2.3f, 1.1f, 1.5f), PrototypeSetup.MakeMaterial(machineName + "Body", bodyColor));
-        Part(root.transform, "Top", PrimitiveType.Cube, new Vector3(0f, 1.25f, 0f), new Vector3(2.4f, 0.12f, 1.6f), PrototypeSetup.MakeMaterial("MachineTop", new Color(0.93f, 0.94f, 0.96f)));
-        Part(root.transform, "Screen", PrimitiveType.Cube, new Vector3(0f, 0.8f, -0.77f), new Vector3(0.9f, 0.45f, 0.05f), PrototypeSetup.MakeMaterial("MachineScreen", new Color(0.08f, 0.12f, 0.18f)));
-        Part(root.transform, "Hopper", PrimitiveType.Cube, new Vector3(0f, 1.45f, 0f), new Vector3(1.0f, 0.3f, 0.8f), PrototypeSetup.MakeMaterial("MachineHopper", new Color(0.55f, 0.6f, 0.68f)));
+        Material lower = PrototypeSetup.MakeMaterial(machineName + "Body", bodyColor);
+        Material upper = PrototypeSetup.MakeMaterial("MachineWhite", new Color(0.93f, 0.94f, 0.96f));
+        Material dark = PrototypeSetup.MakeMaterial("MachineScreen", new Color(0.08f, 0.12f, 0.18f));
+        Material steel = PrototypeSetup.MakeMaterial("MachineHopper", new Color(0.55f, 0.6f, 0.68f));
+
+        var group = new GameObject("BodyGroup").transform; // tout ce qui vibre quand la machine travaille
+        group.SetParent(root.transform, false);
+        RoundedBox.Make(group, "Lower", new Vector3(0f, 0.6f, 0f), new Vector3(2.1f, 1.2f, 1.5f), 0.16f, lower);
+        RoundedBox.Make(group, "Upper", new Vector3(0f, 1.45f, 0f), new Vector3(2.15f, 0.7f, 1.55f), 0.2f, upper);
+        RoundedBox.Make(group, "Screen", new Vector3(0f, 1.45f, -0.78f), new Vector3(0.95f, 0.45f, 0.1f), 0.04f, dark);
+        RoundedBox.Make(group, "Slot", new Vector3(-1.06f, 0.55f, 0f), new Vector3(0.12f, 0.4f, 0.75f), 0.04f, dark);   // entrée, côté tapis
+        RoundedBox.Make(group, "Panel", new Vector3(0f, 0.65f, -0.76f), new Vector3(1.3f, 0.5f, 0.06f), 0.03f, steel); // trappe de service
+        RoundedBox.Make(group, "Hopper", new Vector3(0.45f, 1.9f, 0.1f), new Vector3(0.6f, 0.25f, 0.5f), 0.06f, steel);
+
+        Renderer lamp = MachineBuilder.MakeLampHead(group, new Vector3(-0.55f, 1.9f, 0.1f));
+        lamp.transform.localScale = new Vector3(0.34f, 0.2f, 0.34f);
 
         var machine = root.AddComponent<ProductionMachine>();
         var mso = new SerializedObject(machine);
@@ -216,7 +267,7 @@ public static class ChainBuilder
         mso.ApplyModifiedPropertiesWithoutUndo();
 
         Transform tray = ProductBuilder.BuildTray(root.transform);
-        tray.localPosition = new Vector3(0f, -0.1f, -2.2f); // au sud, juste hors de la zone de dépôt
+        tray.localPosition = new Vector3(0f, -0.1f, trayZ); // juste hors de la zone de dépôt
         tray.localRotation = Quaternion.identity;
 
         var station = root.AddComponent<ProcessStation>();
@@ -227,7 +278,16 @@ public static class ChainBuilder
         sso.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         sso.ApplyModifiedPropertiesWithoutUndo();
 
-        MachineBuilder.AddStockHud(root.transform, machine, 2.9f);
+        var fx = root.AddComponent<MachineFx>();
+        var fxo = new SerializedObject(fx);
+        fxo.FindProperty("machine").objectReferenceValue = machine;
+        fxo.FindProperty("body").objectReferenceValue = group;
+        fxo.FindProperty("lamp").objectReferenceValue = lamp.transform;
+        fxo.FindProperty("sparkPoint").objectReferenceValue = lamp.transform;
+        fxo.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
+        fxo.ApplyModifiedPropertiesWithoutUndo();
+
+        MachineBuilder.AddStockHud(root.transform, machine, 2.8f, lamp);
         return root;
     }
 

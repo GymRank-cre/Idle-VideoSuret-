@@ -67,6 +67,16 @@ public static class SaveBuilder
         list.arraySize = pads.Length;
         for (int i = 0; i < pads.Length; i++)
             list.GetArrayElementAtIndex(i).objectReferenceValue = pads[i];
+        ProcessStation[] stations = Object.FindObjectsByType<ProcessStation>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            .OrderBy(s => s.name).ToArray();
+        SerializedProperty stationList = so.FindProperty("stations");
+        stationList.arraySize = stations.Length;
+        for (int i = 0; i < stations.Length; i++)
+            stationList.GetArrayElementAtIndex(i).objectReferenceValue = stations[i];
+        so.FindProperty("belt1").objectReferenceValue = FindRoot("Belt1");
+        so.FindProperty("belt2").objectReferenceValue = FindRoot("Belt2");
+        so.FindProperty("testConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MachineConfig>(Root + "/TestMachineConfig.asset");
+        so.FindProperty("packConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MachineConfig>(Root + "/PackMachineConfig.asset");
         so.FindProperty("haulerObject").objectReferenceValue = hauler;
         so.FindProperty("courierObject").objectReferenceValue = courier;
         so.FindProperty("upgradeState").objectReferenceValue = Object.FindFirstObjectByType<UpgradeState>();
@@ -79,6 +89,13 @@ public static class SaveBuilder
         so.FindProperty("customerConfig").objectReferenceValue = CustomerBuilder.LoadOrCreateConfig();
         so.FindProperty("welcomeScreen").objectReferenceValue = screen;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static GameObject FindRoot(string objectName)
+    {
+        foreach (GameObject g in Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (g.name == objectName && g.transform.parent == null) return g;
+        return null;
     }
 
     static GameObject FindInactive<T>() where T : Component

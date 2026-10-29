@@ -53,6 +53,46 @@ public static class UnitTests
         SaveData cur = SaveSystem.Migrate(new SaveData { money = 9 });
         Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
 
+        SaveData v3 = SaveSystem.Migrate(new SaveData { version = 3, money = 7, machines = null });
+        Eq("4", v3.version.ToString(), "migration v3 -> v4 : version");
+        Eq("True", (v3.machines != null && v3.machines.Count == 0).ToString(), "migration v3 -> v4 : aucune machine");
+        Eq("7", v3.money.ToString(), "migration v3 -> v4 : l'argent est conservé");
+
+        // Hors ligne avec la chaîne : le plus lent des maillons limite le débit, la valeur est multipliée
+        {
+            var offCfg = ScriptableObject.CreateInstance<OfflineConfig>();
+            var stCfg = ScriptableObject.CreateInstance<StationConfig>();
+            var emp = ScriptableObject.CreateInstance<EmployeeConfig>();
+            var cust = ScriptableObject.CreateInstance<CustomerConfig>();
+            var pt = ScriptableObject.CreateInstance<ProductType>();
+            var sso = new SerializedObject(stCfg);
+            SerializedProperty prods = sso.FindProperty("products");
+            prods.arraySize = 1;
+            prods.GetArrayElementAtIndex(0).objectReferenceValue = pt;
+            sso.ApplyModifiedPropertiesWithoutUndo();
+            var pso = new SerializedObject(pt);
+            pso.FindProperty("value").intValue = 100;
+            pso.ApplyModifiedPropertiesWithoutUndo();
+            var oso = new SerializedObject(offCfg);
+            oso.FindProperty("efficiency").floatValue = 1f;
+            oso.FindProperty("minSeconds").floatValue = 0f;
+            oso.ApplyModifiedPropertiesWithoutUndo();
+            var cso = new SerializedObject(cust);
+            cso.FindProperty("spawnInterval").floatValue = 0.5f; // clients très fréquents : jamais le goulot
+            cso.ApplyModifiedPropertiesWithoutUndo();
+            var eso = new SerializedObject(emp);
+            eso.FindProperty("capacity").intValue = 100; // porteur et livreur très rapides : jamais le goulot
+            eso.ApplyModifiedPropertiesWithoutUndo();
+            int plain = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust);
+            var chain = new OfflineEarnings.Chain { automated = true, testThroughput = 0.4f, packThroughput = 0.2f, valueMultiplier = 2f };
+            int withChain = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust, 1f, 1f, 1f, 0, chain);
+            // goulot = Emballage (0,2/s) x 100 s x 100 x 2 = 4000 ; sans chaîne le débit du poste (0,5/s par défaut) donne 5000
+            Eq("4000", withChain.ToString(), "hors ligne : chaîne limitée par Emballage et valeur x2");
+            Eq("True", (plain > 0).ToString(), "hors ligne sans chaîne : inchangé et positif");
+            Object.DestroyImmediate(offCfg); Object.DestroyImmediate(stCfg); Object.DestroyImmediate(emp);
+            Object.DestroyImmediate(cust); Object.DestroyImmediate(pt);
+        }
+
         // Économie : coût des améliorations strictement positif et croissant
         foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())
         {

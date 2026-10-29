@@ -8,7 +8,7 @@ public class OfflineConfig : ScriptableObject
     [SerializeField, Range(0f, 1f)] float efficiency = 0.2f;  // part de la cadence théorique réellement gagnée
     [SerializeField, Min(0f)] float minSeconds = 60f;         // en dessous, pas d'écran « Bon retour »
     [Header("Cadence mesurée des employés (secondes par aller-retour complet)")]
-    [SerializeField, Min(1f)] float haulerCycleSeconds = 14f; // tas -> poste -> tas avec sa pleine charge
+    [SerializeField, Min(1f)] float haulerCycleSeconds = 9.2f; // tas -> poste -> tas avec sa pleine charge (mesuré en Play en 11a-4 : ~9 s)
     [SerializeField, Min(1f)] float courierCycleSeconds = 14f; // plateau -> comptoir -> plateau avec sa pleine charge
 
     public float MaxHours => maxHours;
