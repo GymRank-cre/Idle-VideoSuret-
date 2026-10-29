@@ -79,7 +79,7 @@ public class UnlockPad : MonoBehaviour
     void UpdateLabel()
     {
         if (priceLabel != null)
-            priceLabel.text = "$ " + remainingPrice;
+            priceLabel.text = NumberFormat.Short(remainingPrice); // l'icône de billet est à gauche du nombre
         if (fillBar != null && config.Price > 0)
         {
             float k = 1f - (float)remainingPrice / config.Price;

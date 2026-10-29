@@ -116,6 +116,19 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**K1 — Police et kit d'interface : fait (points 1 à 8). Éditeur : compilation 0 erreur, Build scene OK, Play 0 erreur, tests unitaires 18/18. Build WebGL refait (1 seul), `webgl/` remplacé, 60 i/s navigateur (avant 60). Capture `K1-jeu-390x844.png`.**
+1. **Police** Lilita One partout (`UiTheme.Font`, repli police intégrée) : HUD, guide, réglages, améliorations, hors-ligne, titre ; texte jeu blanc + contour encre 4 px + ombre.
+2. **Utilitaire** `Editor/UiTheme.cs` : palette, `Style(Text, taille, couleur, contour)`, `AddBase` (socle plein sous un élément).
+3. **Kit** : pastilles ardoise `#1E2A38` opaques avec socle, engrenage rond 124 px, bouton Améliorations carré orange (socle, flèche, pastille rouge « ! », caché jusqu'à l'embauche du porteur).
+4. **HUD** : billet généré (`UiSprites.Bill`), argent à gauche, caisses/employés à droite.
+5. **Nombres abrégés** `NumberFormat.Short` (1,2K ; 12K ; 1M ; B ; T ; aa…) branchés sur HUD, améliorations, hors-ligne, « +N » flottants, prix de dalle. Menu `Tools/Idle Prototype/Tests unitaires` : 18/18.
+6. **Dalles** : plaque sombre, prix à droite d'une icône de billet, titre sur ruban orange centré (blanc contouré).
+7. **Écran titre / chargement** : logo « Idle Sécurité » 130 px qui rebondit doucement, bouton vert « Jouer » avec socle ; page WebGL avec `@font-face` Lilita (police copiée dans le build) et barre de chargement jaune arrondie.
+8. **Pile** : caisses 0,6 -> 0,95, pas vertical 0,17 -> 0,27 (joueur et employés), retard plafonné (`maxLateralLag` 0,25 m, `maxBackLag` 0,5 m) : la pile reste une colonne groupée en course, rebond conservé.
+9. **Preuves** : capture 390x844 (pile en course avec MAX, HUD). **Non fait** : captures 430x932 et comparaison côte à côte avec les maquettes, vérification visuelle des dalles au bord de l'écran, écran titre non capturé (il ne s'affiche que sur WebGL après chargement) ; pastille Points Pro cachée ; sol vide en bas -> 10b.
+Build : voir `webgl/` (numéro de build dans le diagnostic).
+
+## Archive : résultats de l'étape 10a (Claude Code local)
 **Étape 10a — faite (sauf « billets en arc depuis le client », voir plus bas). Éditeur : 0 erreur, boucle de jeu et sauvegarde inchangées. Build WebGL refait, `webgl/` remplacé, 60 i/s mesurées dans le navigateur avant et après. Captures `10a-*`.**
 
 **Ce qui existait déjà (cinq lignes)** : (1) 10 sons générés, billets à hauteur progressive, vibrations sur les gros événements ; (2) pastilles HUD qui gonflent (x1,3) à chaque caisse ou gain ; (3) chiffres flottants « +valeur » et éclats ronds à l'arrivée d'une caisse, d'un produit et d'un billet ; (4) billets qui volent vers le joueur en 0,2 s (linéaire) ; (5) `PopIn` à dépassement simple sur les objets débloqués, `Peek` de caméra vers une nouvelle dalle, pile de caisses qui se balance avec retard. **Manquait** : cadrage, accélération/inclinaison/pas/poussière, vol des caisses en arc, rebond de la pile, compteur qui défile, remplissage visible de la dalle, fête de déblocage, retour des clients et des boutons.
@@ -211,6 +224,7 @@ Sébastien : « Ça marche sur mon iPhone, je veux que le jeu soit satisfaisant 
 Contenu prévu (à détailler quand 10a sera livré ; **l'ordre de priorité suit la référence « Idle Lumber » : 1) police grasse contourée et kit d'interface cohérent, 2) lisibilité des dalles (prix énorme blanc contouré + icône billet) et « +N $ » avec icône, 3) l'extérieur de l'atelier visible (parking, camionnette, rue, herbe, ciel) et fin des zones vides, 4) éclairage doux et couleurs saturées harmonisées, 5) bulles d'humeur des clients, 6) le monde qui vit seul (écrans, caméras, ventilateur, vapeur)**) : police arrondie grasse libre de droits partout (HUD, panneaux, texte 3D) à la place d'Arial ; éclairage chaud avec **ombres douces cuites** (lightmap) sur le décor fixe et ombres temps réel seulement pour les personnages si les images par seconde le permettent ; sol et murs plus riches (deux tons, plinthes, bandes jaune/noir, câbles, taches) ; décor vivant (étagères pleines, caméras dôme, écrans, néon « SÉCURITÉ » émissif, plantes) ; contour doux des personnages ; post-traitement léger (courbe de tons, vignette, saturation) activé seulement si la mesure le permet ; interface harmonisée (panneaux arrondis dégradés, icônes uniformes). **Question à régler avec lui avant :** quelle ambiance (cartoon lumineux, conseillée ; ou plus réaliste ; ou nuit néon) ?
 
 ## Questions (à remplir par Claude Code local)
+- **K1 sur l'iPhone** : lisibilité de la pile plus grosse, du HUD ardoise et de l'écran titre « Jouer » ? Capture bienvenue (390x844 ou 430x932) pour comparer aux maquettes.
 - **10a sur l'iPhone** : le cadrage plus serré (technicien ~9 %), la secousse et le zoom du déblocage te conviennent-ils, ou faut-il les adoucir ? Peux-tu envoyer une courte vidéo (course + paiement d'une dalle) ?
 - **Billets du comptoir en arc depuis le client** et poussière des employés : à faire dans 10a bis, ou on passe à 10b (beauté) ?
 - **Poids du dépôt** : toujours > 700 Mo en local ; un déploiement direct depuis le PC reste préférable avant un nouveau remplacement de `webgl/`.

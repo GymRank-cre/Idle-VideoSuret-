@@ -123,7 +123,7 @@ public static class GuideBuilder
         img.sprite = round;
         img.type = Image.Type.Sliced;
         img.pixelsPerUnitMultiplier = 0.85f;
-        img.color = new Color(0.05f, 0.07f, 0.10f, 0.6f);
+        img.color = UiTheme.Slate; // ardoise opaque (maquette)
         img.raycastTarget = false;
 
         GameObject textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
@@ -134,18 +134,14 @@ public static class GuideBuilder
         tr.offsetMin = new Vector2(24f, 0f);
         tr.offsetMax = new Vector2(-24f, 0f);
         label = textGo.GetComponent<Text>();
-        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        label.fontSize = 50;
+        UiTheme.Style(label, 50, Color.white);
         label.resizeTextForBestFit = true; // une seule ligne, la taille s'adapte
-        label.resizeTextMinSize = 28;
+        label.resizeTextMinSize = 30;
         label.resizeTextMaxSize = 50;
-        label.fontStyle = FontStyle.Bold;
         label.alignment = TextAnchor.MiddleCenter;
-        label.color = Color.white;
         label.raycastTarget = false;
         label.horizontalOverflow = HorizontalWrapMode.Wrap;
         label.verticalOverflow = VerticalWrapMode.Truncate;
-        textGo.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
         label.text = "";
         return bar;
     }

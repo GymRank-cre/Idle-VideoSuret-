@@ -13,6 +13,8 @@ public class StackCarrier : MonoBehaviour
     [SerializeField] bool makesSound;         // vrai pour le joueur : son de ramassage
     [SerializeField] float itemHeight = 0.35f;
     [SerializeField] float followSpeed = 14f;
+    [SerializeField] float maxLateralLag = 0.25f; // la pile reste groupée derrière le dos : écart latéral maximum (m)
+    [SerializeField] float maxBackLag = 0.5f;     // et écart maximum vers l'arrière / l'avant (m)
     [SerializeField] GameObject maxIndicator; // étiquette "MAX", facultative
     [SerializeField] float indicatorGap = 0.4f; // hauteur du panneau MAX au-dessus de la dernière caisse
 
@@ -96,7 +98,14 @@ public class StackCarrier : MonoBehaviour
             // Plus l'objet est haut, plus il réagit lentement.
             float t = 1f - Mathf.Exp(-followSpeed / (1f + i * 0.35f) * Time.deltaTime);
 
-            items[i].position = Vector3.Lerp(items[i].position, targetPos, t);
+            Vector3 pos = Vector3.Lerp(items[i].position, targetPos, t);
+            // retard plafonné : sans cela la pile s'étire en échelle inclinée en courant
+            Vector3 delta = pos - targetPos;
+            Vector3 right = stackAnchor.right; right.y = 0f; right.Normalize();
+            Vector3 forward = stackAnchor.forward; forward.y = 0f; forward.Normalize();
+            float lateral = Mathf.Clamp(Vector3.Dot(delta, right), -maxLateralLag, maxLateralLag);
+            float back = Mathf.Clamp(Vector3.Dot(delta, forward), -maxBackLag, maxBackLag);
+            items[i].position = targetPos + right * lateral + forward * back + Vector3.up * delta.y;
             items[i].rotation = Quaternion.Slerp(items[i].rotation, stackAnchor.rotation, t);
         }
 

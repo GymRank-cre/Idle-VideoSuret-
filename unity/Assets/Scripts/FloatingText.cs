@@ -7,6 +7,7 @@ public class FloatingText : MonoBehaviour
 {
     [SerializeField] TextMesh main;
     [SerializeField] TextMesh shadow; // contour sombre
+    [SerializeField] Transform icon;  // billet à droite du nombre (caché pour un message libre)
 
     string custom; // texte libre (« +5 % vitesse ») ; null = « +valeur »
     Vector3 start;
@@ -46,9 +47,16 @@ public class FloatingText : MonoBehaviour
 
     void SetText()
     {
-        string text = custom ?? "+" + total;
+        string text = custom ?? "+" + NumberFormat.Short(total);
         main.text = text;
         shadow.text = text;
+        if (icon != null)
+        {
+            icon.gameObject.SetActive(custom == null);
+            Renderer r = main.GetComponent<Renderer>();
+            float half = r != null ? r.bounds.extents.x / Mathf.Max(0.01f, transform.lossyScale.x) : 0.5f;
+            icon.localPosition = new Vector3(half + 0.45f, 0f, 0f);
+        }
     }
 
     void Update()

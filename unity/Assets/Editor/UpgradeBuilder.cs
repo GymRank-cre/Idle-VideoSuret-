@@ -156,16 +156,26 @@ public static class UpgradeBuilder
         Sprite circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
         Sprite rounded = UiSprites.Rounded();
 
-        // Bouton rond en bas à droite (zone sûre)
-        RectTransform button = Box("UpgradeButton", safe, circle, new Color(0.95f, 0.78f, 0.15f), Vector2.zero, new Vector2(170f, 170f), true);
-        button.anchorMin = button.anchorMax = button.pivot = new Vector2(1f, 0f);
-        button.anchoredPosition = new Vector2(-40f, 60f);
-        Box("Ring", button, circle, new Color(0.15f, 0.12f, 0.03f, 0.9f), Vector2.zero, new Vector2(138f, 138f), false);
+        // Bouton carré orange à droite, sous les pastilles (maquette) : socle plein, flèche blanche, pastille rouge « ! »
+        GameObject rootGo = new GameObject("UpgradeButton", typeof(RectTransform), typeof(Button));
+        rootGo.transform.SetParent(safe, false);
+        RectTransform button = rootGo.GetComponent<RectTransform>();
+        button.anchorMin = button.anchorMax = button.pivot = new Vector2(1f, 1f);
+        button.anchoredPosition = new Vector2(-40f, -470f);
+        button.sizeDelta = new Vector2(150f, 150f);
+        RectTransform baseRt = Box("Base", button, rounded, new Color32(0xC2, 0x53, 0x0A, 0xFF), new Vector2(0f, -14f), new Vector2(150f, 150f), false);
+        baseRt.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
+        RectTransform face = Box("Face", button, rounded, UiTheme.Orange, Vector2.zero, new Vector2(150f, 150f), true);
+        face.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
+        rootGo.GetComponent<Button>().targetGraphic = face.GetComponent<Image>();
+        Object.DestroyImmediate(face.GetComponent<Button>());
         // flèche vers le haut : losange + tige
-        Rot(Box("ArrowHead", button, round, Color.white, new Vector2(0f, 16f), new Vector2(54f, 54f), false), 45f);
-        Box("ArrowStem", button, round, Color.white, new Vector2(0f, -14f), new Vector2(26f, 44f), false);
-        RectTransform dot = Box("Dot", button, circle, new Color(1f, 0.25f, 0.2f), new Vector2(56f, 56f), new Vector2(46f, 46f), false);
-        Box("DotRim", dot, circle, new Color(1f, 1f, 1f, 0.9f), Vector2.zero, new Vector2(24f, 24f), false);
+        Rot(Box("ArrowHead", face, round, Color.white, new Vector2(0f, 16f), new Vector2(54f, 54f), false), 45f);
+        Box("ArrowStem", face, round, Color.white, new Vector2(0f, -14f), new Vector2(26f, 44f), false);
+        RectTransform dot = Box("Dot", button, circle, UiTheme.Red, new Vector2(62f, 62f), new Vector2(54f, 54f), false);
+        Box("DotRim", dot, circle, new Color(1f, 1f, 1f, 0.95f), Vector2.zero, new Vector2(54f, 54f), false).SetAsFirstSibling();
+        Box("DotIn", dot, circle, UiTheme.Red, Vector2.zero, new Vector2(44f, 44f), false);
+        Label("Mark", dot, "!", 38, Color.white, Vector2.zero, new Vector2(54f, 54f));
 
         // Le bouton n'apparaît qu'après l'embauche du porteur (dalle EMBAUCHE), avec un gonflement.
         button.gameObject.AddComponent<PopIn>();
@@ -333,16 +343,12 @@ public static class UpgradeBuilder
         rt.anchoredPosition = pos;
         rt.sizeDelta = box;
         Text t = go.GetComponent<Text>();
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        t.fontSize = size;
-        t.fontStyle = FontStyle.Bold;
+        UiTheme.Style(t, size, color);
         t.alignment = TextAnchor.MiddleCenter;
-        t.color = color;
         t.text = text;
         t.raycastTarget = false;
         t.horizontalOverflow = HorizontalWrapMode.Overflow;
         t.verticalOverflow = VerticalWrapMode.Overflow;
-        go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.7f);
         return t;
     }
 }

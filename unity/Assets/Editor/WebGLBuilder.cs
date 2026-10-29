@@ -42,16 +42,20 @@ public static class WebGLBuilder
 
         RectTransform panel = UpgradeBuilder.Box("Panel", root.transform, rounded, new Color(0.10f, 0.13f, 0.18f, 0.92f), new Vector2(0f, 40f), new Vector2(860f, 560f), false);
         panel.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        UpgradeBuilder.Label("Title", panel, "Idle Sécurité", 84, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 150f), new Vector2(780f, 130f));
+        Text logo = UpgradeBuilder.Label("Logo", panel, "Idle Sécurité", 130, Color.white, new Vector2(0f, 140f), new Vector2(820f, 170f));
+        UiTheme.Style(logo, 130, Color.white, 7f);
         UpgradeBuilder.Label("Sub", panel, "Installation de sécurité électronique", 38, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 60f), new Vector2(780f, 70f));
-        RectTransform tap = UpgradeBuilder.Box("TapPill", panel, rounded, new Color(0.2f, 0.7f, 0.3f), new Vector2(0f, -110f), new Vector2(620f, 150f), false);
-        tap.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", tap, "Touche pour jouer", 62, Color.white, Vector2.zero, new Vector2(620f, 150f));
+        RectTransform tapBase = UpgradeBuilder.Box("TapBase", panel, rounded, new Color32(0x1F, 0x8F, 0x3A, 0xFF), new Vector2(0f, -124f), new Vector2(560f, 150f), false);
+        tapBase.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
+        RectTransform tap = UpgradeBuilder.Box("TapPill", panel, rounded, UiTheme.Green, new Vector2(0f, -110f), new Vector2(560f, 150f), false);
+        tap.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
+        UpgradeBuilder.Label("Text", tap, "Jouer", 90, Color.white, Vector2.zero, new Vector2(560f, 150f));
 
         var so = new SerializedObject(host.GetComponent<TapToPlayScreen>());
         so.FindProperty("root").objectReferenceValue = root;
         so.FindProperty("tapButton").objectReferenceValue = root.GetComponent<Button>();
         so.FindProperty("pulse").objectReferenceValue = tap;
+        so.FindProperty("logo").objectReferenceValue = logo.rectTransform;
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
@@ -263,12 +267,17 @@ public static class WebGLBuilder
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d12; overscroll-behavior: none; }
       #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; background: #0b0d12; }
-      #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffd93a; font: bold 28px sans-serif; }
+      @font-face { font-family: ""Lilita""; src: url(""LilitaOne-Regular.ttf"") format(""truetype""); font-display: swap; }
+      #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: #fff; font-family: ""Lilita"", sans-serif; }
+      #logo { font-size: 64px; color: #fff; -webkit-text-stroke: 8px #0e1620; paint-order: stroke fill; text-shadow: 0 8px 0 #0e1620; letter-spacing: 1px; }
+      #bar { width: min(70vw, 420px); height: 34px; background: #1e2a38; border-radius: 17px; box-shadow: 0 8px 0 #121a24; overflow: hidden; }
+      #fill { width: 0%; height: 100%; background: #ffc400; border-radius: 17px; transition: width .15s; }
+      #pct { font-size: 26px; -webkit-text-stroke: 5px #0e1620; paint-order: stroke fill; }
     </style>
   </head>
   <body>
     <canvas id=""unity-canvas""></canvas>
-    <div id=""loading"">Chargement...</div>
+    <div id=""loading""><div id=""logo"">Idle Sécurité</div><div id=""bar""><div id=""fill""></div></div><div id=""pct"">Chargement 0 %</div></div>
     <script src=""Build/{{{ LOADER_FILENAME }}}""></script>
     <script>
       // Contexte WebGL perdu (iPhone verrouillé, changement d'application) : Unity ne le récupère pas, on recharge la page
@@ -293,15 +302,17 @@ public static class WebGLBuilder
         productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
         devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       }, function (progress) {
-        document.querySelector(""#loading"").textContent = ""Chargement "" + Math.round(progress * 100) + "" %"";
+        document.querySelector(""#fill"").style.width = Math.round(progress * 100) + ""%""; document.querySelector(""#pct"").textContent = ""Chargement "" + Math.round(progress * 100) + "" %"";
       }).then(function () {
         document.querySelector(""#loading"").style.display = ""none"";
-      }).catch(function (message) { document.querySelector(""#loading"").textContent = ""Erreur : "" + message; });
+      }).catch(function (message) { document.querySelector(""#pct"").textContent = ""Erreur : "" + message; });
     </script>
   </body>
 </html>
 ";
         File.WriteAllText(Path.Combine(dir, "index.html"), html);
+        string fontSource = Path.Combine(Directory.GetCurrentDirectory(), "Assets/Fonts/LilitaOne-Regular.ttf");
+        if (File.Exists(fontSource)) File.Copy(fontSource, Path.Combine(dir, "LilitaOne-Regular.ttf"), true); // la page charge la police du jeu
         AssetDatabase.Refresh();
     }
 }

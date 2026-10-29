@@ -113,7 +113,7 @@ public static class EmployeeBuilder
         var cso = new SerializedObject(carrier);
         cso.FindProperty("stackAnchor").objectReferenceValue = anchor;
         cso.FindProperty("capacity").intValue = config.Capacity;
-        cso.FindProperty("itemHeight").floatValue = 0.17f;
+        cso.FindProperty("itemHeight").floatValue = 0.27f; // comme le joueur : caisses plus grosses
         cso.ApplyModifiedPropertiesWithoutUndo();
 
         var employee = root.AddComponent<Employee>();

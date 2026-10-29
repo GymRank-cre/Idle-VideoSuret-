@@ -76,6 +76,6 @@ public class MoneyHud : MonoBehaviour
 
     static string Format(int money)
     {
-        return money.ToString(); // l'icône de billet remplace le "$"
+        return NumberFormat.Short(money); // l'icône de billet remplace le "$"
     }
 }

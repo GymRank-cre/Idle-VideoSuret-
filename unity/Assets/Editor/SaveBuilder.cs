@@ -154,16 +154,12 @@ public static class SaveBuilder
         rt.anchoredPosition = pos;
         rt.sizeDelta = box;
         Text t = go.GetComponent<Text>();
-        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        t.fontSize = size;
-        t.fontStyle = FontStyle.Bold;
+        UiTheme.Style(t, size, color);
         t.alignment = TextAnchor.MiddleCenter;
-        t.color = color;
         t.text = text;
         t.raycastTarget = false;
         t.horizontalOverflow = HorizontalWrapMode.Overflow;
         t.verticalOverflow = VerticalWrapMode.Overflow;
-        go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
         return t;
     }
 
@@ -173,7 +169,6 @@ public static class SaveBuilder
         Button b = rt.gameObject.AddComponent<Button>();
         b.targetGraphic = rt.GetComponent<Image>();
         Text t = Label("Text", rt, text, size, textColor, Vector2.zero, boxSize);
-        t.GetComponent<Outline>().enabled = back.g > 0.5f; // contour seulement sur le bouton vif
         return b;
     }
 }

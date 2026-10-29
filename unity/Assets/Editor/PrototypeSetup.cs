@@ -22,8 +22,8 @@ public static class PrototypeSetup
     const float CameraFov = 65f;
 
     // ---- Échelle de la pile et vitesse du joueur (4e) ----
-    const float CrateScale = 0.6f;       // taille des caisses portées
-    const float StackItemHeight = 0.17f; // écart vertical entre deux caisses (pile pleine ~2,3 m)
+    const float CrateScale = 0.95f;      // taille des caisses portées (K1 : ≈ 0,5 m, avant 0,6)
+    const float StackItemHeight = 0.27f; // écart vertical entre deux caisses (K1 : caisses plus grosses)
     const float PlayerMoveSpeed = 4.2f;  // m/s à fond (valeur du [SerializeField] de PlayerController)
 
     [MenuItem("Tools/Idle Prototype/Build scene")]
@@ -148,7 +148,7 @@ public static class PrototypeSetup
     // Sa hauteur est calée par StackCarrier juste au-dessus de la dernière caisse.
     static GameObject BuildMaxIndicator(Transform player, Material redMat)
     {
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font font = UiTheme.Font;
 
         GameObject root = new GameObject("MaxIndicator", typeof(FaceCamera));
         root.transform.SetParent(player, false);
@@ -328,7 +328,7 @@ public static class PrototypeSetup
         box.center = new Vector3(0f, 5f, 0f);
 
         // Prix affiché au-dessus de la dalle (TextMesh intégré, face à la caméra)
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font font = UiTheme.Font;
         GameObject labelGo = new GameObject("PriceLabel", typeof(TextMesh), typeof(FaceCamera));
         labelGo.transform.SetParent(pad.transform, false);
         labelGo.transform.localPosition = new Vector3(0f, 0.55f, 0f); // le prix est sous le titre, bien séparé
@@ -389,6 +389,15 @@ public static class PrototypeSetup
     {
         GameObject root = new GameObject("Title", typeof(FaceCamera));
         root.transform.SetParent(priceLabel, false);
+        GameObject ribbonGo = new GameObject("Ribbon", typeof(SpriteRenderer));
+        ribbonGo.transform.SetParent(root.transform, false);
+        ribbonGo.transform.localPosition = new Vector3(0f, 0f, 0.05f); // derrière le texte (vu de la caméra)
+        SpriteRenderer rr = ribbonGo.GetComponent<SpriteRenderer>();
+        rr.sprite = UiSprites.Rounded();
+        rr.drawMode = SpriteDrawMode.Sliced;
+        rr.color = UiTheme.Orange;
+        rr.size = new Vector2(Mathf.Max(2.2f, 0.34f * title.Length + 0.9f), 0.95f);
+        rr.sortingOrder = 0;
         root.transform.localPosition = new Vector3(0f, 1.45f, 0f); // « vers le haut de l'écran », quel que soit l'angle de vue
         foreach (bool shadow in new[] { true, false })
         {
@@ -399,12 +408,13 @@ public static class PrototypeSetup
             tm.font = font;
             tm.text = title;
             tm.fontSize = 100;
-            tm.characterSize = 0.056f;
-            tm.fontStyle = FontStyle.Bold;
+            tm.characterSize = 0.08f;
+            tm.fontStyle = FontStyle.Normal;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
             tm.color = shadow ? new Color(0.05f, 0.07f, 0.1f) : Color.white; // blanc : lisible aussi sur le jaune de la dalle
             t.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+            t.GetComponent<MeshRenderer>().sortingOrder = shadow ? 1 : 2; // devant le ruban
         }
     }
 
@@ -439,9 +449,7 @@ public static class PrototypeSetup
 
         // Argent : pastille en haut à gauche avec un billet vert
         RectTransform moneyPill = MakePill("MoneyPill", safe, true, 330f, round);
-        MakeIcon("BillIcon", moneyPill, round, new Vector2(24f, 0f), new Vector2(78f, 48f), new Color(0.45f, 0.85f, 0.45f));
-        RectTransform billInner = MakeIcon("BillInner", moneyPill, round, new Vector2(32f, 0f), new Vector2(62f, 34f), new Color(0.22f, 0.62f, 0.32f));
-        MakeIcon("BillSeal", moneyPill, dot, new Vector2(40f, 0f), new Vector2(22f, 22f), new Color(0.6f, 0.92f, 0.6f));
+        MakeIcon("BillIcon", moneyPill, UiSprites.Bill(), new Vector2(18f, 0f), new Vector2(92f, 58f), Color.white); // icône de billet unique
         Text moneyText = MakePillText("MoneyText", moneyPill);
         MoneyHud moneyHud = moneyText.gameObject.AddComponent<MoneyHud>();
         var moneySo = new SerializedObject(moneyHud);
@@ -514,8 +522,9 @@ public static class PrototypeSetup
         img.sprite = UiSprites.Rounded();
         img.type = Image.Type.Sliced;
         img.pixelsPerUnitMultiplier = 0.75f; // coins bien arrondis
-        img.color = new Color(0.05f, 0.07f, 0.10f, 0.55f);
+        img.color = UiTheme.Slate; // ardoise opaque (maquette)
         img.raycastTarget = false; // ne bloque pas le joystick
+        UiTheme.AddBase(rt, new Color32(0x12, 0x1A, 0x24, 0xFF), 10f, 0.75f); // socle plein
         return rt;
     }
 
@@ -547,15 +556,11 @@ public static class PrototypeSetup
         rt.offsetMax = new Vector2(-18f, 0f);
 
         Text text = go.GetComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 66;
-        text.fontStyle = FontStyle.Bold;
+        UiTheme.Style(text, 80, Color.white);
         text.alignment = TextAnchor.MiddleLeft;
-        text.color = Color.white;
         text.raycastTarget = false;
         text.horizontalOverflow = HorizontalWrapMode.Overflow;
         text.verticalOverflow = VerticalWrapMode.Overflow;
-        go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.8f);
         return text;
     }
 

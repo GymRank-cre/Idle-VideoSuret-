@@ -40,7 +40,7 @@ public static class FeedbackBuilder
     // Texte 3D (police intégrée) avec un contour sombre décalé derrière.
     static GameObject BuildFloatingTextPrefab()
     {
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font font = UiTheme.Font;
 
         GameObject root = new GameObject("FloatingText", typeof(TextMesh), typeof(FaceCamera), typeof(FloatingText));
         TextMesh main = root.GetComponent<TextMesh>();
@@ -52,7 +52,15 @@ public static class FeedbackBuilder
         TextMesh shadow = shadowGo.GetComponent<TextMesh>();
         SetupText(shadow, font, new Color(0.05f, 0.07f, 0.1f));
 
+        GameObject iconGo = new GameObject("BillIcon", typeof(SpriteRenderer));
+        iconGo.transform.SetParent(root.transform, false);
+        iconGo.transform.localScale = Vector3.one * 0.55f;
+        SpriteRenderer sr = iconGo.GetComponent<SpriteRenderer>();
+        sr.sprite = UiSprites.Bill();
+        sr.sortingOrder = 1;
+
         var so = new SerializedObject(root.GetComponent<FloatingText>());
+        so.FindProperty("icon").objectReferenceValue = iconGo.transform;
         so.FindProperty("main").objectReferenceValue = main;
         so.FindProperty("shadow").objectReferenceValue = shadow;
         so.ApplyModifiedPropertiesWithoutUndo();

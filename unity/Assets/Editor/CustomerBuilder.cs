@@ -197,7 +197,7 @@ public static class CustomerBuilder
 
     static OrderBubble BuildBubble(Transform customer, float parentScale)
     {
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font font = UiTheme.Font;
         GameObject root = new GameObject("OrderBubble", typeof(FaceCamera));
         root.transform.SetParent(customer, false);
         root.transform.localPosition = new Vector3(0f, 2.4f / parentScale, 0f);

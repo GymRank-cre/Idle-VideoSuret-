@@ -55,9 +55,12 @@ public static class AudioBuilder
         Sprite square = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
 
         // Bouton engrenage : discret, en haut au centre
-        RectTransform gear = UpgradeBuilder.Box("SettingsButton", safe, circle, new Color(0.05f, 0.07f, 0.10f, 0.55f), Vector2.zero, new Vector2(104f, 104f), true);
+        RectTransform gear = UpgradeBuilder.Box("SettingsButton", safe, circle, UiTheme.Slate, Vector2.zero, new Vector2(124f, 124f), true);
         gear.anchorMin = gear.anchorMax = gear.pivot = new Vector2(0.5f, 1f);
-        gear.anchoredPosition = new Vector2(0f, -66f);
+        gear.anchoredPosition = new Vector2(0f, -56f);
+        RectTransform gearBase = UiTheme.AddBase(gear, new Color32(0x12, 0x1A, 0x24, 0xFF), 10f, 1f); // socle plein (rond)
+        gearBase.GetComponent<Image>().sprite = circle;
+        gearBase.GetComponent<Image>().type = Image.Type.Simple;
         for (int i = 0; i < 4; i++)
             UpgradeBuilder.Rot(UpgradeBuilder.Box("Tooth" + i, gear, square, new Color(1f, 1f, 1f, 0.85f), Vector2.zero, new Vector2(14f, 62f), false), i * 45f);
         UpgradeBuilder.Box("Disc", gear, circle, new Color(1f, 1f, 1f, 0.9f), Vector2.zero, new Vector2(46f, 46f), false);

@@ -59,7 +59,7 @@ public static class WorkshopBuilder
     {
         EnsureFolder(Root + "/Materials");
         EnsureFolder(Root + "/Textures");
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        font = UiTheme.Font;
         MakeMaterials();
 
         BuildAtmosphere();
@@ -536,17 +536,39 @@ public static class WorkshopBuilder
         // Étiquette du prix : contour sombre par un texte décalé derrière, recopié par TextMirror.
         TextMesh label = pad.GetComponentInChildren<TextMesh>(true);
         if (label == null) return;
-        label.fontStyle = FontStyle.Bold;
-        label.characterSize = 0.075f;
+        label.fontStyle = FontStyle.Normal; // Lilita One est déjà grasse
+        label.characterSize = 0.13f;       // prix énorme (K1)
+        label.anchor = TextAnchor.MiddleLeft;
+        label.alignment = TextAlignment.Left;
         label.color = Color.white;
+        label.transform.localPosition = new Vector3(-0.42f, 0.55f, 0f);
+        Transform ribbonTitle = label.transform.Find("Title");
+        if (ribbonTitle != null) ribbonTitle.localPosition = new Vector3(0.42f, 1.45f, 0f); // le titre reste centré sur la dalle
+
+        // plaque sombre arrondie au centre : les bords jaune/noir restent visibles
+        Clear(t, "Plate");
+        GameObject plate = Prim(PrimitiveType.Cube, "Plate", t, new Vector3(0f, 0.032f, 0f), new Vector3(2.3f, 0.03f, 2.3f),
+            Mat("WS_PadPlate", UiTheme.Slate, 0.1f), Vector3.zero);
+        SetNoShadows(plate);
+
+        // icône de billet à gauche du prix
+        Clear(label.transform, "BillIcon");
+        GameObject billIcon = new GameObject("BillIcon", typeof(SpriteRenderer));
+        billIcon.transform.SetParent(label.transform, false);
+        billIcon.transform.localPosition = new Vector3(-0.5f, 0f, 0f);
+        billIcon.transform.localScale = Vector3.one * 0.9f;
+        SpriteRenderer bsr = billIcon.GetComponent<SpriteRenderer>();
+        bsr.sprite = UiSprites.Bill();
+        bsr.sortingOrder = 2;
         Clear(label.transform, "Outline");
         GameObject outlineGo = new GameObject("Outline", typeof(TextMesh));
         outlineGo.transform.SetParent(label.transform, false);
         outlineGo.transform.localPosition = new Vector3(0.025f, -0.025f, 0.02f);
         TextMesh outline = outlineGo.GetComponent<TextMesh>();
         CopyTextSettings(label, outline);
-        outline.color = new Color(0.05f, 0.05f, 0.08f);
+        outline.color = UiTheme.Ink;
         outline.text = label.text;
+        outline.transform.localPosition = new Vector3(0.035f, -0.035f, 0.02f);
 
         TextMirror mirror = label.GetComponent<TextMirror>();
         if (mirror == null) mirror = label.gameObject.AddComponent<TextMirror>();

@@ -23,7 +23,7 @@ public class OfflineWelcomeScreen : MonoBehaviour
     {
         onClaim = claimed;
         durationText.text = "Absent depuis " + FormatDuration(seconds);
-        amountText.text = "+$ " + amount;
+        amountText.text = "+$ " + NumberFormat.Short(amount);
         root.SetActive(true);
     }
 

@@ -7,7 +7,8 @@ public class TapToPlayScreen : MonoBehaviour
 {
     [SerializeField] GameObject root;
     [SerializeField] Button tapButton;
-    [SerializeField] RectTransform pulse;   // le texte bat doucement
+    [SerializeField] RectTransform pulse;   // le bouton bat doucement
+    [SerializeField] RectTransform logo;    // le logo rebondit légèrement
     [SerializeField] bool forceInEditor;
 
     void Awake()
@@ -30,6 +31,9 @@ public class TapToPlayScreen : MonoBehaviour
     void Update()
     {
         if (root.activeSelf)
+        {
             pulse.localScale = Vector3.one * (1f + 0.06f * Mathf.Sin(Time.unscaledTime * 4f));
+            if (logo != null) logo.localScale = Vector3.one * (1f + 0.04f * Mathf.Sin(Time.unscaledTime * 2.2f)); // léger rebond du logo
+        }
     }
 }

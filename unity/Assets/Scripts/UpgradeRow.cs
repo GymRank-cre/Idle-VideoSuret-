@@ -57,7 +57,7 @@ public class UpgradeRow : MonoBehaviour
         }
 
         effectText.text = "Prochain : " + Short(u);
-        buyLabel.text = "$ " + state.NextCost(index);
+        buyLabel.text = "$ " + NumberFormat.Short(state.NextCost(index));
         bool ok = state.CanAfford(index);
         buyImage.color = ok ? affordableColor : lockedColor;
     }
