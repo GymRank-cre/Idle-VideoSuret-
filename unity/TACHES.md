@@ -133,6 +133,22 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - **Test sur iPhone réel** : à toi de dire si Safari charge, si la scène est visible, si le joystick répond et si le son démarre après « Touche pour jouer ». Je n'ai pu tester que dans Chrome.
 - **Rendu WebGL** : sans ombres temps réel ni post-traitement (tonemapping, bloom, vignette). Acceptable pour le test, ou veux-tu que je cherche à les remettre une par une (long) ?
 
+## Relecture cloud de l'étape 8c : validée — le jeu tourne dans un navigateur mobile
+Build WebGL de 17 Mo (très loin des 60 Mo), page chargée, « Touche pour jouer », joystick tactile, sauvegarde conservée au rechargement, 0 erreur de jeu. Très bonne trouvaille sur le profil URP « PC » qui rendait la scène noire, et sur le conflit de port 8080 avec le pont MCP. Réponses :
+- **Rendu WebGL sans ombres ni post-traitement** : acceptable pour le test sur iPhone. À reprendre plus tard, pas maintenant.
+- **Test sur iPhone** : Sébastien le fera dès que le lien existe.
+
+## Tâche en cours : étape 8d — Mettre le build WebGL en ligne par Vercel, sans ligne de commande côté Sébastien
+**Contexte :** Sébastien est loin de son PC (il utilise AnyDesk depuis son téléphone) et ne peut pas coller de commandes. Au lieu du CLI Vercel (connexion interactive), on passe par l'**intégration Git de Vercel** : Sébastien importe le dépôt GitHub depuis son téléphone, et chaque poussée de branche produit une URL d'aperçu.
+1. Copier le dossier du build (`E:\PROJET 1\Builds\WebGL`) dans le clone, à la **racine du dépôt**, sous `webgl/` (donc `webgl/index.html`, `webgl/Build/...`, `webgl/TemplateData/...`). **Ne pas** le mettre sous `unity/`. Ajouter `webgl/` au suivi Git (vérifier le `.gitignore`).
+2. Vérifier `vercel.json` à la racine : il règle des en-têtes pour la PWA du dépôt ; ne pas casser ces règles. Ajouter seulement ce qui est nécessaire pour servir le build (type de contenu et `Cache-Control: no-cache` pour `webgl/index.html`, cache long pour `webgl/Build/*` n'est pas nécessaire en test). Pas de `buildCommand`. Le site doit rester statique.
+3. Commit et poussée sur la **même branche** (pas de pull request). Message de commit clair, noter la taille poussée.
+4. Ne rien déployer toi-même, ne pas utiliser le CLI Vercel. Dans Résultats : chemin exact `webgl/index.html`, taille, et la phrase « Sébastien : sur vercel.com, importer GymRank-cre/Idle-VideoSuret-, puis ouvrir le déploiement de la branche et ajouter /webgl à l'adresse ».
+5. À chaque nouveau build WebGL ultérieur : remplacer `webgl/` et repousser (le dossier ne grossit pas, mais l'historique Git si : à signaler si le dépôt dépasse 200 Mo).
+**Critères de réussite :** `webgl/index.html` et son dossier `Build` sont sur la branche distante, le site statique du dépôt n'est pas cassé (la maquette `demo/` fonctionne toujours), aucun secret dans les fichiers poussés.
+
+---
+
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
 - Ajoutés : `StationConfig`, `ObjectPool`, `ProgressBar3D`, `InstallStation` ; `PrototypeSetup` construit le poste en `(-6, 0.1, 0)`, `Assets/Prototype/StationConfig.asset` (conservé s'il existe), prefab `Bill`, barre au-dessus du poste. `ResourcePile` non modifié.
@@ -468,3 +484,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Sébastien a installé Node.js et dispose d'un compte Vercel. Étape 8c : une fois le build local validé, lui donner les commandes exactes `npm i -g vercel` puis `vercel login` (il se connecte lui-même) puis `vercel` dans le dossier du build ; ne rien déployer sans sa validation.
 - Cloud, à propos du build WebGL (qui compile lentement les shaders du paquet d'IA Sentis) : si la taille ou la durée est mauvaise, proposer à Sébastien de **retirer les packages Unity AI inutilisés** (`com.unity.ai.assistant`, Sentis/Inference Engine et dépendances) du `manifest.json` : ils n'apportent rien au jeu, alourdissent le build et inondent la Console de messages `NoSubscription`. Ne le faire qu'avec son accord, après le premier build mesuré, et refaire un test complet ensuite.
 - Sébastien : Unity relancé, retrait de Sentis et des packages Unity AI inutilisés autorisé.
+- Étape 8c relue : validée (build WebGL 17 Mo fonctionnel dans Chrome mobile). Étape 8d : mise en ligne du build via l'intégration Git de Vercel (Sébastien sur téléphone).
