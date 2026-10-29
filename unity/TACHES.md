@@ -118,10 +118,26 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 8b)_
+**Étape 8b — le module WebGL n'est PAS installé : le build, la mesure de taille et le test navigateur n'ont donc pas pu être faits. Le reste est fait, compile (0 erreur, 0 warning) et testé en Play. Capture `8b-01-touche-pour-jouer`.**
+
+**1. Module** : `E:/UNITY/6000.0.85f1/Editor/Data/PlaybackEngines` ne contient que `AndroidPlayer`, `iOSSupport` et `windowsstandalonesupport` ; `BuildPipeline.IsBuildTargetSupported(WebGL)` = faux. Je n'ai rien installé moi-même. Marche à suivre pour Sébastien dans Questions.
+
+**Suite de la relecture 8a : sons des employés**
+- `MusicConfig` : `employeeVolume` 0,35 et `employeeHearDistance` 12 m. `AudioManager.PlayAt(son, position, parUnEmployé)` : volume x 0,35 pour un employé, atténué linéairement avec la **distance au joueur** (pas à la caméra : elle est à ~14 m au-dessus, tout serait inaudible). Mesuré : dépôt du joueur à 3 m = volume 0,600 ; produit prêt (employé) à 6 m = 0,140 ; à 13 m = rien. Branché sur : dépôt de caisses au poste (porteur), commande payée (livreur), produit prêt.
+
+**2. Sauvegarde WebGL** : `SaveSystem` écrit le même JSON (même `version`, mêmes migrations) dans `PlayerPrefs` (`save_json`) avec la copie de secours sur `save_json_bak`, puis `PlayerPrefs.Save()`, quand `UNITY_WEBGL && !UNITY_EDITOR` ; fichiers `.tmp`/`.bak` partout ailleurs, inchangé. Pour tester dans l'éditeur : drapeau `SaveSystem.ForcePlayerPrefs`. Testé : 2 sauvegardes -> principal 1 014 o + secours ; lecture = argent 421 ; principal abîmé -> secours (argent 321) ; les deux abîmés -> nouvelle partie sans exception ; `DeleteSave` efface les deux clés.
+
+**3. Audio WebGL** : `TapToPlayScreen` (écran « Idle Sécurité / Touche pour jouer », même style que les panneaux, grand bouton plein écran) n'apparaît que sur WebGL (jamais dans l'éditeur sauf `forceInEditor`). Tant qu'il n'est pas touché, `AudioManager` est verrouillé (aucun son, pas de musique) ; au toucher il appelle `Unlock()`. Testé en simulant le verrou : aucun son lancé tant que verrouillé, son de clic lancé après le toucher, écran masqué. Vibration : `Application.isMobilePlatform` est faux sur WebGL, donc ignorée.
+
+**4. Build** : `Editor/WebGLBuilder.cs`, menu `Tools > Idle Prototype > Build WebGL de test` : vérifie le module (sinon affiche la marche à suivre), crée le gabarit de page `Assets/WebGLTemplates/IdleMobile/index.html` (canvas plein écran portrait, `touch-action: none`, pas de défilement, ratio de pixels plafonné à 2, barre « Chargement x % »), ajoute la scène aux Build Settings, applique : compression **Gzip**, `decompressionFallback` activé, mémoire 256 Mo (initiale et maximale), exceptions « explicites seulement », strip **Low**, `runInBackground` désactivé, résolution par défaut 390x844 ; build vers `E:/PROJET 1/Builds/WebGL`, puis retour à la cible active précédente (Windows) et affichage de la durée et de la taille. **Ce menu n'a jamais été exécuté jusqu'au bout** : le gabarit utilise la syntaxe de gabarit Unity 6 de mémoire (je ne peux pas relire le gabarit « Minimal » sans le module) et les noms d'API `PlayerSettings.WebGL.*` ont seulement été vérifiés à la compilation. Les réglages ne sont appliqués qu'au lancement du menu : le projet n'a pas été modifié.
+**5. Poids** (estimation, sans build) : `Technicien.fbx` fait 62 Mo sur disque mais le maillage importé n'a que 32 939 sommets / 53 738 triangles (~3 Mo en mémoire), aucune texture ; ce ne sont pas les 62 Mo qui partent dans le build. Je pense donc rester très en dessous de 60 Mo ; à confirmer par le vrai build. Réductions sûres si besoin : blendshapes désactivés (activés aujourd'hui), tangentes « None », compression de maillage Medium. Je ne les ai pas appliquées sans build pour vérifier le rendu.
+**6. Test local / 8. capture navigateur 390x844** : impossibles sans build. Marche prévue : `cd "E:\PROJET 1\Builds\WebGL"` puis `python -m http.server 8080`, ouvrir `http://localhost:8080` (mode appareil 390x844 des outils de développement). Je n'ai pas cherché de navigateur sans interface.
+**7. Hébergement gratuit (à faire par Sébastien, rien n'est déployé)** : installer Node.js, `npm i -g vercel`, puis dans `E:\PROJET 1\Builds\WebGL` : `vercel` (connexion par Sébastien, répondre aux questions, projet privé / « Deployment Protection » activée), puis `vercel --prod` ; ouvrir l'URL dans Safari sur l'iPhone et « Ajouter à l'écran d'accueil » pour le plein écran. Les fichiers `.gz` du build doivent être servis avec `Content-Encoding: gzip` ou être décompressés par le `decompressionFallback` (activé), donc rien à configurer.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Module WebGL à installer** : Unity Hub > Installations > Unity 6000.0.85f1 > ⚙ > « Ajouter des modules » > coche **WebGL Build Support** > Installer (compter ~1 à 2 Go). Ensuite relancer `Tools > Idle Prototype > Build WebGL de test` (ou me demander de le faire) : je ferai le build, la mesure de taille et le test local. Veux-tu l'installer, ou préfères-tu que je tente l'installation par Unity Hub en ligne de commande ?
+- **Distance des sons** : j'ai pris la distance au joueur (et non à la caméra, trop haute). Cela te convient ?
+- **Réductions du modèle** (blendshapes, tangentes, compression) : à appliquer seulement si le vrai build dépasse 60 Mo ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

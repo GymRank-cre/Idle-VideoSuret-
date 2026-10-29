@@ -26,6 +26,7 @@ public class InstallStation : MonoBehaviour
         public Transform item;
         public Vector3 from;
         public float elapsed;
+        public bool employee;
     }
 
     readonly List<Flight> flights = new List<Flight>();
@@ -72,7 +73,7 @@ public class InstallStation : MonoBehaviour
         Quaternion rot = taken.rotation;
         cratePool.Release(taken.gameObject);
         GameObject flying = cratePool.Get(from, rot);
-        flights.Add(new Flight { item = flying.transform, from = from });
+        flights.Add(new Flight { item = flying.transform, from = from, employee = !carrier.MakesSound });
     }
 
     void OnTriggerExit(Collider other)
@@ -105,7 +106,7 @@ public class InstallStation : MonoBehaviour
                 flights.RemoveAt(i);
                 storedCrates++;
                 if (feedback != null) feedback.CrateArrived(CrateTarget);
-                AudioManager.Play(SfxId.Deposit);
+                AudioManager.PlayAt(SfxId.Deposit, transform.position, f.employee);
             }
             else
             {
@@ -214,7 +215,7 @@ public class InstallStation : MonoBehaviour
             product.Init(type, pool.Release, OnProductTaken);
             slots[slot] = product;
             if (feedback != null) feedback.ProductReady(pos);
-            AudioManager.Play(SfxId.ProductReady);
+            AudioManager.PlayAt(SfxId.ProductReady, pos, false);
         }
     }
 

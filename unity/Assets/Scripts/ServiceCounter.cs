@@ -13,6 +13,7 @@ public class ServiceCounter : MonoBehaviour
         public Customer customer;
         public Vector3 from;
         public float elapsed;
+        public bool employee;
     }
 
     [SerializeField] CustomerConfig config;
@@ -58,7 +59,8 @@ public class ServiceCounter : MonoBehaviour
         if (product == null) return; // le joueur ne porte pas le bon produit
         timer = 0f;
 
-        deliveries.Add(new Delivery { product = product, customer = head, from = product.transform.position });
+        deliveries.Add(new Delivery { product = product, customer = head, from = product.transform.position,
+            employee = other.GetComponent<PlayerController>() == null });
     }
 
     void Update()
@@ -86,7 +88,7 @@ public class ServiceCounter : MonoBehaviour
             if (feedback != null) feedback.CrateArrived(target);
 
             if (d.customer.IsComplete && !HasDeliveryFor(d.customer))
-                CompleteOrder(d.customer);
+                CompleteOrder(d.customer, d.employee);
         }
     }
 
@@ -96,11 +98,11 @@ public class ServiceCounter : MonoBehaviour
         return false;
     }
 
-    void CompleteOrder(Customer customer)
+    void CompleteOrder(Customer customer, bool byEmployee = false)
     {
         int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * (upgrades != null ? upgrades.CustomerPay : 1f));
         SpawnBills(total);
-        AudioManager.Play(SfxId.OrderPaid);
+        AudioManager.PlayAt(SfxId.OrderPaid, customer.transform.position, byEmployee);
         if (feedback != null) feedback.ProductReady(customer.transform.position + Vector3.up * 1.9f); // pop de bonheur
         queue.Pay(customer);
     }

@@ -17,6 +17,8 @@ public class AudioManager : MonoBehaviour
     float lastBillTime = -10f;
     int billStep;
     float lastVibration = -10f;
+    Transform listener;   // le joueur : les sons lointains s'atténuent
+    bool locked;          // WebGL : le navigateur bloque le son avant le premier toucher
 
     public static AudioManager Instance { get; private set; }
 
@@ -24,6 +26,7 @@ public class AudioManager : MonoBehaviour
     public bool MusicOn { get; private set; }
     public bool VibrationOn { get; private set; }
     public AudioClip[] Clips => clips;
+    public bool IsLocked => locked;
     public MusicConfig Config => config;
     public event Action OnSettingsChanged;
 
@@ -33,6 +36,10 @@ public class AudioManager : MonoBehaviour
         SoundOn = config.SoundOnByDefault;
         MusicOn = config.MusicOnByDefault;
         VibrationOn = config.VibrationOnByDefault;
+
+        locked = Application.platform == RuntimePlatform.WebGLPlayer;
+        PlayerController player = FindFirstObjectByType<PlayerController>();
+        if (player != null) listener = player.transform;
 
         clips = SfxLibrary.CreateAll(); // une fois pour toutes
         pool = new AudioSource[PoolSize];
@@ -65,6 +72,13 @@ public class AudioManager : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ réglages
+
+    // Premier toucher de l'utilisateur (WebGL) : le son peut démarrer.
+    public void Unlock()
+    {
+        locked = false;
+        ApplyMusic();
+    }
 
     // Appelé au chargement d'une sauvegarde (valeurs mémorisées).
     public void Apply(bool sound, bool musicOn, bool vibration)
@@ -100,7 +114,7 @@ public class AudioManager : MonoBehaviour
     void ApplyMusic()
     {
         music.volume = config.MusicVolume;
-        bool want = SoundOn && MusicOn;
+        bool want = SoundOn && MusicOn && !locked;
         if (want && !music.isPlaying) music.Play();
         else if (!want && music.isPlaying) music.Pause();
     }
@@ -109,7 +123,13 @@ public class AudioManager : MonoBehaviour
 
     public static void Play(SfxId id, float pitch = 1f)
     {
-        if (Instance != null) Instance.PlayInternal(id, pitch);
+        if (Instance != null) Instance.PlayInternal(id, pitch, 1f);
+    }
+
+    // Son d'un événement situé dans l'atelier : volume réduit pour un employé, atténué avec la distance au joueur.
+    public static void PlayAt(SfxId id, Vector3 position, bool byEmployee)
+    {
+        if (Instance != null) Instance.PlayAtInternal(id, position, byEmployee);
     }
 
     // Billets ramassés à moins de 0,6 s d'écart : la note monte d'un demi-ton, jusqu'au plafond, puis retombe.
@@ -118,17 +138,30 @@ public class AudioManager : MonoBehaviour
         if (Instance != null) Instance.PlayBillInternal();
     }
 
+    void PlayAtInternal(SfxId id, Vector3 position, bool byEmployee)
+    {
+        float scale = byEmployee ? config.EmployeeVolume : 1f;
+        if (listener != null)
+        {
+            Vector3 d = position - listener.position;
+            d.y = 0f;
+            scale *= Mathf.Clamp01(1f - d.magnitude / config.EmployeeHearDistance);
+        }
+        if (scale < 0.02f) return;
+        PlayInternal(id, 1f, scale);
+    }
+
     void PlayBillInternal()
     {
         float now = Time.unscaledTime;
         billStep = now - lastBillTime < config.BillChainWindow ? Mathf.Min(billStep + 1, config.BillMaxSteps) : 0;
         lastBillTime = now;
-        PlayInternal(SfxId.Bill, Mathf.Pow(1.059463f, billStep)); // 2^(1/12) par demi-ton
+        PlayInternal(SfxId.Bill, Mathf.Pow(1.059463f, billStep), 1f); // 2^(1/12) par demi-ton
     }
 
-    void PlayInternal(SfxId id, float pitch)
+    void PlayInternal(SfxId id, float pitch, float volumeScale)
     {
-        if (!SoundOn) return;
+        if (!SoundOn || locked) return;
         AudioClip clip = clips[(int)id];
 
         int same = 0, oldest = 0, free = -1;
@@ -151,7 +184,7 @@ public class AudioManager : MonoBehaviour
         AudioSource src = pool[slot];
         src.clip = clip;
         src.pitch = pitch;
-        src.volume = config.SfxVolume;
+        src.volume = config.SfxVolume * volumeScale;
         src.Play();
         startedAt[slot] = Time.unscaledTime;
     }

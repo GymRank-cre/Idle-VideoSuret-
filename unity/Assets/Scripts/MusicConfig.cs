@@ -13,6 +13,9 @@ public class MusicConfig : ScriptableObject
     [SerializeField] bool vibrationOnByDefault = true;
     [SerializeField, Min(0.1f)] float minVibrationGap = 0.5f;
     [SerializeField, Range(1, 8)] int maxSameSound = 3;
+    [Header("Sons des employés")]
+    [SerializeField, Range(0f, 1f)] float employeeVolume = 0.35f;   // part du volume du joueur
+    [SerializeField, Min(1f)] float employeeHearDistance = 12f;       // inaudible au-delà (distance au joueur)
     [Header("Billets : hauteur progressive")]
     [SerializeField, Min(0.05f)] float billChainWindow = 0.6f;   // billets ramassés à moins de ce délai : la note monte
     [SerializeField, Range(1, 24)] int billMaxSteps = 8;          // demi-tons maximum avant plafond
@@ -25,6 +28,8 @@ public class MusicConfig : ScriptableObject
     public bool VibrationOnByDefault => vibrationOnByDefault;
     public float MinVibrationGap => minVibrationGap;
     public int MaxSameSound => maxSameSound;
+    public float EmployeeVolume => employeeVolume;
+    public float EmployeeHearDistance => employeeHearDistance;
     public float BillChainWindow => billChainWindow;
     public int BillMaxSteps => billMaxSteps;
 }

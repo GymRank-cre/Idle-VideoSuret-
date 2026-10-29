@@ -125,10 +125,13 @@ public static class PrototypeSetup
 
         SaveBuilder.Build(); // sauvegarde, gains hors ligne, écran « Bon retour » (étape 7a)
 
+        WebGLBuilder.Build(); // écran « Touche pour jouer » (étape 8b), au-dessus de tout le reste du Canvas
+
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
         EmployeeBuilder.BakeNavMesh(); // après le décor : le NavMesh voit tous les obstacles
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
+        WebGLBuilder.EnsureSceneInBuildSettings();
         AssetDatabase.SaveAssets();
         Selection.activeGameObject = player;
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");

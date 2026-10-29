@@ -22,6 +22,7 @@ public class StackCarrier : MonoBehaviour
     public int Capacity => capacity + (upgrades == null ? 0 : employee ? upgrades.EmployeeExtraCapacity : upgrades.ExtraCapacity);
     public event System.Action OnCountChanged;
     public bool IsFull => items.Count >= Capacity;
+    public bool MakesSound => makesSound;
     public bool IsEmpty => items.Count == 0;
 
     void Start()

@@ -24,6 +24,18 @@ public class SaveSystem : MonoBehaviour
     [SerializeField] OfflineWelcomeScreen welcomeScreen;
     [SerializeField, Min(1f)] float autosaveInterval = 10f;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+    const bool WebGlRuntime = true;   // le système de fichiers WebGL est en mémoire : on passe par PlayerPrefs
+#else
+    const bool WebGlRuntime = false;
+#endif
+    // Vrai pour tester le repli WebGL dans l'éditeur.
+    public static bool ForcePlayerPrefs;
+    const string PrefsKey = "save_json";
+    const string PrefsBackupKey = "save_json_bak";
+
+    static bool UsePlayerPrefs => WebGlRuntime || ForcePlayerPrefs;
+
     // Vrai pendant un test « absence simulée » ou « effacer » en Play : plus aucune écriture.
     public static bool Suspended;
 
@@ -161,6 +173,15 @@ public class SaveSystem : MonoBehaviour
 
     static void Write(string json)
     {
+        if (UsePlayerPrefs)
+        {
+            string previous = PlayerPrefs.GetString(PrefsKey, "");
+            if (previous.Length > 0) PlayerPrefs.SetString(PrefsBackupKey, previous); // copie de secours sur une 2e clé
+            PlayerPrefs.SetString(PrefsKey, json);
+            PlayerPrefs.Save();
+            return;
+        }
+
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
@@ -179,6 +200,16 @@ public class SaveSystem : MonoBehaviour
     // Fichier absent ou abîmé -> copie de secours -> sinon null (nouvelle partie). Ne lève jamais d'exception.
     static SaveData Read()
     {
+        if (UsePlayerPrefs)
+        {
+            foreach (string key in new[] { PrefsKey, PrefsBackupKey })
+            {
+                SaveData data = TryParse(PlayerPrefs.GetString(key, ""));
+                if (data != null) return Migrate(data);
+            }
+            return null;
+        }
+
         foreach (string path in new[] { FilePath, BackupPath })
         {
             SaveData data = TryRead(path);
@@ -191,8 +222,20 @@ public class SaveSystem : MonoBehaviour
     {
         try
         {
-            if (!File.Exists(path)) return null;
-            SaveData data = JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
+            return File.Exists(path) ? TryParse(File.ReadAllText(path)) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    static SaveData TryParse(string json)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(json)) return null;
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
             if (data == null || data.version <= 0 || data.pads == null || data.employees == null) return null;
             return data;
         }
@@ -232,6 +275,8 @@ public class SaveSystem : MonoBehaviour
     public static void DeleteSave()
     {
         Suspended = true; // en Play, l'arrêt ne doit pas réécrire le fichier
+        PlayerPrefs.DeleteKey(PrefsKey);
+        PlayerPrefs.DeleteKey(PrefsBackupKey);
         foreach (string path in new[] { FilePath, BackupPath, TempPath })
             if (File.Exists(path)) File.Delete(path);
     }
@@ -246,7 +291,7 @@ public class SaveSystem : MonoBehaviour
         data.pendingOffline = 0; // recalculé au prochain démarrage
         data.pendingSeconds = 0;
         Write(JsonUtility.ToJson(data, true));
-        if (File.Exists(BackupPath)) File.Delete(BackupPath);
+        if (!UsePlayerPrefs && File.Exists(BackupPath)) File.Delete(BackupPath);
         return true;
     }
 }
