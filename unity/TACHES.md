@@ -100,10 +100,29 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étapes 6c et 7a)_
+**Étapes 6c et 7a — compile (0 erreur, 0 warning), Build scene OK, testées via MCP en Play. Captures `6c-*` et `7a-*` dans `unity/captures/`.**
+
+**6c**
+- **Dalles l'une après l'autre** : `UnlockPad` a un tableau `revealOnUnlock` : au départ seule la dalle du poste 2 (100) est visible ; la dalle « EMBAUCHE » apparaît quand elle est payée, la dalle « LIVREUR » quand le porteur est embauché (`PopIn` + étincelle `FeedbackSpawner`). Le guide tient compte des dalles cachées. Captures `6c-01-depart-une-dalle`, `6c-02-apparition-embauche`, `6c-03-dalles-titres`.
+- **Titres et prix séparés** : titre à 3,5 m, prix à 0,7 m (plus de chevauchement) ; dalle d'embauche du porteur déplacée en (3,2 ; 4,4) pour rester dans le cadre portrait.
+- **Néon** : déplacé sur le mur de gauche, près du coin du fond, tourné vers la pièce, au-dessus des étagères. Le mur du fond est libre pour les pastilles et la phrase (voir `6c-01`).
+- **Production à la demande** : `ProductDemand` (une responsabilité) lit `CustomerQueue.Line` : d'abord le produit du client en tête, puis ce qui manque aux suivants, en comptant les produits déjà sur les plateaux ou portés ; sinon rotation. `InstallStation` le lit (champ facultatif `demand`).
+- **Équilibre** (valeurs dans `StationConfig.asset` et `GuideConfig.asset`, prix et `billValue` inchangés) : `cratesPerJob` 6, `jobDuration` 4 s, `cratesToCollect` 6. Mesure avec un bot au joystick avec 0,5 s d'hésitation à chaque changement de cible : 1re caisse à 1,2 s, **1er billet encaissé à 20,8 s** (cible ≤ 25 s), **1re dalle à 54 s** (cible 60-75 s : un peu trop rapide), porteur vers 2 min (estimation à partir du débit mesuré ~2,6 $/s, la mesure continue a été faussée par une erreur du bot qui a perdu 150 s), **livreur 59 s après le porteur**, soit environ 3 min (cible 3 min 30). Avec les 2 employés et le joueur immobile : débit ~5,8 $/s (600 $ en 100 s).
+
+**7a**
+- Ajoutés : `SaveData`, `SaveSystem`, `OfflineConfig` (max 8 h, rendement 50 %, minimum 60 s, cadences mesurées 14 s / 14 s par aller-retour), `OfflineEarnings`, `OfflineWelcomeScreen`, `Editor/SaveBuilder.cs`, `DemandBuilder.cs`. `UnlockPad` : `saveId`, `Restore()`, `RemainingPrice`.
+- **Fichier** : `save.json` dans `Application.persistentDataPath` ; écriture atomique `.tmp` puis `File.Replace` avec copie de secours `.bak` ; sauvegarde toutes les 10 s si l'état a changé, à la pause et à la sortie ; champ `version` + `Migrate()` vide. Contenu : argent, `lastSaveUtc`, prix restant de chaque dalle, employés embauchés, `guideDone`, plus `pendingOffline`/`pendingSeconds` (gain calculé mais pas encore récupéré, pour ne pas le perdre si on quitte avant de cliquer).
+- **Tests** : relancer Play restaure argent 430, dalles payées, 2 employés actifs. Fichier abîmé + `.bak` valide : état restauré. Les deux abîmés : nouvelle partie propre (argent 0, 3 dalles intactes), pas d'exception. Sans sauvegarde : gameplay identique (la sauvegarde ne s'écrit qu'après).
+- **Hors ligne** (calcul pur sur les assets) : 2 h avec porteur ET livreur = **10 714 $** (écran réel : +$ 10 721) ; porteur seul, livreur seul ou aucun = 0 ; 20 h = 8 h (plafond) ; durée négative = 0 ; 30 s = 0. Formule : débit = le plus petit entre poste (`productsPerJob / jobDuration`), porteur (`capacity / cycle / cratesPerJob`), livreur (`capacity / cycle`) et clients (quantité moyenne / `spawnInterval`) x valeur moyenne des produits x durée plafonnée x 50 %. Le débit réel mesuré (~5,8 $/s) est cohérent avec le débit théorique brut (~6 $/s avant rendement).
+- **Écran « Bon retour ! »** : `7a-01-bon-retour` (durée, « +$ 10721 », bouton Récupérer, bouton ×2 grisé « bientôt »). Cliquer Récupérer ajoute le gain (60 -> 10 781). `7a-02-partie-rechargee` : dalles ouvertes, porteur et livreur présents.
+- Menus : `Tools > Idle Prototype > Effacer la sauvegarde` (efface aussi la clé du guide) et `Simuler une absence de 2 h` (modifie `save.json` ; arrêter puis relancer Play).
+- Guide : si une partie est rechargée après la dalle du poste 2, il reprend à « EMBAUCHE » au lieu de recommencer.
+- Pour tes tests : `Effacer la sauvegarde` avant une nouvelle partie, sinon Play reprend l'état précédent.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Gain hors ligne trop généreux ?** 2 h = ~10 700 $ alors que les dalles coûtent 100 à 250. Soit baisser le rendement (par exemple 15-20 %), soit attendre les améliorations de l'étape 7b (prix qui montent). Je propose de ne rien changer d'ici là.
+- **1re dalle à 54 s** (cible 60-75 s) : ralentir un peu (par exemple `jobDuration` 5 s) ou garder ce début nerveux ?
+- **Apparition de la dalle d'embauche** : le poste 2 et la dalle d'embauche ne sont pas visibles ensemble à l'écran quand on paye la dalle 1 (la nouvelle dalle est à droite, hors cadre). Faut-il une flèche ou un léger déplacement de caméra qui la montre ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

@@ -15,7 +15,7 @@ public static class EmployeeBuilder
     const float HumanHeight = 1.7f;
 
     // Dalle d'embauche du porteur : près du tas (au nord). Dalle du livreur : près du comptoir.
-    static readonly Vector3 HaulerPadPosition = new Vector3(4.5f, 0.01f, 4.4f);
+    static readonly Vector3 HaulerPadPosition = new Vector3(3.2f, 0.01f, 4.4f);
     static readonly Vector3 HaulerSpawn = new Vector3(2.2f, 0f, 2.6f);
     static readonly Vector3 CourierPadPosition = new Vector3(1.0f, 0.01f, -3.9f);
     static readonly Vector3 CourierSpawn = new Vector3(-0.8f, 0f, -2.6f);
@@ -57,14 +57,30 @@ public static class EmployeeBuilder
             if (g != null) Object.DestroyImmediate(g);
         }
 
-        BuildHauler(equipped, LoadOrCreateConfig(), pile, station);
-        BuildCourier(equipped, LoadOrCreateConfig("CourierConfig", 4, 250), station);
+        UnlockPad haulerPad = BuildHauler(equipped, LoadOrCreateConfig(), pile, station);
+        UnlockPad courierPad = BuildCourier(equipped, LoadOrCreateConfig("CourierConfig", 4, 250), station);
         AddPlayerObstacle();
+
+        // Les dalles apparaissent l'une après l'autre : poste 2 -> embauche du porteur -> embauche du livreur.
+        UnlockPad station2Pad = Object.FindObjectsByType<UnlockPad>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            .FirstOrDefault(p => p.name == "UnlockPad");
+        SetReveal(station2Pad, haulerPad);
+        SetReveal(haulerPad, courierPad);
+    }
+
+    static void SetReveal(UnlockPad from, UnlockPad next)
+    {
+        if (from == null || next == null) return;
+        var so = new SerializedObject(from);
+        SerializedProperty list = so.FindProperty("revealOnUnlock");
+        list.arraySize = 1;
+        list.GetArrayElementAtIndex(0).objectReferenceValue = next.gameObject;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ porteur de caisses (6a)
 
-    static void BuildHauler(GameObject equipped, EmployeeConfig config, ResourcePile pile, GameObject station)
+    static UnlockPad BuildHauler(GameObject equipped, EmployeeConfig config, ResourcePile pile, GameObject station)
     {
         // Points où l'employé se tient : à côté du tas (dans sa zone) et au poste, de côté pour laisser le centre au joueur
         Transform stands = new GameObject("EmployeeStands").transform;
@@ -101,18 +117,18 @@ public static class EmployeeBuilder
         AddHumanAnimator(model, agent);
         root.SetActive(false); // la dalle d'embauche l'active
 
-        PrototypeSetup.BuildUnlockPad(root, model, HaulerPadPosition, "HirePad", "HireConfig", "EMBAUCHE", config.HirePrice);
+        return PrototypeSetup.BuildUnlockPad(root, model, HaulerPadPosition, "HirePad", "HireConfig", "EMBAUCHE", config.HirePrice, true);
     }
 
     // ------------------------------------------------------------------ livreur (6b)
 
-    static void BuildCourier(GameObject equipped, EmployeeConfig config, GameObject station)
+    static UnlockPad BuildCourier(GameObject equipped, EmployeeConfig config, GameObject station)
     {
         Transform tray = station.transform.Find("OutputTray");
         GameObject counterGo = GameObject.Find("ServiceCounter");
         GameObject binGo = GameObject.Find("TrashBin");
         CustomerQueue queue = Object.FindFirstObjectByType<CustomerQueue>();
-        if (tray == null || counterGo == null || binGo == null || queue == null) return; // pas de clients : pas de livreur
+        if (tray == null || counterGo == null || binGo == null || queue == null) return null; // pas de clients : pas de livreur
 
         Transform stands = new GameObject("CourierStands").transform;
         stands.SetParent(GameObject.Find("EmployeeStands").transform, false);
@@ -153,7 +169,7 @@ public static class EmployeeBuilder
         AddHumanAnimator(model, agent);
         root.SetActive(false);
 
-        PrototypeSetup.BuildUnlockPad(root, model, CourierPadPosition, "HirePadCourier", "HireCourierConfig", "LIVREUR", config.HirePrice);
+        return PrototypeSetup.BuildUnlockPad(root, model, CourierPadPosition, "HirePadCourier", "HireCourierConfig", "LIVREUR", config.HirePrice, true);
     }
 
     // ------------------------------------------------------------------ éléments communs

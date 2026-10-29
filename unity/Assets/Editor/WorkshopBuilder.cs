@@ -304,13 +304,16 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cube, "WindowBarH", parent, new Vector3(-0.9f, 1.85f, z - 0.11f), new Vector3(2.5f, 0.08f, 0.05f), mWhite);
         Prim(PrimitiveType.Cube, "WindowSill", parent, new Vector3(-0.9f, 1.0f, z - 0.12f), new Vector3(3.0f, 0.06f, 0.25f), mWood);
 
-        // Enseigne néon "SÉCURITÉ"
-        Prim(PrimitiveType.Cube, "NeonPlate", parent, new Vector3(2.75f, 1.35f, z - 0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
-        Prim(PrimitiveType.Cube, "NeonTop", parent, new Vector3(2.75f, 1.77f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonBottom", parent, new Vector3(2.75f, 0.93f, z - 0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonLeft", parent, new Vector3(0.65f, 1.35f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        Prim(PrimitiveType.Cube, "NeonRight", parent, new Vector3(4.85f, 1.35f, z - 0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        TextMesh sign = MakeText(parent, "NeonText", "SÉCURITÉ", new Vector3(2.75f, 1.35f, z - 0.13f), 0.09f, 100,
+        // Enseigne néon "SÉCURITÉ" : sur le mur de gauche, près du coin du fond, tournée vers la pièce
+        // (le mur du fond reste libre pour les pastilles et la phrase du guide).
+        Transform neon = Group(parent, "Neon", new Vector3(RoomLeft + 0.05f, 0f, RoomBack - 3.0f));
+        neon.rotation = Quaternion.Euler(0f, -90f, 0f);
+        Prim(PrimitiveType.Cube, "NeonPlate", neon, new Vector3(0f, 3.05f, -0.05f), new Vector3(4.2f, 0.8f, 0.08f), mDark);
+        Prim(PrimitiveType.Cube, "NeonTop", neon, new Vector3(0f, 3.47f, -0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonBottom", neon, new Vector3(0f, 2.63f, -0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonLeft", neon, new Vector3(-2.1f, 3.05f, -0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        Prim(PrimitiveType.Cube, "NeonRight", neon, new Vector3(2.1f, 3.05f, -0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
+        TextMesh sign = MakeText(neon, "NeonText", "SÉCURITÉ", new Vector3(0f, 3.05f, -0.13f), 0.09f, 100,
             new Color(0.45f, 1f, 0.85f));
         sign.fontStyle = FontStyle.Bold;
 

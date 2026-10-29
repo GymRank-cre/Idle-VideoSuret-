@@ -11,6 +11,7 @@ public class InstallStation : MonoBehaviour
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
     [SerializeField] GameObject billPrefab;
     [SerializeField] FeedbackSpawner feedback; // facultatif : éclat quand une caisse arrive
+    [SerializeField] ProductDemand demand;     // facultatif : fabrique d'abord ce que demandent les clients
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
     [SerializeField] Transform outputTray;   // plateau de sortie des produits finis (places alignées sur son axe x)
@@ -189,8 +190,12 @@ public class InstallStation : MonoBehaviour
             int slot = FreeSlot();
             if (slot < 0) return;
 
-            ProductType type = types[productCursor % types.Length];
-            productCursor++;
+            ProductType type = demand != null ? demand.Pick() : null;
+            if (type == null) // personne n'attend un produit manquant : rotation
+            {
+                type = types[productCursor % types.Length];
+                productCursor++;
+            }
             if (type == null || type.Prefab == null) continue;
 
             if (!productPools.TryGetValue(type, out ObjectPool pool))

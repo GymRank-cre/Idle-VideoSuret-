@@ -62,12 +62,20 @@ public static class GuideBuilder
         so.FindProperty("station").objectReferenceValue = station.transform;
         so.FindProperty("tray").objectReferenceValue = station.transform.Find("OutputTray");
         so.FindProperty("counter").objectReferenceValue = counter != null ? counter.transform : null;
-        so.FindProperty("payPadObject").objectReferenceValue = GameObject.Find("UnlockPad");
-        so.FindProperty("hirePadObject").objectReferenceValue = GameObject.Find("HirePad");
+        so.FindProperty("payPadObject").objectReferenceValue = FindPad("UnlockPad");
+        so.FindProperty("hirePadObject").objectReferenceValue = FindPad("HirePad");
         so.FindProperty("arrow").objectReferenceValue = arrow;
         so.FindProperty("label").objectReferenceValue = label;
         so.FindProperty("labelRoot").objectReferenceValue = bar;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Les dalles d'embauche sont cachées au départ : GameObject.Find ne les voit pas.
+    static GameObject FindPad(string padName)
+    {
+        foreach (UnlockPad pad in Object.FindObjectsByType<UnlockPad>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (pad.name == padName) return pad.gameObject;
+        return null;
     }
 
     // Flèche 3D : une tige et une tête en losange (un cube tourné de 45°), jaune lumineux ; elle pointe vers +z.

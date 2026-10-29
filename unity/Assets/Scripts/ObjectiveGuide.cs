@@ -38,6 +38,8 @@ public class ObjectiveGuide : MonoBehaviour
             return;
         }
         step = Step.CollectCrates;
+        // partie rechargée au milieu du guide : on reprend après la dalle déjà payée
+        if (payPadObject != null && !payPadObject.activeSelf) step = Step.PayPad;
         ShowPhrase();
     }
 
@@ -86,7 +88,8 @@ public class ObjectiveGuide : MonoBehaviour
             case Step.PayPad:
                 return payPadObject == null || !payPadObject.activeSelf;
             case Step.HireEmployee:
-                return hirePadObject == null || !hirePadObject.activeSelf;
+                // la dalle d'embauche est cachée tant que la dalle du poste 2 n'est pas payée
+                return hirePadObject == null || (!hirePadObject.activeSelf && (payPadObject == null || !payPadObject.activeSelf));
         }
         return false;
     }

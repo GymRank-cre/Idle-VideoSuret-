@@ -28,6 +28,7 @@ public class CustomerQueue : MonoBehaviour
     bool firstCustomerDone;
 
     public int Waiting => line.Count;
+    public IReadOnlyList<Customer> Line => line; // dans l'ordre de la file (le client en tête en premier)
 
     // Le client en tête, arrivé à sa place et pas encore servi ; sinon null.
     public Customer Head

@@ -114,10 +114,13 @@ public static class PrototypeSetup
 
         BuildJoystick(player.GetComponent<PlayerController>());
         BuildHud(player, carrier);
-        BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
+        UnlockPad station2Pad = BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
+        DemandBuilder.Build(); // production à la demande des clients (étape 6c)
         GuideBuilder.Build(); // flèche et phrase d'objectif du début de partie (étape 6b)
+
+        SaveBuilder.Build(); // sauvegarde, gains hors ligne, écran « Bon retour » (étape 7a)
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
         EmployeeBuilder.BakeNavMesh(); // après le décor : le NavMesh voit tous les obstacles
@@ -277,7 +280,7 @@ public static class PrototypeSetup
     // Dalle de déblocage jaune : le joueur y paie, puis `target` apparaît (avec un gonflement sur `popObject`).
     // Sert au 2e poste et à l'embauche ; `title` (facultatif) s'affiche au-dessus du prix.
     internal static UnlockPad BuildUnlockPad(GameObject target, GameObject popObject, Vector3 position,
-        string padName, string configName, string title, int priceOverride = 0)
+        string padName, string configName, string title, int priceOverride = 0, bool startHidden = false)
     {
         Material padMat = MakeMaterial("UnlockPad", new Color(0.95f, 0.8f, 0.15f));
 
@@ -315,7 +318,7 @@ public static class PrototypeSetup
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         GameObject labelGo = new GameObject("PriceLabel", typeof(TextMesh), typeof(FaceCamera));
         labelGo.transform.SetParent(pad.transform, false);
-        labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+        labelGo.transform.localPosition = new Vector3(0f, 0.7f, 0f); // le prix est sous le titre, bien séparé
         TextMesh label = labelGo.GetComponent<TextMesh>();
         label.font = font;
         label.fontSize = 100;
@@ -337,7 +340,15 @@ public static class PrototypeSetup
         so.FindProperty("wallet").objectReferenceValue = wallet;
         so.FindProperty("target").objectReferenceValue = target;
         so.FindProperty("priceLabel").objectReferenceValue = label;
+        so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
+        so.FindProperty("saveId").stringValue = padName;
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        if (startHidden) // dalle dévoilée plus tard par la précédente, avec un gonflement
+        {
+            pad.AddComponent<PopIn>();
+            pad.SetActive(false);
+        }
         return unlockPad;
     }
 
@@ -346,7 +357,7 @@ public static class PrototypeSetup
     {
         GameObject root = new GameObject("Title", typeof(FaceCamera));
         root.transform.SetParent(pad, false);
-        root.transform.localPosition = new Vector3(0f, 2.2f, 0f);
+        root.transform.localPosition = new Vector3(0f, 3.5f, 0f);
         foreach (bool shadow in new[] { true, false })
         {
             GameObject t = new GameObject(shadow ? "Shadow" : "Text", typeof(TextMesh));
@@ -356,7 +367,7 @@ public static class PrototypeSetup
             tm.font = font;
             tm.text = title;
             tm.fontSize = 100;
-            tm.characterSize = 0.075f;
+            tm.characterSize = 0.062f;
             tm.fontStyle = FontStyle.Bold;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
