@@ -54,7 +54,7 @@ public static class UnitTests
         Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
 
         SaveData v3 = SaveSystem.Migrate(new SaveData { version = 3, money = 7, machines = null });
-        Eq("4", v3.version.ToString(), "migration v3 -> v4 : version");
+        Eq("5", v3.version.ToString(), "migration v3 -> version courante (5)");
         Eq("True", (v3.machines != null && v3.machines.Count == 0).ToString(), "migration v3 -> v4 : aucune machine");
         Eq("7", v3.money.ToString(), "migration v3 -> v4 : l'argent est conservé");
 
@@ -89,9 +89,67 @@ public static class UnitTests
             // goulot = Emballage (0,2/s) x 100 s x 100 x 2 = 4000 ; sans chaîne le débit du poste (0,5/s par défaut) donne 5000
             Eq("4000", withChain.ToString(), "hors ligne : chaîne limitée par Emballage et valeur x2");
             Eq("True", (plain > 0).ToString(), "hors ligne sans chaîne : inchangé et positif");
+            var fast = new OfflineEarnings.Chain { assemblySpeed = 2f };
+            int doubled = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust, 1f, 1f, 1f, 0, fast);
+            Eq(plain.ToString("0"), (doubled / 2).ToString("0"), "hors ligne : assemblage 2x plus rapide = gain doublé");
             Object.DestroyImmediate(offCfg); Object.DestroyImmediate(stCfg); Object.DestroyImmediate(emp);
             Object.DestroyImmediate(cust); Object.DestroyImmediate(pt);
         }
+
+        // 11b : améliorations par machine
+        {
+            var mu = ScriptableObject.CreateInstance<MachineUpgradeConfig>();
+            var muo = new SerializedObject(mu);
+            SerializedProperty ml = muo.FindProperty("machines");
+            ml.arraySize = 1;
+            SerializedProperty m0 = ml.GetArrayElementAtIndex(0);
+            m0.FindPropertyRelative("id").stringValue = "test";
+            m0.FindPropertyRelative("speedBaseCost").intValue = 120;
+            m0.FindPropertyRelative("addBaseCost").intValue = 200;
+            m0.FindPropertyRelative("speedMax").intValue = 12;
+            m0.FindPropertyRelative("addMax").intValue = 3;
+            muo.ApplyModifiedPropertiesWithoutUndo();
+            MachineUpgradeConfig.Machine mm = mu.Machines[0];
+            Eq("120", mu.SpeedCost(mm, 0).ToString(), "coût vitesse niveau 0");
+            Eq("138", mu.SpeedCost(mm, 1).ToString(), "coût vitesse x1,15 par niveau");
+            Eq("True", (mu.SpeedCost(mm, 10) > mu.SpeedCost(mm, 9)).ToString(), "coût croissant");
+            Eq("1,00", mu.SpeedFactor(0, 0).ToString("0.00"), "vitesse niveau 0");
+            Eq("1,50", mu.SpeedFactor(5, 0).ToString("0.00"), "vitesse niveau 5 : +10 % par niveau");
+            Eq("4,00", mu.SpeedFactor(10, 0).ToString("0.00"), "palier 10 : x2 de débit");
+            Eq("8,00", mu.SpeedFactor(10, 10).ToString("0.00"), "palier 10 des deux axes");
+            var go3 = new GameObject("MuState");
+            var mst = go3.AddComponent<MachineUpgradeState>();
+            var mso = new SerializedObject(mst);
+            mso.FindProperty("config").objectReferenceValue = mu;
+            mso.ApplyModifiedPropertiesWithoutUndo();
+            for (int n = 0; n < 9; n++) mst.Purchase("test", MachineUpgradeState.Speed);
+            Eq("True", mst.Purchase("test", MachineUpgradeState.Speed).ToString(), "le 10e achat atteint un palier");
+            Eq("10", mst.Level("test", MachineUpgradeState.Speed).ToString(), "niveau vitesse 10");
+            mst.Purchase("test", MachineUpgradeState.Speed); mst.Purchase("test", MachineUpgradeState.Speed);
+            Eq("True", mst.IsMax("test", MachineUpgradeState.Speed).ToString(), "plafond de vitesse (12)");
+            Eq("False", mst.Purchase("test", MachineUpgradeState.Speed).ToString(), "au plafond : plus d'achat");
+            Eq("12", mst.Level("test", MachineUpgradeState.Speed).ToString(), "le niveau ne dépasse pas le plafond");
+            mst.SetLevel("test", MachineUpgradeState.Add, 99);
+            Eq("3", mst.Level("test", MachineUpgradeState.Add).ToString(), "restauration plafonnée");
+
+            // machine : AJOUTER = plus d'objets par cycle ; VITESSE = cycle plus court
+            var mcfg = ScriptableObject.CreateInstance<MachineConfig>();
+            var mgo = new GameObject("UpMachine");
+            var pm = mgo.AddComponent<ProductionMachine>();
+            pm.Configure(mcfg);
+            var pso2 = new SerializedObject(pm);
+            pso2.FindProperty("upgrades").objectReferenceValue = mst;
+            pso2.FindProperty("machineId").stringValue = "test";
+            pso2.ApplyModifiedPropertiesWithoutUndo();
+            Eq("4", pm.OutputPerCycle.ToString(), "ajouter x3 : 1 + 3 objets par cycle");
+            Eq("True", (pm.CycleSeconds < 2f / 4f).ToString(), "vitesse niveau 12 : cycle plus de 4 fois plus court");
+            Object.DestroyImmediate(mgo); Object.DestroyImmediate(go3);
+            Object.DestroyImmediate(mcfg); Object.DestroyImmediate(mu);
+        }
+
+        SaveData v4 = SaveSystem.Migrate(new SaveData { version = 4, money = 9, machineLevels = null });
+        Eq("5", v4.version.ToString(), "migration v4 -> v5 : version");
+        Eq("True", (v4.machineLevels != null && v4.machineLevels.Count == 0).ToString(), "migration v4 -> v5 : tout à 0");
 
         // Économie : coût des améliorations strictement positif et croissant
         foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())

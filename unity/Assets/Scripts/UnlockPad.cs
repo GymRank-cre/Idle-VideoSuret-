@@ -17,8 +17,11 @@ public class UnlockPad : MonoBehaviour
     [SerializeField] float fillWidth = 3f;
     [SerializeField] bool isHire;                 // dalle d'embauche : fanfare au lieu de l'arpège
     [SerializeField] string saveId;               // identifiant stable pour la sauvegarde
+    [SerializeField] MonoBehaviour repeatSource;  // facultatif (IRepeatablePad) : dalle qui se paie plusieurs fois (amélioration de machine)
 
     int remainingPrice;
+    int fullPrice;             // prix de référence de la barre de remplissage
+    IRepeatablePad repeat;
     bool initialized;
     float timer;
     float sparkTimer;
@@ -41,20 +44,24 @@ public class UnlockPad : MonoBehaviour
     {
         if (initialized) return;
         initialized = true;
-        remainingPrice = config.Price;
+        repeat = repeatSource as IRepeatablePad;
+        remainingPrice = repeat != null ? repeat.NextPrice() : config.Price;
+        fullPrice = remainingPrice;
         UpdateLabel();
     }
 
     void OnTriggerStay(Collider other)
     {
         if (remainingPrice <= 0 || other.GetComponent<PlayerController>() == null) return;
+        if (repeat != null && repeat.IsMaxed) return;
 
         timer += Time.deltaTime;
         if (timer < config.PayInterval) return;
         timer = 0f;
 
-        // Sans argent le prix reste où il est : rien n'est perdu.
-        int amount = Mathf.Min(config.PayStep, remainingPrice, wallet.Money);
+        // Sans argent le prix reste où il est : rien n'est perdu. Dalle répétable : n'importe quel prix se paie en ~1,5 s.
+        int step = repeat != null ? Mathf.Max(config.PayStep, Mathf.CeilToInt(fullPrice * config.PayInterval / 1.5f)) : config.PayStep;
+        int amount = Mathf.Min(step, remainingPrice, wallet.Money);
         if (amount <= 0 || !wallet.TrySpend(amount)) return;
 
         remainingPrice -= amount;
@@ -79,10 +86,10 @@ public class UnlockPad : MonoBehaviour
     void UpdateLabel()
     {
         if (priceLabel != null)
-            priceLabel.text = NumberFormat.Short(remainingPrice); // l'icône de billet est à gauche du nombre
-        if (fillBar != null && config.Price > 0)
+            priceLabel.text = repeat != null && repeat.IsMaxed ? "MAX" : NumberFormat.Short(remainingPrice); // l'icône de billet est à gauche du nombre
+        if (fillBar != null && fullPrice > 0)
         {
-            float k = 1f - (float)remainingPrice / config.Price;
+            float k = 1f - (float)remainingPrice / fullPrice;
             fillBar.localScale = new Vector3(Mathf.Max(0.0001f, fillWidth * k), fillBar.localScale.y, fillBar.localScale.z);
             Vector3 lp = fillBar.localPosition;
             fillBar.localPosition = new Vector3(-fillWidth * 0.5f + fillWidth * k * 0.5f, lp.y, lp.z);
@@ -93,6 +100,15 @@ public class UnlockPad : MonoBehaviour
     public void Restore(int remaining)
     {
         initialized = true;
+        repeat = repeatSource as IRepeatablePad;
+        if (repeat != null) // le niveau vient de MachineUpgradeState (déjà restauré) : on repart du prix du niveau suivant
+        {
+            remainingPrice = repeat.NextPrice();
+            fullPrice = remainingPrice;
+            UpdateLabel();
+            return;
+        }
+        fullPrice = config.Price;
         remainingPrice = Mathf.Clamp(remaining, 0, config.Price);
         UpdateLabel();
         if (remainingPrice <= 0)
@@ -101,6 +117,14 @@ public class UnlockPad : MonoBehaviour
 
     void Unlock(bool silent = false)
     {
+        if (repeat != null) // dalle répétable : niveau +1 (fête dans la source), prix suivant, la dalle reste
+        {
+            repeat.Purchased();
+            remainingPrice = repeat.NextPrice();
+            fullPrice = remainingPrice;
+            UpdateLabel();
+            return;
+        }
         if (!silent) GameLog.Event("déblocage " + (string.IsNullOrEmpty(saveId) ? name : saveId));
         if (!silent)
         {

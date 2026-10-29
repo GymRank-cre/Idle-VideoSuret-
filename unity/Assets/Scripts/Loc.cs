@@ -25,6 +25,7 @@ public static class Loc
         { "title.logo", "Idle Sécurité" },
         { "title.sub", "Installation de sécurité électronique" },
         { "title.play", "Jouer" },
+        { "machine.level", "Niv {0}" },
         { "diag.session", "Session : {0} s" },
         { "diag.events", "Événements :" },
         { "diag.none", "aucun" },

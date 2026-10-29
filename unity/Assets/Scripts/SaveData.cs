@@ -5,7 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class SaveData
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     [Serializable]
     public class PadState
@@ -29,6 +29,14 @@ public class SaveData
         public int output;
     }
 
+    [System.Serializable]
+    public class MachineLevel
+    {
+        public string id;
+        public int speed;
+        public int add;
+    }
+
     public int version = CurrentVersion;
     public int money;
     public long lastSaveUtc;                 // secondes Unix
@@ -36,6 +44,7 @@ public class SaveData
     public List<string> employees = new List<string>(); // "hauler", "courier"
     public List<UpgradeLevel> upgrades = new List<UpgradeLevel>(); // v2
     public List<MachineStock> machines = new List<MachineStock>(); // v4 : stocks des machines de la chaîne
+    public List<MachineLevel> machineLevels = new List<MachineLevel>(); // v5 : améliorations par machine
     public bool settingsSaved;               // v3 : faux = anciennes sauvegardes, on garde les réglages par défaut
     public bool soundOn = true;
     public bool musicOn;

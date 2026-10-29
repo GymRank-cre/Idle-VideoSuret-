@@ -5,7 +5,7 @@ using UnityEngine;
 // caisses une à une. Quand il y en a assez, un travail démarre (barre de
 // progression), puis des billets apparaissent au point de sortie.
 [RequireComponent(typeof(Collider))]
-public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
+public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource, IThroughput
 {
     [SerializeField] StationConfig config;
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
@@ -13,6 +13,8 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
     [SerializeField] FeedbackSpawner feedback; // facultatif : éclat quand une caisse arrive
     [SerializeField] UpgradeState upgrades;    // facultatif : amélioration de la vitesse de fabrication
     [SerializeField] ProductDemand demand;     // facultatif : fabrique d'abord ce que demandent les clients
+    [SerializeField] MachineUpgradeState machineUpgrades; // facultatif : améliorations par machine (11b)
+    [SerializeField] string machineId = "assembly";
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
     [SerializeField] Transform outputTray;   // plateau de sortie des produits finis (places alignées sur son axe x)
@@ -59,7 +61,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
     {
         StackCarrier carrier = other.GetComponent<StackCarrier>();
         if (carrier == null || carrier.IsEmpty) return;
-        if (storedCrates + flights.Count >= config.InputCapacity) return;
+        if (storedCrates + flights.Count >= InputCapacity) return;
 
         depositTimer += Time.deltaTime;
         if (depositTimer < config.DepositInterval) return;
@@ -115,13 +117,19 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
         }
     }
 
-    float JobDuration => config.JobDuration * (upgrades != null ? upgrades.JobDuration : 1f);
+    // Valeurs effectives : AJOUTER = produits en plus par travail (plafonné par le plateau), qui consomment autant de caisses en plus.
+    int ExtraUnits => machineUpgrades != null ? machineUpgrades.ExtraUnits(machineId) : 0;
+    int ProductsPerJobNow => MakesProducts ? Mathf.Min(config.ProductsPerJob + ExtraUnits, config.OutputCapacity) : config.ProductsPerJob;
+    int CratesPerJobNow => config.CratesPerJob * ProductsPerJobNow / Mathf.Max(1, config.ProductsPerJob);
+    float JobDuration => config.JobDuration * (upgrades != null ? upgrades.JobDuration : 1f)
+        / (machineUpgrades != null ? machineUpgrades.SpeedFactor(machineId) : 1f);
+    public float ThroughputPerSecond => ProductsPerJobNow / JobDuration;
 
     void UpdateJob()
     {
-        if (!working && storedCrates >= config.CratesPerJob)
+        if (!working && storedCrates >= CratesPerJobNow)
         {
-            storedCrates -= config.CratesPerJob;
+            storedCrates -= CratesPerJobNow;
             working = true;
             jobTimer = 0f;
         }
@@ -135,7 +143,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
         if (jobTimer >= JobDuration)
         {
             // Plateau plein : le travail attend (barre pleine) qu'une place se libère, rien n'est perdu.
-            if (MakesProducts && FreeSlotCount() < config.ProductsPerJob)
+            if (MakesProducts && FreeSlotCount() < ProductsPerJobNow)
             {
                 jobTimer = JobDuration;
                 if (progressBar != null) progressBar.SetProgress(1f);
@@ -166,7 +174,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
 
     // État pour l'étiquette de stock et le voyant (IMachineStatus).
     public int InputCount => storedCrates;
-    public int InputCapacity => config.InputCapacity;
+    public int InputCapacity => Mathf.Max(config.InputCapacity, CratesPerJobNow * 2);
     public int OutputCount => MakesProducts ? ProductsOnTray : 0;
     public int OutputCapacity => MakesProducts ? config.OutputCapacity : 0;
     public MachineState State
@@ -174,7 +182,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
         get
         {
             if (working) return jobTimer >= JobDuration ? MachineState.Blocked : MachineState.Running;
-            return storedCrates >= config.CratesPerJob ? MachineState.Running : MachineState.WaitingInput;
+            return storedCrates >= CratesPerJobNow ? MachineState.Running : MachineState.WaitingInput;
         }
     }
 
@@ -218,7 +226,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
         if (productsHolder == null)
             productsHolder = new GameObject(name + " Products").transform;
 
-        for (int n = 0; n < config.ProductsPerJob; n++)
+        for (int n = 0; n < ProductsPerJobNow; n++)
         {
             int slot = FreeSlot();
             if (slot < 0) return;

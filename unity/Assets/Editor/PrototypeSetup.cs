@@ -120,6 +120,7 @@ public static class PrototypeSetup
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
         ChainBuilder.Build(); // machines Test et Emballage, dalles et valeur par stade (11a-2)
         MachineBuilder.Build(); // voyant et stocks au-dessus des machines (11a)
+        MachineUpgradeBuilder.Build(); // améliorations par machine : dalles, niveaux, conseiller (11b)
         DemandBuilder.Build(); // production à la demande des clients (étape 6c)
         UpgradeBuilder.Build(); // améliorations : état, bouton et panneau (étape 7b)
         AudioBuilder.Build(); // sons, musique, réglages (étape 8a)

@@ -11,6 +11,7 @@ public class SaveSystem : MonoBehaviour
 
     [SerializeField] Wallet wallet;
     [SerializeField] UnlockPad[] pads;            // toutes les dalles, même cachées
+    [SerializeField] MachineUpgradeState machineUpgrades; // améliorations par machine (11b)
     [SerializeField] ProcessStation[] stations;   // machines de la chaîne (Test, Emballage)
     [SerializeField] GameObject belt1;            // tapis (actif = acheté)
     [SerializeField] GameObject belt2;
@@ -75,6 +76,12 @@ public class SaveSystem : MonoBehaviour
         if (upgradeState != null)
             foreach (SaveData.UpgradeLevel u in loaded.upgrades)
                 upgradeState.SetLevel(u.id, u.level);
+        if (machineUpgrades != null && loaded.machineLevels != null)
+            foreach (SaveData.MachineLevel ml in loaded.machineLevels)
+            {
+                machineUpgrades.SetLevel(ml.id, MachineUpgradeState.Speed, ml.speed);
+                machineUpgrades.SetLevel(ml.id, MachineUpgradeState.Add, ml.add);
+            }
         foreach (UnlockPad pad in pads)
         {
             SaveData.PadState state = loaded.pads.Find(p => p.id == pad.SaveId);
@@ -120,13 +127,26 @@ public class SaveSystem : MonoBehaviour
     {
         bool automated = belt1 != null && belt2 != null && belt1.activeInHierarchy && belt2.activeInHierarchy
             && testConfig != null && packConfig != null;
-        return new OfflineEarnings.Chain
+        var chain = new OfflineEarnings.Chain { automated = automated, valueMultiplier = automated ? packConfig.ValueMultiplier : 1f };
+        if (machineUpgrades != null)
         {
-            automated = automated,
-            testThroughput = automated ? testConfig.Throughput : 0f,
-            packThroughput = automated ? packConfig.Throughput : 0f,
-            valueMultiplier = automated ? packConfig.ValueMultiplier : 1f
-        };
+            chain.assemblySpeed = machineUpgrades.SpeedFactor("assembly");
+            chain.assemblyExtraProducts = machineUpgrades.ExtraUnits("assembly");
+        }
+        if (automated)
+        {
+            chain.testThroughput = Effective(testConfig, "test");
+            chain.packThroughput = Effective(packConfig, "pack");
+        }
+        return chain;
+    }
+
+    // Débit d'une machine avec ses améliorations : (sortie + unités en plus) / (cycle / vitesse).
+    float Effective(MachineConfig c, string id)
+    {
+        float speed = machineUpgrades != null ? machineUpgrades.SpeedFactor(id) : 1f;
+        int extra = machineUpgrades != null ? machineUpgrades.ExtraUnits(id) : 0;
+        return (c.OutputPerCycle + extra) / (c.CycleSeconds / speed);
     }
 
     void Claim()
@@ -174,6 +194,14 @@ public class SaveSystem : MonoBehaviour
                 data.upgrades.Add(new SaveData.UpgradeLevel { id = upgradeState.Config.Upgrades[i].id, level = upgradeState.Level(i) });
         foreach (UnlockPad pad in pads)
             data.pads.Add(new SaveData.PadState { id = pad.SaveId, remaining = pad.RemainingPrice });
+        if (machineUpgrades != null)
+            foreach (MachineUpgradeConfig.Machine m in machineUpgrades.Config.Machines)
+                data.machineLevels.Add(new SaveData.MachineLevel
+                {
+                    id = m.id,
+                    speed = machineUpgrades.Level(m.id, MachineUpgradeState.Speed),
+                    add = machineUpgrades.Level(m.id, MachineUpgradeState.Add)
+                });
         if (stations != null)
             foreach (ProcessStation st in stations)
                 if (st != null && st.gameObject.activeInHierarchy)
@@ -294,6 +322,11 @@ public class SaveSystem : MonoBehaviour
         if (data.version < 4)
         {
             data.version = 4; // v3 : pas de chaîne, machines et tapis verrouillés (leurs dalles absentes = prix plein)
+        }
+        if (data.machineLevels == null) data.machineLevels = new System.Collections.Generic.List<SaveData.MachineLevel>();
+        if (data.version < 5)
+        {
+            data.version = 5; // v4 : aucune amélioration par machine, tout à 0
         }
         return data;
     }

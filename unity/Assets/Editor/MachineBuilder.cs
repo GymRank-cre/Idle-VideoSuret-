@@ -122,7 +122,7 @@ public static class MachineBuilder
         return new[] { text, outline };
     }
 
-    static TextMesh MakeText(string textName, Transform parent, Vector3 pos, Color color, int order)
+    public static TextMesh MakeText(string textName, Transform parent, Vector3 pos, Color color, int order, float characterSize = 0.07f, TextAnchor anchor = TextAnchor.MiddleLeft)
     {
         var go = new GameObject(textName, typeof(MeshRenderer), typeof(TextMesh));
         go.transform.SetParent(parent, false);
@@ -130,9 +130,9 @@ public static class MachineBuilder
         TextMesh tm = go.GetComponent<TextMesh>();
         tm.font = UiTheme.Font;
         tm.fontSize = 64;
-        tm.characterSize = 0.07f;
-        tm.anchor = TextAnchor.MiddleLeft;
-        tm.alignment = TextAlignment.Left;
+        tm.characterSize = characterSize;
+        tm.anchor = anchor;
+        tm.alignment = anchor == TextAnchor.MiddleCenter ? TextAlignment.Center : TextAlignment.Left;
         tm.color = color;
         tm.text = "0/0";
         var mr = go.GetComponent<MeshRenderer>();

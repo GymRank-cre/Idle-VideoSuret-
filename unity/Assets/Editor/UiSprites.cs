@@ -93,6 +93,61 @@ public static class UiSprites
         return AssetDatabase.LoadAssetAtPath<Sprite>(BillPath);
     }
 
+    // Pictogrammes blancs à contour sombre (flèche vers le haut, plus), générés une fois. Teintés par SpriteRenderer.color.
+    public static Sprite Arrow()
+    {
+        return Glyph("Assets/Prototype/Textures/ArrowIcon.png", (x, y) =>
+            (x >= 46 && x <= 82 && y >= 8 && y <= 66) ||
+            (y >= 60 && y <= 120 && Mathf.Abs(x - 64f) <= (120f - y) * 0.88f));
+    }
+
+    public static Sprite Plus()
+    {
+        return Glyph("Assets/Prototype/Textures/PlusIcon.png", (x, y) =>
+            (x >= 48 && x <= 80 && y >= 16 && y <= 112) || (x >= 16 && x <= 112 && y >= 48 && y <= 80));
+    }
+
+    static Sprite Glyph(string path, System.Func<int, int, bool> inside)
+    {
+        Sprite existing = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (existing != null) return existing;
+        if (!AssetDatabase.IsValidFolder("Assets/Prototype/Textures"))
+            AssetDatabase.CreateFolder("Assets/Prototype", "Textures");
+
+        const int n = 128, r = 6;
+        var mask = new bool[n * n];
+        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++) mask[y * n + x] = inside(x, y);
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        Color ink = new Color32(0x0E, 0x16, 0x20, 0xFF);
+        for (int y = 0; y < n; y++)
+        {
+            for (int x = 0; x < n; x++)
+            {
+                bool near = false;
+                for (int dy = -r; dy <= r && !near; dy++)
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        int xx = x + dx, yy = y + dy;
+                        if (xx < 0 || yy < 0 || xx >= n || yy >= n || dx * dx + dy * dy > r * r) continue;
+                        if (mask[yy * n + xx]) { near = true; break; }
+                    }
+                tex.SetPixel(x, y, mask[y * n + x] ? Color.white : near ? ink : new Color(0f, 0f, 0f, 0f));
+            }
+        }
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.alphaIsTransparency = true;
+        importer.mipmapEnabled = false;
+        importer.spritePixelsPerUnit = 100f;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
     // Couverture (0 à 1) d'un rectangle arrondi inset de `inset` pixels avec le rayon `radius`.
     static float RoundedBox(float x, float y, float w, float h, float inset, float radius)
     {

@@ -11,6 +11,8 @@ public static class OfflineEarnings
         public float testThroughput;   // produits par seconde
         public float packThroughput;
         public float valueMultiplier;  // x2,4 : multiplicateur du dernier maillon
+        public float assemblySpeed;    // améliorations de l'assemblage (11b) : 0 = pas d'amélioration, sinon facteur de vitesse
+        public int assemblyExtraProducts; // produits en plus par travail
     }
 
     public static int Compute(long elapsedSeconds, bool hasHauler, bool hasCourier, OfflineConfig offline,
@@ -24,8 +26,10 @@ public static class OfflineEarnings
         if (seconds < offline.MinSeconds) return 0;
         double capped = Mathf.Min(seconds, offline.MaxHours * 3600f);
 
-        double stationRate = station.ProductsPerJob / ((double)station.JobDuration * jobDurationMultiplier);
-        double haulerRate = (hauler.Capacity + employeeCapacityBonus) / ((double)offline.HaulerCycleSeconds / employeeSpeedMultiplier) / station.CratesPerJob;
+        double assemblySpeed = chain.assemblySpeed > 0f ? chain.assemblySpeed : 1.0;
+        int productsPerJob = Mathf.Min(station.ProductsPerJob + chain.assemblyExtraProducts, station.OutputCapacity);
+        double stationRate = productsPerJob / ((double)station.JobDuration * jobDurationMultiplier / assemblySpeed);
+        double haulerRate = (hauler.Capacity + employeeCapacityBonus) / ((double)offline.HaulerCycleSeconds / employeeSpeedMultiplier) * station.ProductsPerJob / station.CratesPerJob;
         double courierRate = (courier.Capacity + employeeCapacityBonus) / ((double)offline.CourierCycleSeconds / employeeSpeedMultiplier);
         double customerRate = (customers.MinQuantity + customers.MaxQuantity) * 0.5 / customers.SpawnInterval;
         double rate = System.Math.Min(System.Math.Min(stationRate, haulerRate), System.Math.Min(courierRate, customerRate));
