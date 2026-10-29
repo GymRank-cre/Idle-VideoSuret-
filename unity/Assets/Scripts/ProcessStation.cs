@@ -6,7 +6,7 @@ using UnityEngine;
 // le produit de stade suivant apparaît sur le plateau de sortie, d'où le joueur (ou le livreur) le ramasse.
 // Rien n'est perdu : plateau plein = la machine s'arrête (goulot visible par le voyant).
 [RequireComponent(typeof(Collider))]
-public class ProcessStation : MonoBehaviour
+public class ProcessStation : MonoBehaviour, IProductSource
 {
     struct Flight
     {
@@ -40,6 +40,33 @@ public class ProcessStation : MonoBehaviour
             if (slots != null) for (int i = 0; i < slots.Length; i++) if (slots[i] != null) n++;
             return n;
         }
+    }
+
+    // Places libres en entrée (déposées par le joueur en vol comprises).
+    public int FreeInputSlots => machine.InputCapacity - machine.InputCount - flights.Count;
+
+    // Un tapis y dépose un produit ; faux si la machine est pleine (le produit attend sur le tapis).
+    public bool TryAcceptFromBelt(Product product)
+    {
+        if (FreeInputSlots <= 0 || !machine.TryAddInput()) return false;
+        pending.Enqueue(product.Type);
+        AudioManager.PlayAt(SfxId.Deposit, transform.position, false);
+        product.Recycle();
+        return true;
+    }
+
+    // Un tapis prend un produit du plateau de sortie.
+    public Product TakeProduct()
+    {
+        if (slots == null) return null;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            Product p = slots[i];
+            if (p == null || p.IsCollecting) continue;
+            p.BeginCollect();
+            return p;
+        }
+        return null;
     }
 
     void Reset() { GetComponent<Collider>().isTrigger = true; }

@@ -5,7 +5,7 @@ using UnityEngine;
 // caisses une à une. Quand il y en a assez, un travail démarre (barre de
 // progression), puis des billets apparaissent au point de sortie.
 [RequireComponent(typeof(Collider))]
-public class InstallStation : MonoBehaviour, IMachineStatus
+public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource
 {
     [SerializeField] StationConfig config;
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
@@ -148,6 +148,20 @@ public class InstallStation : MonoBehaviour, IMachineStatus
             if (!MakesProducts) SpawnBills();
             SpawnProducts();
         }
+    }
+
+    // Un tapis prend un produit du plateau.
+    public Product TakeProduct()
+    {
+        if (slots == null) return null;
+        for (int i = 0; i < slots.Length; i++)
+        {
+            Product p = slots[i];
+            if (p == null || p.IsCollecting) continue;
+            p.BeginCollect(); // libère la place via OnProductTaken
+            return p;
+        }
+        return null;
     }
 
     // État pour l'étiquette de stock et le voyant (IMachineStatus).

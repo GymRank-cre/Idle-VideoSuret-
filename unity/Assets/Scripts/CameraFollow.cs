@@ -11,7 +11,16 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] float referenceAspect = 0.5625f;  // largeur/hauteur de référence (portrait 9:16) : largeur de vue conservée
     [SerializeField] Vector2 fovLimits = new Vector2(40f, 85f);
 
+    [Header("Vue d'ensemble (11a-3)")]
+    [SerializeField] Transform overviewFocus;   // actif seulement quand la chaîne existe (enfant d'une machine débloquée)
+    [SerializeField] float overviewScale = 1.8f; // distance de la caméra x1,8 quand le joueur ne touche plus l'écran
+    [SerializeField] float idleDelay = 1.5f;
+    [SerializeField, Range(0f, 1f)] float overviewWeight = 0.65f; // part du chemin du joueur vers le centre de l'atelier
+
     Camera cam;
+    PlayerController player;
+    float idleTime;
+    float overviewK, overviewVel;
     float baseFov;
     bool repairLogged;
     Vector3 smoothPos;           // position lissée, sans la secousse
@@ -25,6 +34,7 @@ public class CameraFollow : MonoBehaviour
     {
         cam = GetComponent<Camera>();
         baseFov = cam.fieldOfView;
+        if (target != null) player = target.GetComponent<PlayerController>();
     }
 
     // Secousse légère (≤ 0,1 m) : décroît jusqu'à zéro, ne bloque aucune commande.
@@ -91,6 +101,22 @@ public class CameraFollow : MonoBehaviour
         peekElapsed = 0f;
     }
 
+    // 0 = cadrage normal, 1 = vue d'ensemble ; revient dès que le joueur bouge ou qu'un Peek est en cours.
+    float UpdateOverview()
+    {
+        if (overviewFocus == null || !overviewFocus.gameObject.activeInHierarchy || !Finite(Time.deltaTime))
+        {
+            overviewK = 0f; overviewVel = 0f; idleTime = 0f;
+            return 0f;
+        }
+        bool active = (player != null && player.MoveAmount > 0.05f) || peekTarget != null;
+        idleTime = active ? 0f : idleTime + Time.deltaTime;
+        float want = idleTime >= idleDelay ? 1f : 0f;
+        overviewK = Mathf.SmoothDamp(overviewK, want, ref overviewVel, 0.4f);
+        if (!Finite(overviewK)) { overviewK = 0f; overviewVel = 0f; Repair("vue d'ensemble"); }
+        return Mathf.Clamp01(overviewK);
+    }
+
     void LateUpdate()
     {
         if (target == null || !Finite(target.position)) return;
@@ -125,7 +151,9 @@ public class CameraFollow : MonoBehaviour
             }
         }
 
-        Vector3 desired = focus + offset;
+        float ov = UpdateOverview();
+        if (ov > 0.0001f) focus = Vector3.Lerp(focus, overviewFocus.position, overviewWeight * ov);
+        Vector3 desired = focus + offset * Mathf.Lerp(1f, overviewScale, ov);
         if (!Finite(desired)) { peekTarget = null; Repair("position visée"); return; }
         float t = 1f - Mathf.Exp(-smooth * Time.deltaTime);
         if (!Finite(t)) t = 1f;

@@ -12,6 +12,21 @@ public class MachineConfig : ScriptableObject
     [SerializeField, Min(1)] int outputCapacity = 10;   // stock de sortie (plein : la machine s'arrête = goulot)
     [SerializeField, Min(0.1f)] float valueMultiplier = 1f; // valeur d'un objet sorti, par rapport à la caisse (x1)
 
+    // Une machine dont l'entrée ou la sortie par cycle dépasse sa capacité se bloquerait pour toujours : on corrige à la saisie.
+    void OnValidate()
+    {
+        if (inputPerCycle > inputCapacity)
+        {
+            Debug.LogWarning(name + " : entrée par cycle > capacité d'entrée, ramenée à " + inputCapacity);
+            inputPerCycle = inputCapacity;
+        }
+        if (outputPerCycle > outputCapacity)
+        {
+            Debug.LogWarning(name + " : sortie par cycle > capacité de sortie, ramenée à " + outputCapacity);
+            outputPerCycle = outputCapacity;
+        }
+    }
+
     public string DisplayName => displayName;
     public int InputPerCycle => inputPerCycle;
     public int OutputPerCycle => outputPerCycle;

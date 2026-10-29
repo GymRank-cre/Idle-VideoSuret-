@@ -12,7 +12,7 @@ public static class ChainBuilder
 
     public static void Build()
     {
-        foreach (string old in new[] { "TestMachine", "PackMachine", "TestPad", "PackPad" })
+        foreach (string old in new[] { "TestMachine", "PackMachine", "TestPad", "PackPad", "Belt1", "Belt2", "BeltPad1", "BeltPad2" })
             foreach (GameObject go in Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 if (go != null && go.name == old && go.transform.parent == null) Object.DestroyImmediate(go);
 
@@ -28,9 +28,40 @@ public static class ChainBuilder
         test.SetActive(false);
         pack.SetActive(false);
 
-        // enchaînement des dalles : ... -> livreur -> Test -> Emballage
+        // tapis (11a-3) : Assemblage -> Test et Test -> Emballage, chacun débloqué par sa dalle
+        ProcessStation testStation = test.GetComponent<ProcessStation>();
+        ProcessStation packStation = pack.GetComponent<ProcessStation>();
+        InstallStation assembly = FindAssembly();
+        GameObject belt1 = BuildBelt("Belt1", assembly, testStation, new[]
+        {
+            new Vector3(-6.6f, 0f, 0f), new Vector3(-7.3f, 0f, 0f), new Vector3(-7.3f, 0f, 9.4f), new Vector3(-2.7f, 0f, 9.4f)
+        });
+        GameObject belt2 = BuildBelt("Belt2", testStation, packStation, new[]
+        {
+            new Vector3(-0.7f, 0f, 6.8f), new Vector3(0.75f, 0f, 6.8f), new Vector3(0.75f, 0f, 8.4f), new Vector3(1.85f, 0f, 8.4f)
+        });
+        UnlockPad beltPad1 = PrototypeSetup.BuildUnlockPad(belt1, belt1.transform.Find("Pop").gameObject, new Vector3(-1.5f, 0.01f, 4f), "BeltPad1", "BeltPad1Config", "TAPIS", 600, true);
+        UnlockPad beltPad2 = PrototypeSetup.BuildUnlockPad(belt2, belt2.transform.Find("Pop").gameObject, new Vector3(7f, 0.01f, 7f), "BeltPad2", "BeltPad2Config", "TAPIS", 1200, true);
+        belt1.SetActive(false);
+        belt2.SetActive(false);
+
+        // vue d'ensemble : le centre de l'atelier, actif seulement une fois la machine Test débloquée
+        var focus = new GameObject("OverviewFocus").transform;
+        focus.SetParent(test.transform, false);
+        focus.position = new Vector3(0.5f, 0f, 4.5f);
+        CameraFollow cameraFollow = Object.FindFirstObjectByType<CameraFollow>();
+        if (cameraFollow != null)
+        {
+            var cso = new SerializedObject(cameraFollow);
+            cso.FindProperty("overviewFocus").objectReferenceValue = focus;
+            cso.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // enchaînement des dalles : ... -> livreur -> Test -> (Emballage, Tapis 1) ; Emballage -> Tapis 2
         Reveal(FindPad("HirePadCourier"), testPad);
         Reveal(testPad, packPad);
+        Reveal(testPad, beltPad1);
+        Reveal(packPad, beltPad2);
 
         ServiceCounter counter = Object.FindFirstObjectByType<ServiceCounter>(FindObjectsInactive.Include);
         if (counter != null)
@@ -42,6 +73,84 @@ public static class ChainBuilder
             list.GetArrayElementAtIndex(1).objectReferenceValue = packConfig;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
+    }
+
+    static InstallStation FindAssembly()
+    {
+        foreach (InstallStation s in Object.FindObjectsByType<InstallStation>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (s.name == "InstallStation") return s;
+        return null;
+    }
+
+    // Tapis : bande sombre à rails jaunes le long des points, taquets qui défilent, composant Conveyor.
+    // Créé désactivé (la dalle l'active) ; « Pop » est le petit repère que la dalle fait gonfler.
+    static GameObject BuildBelt(string beltName, MonoBehaviour source, ProcessStation destination, Vector3[] points)
+    {
+        const float width = 0.6f;
+        var root = new GameObject(beltName);
+        Material bed = PrototypeSetup.MakeMaterial("BeltBed", new Color(0.17f, 0.2f, 0.25f));
+        Material rail = PrototypeSetup.MakeMaterial("BeltRail", new Color32(0xFF, 0xC4, 0x00, 0xFF));
+        Material cleatMat = PrototypeSetup.MakeMaterial("BeltCleat", new Color32(0x3A, 0x45, 0x55, 0xFF));
+
+        var pop = new GameObject("Pop").transform;
+        pop.SetParent(root.transform, false);
+        pop.position = points[points.Length / 2];
+
+        var waypoints = new Transform[points.Length];
+        float length = 0f;
+        for (int i = 0; i < points.Length; i++)
+        {
+            var wp = new GameObject("WP" + i).transform;
+            wp.SetParent(root.transform, false);
+            wp.position = points[i];
+            waypoints[i] = wp;
+            if (i > 0) length += Vector3.Distance(points[i - 1], points[i]);
+        }
+
+        for (int i = 1; i < points.Length; i++)
+        {
+            Vector3 a = points[i - 1], b = points[i];
+            Vector3 dir = (b - a).normalized;
+            float seg = Vector3.Distance(a, b);
+            Quaternion rot = Quaternion.LookRotation(dir, Vector3.up);
+            Vector3 mid = (a + b) * 0.5f;
+            Box(root.transform, "Bed" + i, mid + Vector3.up * 0.09f, rot, new Vector3(width, 0.12f, seg + width), bed);
+            Vector3 side = Vector3.Cross(Vector3.up, dir) * (width * 0.5f);
+            Box(root.transform, "RailA" + i, mid + Vector3.up * 0.17f + side, rot, new Vector3(0.05f, 0.1f, seg + width), rail);
+            Box(root.transform, "RailB" + i, mid + Vector3.up * 0.17f - side, rot, new Vector3(0.05f, 0.1f, seg + width), rail);
+        }
+
+        const float cleatSpacing = 0.5f;
+        int count = Mathf.CeilToInt(length / cleatSpacing) + 1;
+        var cleats = new Transform[count];
+        for (int i = 0; i < count; i++)
+            cleats[i] = Box(root.transform, "Cleat" + i, points[0], Quaternion.identity, new Vector3(width * 0.85f, 0.03f, 0.08f), cleatMat);
+
+        var conveyor = root.AddComponent<Conveyor>();
+        var so = new SerializedObject(conveyor);
+        so.FindProperty("source").objectReferenceValue = source;
+        so.FindProperty("destination").objectReferenceValue = destination;
+        so.FindProperty("cleatSpacing").floatValue = cleatSpacing;
+        SerializedProperty wps = so.FindProperty("waypoints");
+        wps.arraySize = waypoints.Length;
+        for (int i = 0; i < waypoints.Length; i++) wps.GetArrayElementAtIndex(i).objectReferenceValue = waypoints[i];
+        SerializedProperty cl = so.FindProperty("cleats");
+        cl.arraySize = cleats.Length;
+        for (int i = 0; i < cleats.Length; i++) cl.GetArrayElementAtIndex(i).objectReferenceValue = cleats[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return root;
+    }
+
+    static Transform Box(Transform parent, string boxName, Vector3 pos, Quaternion rot, Vector3 scale, Material mat)
+    {
+        GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        go.name = boxName;
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.transform.SetParent(parent, false);
+        go.transform.SetPositionAndRotation(pos, rot);
+        go.transform.localScale = scale;
+        go.GetComponent<Renderer>().sharedMaterial = mat;
+        return go.transform;
     }
 
     static Vector3 Flat(Vector3 p) { return new Vector3(p.x, 0.01f, p.z); }
