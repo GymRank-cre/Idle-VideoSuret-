@@ -8,6 +8,7 @@ public class StackCarrier : MonoBehaviour
 {
     [SerializeField] Transform stackAnchor;   // vide placé dans le dos du joueur
     [SerializeField] int capacity = 8;
+    [SerializeField] UpgradeState upgrades;   // facultatif : améliorations de capacité (joueur seulement)
     [SerializeField] float itemHeight = 0.35f;
     [SerializeField] float followSpeed = 14f;
     [SerializeField] GameObject maxIndicator; // étiquette "MAX", facultative
@@ -16,14 +17,30 @@ public class StackCarrier : MonoBehaviour
     readonly List<Transform> items = new List<Transform>();
 
     public int Count => items.Count;
-    public int Capacity => capacity;
+    public int Capacity => capacity + (upgrades != null ? upgrades.ExtraCapacity : 0);
     public event System.Action OnCountChanged;
-    public bool IsFull => items.Count >= capacity;
+    public bool IsFull => items.Count >= Capacity;
     public bool IsEmpty => items.Count == 0;
 
     void Start()
     {
         UpdateIndicator();
+    }
+
+    void OnEnable()
+    {
+        if (upgrades != null) upgrades.OnChanged += CapacityChanged;
+    }
+
+    void OnDisable()
+    {
+        if (upgrades != null) upgrades.OnChanged -= CapacityChanged;
+    }
+
+    void CapacityChanged()
+    {
+        UpdateIndicator();
+        OnCountChanged?.Invoke(); // le HUD relit Count/Capacity
     }
 
     public bool TryAdd(Transform item)

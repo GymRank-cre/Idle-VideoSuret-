@@ -111,10 +111,26 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 7b)_
+**Étape 7b — compile (0 erreur, 0 warning), Build scene OK, testée via MCP en Play. Captures `7b-*` dans `unity/captures/`.** Corrections de la relecture 6c/7a incluses.
+
+**Corrections de la relecture**
+- `OfflineConfig` : rendement **20 %**, durée max **4 h** (asset et valeurs par défaut).
+- **Caméra vers la dalle qui apparaît** : `CameraFollow.Peek(cible, 1,2 s)` (aller rapide, court maintien, retour sur le joueur, commandes jamais bloquées) ; appelée par `UnlockPad` quand une dalle suivante se dévoile (pas au rechargement d'une partie). Capture `7b-05-camera-dalle-embauche`.
+- **Écran « Bon retour ! »** restylé : panneau arrondi semi-transparent, titre jaune, bouton vert arrondi, « pop » à l'ouverture (`7b-04`). Pour avoir de vrais coins arrondis j'ai généré par code un sprite `Assets/Prototype/Textures/RoundedRect.png` (9 zones, `Editor/UiSprites.cs`), aussi utilisé par les pastilles du HUD et la phrase du guide (même style partout).
+
+**7b — améliorations**
+- Ajoutés : `UpgradeConfig` (liste : id, nom, `kind`, `baseCost`, `costGrowth` 1,35, `maxLevel` 10, `effectPerLevel`), `UpgradeState` (niveaux en mémoire, jamais d'écriture dans les ScriptableObject), `UpgradeRow`, `UpgradePanel`, `Editor/UpgradeBuilder.cs`. Les scripts concernés lisent le multiplicateur à l'usage (champ facultatif `upgrades`) : `StackCarrier` (joueur seul), `PlayerController`, `InstallStation`, `ServiceCounter`, `Employee`, `Courier`. `FeedbackSpawner` : `Message()` et `Sparkle()`.
+- Cinq améliorations et coûts de base : pile +1 caisse (60), vitesse joueur +5 % (80), fabrication −7 % de durée (100), paiement des clients +8 % (120), vitesse des employés +8 % (140). Coût du niveau n = base x 1,35^n (par exemple pile : 60 / 269 / 894 aux niveaux 0 / 5 / 9).
+- **Mesuré en Play au niveau maximum** : pile 18 caisses (HUD « 0/18 » mis à jour), joueur 6,30 m/s (4,2 x 1,5), travail du poste 1,22 s (4 s x 0,3), paiement d'une commande de 25 $ = 45 $ (x 1,8), vitesse de l'agent employé 5,4 (3 x 1,8). Au niveau 1 : pile 9, joueur x1,05, travail x0,93, paiement x1,08, employés x1,08.
+- **Interface** : bouton rond jaune « flèche vers le haut » en bas à droite (zone sûre), point rouge quand un achat est possible, panneau arrondi avec une ligne par amélioration (icône en formes simples, nom, « Niv x/10 », « Prochain : … », bouton « $ coût » grisé si argent insuffisant, « MAX » à la fin). Le jeu continue derrière. À l'achat : pop de la ligne, étincelles et chiffre flottant (« +5 % vitesse », capture `7b-03-achat`). Captures `7b-01-bouton-point`, `7b-02-panneau`. Le chiffre flottant est dans le monde 3D : il passe derrière le panneau s'il est ouvert.
+- **Sauvegarde version 2** : niveaux (par `id`) dans `SaveData`, `Migrate()` 1 -> 2 (niveaux à 0). Testé : fichier v1 chargé (argent 777, niveaux 0, écran « Bon retour » +4 291 $ pour 2 h) ; fichier v2 avec niveaux 5/5/5 sur fabrication, employés et paiement : niveaux restaurés et gain 2 h = **8 412 $**. Les gains hors ligne tiennent compte des niveaux : durée du travail x multiplicateur, cycles des employés / multiplicateur de vitesse, valeur x multiplicateur de paiement (`OfflineEarnings`).
+- **Guide** : deux étapes ajoutées après l'embauche du porteur : « Embauche un livreur sur la dalle LIVREUR » (flèche vers la dalle), puis « Ouvre le menu Améliorations » (le bouton bat, pas de flèche 3D). Fini à l'ouverture du panneau. Les phrases sont dans `GuideConfig`.
+- Le jeu reste jouable sans toucher au panneau (aucune amélioration obligatoire).
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Prix de départ** (60 à 140) : avec ~2,5 $/s au début on a bien un achat toutes les 60 à 90 s, mais cela retarde la 1re dalle (100) si on achète d'abord. Faut-il griser les améliorations tant que la dalle du poste 2 n'est pas payée ?
+- **Plafond d'économie** : au niveau 10 partout la fabrication dure 1,2 s, le débit est limité par le porteur (6 caisses par aller-retour), pas par le poste. Prochaine étape d'économie : améliorer aussi la capacité du porteur et du livreur ?
+- **Gain hors ligne** : le rendement n'augmente que par les niveaux achetés ; à 20 %, 2 h = ~4 300 $ sans niveau, ~8 400 $ avec 5 niveaux sur trois lignes. Cohérent avec les prix qui montent ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

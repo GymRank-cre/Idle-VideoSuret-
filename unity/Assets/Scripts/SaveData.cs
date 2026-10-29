@@ -5,7 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class SaveData
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     [Serializable]
     public class PadState
@@ -14,11 +14,19 @@ public class SaveData
         public int remaining; // prix restant ; 0 = payée
     }
 
+    [Serializable]
+    public class UpgradeLevel
+    {
+        public string id;
+        public int level;
+    }
+
     public int version = CurrentVersion;
     public int money;
     public long lastSaveUtc;                 // secondes Unix
     public List<PadState> pads = new List<PadState>();
     public List<string> employees = new List<string>(); // "hauler", "courier"
+    public List<UpgradeLevel> upgrades = new List<UpgradeLevel>(); // v2
     public bool guideDone;
     public int pendingOffline;               // gain hors ligne calculé mais pas encore récupéré
     public long pendingSeconds;              // durée d'absence correspondante

@@ -8,15 +8,24 @@ public class FloatingText : MonoBehaviour
     [SerializeField] TextMesh main;
     [SerializeField] TextMesh shadow; // contour sombre
 
+    string custom; // texte libre (« +5 % vitesse ») ; null = « +valeur »
     Vector3 start;
     Color color;
     int total;
     float duration, height, elapsed;
     Action<GameObject> release;
 
+    public void PlayText(string text, Vector3 position, Color textColor, float lifetime, float rise, Action<GameObject> releaseToPool)
+    {
+        Play(0, position, textColor, lifetime, rise, releaseToPool);
+        custom = text;
+        SetText();
+    }
+
     public void Play(int value, Vector3 position, Color textColor, float lifetime, float rise, Action<GameObject> releaseToPool)
     {
         total = value;
+        custom = null;
         SetText();
         start = position;
         color = textColor;
@@ -37,7 +46,7 @@ public class FloatingText : MonoBehaviour
 
     void SetText()
     {
-        string text = "+" + total;
+        string text = custom ?? "+" + total;
         main.text = text;
         shadow.text = text;
     }

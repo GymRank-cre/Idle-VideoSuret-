@@ -21,6 +21,7 @@ public class ServiceCounter : MonoBehaviour
     [SerializeField] Transform billPoint;        // sur le comptoir, du côté du joueur
     [SerializeField] float billScatter = 0.55f;
     [SerializeField] float targetHeight = 1.1f;  // hauteur visée sur le client
+    [SerializeField] UpgradeState upgrades;      // facultatif : amélioration du paiement
     [SerializeField] FeedbackSpawner feedback;   // facultatif
 
     readonly List<Delivery> deliveries = new List<Delivery>();
@@ -97,7 +98,7 @@ public class ServiceCounter : MonoBehaviour
 
     void CompleteOrder(Customer customer)
     {
-        int total = customer.OrderType.Value * customer.Quantity;
+        int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * (upgrades != null ? upgrades.CustomerPay : 1f));
         SpawnBills(total);
         if (feedback != null) feedback.ProductReady(customer.transform.position + Vector3.up * 1.9f); // pop de bonheur
         queue.Pay(customer);

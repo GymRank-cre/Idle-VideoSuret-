@@ -4,8 +4,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "OfflineConfig", menuName = "Idle/Offline Config")]
 public class OfflineConfig : ScriptableObject
 {
-    [SerializeField, Min(0.1f)] float maxHours = 8f;          // durée d'absence prise en compte au maximum
-    [SerializeField, Range(0f, 1f)] float efficiency = 0.5f;  // part de la cadence théorique réellement gagnée
+    [SerializeField, Min(0.1f)] float maxHours = 4f;          // durée d'absence prise en compte au maximum
+    [SerializeField, Range(0f, 1f)] float efficiency = 0.2f;  // part de la cadence théorique réellement gagnée
     [SerializeField, Min(0f)] float minSeconds = 60f;         // en dessous, pas d'écran « Bon retour »
     [Header("Cadence mesurée des employés (secondes par aller-retour complet)")]
     [SerializeField, Min(1f)] float haulerCycleSeconds = 14f; // tas -> poste -> tas avec sa pleine charge

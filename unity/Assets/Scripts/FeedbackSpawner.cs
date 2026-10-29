@@ -60,6 +60,19 @@ public class FeedbackSpawner : MonoBehaviour
         lastTextTime = Time.time;
     }
 
+    // Message libre qui monte (« +5 % vitesse »).
+    public void Message(Vector3 position, string text)
+    {
+        GameObject go = textPool.Get(position, Quaternion.identity);
+        go.GetComponent<FloatingText>().PlayText(text, position, config.FloatColor, config.FloatDuration * 1.6f, config.FloatHeight, textPool.Release);
+    }
+
+    // Étincelles à une position (achat, apparition).
+    public void Sparkle(Vector3 position)
+    {
+        Burst(position, config.FloatColor);
+    }
+
     void Burst(Vector3 position, Color color)
     {
         GameObject go = burstPool.Get(position, Quaternion.identity);

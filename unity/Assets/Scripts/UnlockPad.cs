@@ -12,6 +12,7 @@ public class UnlockPad : MonoBehaviour
     [SerializeField] TextMesh priceLabel; // prix restant, affiché au-dessus de la dalle
     [SerializeField] GameObject[] revealOnUnlock; // dalles suivantes, cachées tant que celle-ci n'est pas payée
     [SerializeField] FeedbackSpawner feedback;    // facultatif : étincelle quand une dalle suivante apparaît
+    [SerializeField] CameraFollow cameraFollow;   // facultatif : montre brièvement la dalle qui apparaît
     [SerializeField] string saveId;               // identifiant stable pour la sauvegarde
 
     int remainingPrice;
@@ -78,10 +79,10 @@ public class UnlockPad : MonoBehaviour
         remainingPrice = Mathf.Clamp(remaining, 0, config.Price);
         UpdateLabel();
         if (remainingPrice <= 0)
-            Unlock();
+            Unlock(true);
     }
 
-    void Unlock()
+    void Unlock(bool silent = false)
     {
         target.SetActive(true); // PopIn sur la cible fait le gonflement
         foreach (GameObject next in revealOnUnlock)
@@ -90,7 +91,9 @@ public class UnlockPad : MonoBehaviour
             UnlockPad nextPad = next.GetComponent<UnlockPad>();
             if (nextPad != null && nextPad.IsUnlocked) continue; // déjà payée (partie rechargée)
             next.SetActive(true); // PopIn sur la dalle fait le gonflement
+            if (silent) continue;
             if (feedback != null) feedback.ProductReady(next.transform.position + Vector3.up * 0.3f);
+            if (cameraFollow != null) cameraFollow.Peek(next.transform, 1.2f);
         }
         gameObject.SetActive(false);
     }

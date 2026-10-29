@@ -64,6 +64,8 @@ public static class GuideBuilder
         so.FindProperty("counter").objectReferenceValue = counter != null ? counter.transform : null;
         so.FindProperty("payPadObject").objectReferenceValue = FindPad("UnlockPad");
         so.FindProperty("hirePadObject").objectReferenceValue = FindPad("HirePad");
+        so.FindProperty("courierPadObject").objectReferenceValue = FindPad("HirePadCourier");
+        so.FindProperty("upgradePanel").objectReferenceValue = Object.FindFirstObjectByType<UpgradePanel>();
         so.FindProperty("arrow").objectReferenceValue = arrow;
         so.FindProperty("label").objectReferenceValue = label;
         so.FindProperty("labelRoot").objectReferenceValue = bar;
@@ -109,7 +111,7 @@ public static class GuideBuilder
     // Phrase : une ligne dans une pastille sombre arrondie, sous les pastilles du HUD (zone sûre de l'écran).
     static GameObject BuildBar(Transform safeArea, out Text label)
     {
-        Sprite round = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+        Sprite round = UiSprites.Rounded();
 
         GameObject bar = new GameObject("GuideBar", typeof(RectTransform), typeof(Image));
         bar.transform.SetParent(safeArea, false);
@@ -120,7 +122,7 @@ public static class GuideBuilder
         Image img = bar.GetComponent<Image>();
         img.sprite = round;
         img.type = Image.Type.Sliced;
-        img.pixelsPerUnitMultiplier = 3f;
+        img.pixelsPerUnitMultiplier = 0.85f;
         img.color = new Color(0.05f, 0.07f, 0.10f, 0.6f);
         img.raycastTarget = false;
 

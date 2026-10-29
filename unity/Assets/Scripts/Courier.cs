@@ -10,6 +10,7 @@ public class Courier : MonoBehaviour
     enum State { GoToTray, Collect, GoToCounter, Deliver, GoToBin }
 
     [SerializeField] EmployeeConfig config;
+    [SerializeField] UpgradeState upgrades;     // facultatif : amélioration de vitesse des employés
     [SerializeField] InstallStation station;     // pour savoir s'il reste des produits sur le plateau
     [SerializeField] CustomerQueue queue;
     [SerializeField] Transform trayStand;
@@ -38,7 +39,7 @@ public class Courier : MonoBehaviour
 
     void OnEnable()
     {
-        agent.speed = config.MoveSpeed;
+        agent.speed = Speed;
         if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
             agent.Warp(hit.position);
         Begin(State.GoToTray);
@@ -72,8 +73,11 @@ public class Courier : MonoBehaviour
             && agent.remainingDistance <= agent.stoppingDistance + arriveTolerance;
     }
 
+    float Speed => config.MoveSpeed * (upgrades != null ? upgrades.EmployeeSpeed : 1f);
+
     void Update()
     {
+        agent.speed = Speed; // relu à chaque image : une amélioration achetée agit tout de suite
         switch (state)
         {
             case State.GoToTray:

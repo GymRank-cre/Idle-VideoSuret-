@@ -11,6 +11,7 @@ public class InstallStation : MonoBehaviour
     [SerializeField] ResourcePile cratesSource; // son pool de caisses est partagé avec le poste
     [SerializeField] GameObject billPrefab;
     [SerializeField] FeedbackSpawner feedback; // facultatif : éclat quand une caisse arrive
+    [SerializeField] UpgradeState upgrades;    // facultatif : amélioration de la vitesse de fabrication
     [SerializeField] ProductDemand demand;     // facultatif : fabrique d'abord ce que demandent les clients
     [SerializeField] ProgressBar3D progressBar;
     [SerializeField] Transform billExit;     // point autour duquel les billets tombent
@@ -112,6 +113,8 @@ public class InstallStation : MonoBehaviour
         }
     }
 
+    float JobDuration => config.JobDuration * (upgrades != null ? upgrades.JobDuration : 1f);
+
     void UpdateJob()
     {
         if (!working && storedCrates >= config.CratesPerJob)
@@ -125,14 +128,14 @@ public class InstallStation : MonoBehaviour
 
         jobTimer += Time.deltaTime;
         if (progressBar != null)
-            progressBar.SetProgress(jobTimer / config.JobDuration);
+            progressBar.SetProgress(jobTimer / JobDuration);
 
-        if (jobTimer >= config.JobDuration)
+        if (jobTimer >= JobDuration)
         {
             // Plateau plein : le travail attend (barre pleine) qu'une place se libère, rien n'est perdu.
             if (MakesProducts && FreeSlotCount() < config.ProductsPerJob)
             {
-                jobTimer = config.JobDuration;
+                jobTimer = JobDuration;
                 if (progressBar != null) progressBar.SetProgress(1f);
                 return;
             }

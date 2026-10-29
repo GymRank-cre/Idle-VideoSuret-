@@ -13,6 +13,7 @@ public class SaveSystem : MonoBehaviour
     [SerializeField] UnlockPad[] pads;            // toutes les dalles, même cachées
     [SerializeField] GameObject haulerObject;     // porteur de caisses (actif = embauché)
     [SerializeField] GameObject courierObject;    // livreur
+    [SerializeField] UpgradeState upgradeState;
     [SerializeField] GuideConfig guideConfig;
     [SerializeField] OfflineConfig offlineConfig;
     [SerializeField] StationConfig stationConfig;
@@ -48,6 +49,9 @@ public class SaveSystem : MonoBehaviour
         if (loaded == null) return; // nouvelle partie : le gameplay est inchangé
 
         wallet.Add(loaded.money);
+        if (upgradeState != null)
+            foreach (SaveData.UpgradeLevel u in loaded.upgrades)
+                upgradeState.SetLevel(u.id, u.level);
         foreach (UnlockPad pad in pads)
         {
             SaveData.PadState state = loaded.pads.Find(p => p.id == pad.SaveId);
@@ -60,7 +64,10 @@ public class SaveSystem : MonoBehaviour
         {
             long elapsed = now - loaded.lastSaveUtc;
             pending.pendingOffline = OfflineEarnings.Compute(elapsed, loaded.employees.Contains("hauler"),
-                loaded.employees.Contains("courier"), offlineConfig, stationConfig, haulerConfig, courierConfig, customerConfig);
+                loaded.employees.Contains("courier"), offlineConfig, stationConfig, haulerConfig, courierConfig, customerConfig,
+                upgradeState != null ? upgradeState.JobDuration : 1f,
+                upgradeState != null ? upgradeState.EmployeeSpeed : 1f,
+                upgradeState != null ? upgradeState.CustomerPay : 1f);
             pending.pendingSeconds = Math.Max(0, elapsed);
         }
 
@@ -112,6 +119,9 @@ public class SaveSystem : MonoBehaviour
             pendingOffline = pending != null ? pending.pendingOffline : 0,
             pendingSeconds = pending != null ? pending.pendingSeconds : 0
         };
+        if (upgradeState != null)
+            for (int i = 0; i < upgradeState.Count; i++)
+                data.upgrades.Add(new SaveData.UpgradeLevel { id = upgradeState.Config.Upgrades[i].id, level = upgradeState.Level(i) });
         foreach (UnlockPad pad in pads)
             data.pads.Add(new SaveData.PadState { id = pad.SaveId, remaining = pad.RemainingPrice });
         if (haulerObject != null && haulerObject.activeSelf) data.employees.Add("hauler");
@@ -181,9 +191,15 @@ public class SaveSystem : MonoBehaviour
         }
     }
 
-    // Prévu pour les futures versions du format ; rien à convertir pour l'instant.
+    // Conversion des anciens fichiers vers le format courant.
     static SaveData Migrate(SaveData data)
     {
+        if (data.version < 2)
+        {
+            data.upgrades = new System.Collections.Generic.List<SaveData.UpgradeLevel>(); // v1 : niveaux à 0
+            data.version = 2;
+        }
+        if (data.upgrades == null) data.upgrades = new System.Collections.Generic.List<SaveData.UpgradeLevel>();
         return data;
     }
 

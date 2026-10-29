@@ -6,7 +6,7 @@ using UnityEngine.UI;
 // Quand la dernière étape est validée, le guide disparaît pour toujours (PlayerPrefs).
 public class ObjectiveGuide : MonoBehaviour
 {
-    enum Step { CollectCrates, DepositCrates, TakeProduct, DeliverProduct, CollectBills, PayPad, HireEmployee, Done }
+    enum Step { CollectCrates, DepositCrates, TakeProduct, DeliverProduct, CollectBills, PayPad, HireEmployee, HireCourier, OpenUpgrades, Done }
 
     [SerializeField] GuideConfig config;
     [SerializeField] Transform player;
@@ -18,7 +18,9 @@ public class ObjectiveGuide : MonoBehaviour
     [SerializeField] Transform tray;
     [SerializeField] Transform counter;
     [SerializeField] GameObject payPadObject;     // la dalle du 2e poste (se désactive quand elle est payée)
-    [SerializeField] GameObject hirePadObject;    // la dalle d'embauche
+    [SerializeField] GameObject hirePadObject;    // la dalle d'embauche du porteur
+    [SerializeField] GameObject courierPadObject; // la dalle d'embauche du livreur
+    [SerializeField] UpgradePanel upgradePanel;   // bouton Améliorations (dernière étape)
     [SerializeField] Transform arrow;             // flèche 3D (enfant de rien : placée par ce script)
     [SerializeField] Text label;
     [SerializeField] GameObject labelRoot;
@@ -90,6 +92,10 @@ public class ObjectiveGuide : MonoBehaviour
             case Step.HireEmployee:
                 // la dalle d'embauche est cachée tant que la dalle du poste 2 n'est pas payée
                 return hirePadObject == null || (!hirePadObject.activeSelf && (payPadObject == null || !payPadObject.activeSelf));
+            case Step.HireCourier:
+                return courierPadObject == null || (!courierPadObject.activeSelf && !hirePadObject.activeSelf);
+            case Step.OpenUpgrades:
+                return upgradePanel == null || upgradePanel.HasBeenOpened;
         }
         return false;
     }
@@ -119,6 +125,7 @@ public class ObjectiveGuide : MonoBehaviour
             case Step.CollectBills: return NearestBill() ?? counter;
             case Step.PayPad: return payPadObject != null ? payPadObject.transform : null;
             case Step.HireEmployee: return hirePadObject != null ? hirePadObject.transform : null;
+            case Step.HireCourier: return courierPadObject != null ? courierPadObject.transform : null;
         }
         return null;
     }
@@ -155,6 +162,7 @@ public class ObjectiveGuide : MonoBehaviour
     void ShowPhrase()
     {
         if (label != null && (int)step < phrases.Length) label.text = phrases[(int)step];
+        if (upgradePanel != null) upgradePanel.SetHighlight(step == Step.OpenUpgrades); // le bouton bat pendant la dernière étape
     }
 
     void Finish(bool remember)
@@ -167,5 +175,6 @@ public class ObjectiveGuide : MonoBehaviour
         }
         if (arrow != null) arrow.gameObject.SetActive(false);
         if (labelRoot != null) labelRoot.SetActive(false);
+        if (upgradePanel != null) upgradePanel.SetHighlight(false);
     }
 }

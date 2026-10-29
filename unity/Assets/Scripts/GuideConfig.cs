@@ -12,6 +12,8 @@ public class GuideConfig : ScriptableObject
     [SerializeField] string collectBills = "Ramasse tes billets";
     [SerializeField] string payPad = "Paye la dalle jaune pour ouvrir un 2e poste";
     [SerializeField] string hireEmployee = "Embauche un employé sur la dalle EMBAUCHE";
+    [SerializeField] string hireCourier = "Embauche un livreur sur la dalle LIVREUR";
+    [SerializeField] string openUpgrades = "Ouvre le menu Améliorations";
 
     [Header("Flèche 3D")]
     [SerializeField] float arrowHeight = 1.7f;     // au-dessus de la position du joueur
@@ -23,7 +25,7 @@ public class GuideConfig : ScriptableObject
     [SerializeField, Min(1)] int cratesToCollect = 3;   // caisses portées pour valider la 1re étape
     [SerializeField] string doneKey = "guide_done";     // mémorisé avec PlayerPrefs (la vraie sauvegarde viendra à l'étape 7)
 
-    public string[] Phrases => new[] { collectCrates, depositCrates, takeProduct, deliverProduct, collectBills, payPad, hireEmployee };
+    public string[] Phrases => new[] { collectCrates, depositCrates, takeProduct, deliverProduct, collectBills, payPad, hireEmployee, hireCourier, openUpgrades };
     public float ArrowHeight => arrowHeight;
     public float ArrowBob => arrowBob;
     public float ArrowBobSpeed => arrowBobSpeed;

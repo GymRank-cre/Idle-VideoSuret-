@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
+    [SerializeField] UpgradeState upgrades; // facultatif : amélioration de vitesse
     [SerializeField] float turnSpeed = 720f;
     [SerializeField] Transform cameraTransform; // vide = Camera.main
 
@@ -61,7 +62,7 @@ public class PlayerController : MonoBehaviour
             right = Vector3.ProjectOnPlane(cameraTransform.right, Vector3.up).normalized;
         }
 
-        Vector3 planar = (forward * input.y + right * input.x) * moveSpeed;
+        Vector3 planar = (forward * input.y + right * input.x) * moveSpeed * (upgrades != null ? upgrades.PlayerSpeed : 1f);
         Vector3 velocity = planar;
         velocity.y = -2f; // plaque le personnage au sol
 

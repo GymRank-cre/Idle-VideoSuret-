@@ -118,6 +118,7 @@ public static class PrototypeSetup
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
         DemandBuilder.Build(); // production à la demande des clients (étape 6c)
+        UpgradeBuilder.Build(); // améliorations : état, bouton et panneau (étape 7b)
         GuideBuilder.Build(); // flèche et phrase d'objectif du début de partie (étape 6b)
 
         SaveBuilder.Build(); // sauvegarde, gains hors ligne, écran « Bon retour » (étape 7a)
@@ -479,9 +480,9 @@ public static class PrototypeSetup
         rt.sizeDelta = new Vector2(width, 110f);
 
         Image img = go.GetComponent<Image>();
-        img.sprite = round;
+        img.sprite = UiSprites.Rounded();
         img.type = Image.Type.Sliced;
-        img.pixelsPerUnitMultiplier = 3f; // coins bien arrondis
+        img.pixelsPerUnitMultiplier = 0.75f; // coins bien arrondis
         img.color = new Color(0.05f, 0.07f, 0.10f, 0.55f);
         img.raycastTarget = false; // ne bloque pas le joystick
         return rt;

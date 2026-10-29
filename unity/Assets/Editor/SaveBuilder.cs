@@ -69,6 +69,7 @@ public static class SaveBuilder
             list.GetArrayElementAtIndex(i).objectReferenceValue = pads[i];
         so.FindProperty("haulerObject").objectReferenceValue = hauler;
         so.FindProperty("courierObject").objectReferenceValue = courier;
+        so.FindProperty("upgradeState").objectReferenceValue = Object.FindFirstObjectByType<UpgradeState>();
         so.FindProperty("guideConfig").objectReferenceValue = GuideBuilder.LoadOrCreateConfig();
         so.FindProperty("offlineConfig").objectReferenceValue = LoadOrCreateConfig();
         so.FindProperty("stationConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<StationConfig>(Root + "/StationConfig.asset");
@@ -89,7 +90,7 @@ public static class SaveBuilder
 
     static OfflineWelcomeScreen BuildScreen(Transform canvas)
     {
-        Sprite round = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+        Sprite round = UiSprites.Rounded();
 
         GameObject host = new GameObject("OfflineScreen", typeof(RectTransform), typeof(OfflineWelcomeScreen));
         host.transform.SetParent(canvas, false);
@@ -101,7 +102,8 @@ public static class SaveBuilder
         Stretch(root.GetComponent<RectTransform>());
         root.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.62f);
 
-        RectTransform panel = Box("Panel", root.transform, round, new Color(0.10f, 0.13f, 0.18f, 0.97f), new Vector2(0f, 60f), new Vector2(860f, 900f));
+        RectTransform panel = Box("Panel", root.transform, round, new Color(0.10f, 0.13f, 0.18f, 0.9f), new Vector2(0f, 60f), new Vector2(860f, 900f));
+        panel.gameObject.AddComponent<PopIn>(); // léger « pop » à l'ouverture
         Label("Title", panel, "Bon retour !", 96, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 320f), new Vector2(800f, 140f));
         Text duration = Label("Duration", panel, "Absent depuis 2 h 00 min", 46, new Color(0.85f, 0.88f, 0.92f), new Vector2(0f, 190f), new Vector2(800f, 90f));
         Text amount = Label("Amount", panel, "+$ 0", 150, new Color(0.45f, 0.95f, 0.5f), new Vector2(0f, 40f), new Vector2(800f, 220f));
@@ -137,7 +139,7 @@ public static class SaveBuilder
         Image img = go.GetComponent<Image>();
         img.sprite = sprite;
         img.type = Image.Type.Sliced;
-        img.pixelsPerUnitMultiplier = 3f;
+        img.pixelsPerUnitMultiplier = size.y > 500f ? 0.9f : 0.8f; // coins bien arrondis
         img.color = color;
         return rt;
     }

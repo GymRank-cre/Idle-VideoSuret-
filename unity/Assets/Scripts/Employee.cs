@@ -10,6 +10,7 @@ public class Employee : MonoBehaviour
     enum State { GoToPile, FillUp, GoToStation, Deposit }
 
     [SerializeField] EmployeeConfig config;
+    [SerializeField] UpgradeState upgrades;     // facultatif : amélioration de vitesse des employés
     [SerializeField] Transform pileStand;       // où il se tient près du tas (dans la zone de ramassage)
     [SerializeField] Transform pileLookAt;
     [SerializeField] Transform stationStand;    // où il se tient au poste, de côté pour laisser le centre au joueur
@@ -32,7 +33,7 @@ public class Employee : MonoBehaviour
 
     void OnEnable()
     {
-        agent.speed = config.MoveSpeed;
+        agent.speed = Speed;
 
         // L'agent doit être posé sur le NavMesh avant de recevoir une destination.
         if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
@@ -67,8 +68,11 @@ public class Employee : MonoBehaviour
             && agent.remainingDistance <= agent.stoppingDistance + arriveTolerance;
     }
 
+    float Speed => config.MoveSpeed * (upgrades != null ? upgrades.EmployeeSpeed : 1f);
+
     void Update()
     {
+        agent.speed = Speed; // relu à chaque image : une amélioration achetée agit tout de suite
         switch (state)
         {
             case State.GoToPile:
