@@ -12,6 +12,17 @@ Ambition : un jeu au niveau des idle arcade connus de l'App Store (progression c
 5. **Raison de revenir** : gains hors ligne, récompenses du jour, quêtes, événements.
 6. **Mondes qui renouvellent le jeu** (voir plus bas) : une nouvelle mécanique tous les quelques niveaux.
 
+## Cap de jeu décidé avec Sébastien (29/10) : gestion d'usine type « Idle Lumber », ouverture arcade
+Sébastien veut « le même style de jeu » qu'Idle Lumber. Réponses : ce qui lui plaît = **gérer l'usine, les commandes, la progression** (le look en plus) ; le technicien = **au début, puis tout automatique**. Conséquence : le jeu évolue d'un « arcade idle où l'on court partout » vers un **jeu de gestion d'usine** dont les **premières minutes restent arcade** (le technicien porte et installe à la main, c'est le tutoriel vivant), puis **les machines, tapis et employés prennent le relais** et le joueur gère : acheter, améliorer, accepter des commandes, s'agrandir.
+**Les cinq piliers de gestion (à construire dans cet ordre) :**
+1. **Chaîne de production visible** : réception du matériel → assemblage → test/programmation → emballage → expédition, reliées par des **tapis où l'on voit les objets circuler**, avec stocks affichés (« 3/10 ») et **goulots** visibles (une machine pleine bloque la précédente) : l'œil du joueur repère où investir.
+2. **Améliorations par machine** : en touchant une machine (ou une dalle « prix + flèche ») : **Ajouter** (une machine de plus sur la voie), **Vitesse**, **Valeur** ; niveaux affichés, coûts qui montent par palier (idée de départ : ×1,12 à ×1,18 par niveau, réglable dans un `ScriptableObject`).
+3. **Commandes de clients** : panneau « Nouvelles commandes » avec portrait du client, contenu (« 3 caméras dôme + 2 badgeuses »), valeur en $ et en **Points Pro** ; **Accepter / Refuser / x2** (le x2 sera la vidéo récompensée, factice au début) ; camionnettes qui attendent avec **bulle d'humeur** (content → neutre → en colère, le client part si on tarde).
+4. **Points Pro et réputation (prestige)** : chaque commande rapporte des Points Pro, à dépenser dans un arbre de **bonus permanents** (revenus, vitesse, gains hors ligne) ; barre du haut : $, Points Pro, (gemmes plus tard).
+5. **S'agrandir** : acheter de nouvelles usines = **nos mondes** (Atelier, Chantiers chez les clients, Banque et centre commercial, Ville connectée, Base du futur), chacun avec ses machines et son décor.
+**Le technicien après l'automatisation** : il reste jouable (déplacements, ramassage de billets, réparation d'incidents) mais n'est plus indispensable ; idée à tester : se tenir près d'une machine la **booste** (+50 % de vitesse) pour garder du plaisir actif. **Caméra** : vue d'ensemble en plongée, déplaçable au doigt et zoom à deux doigts, plus éloignée une fois l'usine automatisée.
+**Les étapes 11a à 11f** (voir TACHES.md) construisent ces piliers ; **la beauté (10b)** se fait **après 11a/11b**, car le décor dépend de la disposition des machines.
+
 ## Les mondes (évolution technologique de la sécurité électronique)
 1. **L'Atelier** — alarmes, caméras dôme, badgeuses. *(en cours)* Mécanique de base : ramasser, installer, vendre.
 2. **Chantiers chez les clients** — camionnette qui transporte le matériel, installation sur site (maisons, commerces). Nouvelle mécanique : déplacements et livraisons.
@@ -57,7 +68,7 @@ Lien : https://apps.apple.com/fr/app/idle-lumber-gestion-dusine/id1552153525 . *
 ## Ce qu'on ne peut pas promettre
 Aucun jeu n'est sûr de devenir un succès : la réussite se vérifie avec de vrais joueurs (tests, chiffres, retours), pas avant. La bonne méthode : petites versions, tests réguliers, corrections.
 
-## Priorités proposées (ordre)
+## Priorités proposées (ordre) — **mise à jour 29/10 : voir « Cap de jeu » plus haut, le jeu devient un jeu de gestion d'usine ; ordre actuel : 10a (sensation), 11a à 11c (chaîne, améliorations, commandes), 10b (beauté), 11d à 11f**
 1. Finir le « début parfait » : atelier propre, vrai personnage, 5 premières minutes.
 2. Employés automatiques, améliorations, sauvegarde, gains hors ligne (étapes 6 et 7 de la feuille de route).
 3. Clients avec commandes (étape 5) et première boucle complète.
