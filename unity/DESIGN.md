@@ -36,6 +36,13 @@ Chaque monde : nouveau décor, nouvelles machines, nouvelle tenue du technicien,
 - Durée de la première session : 8 minutes ou plus.
 - Test fermé avec 20 à 50 vraies personnes avant toute sortie publique.
 
+## Satisfaisant et magnifique : la barre de qualité (voulu par Sébastien, 29/10)
+Le jeu tourne sur son iPhone (Artifact Claude et lien Vercel). Objectif suivant : **un jeu agréable à toucher et beau à regarder**, au niveau des idle arcade du classement App Store. Trois piliers, dans cet ordre de travail :
+1. **Sensation (« juice »)** : chaque geste du joueur a un retour en moins de 100 ms (image, son, mouvement), aucun événement muet ; le personnage accélère et freine doucement, la pile rebondit, les billets sont aspirés, les compteurs défilent, un déblocage fait une vraie fête (confettis, secousse légère, zoom, son).
+2. **Beauté** : direction **cartoon 3D lumineux** : couleurs franches (jaune/orange chantier + bleu/cyan « technologie »), éclairage chaud avec ombres douces, matières variées (sol, murs, métal, néon), décor vivant (étagères pleines, caméras, écrans, plantes, câbles), police arrondie grasse partout, interface cohérente (panneaux arrondis, icônes uniformes). Personnage plus gros à l'écran (au moins 9 % de la largeur sur 390 px).
+3. **Fluidité** : **60 images par seconde visées sur iPhone** (WebGL), jamais en dessous de 45 ; les effets coûteux (ombres temps réel, post-traitement) ne sont activés que si la mesure le permet (`WebGlPostFxGate`, panneau de diagnostic).
+**Méthode :** une petite étape à la fois, captures **avant / après** à chaque étape (390×844, caméra de jeu), relues par le cloud avec un œil de directeur artistique ; Sébastien juge sur l'iPhone. Références : Sébastien peut envoyer 2 ou 3 captures de jeux App Store qu'il aime, on s'y compare.
+
 ## Ce qu'on ne peut pas promettre
 Aucun jeu n'est sûr de devenir un succès : la réussite se vérifie avec de vrais joueurs (tests, chiffres, retours), pas avant. La bonne méthode : petites versions, tests réguliers, corrections.
 
