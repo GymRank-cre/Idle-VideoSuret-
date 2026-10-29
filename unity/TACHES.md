@@ -453,3 +453,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 8a (sons, musique, vibrations, réglages) relue : validée. Étape 8b (préparer un test WebGL pour l'iPhone) spécifiée ; ensuite pause en attendant les retours de Sébastien.
 - Étape 8b relue : validée (build WebGL en attente du module, installé par Sébastien). Étape 8c prête.
 - Sébastien confirme l'installation du module WebGL : étape 8c déclenchée.
+- Sébastien a installé Node.js et dispose d'un compte Vercel. Étape 8c : une fois le build local validé, lui donner les commandes exactes `npm i -g vercel` puis `vercel login` (il se connecte lui-même) puis `vercel` dans le dossier du build ; ne rien déployer sans sa validation.
