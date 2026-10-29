@@ -22,6 +22,9 @@ public static class WebGLBuilder
         Transform old = canvas.transform.Find("TapToPlay");
         if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
 
+        if (Camera.main != null && Camera.main.GetComponent<WebGlPostFxGate>() == null)
+            Camera.main.gameObject.AddComponent<WebGlPostFxGate>(); // post-traitement coupé sur WebGL seulement
+
         Sprite rounded = UiSprites.Rounded();
 
         GameObject host = new GameObject("TapToPlay", typeof(RectTransform), typeof(TapToPlayScreen));
@@ -95,7 +98,16 @@ public static class WebGLBuilder
             target = BuildTarget.WebGL,
             options = BuildOptions.None
         };
-        BuildReport report = BuildPipeline.BuildPlayer(options);
+        ForceWebGlPipeline();
+        BuildReport report;
+        try
+        {
+            report = BuildPipeline.BuildPlayer(options);
+        }
+        finally
+        {
+            RestoreRenderPipelines();
+        }
         double seconds = EditorApplication.timeSinceStartup - start;
 
         long bytes = FolderSize(OutputDir);
@@ -119,6 +131,85 @@ public static class WebGLBuilder
         PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.WebGL, ManagedStrippingLevel.Low); // pas de strip risqué
         PlayerSettings.defaultWebScreenWidth = 390;
         PlayerSettings.defaultWebScreenHeight = 844;
+    }
+
+    // Profil URP « WebGL » : copie du profil Mobile (rendu Forward, pas Forward+) sans ombres temps réel ni textures de
+    // profondeur/opaque. Le profil PC (Forward+) donnait une scène noire sur WebGL (« Mismatch between texture format and
+    // sampler type »). Les profils Mobile et PC ne sont pas modifiés.
+    static UnityEngine.Rendering.RenderPipelineAsset EnsureWebGlPipeline()
+    {
+        const string source = "Assets/Settings/Mobile_RPAsset.asset";
+        const string copy = "Assets/Settings/WebGL_RPAsset.asset";
+        if (AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(copy) == null)
+            AssetDatabase.CopyAsset(source, copy);
+        var rp = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(copy);
+        var rso = new SerializedObject(rp);
+        SetBool(rso, "m_MainLightShadowsSupported", false);
+        SetBool(rso, "m_AdditionalLightShadowsSupported", false);
+        SetBool(rso, "m_SoftShadowsSupported", false);
+        SetBool(rso, "m_SupportsHDR", false);
+        SetBool(rso, "m_RequireDepthTexture", false);
+        SetBool(rso, "m_RequireOpaqueTexture", false);
+        SetBool(rso, "m_SupportsLightCookies", false);
+        SetBool(rso, "m_SupportsLightLayers", false);
+        SerializedProperty add = rso.FindProperty("m_AdditionalLightsRenderingMode");
+        if (add != null) add.intValue = 0; // désactivé
+        SerializedProperty msaa = rso.FindProperty("m_MSAA");
+        if (msaa != null) msaa.intValue = 1;
+        rso.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(rp);
+        AssetDatabase.SaveAssets();
+        return rp;
+    }
+
+    const string RestoreKey = "IdleWebGL_RestoreRP"; // chemins d'origine, gardés même si l'éditeur recharge ses scripts
+
+    // Le temps du build, le profil WebGL remplace le profil par défaut ET celui de chaque niveau de qualité. Les chemins
+    // d'origine sont mémorisés dans EditorPrefs : le changement de plateforme recharge les scripts, un simple « finally »
+    // ne suffirait pas. RestoreRenderPipelines() remet tout (appelé après le build et au rechargement de l'éditeur).
+    static void ForceWebGlPipeline()
+    {
+        UnityEngine.Rendering.RenderPipelineAsset rp = EnsureWebGlPipeline();
+
+        var qso = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/QualitySettings.asset")[0]);
+        SerializedProperty levels = qso.FindProperty("m_QualitySettings");
+        string saved = AssetDatabase.GetAssetPath(UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline);
+        for (int i = 0; i < levels.arraySize; i++)
+        {
+            SerializedProperty pipe = levels.GetArrayElementAtIndex(i).FindPropertyRelative("customRenderPipeline");
+            saved += "|" + AssetDatabase.GetAssetPath(pipe.objectReferenceValue);
+            pipe.objectReferenceValue = rp;
+        }
+        EditorPrefs.SetString(RestoreKey, saved);
+        qso.ApplyModifiedPropertiesWithoutUndo();
+        UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline = rp;
+        AssetDatabase.SaveAssets();
+    }
+
+    [InitializeOnLoadMethod]
+    static void RestoreRenderPipelines()
+    {
+        string saved = EditorPrefs.GetString(RestoreKey, "");
+        if (string.IsNullOrEmpty(saved)) return;
+        if (BuildPipeline.isBuildingPlayer) return; // pas pendant le build lui-même
+
+        string[] parts = saved.Split('|');
+        var qso = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/QualitySettings.asset")[0]);
+        SerializedProperty levels = qso.FindProperty("m_QualitySettings");
+        for (int i = 0; i < levels.arraySize && i + 1 < parts.Length; i++)
+            levels.GetArrayElementAtIndex(i).FindPropertyRelative("customRenderPipeline").objectReferenceValue =
+                string.IsNullOrEmpty(parts[i + 1]) ? null : AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(parts[i + 1]);
+        qso.ApplyModifiedPropertiesWithoutUndo();
+        UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline =
+            string.IsNullOrEmpty(parts[0]) ? null : AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>(parts[0]);
+        AssetDatabase.SaveAssets();
+        EditorPrefs.DeleteKey(RestoreKey);
+    }
+
+    static void SetBool(SerializedObject so, string name, bool value)
+    {
+        SerializedProperty p = so.FindProperty(name);
+        if (p != null) p.boolValue = value;
     }
 
     static long FolderSize(string dir)
