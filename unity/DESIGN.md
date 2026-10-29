@@ -43,6 +43,17 @@ Le jeu tourne sur son iPhone (Artifact Claude et lien Vercel). Objectif suivant 
 3. **Fluidité** : **60 images par seconde visées sur iPhone** (WebGL), jamais en dessous de 45 ; les effets coûteux (ombres temps réel, post-traitement) ne sont activés que si la mesure le permet (`WebGlPostFxGate`, panneau de diagnostic).
 **Méthode :** une petite étape à la fois, captures **avant / après** à chaque étape (390×844, caméra de jeu), relues par le cloud avec un œil de directeur artistique ; Sébastien juge sur l'iPhone. Références : Sébastien peut envoyer 2 ou 3 captures de jeux App Store qu'il aime, on s'y compare.
 
+### Référence visuelle n°1 choisie par Sébastien : « Idle Lumber – Gestion d'usine » (App Store, 4,6 étoiles, 13 500 avis)
+Lien : https://apps.apple.com/fr/app/idle-lumber-gestion-dusine/id1552153525 . **On s'inspire du niveau de finition et des principes, on ne copie ni les images, ni l'interface, ni les personnages** (jeu commercial protégé). Ce qu'on retient, après lecture des captures de la fiche :
+1. **Cadrage serré, objets énormes** : les machines et les piles occupent la moitié de l'écran, tout est lisible au premier coup d'œil. À nous : personnage ≥ 9 % de la largeur, dalles ≥ 25 %, aucune zone vide à l'écran.
+2. **Le monde déborde de l'écran** : jamais de sol gris vide ; le décor continue partout (forêt, rivière, route). À nous : sol plus riche, tapis et marquages, objets posés, **l'extérieur de l'atelier visible** (parking, camionnette, rue, herbe, ciel) au lieu de l'obscurité sur les bords.
+3. **Maquette « jouet » très détaillée** : formes rondes et épaisses, couleurs saturées et harmonisées (vert/orange/bleu), éclairage doux, ombres douces, pas de contours noirs. Des milliers de petits éléments (troncs, copeaux) qui s'empilent et bougent.
+4. **Police d'affichage grasse et condensée avec contour sombre** pour les titres et les chiffres (bannières « bois » en bas des captures). À nous : police libre arrondie/condensée (type Lilita One, OFL), contour sombre, ombre portée.
+5. **Kit d'interface cohérent** : barre du haut en pastilles sombres arrondies (icône + valeur + « + »), boutons carrés arrondis orange avec icône blanche et pastille rouge « nouveau », raccourcis en bas (caméra, « x2 argent », boutique). À nous : mêmes principes avec notre identité (jaune sécurité, bleu technologie).
+6. **Dalles d'achat** : plaque sombre arrondie avec **gros prix blanc contouré**, flèche « amélioration » et icône billet ; la main de tutoriel qui pointe. À nous : garder le jaune/noir « chantier » mais avec ce niveau de lisibilité (prix énorme, icône), main de guide.
+7. **Retours flottants** : « +256 $ » avec icône de billet au-dessus de l'objet qui rapporte ; **bulles d'humeur** (emoji colère rouge) sur les clients qui attendent ; panneaux de commande avec portraits de clients dessinés.
+8. **Le monde vit tout seul** : tapis qui défilent, scies qui tournent, camions qui passent. À nous : écrans qui clignotent, caméras qui pivotent, imprimante, ventilateur, vapeur, véhicules dehors.
+
 ## Ce qu'on ne peut pas promettre
 Aucun jeu n'est sûr de devenir un succès : la réussite se vérifie avec de vrais joueurs (tests, chiffres, retours), pas avant. La bonne méthode : petites versions, tests réguliers, corrections.
 
