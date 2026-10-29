@@ -8,11 +8,16 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] UpgradeState upgrades; // facultatif : amélioration de vitesse
-    [SerializeField] float turnSpeed = 720f;
+    [SerializeField] float turnSpeed = 540f;
+    [SerializeField, Min(0f)] float inputSmoothTime = 0.08f; // lisse le tremblement du pouce (9b : sans lissage, ±8° à 6 Hz = ±8° de rotation)
+    [SerializeField, Min(0f)] float turnDeadAngle = 5f;       // pas de pivot pour un écart plus petit tant que le personnage va tout droit
     [SerializeField] Transform cameraTransform; // vide = Camera.main
 
     CharacterController controller;
     Vector2 externalInput;
+    Vector2 smoothedInput;
+    Vector2 inputVelocity;
+    bool turning;
 
     public bool IsMoving { get; private set; }
     public float MoveAmount { get; private set; }  // intensité de l'entrée, de 0 à 1 (lecture seule)
@@ -51,7 +56,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        Vector2 input = ReadInput();
+        Vector2 input = Vector2.SmoothDamp(smoothedInput, ReadInput(), ref inputVelocity, inputSmoothTime);
+        if (input.sqrMagnitude < 1e-4f) { input = Vector2.zero; inputVelocity = Vector2.zero; }
+        smoothedInput = input;
 
         // Mouvement relatif à la caméra, à plat sur le sol.
         Vector3 forward = Vector3.forward;
@@ -74,8 +81,16 @@ public class PlayerController : MonoBehaviour
         if (IsMoving)
         {
             Quaternion target = Quaternion.LookRotation(planar, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(
-                transform.rotation, target, turnSpeed * Time.deltaTime);
+            float gap = Quaternion.Angle(transform.rotation, target);
+            if (gap > turnDeadAngle) turning = true;       // vrai virage : on pivote jusqu'à la bonne direction
+            else if (gap < 1f) turning = false;
+            if (turning)
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation, target, turnSpeed * Time.deltaTime);
+        }
+        else
+        {
+            turning = false;
         }
     }
 }

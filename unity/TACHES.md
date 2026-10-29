@@ -116,71 +116,37 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 8d — le build WebGL est sur la branche, à la racine du dépôt : `webgl/index.html` (+ `webgl/Build/*`). Rien n'est déployé par moi (pas de CLI Vercel).**
-- Contenu poussé : `webgl/index.html` (1,8 ko) et `webgl/Build/` : `WebGL.data.unityweb` 6,0 Mo, `WebGL.wasm.unityweb` 10,4 Mo, `WebGL.framework.js.unityweb` 0,09 Mo, `WebGL.loader.js` 0,05 Mo ; **total 17,1 Mo**. Pas de dossier `TemplateData` : mon gabarit de page n'en utilise pas. Aucun secret (recherche de `key/secret/token/password` dans `webgl/` : rien). `.gitignore` n'exclut pas `webgl/`.
-- `vercel.json` : règles existantes de la PWA **inchangées** (`/sw.js`, `/manifest.json`, `/(.*)`, `cleanUrls`) ; j'ai ajouté seulement `Cache-Control: no-cache` pour `/webgl` et `/webgl/index.html` (+ `Content-Type: text/html`), insérées avant la règle générale. Pas de `buildCommand`, le site reste statique ; la maquette `demo/` n'a pas été touchée. Le fichier a été reformaté (indentation JSON), contenu équivalent.
-- Page : j'ai ajouté en tête de `index.html` une petite redirection qui ajoute la barre finale (`/webgl` -> `/webgl/`), sinon les chemins relatifs `Build/...` seraient faux ; le même code est dans le générateur de gabarit (`WebGLBuilder`, prochains builds).
-- Vérification : le dossier `webgl/` du clone, servi en local, charge et se joue comme avant (page chargée, « Touche pour jouer », sauvegarde conservée au rechargement, 0 erreur de jeu).
-- Attention : le service worker `sw.js` de la maquette (portée racine) intercepte aussi `/webgl/` (réseau d'abord, mise en cache des réponses) : sans conséquence pour le test, mais si le jeu semble « ancien » après une mise à jour, vider les données du site dans Safari.
-- **Sébastien : sur vercel.com, importer GymRank-cre/Idle-VideoSuret-, puis ouvrir le déploiement de la branche et ajouter /webgl/ à l'adresse (avec la barre finale).**
-- Poids du dépôt : +17 Mo ; je signalerai si les remplacements successifs de `webgl/` le font dépasser 200 Mo.
+**Étapes 9a et 9b — faites, un seul build WebGL (17,1 Mo) remplacé dans `webgl/` et poussé. Éditeur : 0 erreur, boucle de jeu inchangée (argent 25 après un cycle). Navigateur (Chrome, tactile, 390x844 / 390x700 / 430x932) : 0 erreur de jeu (seulement `favicon.ico` 404).**
+
+**Retour iPhone (iPhone 14, iOS 26.5) : « écran gris après la première dalle » = cause trouvée et corrigée.** En reproduisant (accès de test temporaire pour avoir de l'argent, retiré depuis) j'ai vu 1 259 erreurs `Screen position out of view frustum` / `JS_Sound_SetListenerPosition(x=NaN...)` : la **caméra devenait `NaN`** à la fin du petit déplacement `Peek` vers la dalle qui apparaît : `Mathf.Sqrt(Mathf.Sin(k * pi))` avec `sin(pi)` = -8.7e-8 en WebGL donne `NaN`, et le lissage de la caméra ne s'en remet jamais (écran gris, HUD seul). Correctif : `Mathf.Max(0, ...)` + garde-fou : une caméra `NaN` est ignorée. Revérifié dans le navigateur (dalle payée, dalle EMBAUCHE révélée, scène visible, 0 erreur).
+
+**9a**
+1. **Joystick plein écran** : zone de capture aux ancres (0,0)-(1,1), derrière tous les boutons ; joystick posé à droite testé en tactile (`9a-01-joystick-droite-*`), un toucher sur l'engrenage ouvre les réglages sans faire apparaître de joystick (`9a-02-engrenage-*`) ; un seul doigt actif (`pointerId`).
+2. **Textes de dalle** : le titre est maintenant **enfant du prix et décalé dans le repère de la caméra** (vers le haut de l'écran), pas de 4 m en hauteur monde : la mesure montrait qu'en bas d'écran, l'angle de vue étant de ~72°, 3,45 m de hauteur ne séparaient que 63 px. Titre en blanc (lisible sur le jaune), décalage 1,45 m (≈ 150 px à 390 de large). Captures `9a-03-dalles-390x844` et `430x932`.
+3. **Cadrage** : `CameraFollow` garde la **même largeur de vue** : champ vertical = 2·atan(tan(65°/2)·0,5625/aspect), borné 40-85°. 390x844 -> 75,6°, 430x932 -> 75,7°, 390x700 ~ 65° ; vérifié aux trois formats, joueur au centre (`9a-0x-*`). Dans l'éditeur en fenêtre paysage le champ est borné à 40° (c'est normal).
+4. **Joystick** : rond de fond 330 (avant 200) à 38 % d'opacité (avant 25 %), rond mobile 120, rayon 150 (avant 100), zone morte 0,13 ; **au-delà du rayon le rond de fond suit le doigt** (joystick dynamique).
+5. Build WebGL refait avec le profil URP WebGL, `webgl/` remplacé (`vercel.json` inchangé, pas de reformatage de plus). Le fichier `index.html` garde la redirection sécurisée vers `/webgl/`.
+
+**9b — le balancement du technicien (mesuré en Play, 1080x1920, entrées simulées, avant -> après)**
+| Mesure | Avant | Après |
+|---|---|---|
+| **Hanches, déplacement latéral (crête à crête), course tout droit** | **108 cm** (de -87 à +21 cm) | **1,2 cm** |
+| Rotation Y du joueur, tout droit | 0,00° | 0,00° |
+| Rotation Y avec pouce qui tremble (±8° à 6 Hz) | **15,97°** | **0,00°** |
+| Zigzag de position avec pouce qui tremble (amplitude 1 / 0,25) | 3,22 / 0,81 cm | 1,20 / 0,30 cm |
+| Position à l'écran, tout droit | 0 px | 0 px |
+| Glisse à l'écran au départ vers la droite (caméra) | 50 px | 29 px |
+- **Cause principale = B (animation)** : les clips Mixamo étaient importés avec `lockRootPositionXZ = true` (« Bake Into Pose »), donc le balancement latéral du centre de masse restait dans la pose : les hanches balançaient d'environ **1 m** à chaque foulée (visible sur `9b-00-avant-planche.png` : le personnage passe de gauche à droite d'une image à l'autre). Corrigé dans `HumanCharacterBuilder` (`lockRootPositionXZ = false`, la condition de réimport est mise à jour pour que les anciens réglages soient refaits) ; `lockRootRotation` et `lockRootHeightY` restent à vrai ; `applyRootMotion` reste faux. Planches `9b-01-apres-planche.png` (tout droit) et `9b-02-apres-virage.png` (virage de 90° en 0,5 s).
+- **A (joystick)** confirmée et corrigée : entrée lissée (`inputSmoothTime` 0,08 s, `SmoothDamp`), pas de pivot pour un écart < 5° (hystérésis jusqu'à 1°), `turnSpeed` 720 -> 540 °/s.
+- **C (caméra)** réelle mais modeste : `smooth` 8 -> 13 (glisse de 50 à 29 px au départ).
+- **D (pile)** : **non mesurée** et non modifiée (pas de balancement attribuable à la pile dans les planches ; elle reste à regarder sur la vidéo de l'iPhone).
+- **E (WebGL)** : la mesure fine (hanches, rotation) n'a été faite que dans l'éditeur ; dans le navigateur j'ai seulement constaté que la scène, le joystick et la course fonctionnent (pas de mesure des hanches). Les employés et clients partagent le même contrôleur : ils n'ont plus le balancement de hanches, sans autre changement visible.
+- **Question à trancher après la vidéo de Sébastien** : si le balancement persiste sur iPhone, c'est sans doute la pile (D) ou un réglage d'animation (remplacer la course par une course « en place »).
 
 ## Questions (à remplir par Claude Code local)
-- **Vercel** : l'import du dépôt est à faire par Sébastien ; je ne peux pas vérifier qu'une branche non principale est déployée en « Preview » sur son compte (réglage « Ignored Build Step » / branches).
-- **Son sur iPhone** : à vérifier dès que le lien existe (Safari exige le toucher sur « Touche pour jouer »).
-
-## Relecture cloud de l'étape 8d + test iPhone de Sébastien : le jeu tourne, 4 défauts relevés sur sa vidéo
-Le build WebGL est en ligne (aperçu Vercel `/webgl/`) et joue sur l'iPhone de Sébastien (Safari). Sébastien a envoyé une **vidéo d'écran** (`ScreenRecording`, 19 s, 1170×2532) : le jeu est fluide, le guide, le HUD et la sauvegarde fonctionnent (partie reprise à « Embauche un livreur »). Défauts relevés :
-1. **Le joystick ne se déclenche que dans la moitié gauche de l'écran** (`JoystickArea` ancrée de `(0,0)` à `(0.6,1)` dans `PrototypeSetup.BuildJoystick`). Sébastien « ne peut pas mettre le doigt à droite » : sur téléphone on joue souvent au pouce droit. **Le rond du joystick n'apparaît jamais à droite.**
-2. **Titre et prix des dalles se chevauchent** (« LIVREUR » écrase « $ 250 », visible sur la vidéo à la dalle LIVREUR) : le chevauchement existe aussi dans la version WebGL, même si la capture de 6c l'avait corrigé en éditeur. Les textes 3D (`TextMesh`) et `FaceCamera.keepScreenSize` se comportent autrement en WebGL / sur écran étroit.
-3. **La zone de jeu est courte** dans le navigateur intégré de Safari (barres haut et bas, rapport hauteur/largeur ~ 1,95) : le joueur n'est pas au centre de la vue et on voit trop de sol vide en bas.
-4. **La pile de caisses** portée dans le dos paraît décalée/inclinée sur le côté du personnage quand il marche (visible sur la vidéo à 12 s) : acceptable, mais à surveiller.
-5. **Le technicien « se déplace bizarrement » : il se balance de gauche à droite, dès qu'il bouge** (réponses de Sébastien, mot pour mot : « Gauche droite il se balance » et, pour le moment où ça arrive, « Dès que je bouge »). Ce n'est donc pas lié à un endroit ni à une action (ramassage, dalle), mais au simple fait de marcher/courir. La fluidité est bonne (42 à 54 images distinctes par seconde sur la vidéo) et la direction suit bien le joystick : le défaut est dans la manière dont le personnage bouge, pas dans le débit d'images. Étape 9b spécifiée ci-dessous.
-
-## Tâche en cours : étape 9a — Joystick plein écran et correctifs du test iPhone
-1. **Joystick sur tout l'écran** : la zone de capture du joystick doit couvrir **tout l'écran** (ancres `(0,0)` à `(1,1)`), sous les boutons. Les boutons (Améliorations, engrenage des réglages, panneaux, écran « Touche pour jouer », « Bon retour ») restent prioritaires : un toucher qui commence sur un bouton ou un panneau ouvert **ne démarre pas** le joystick (vérifier l'ordre des enfants du Canvas et `raycastTarget`). Garder un seul doigt actif pour le joystick (`pointerId`), le deuxième doigt est ignoré. Tester à la souris dans l'éditeur ET en émulation tactile dans le navigateur.
-2. **Chevauchement des textes de dalle** : séparer clairement titre et prix (distance mesurée en pixels écran, pas en mètres), tailles lisibles sur un iPhone, aucun recouvrement à 390×844 ni à 430×932, avec la caméra de jeu réelle. Capture dans le navigateur (émulation mobile) à l'appui.
-3. **Cadrage selon le rapport hauteur/largeur** : adapter automatiquement le champ de vision (ou la distance de la caméra) pour que la zone de jeu visible soit la même quelle que soit la forme de l'écran (écrans étroits de Safari comme plein écran), joueur au centre de la vue. Vérifier 390×844, 390×700 (barres Safari) et 430×932.
-4. **Retour visuel du joystick** : léger agrandissement du rond de fond (taille adaptée au pouce), opacité un peu plus forte.
-5. **Faire aussi l'étape 9b ci-dessous (balancement du technicien) avant de reconstruire** : un seul build WebGL pour 9a + 9b. Reconstruire le build WebGL, remplacer `webgl/` dans le dépôt, pousser (même branche). Sébastien rouvrira le lien Vercel (nouvelle adresse d'aperçu).
-6. Captures `9a-` : joystick utilisé à droite (rond visible à droite), dalle LIVREUR sans chevauchement, trois formats d'écran.
-
-**Critères de réussite :** 0 erreur ; le joueur se déplace en posant le doigt n'importe où sur l'écran hors boutons ; les boutons restent cliquables ; textes de dalle lisibles ; cadrage cohérent sur les trois formats ; gameplay inchangé.
-
-## Étape 9b (à faire dans la foulée de 9a, même build) — Le technicien se balance gauche-droite dès qu'il bouge
-**Le défaut :** vu de dessus/derrière avec la caméra de jeu, le technicien oscille de gauche à droite dès qu'il marche ou court (Sébastien : « Gauche droite il se balance », « Dès que je bouge »). Cause **non identifiée** : ne rien corriger au hasard. **D'abord mesurer, ensuite corriger la ou les causes réellement mesurées.**
-
-**Pistes, de la plus à la moins probable (d'après la lecture du code) :**
-- **A. Direction instable à cause du joystick** : `PlayerController.Update` tourne vers la direction brute du joystick à 720 °/s (`RotateTowards`) et déplace dans cette même direction sans aucun lissage ; le rond du joystick fait 100 unités de rayon (≈ 0,5 cm sur l'iPhone) : un tremblement de 1 mm du pouce change la direction de plusieurs degrés, donc le personnage zigzague et pivote sans cesse.
-- **B. Animation Mixamo** : `HumanCharacterBuilder.ConfigureAnimation` règle `lockRootPositionXZ = true` (« Bake Into Pose » XZ) : le **déplacement latéral du centre de masse** de la marche/course reste donc dans la pose (le corps se décale à chaque pas), alors que `applyRootMotion = false`. Vu du dessus/derrière, ce balancement de hanches est très visible. Essayer `lockRootPositionXZ = false` (le déplacement latéral de la racine est alors ignoré puisque le déplacement vient du `PlayerController`), garder `lockRootRotation = true` et `lockRootHeightY = true`, puis réimporter et regarder.
-- **C. Caméra** : `CameraFollow` suit par lissage exponentiel (`smooth = 8`) : à 4,2 m/s elle retarde d'environ 0,5 m, donc **chaque changement de direction fait glisser le personnage de gauche à droite à l'écran**, et les images irrégulières du WebGL (42 à 54 i/s) accentuent le saccadé.
-- **D. Pile de caisses** : `StackCarrier` fait suivre les caisses avec un retard croissant (`followSpeed 14 / (1 + i × 0,35)`) : la pile oscille à chaque virage (déjà vu à 12 s sur la vidéo), ce qui peut passer pour un balancement du personnage.
-- **E. WebGL seulement** : le pas de temps variable (`Time.deltaTime`) amplifie A et C ; comparer éditeur et build WebGL.
-
-**1. Mesure (en Play, via MCP, entrée simulée avec `SetMoveInput`, sans doigt) — à consigner dans Résultats sous forme de petit tableau :**
-- **Test droit** : `SetMoveInput(new Vector2(0,1))` pendant 3 s (puis `(1,0)`, puis `(0.5,0.5)`). Enregistrer à chaque image : rotation Y du joueur (degrés), `localPosition.x` du `Human` et position latérale de l'os `Hips` (`animator.GetBoneTransform(HumanBodyBones.Hips)`) **dans le repère du joueur**, et la position **à l'écran** du joueur (`Camera.WorldToScreenPoint`, en pixels, caméra de jeu réelle, 1080 px de large).
-- **Test « pouce qui tremble »** : même chose avec une entrée `(0,1)` + bruit de ±8° à 6 Hz (simule le pouce). Comparer l'amplitude de la rotation Y et du zigzag à l'écran avec le test droit.
-- **Lecture :** si en test droit la rotation Y et la position écran sont plates mais les `Hips` oscillent → cause B ; si la rotation Y oscille seulement avec le bruit → cause A ; si la position écran du joueur oscille (ou glisse à chaque virage) alors que le joueur va droit → cause C ; si seule la pile bouge → cause D. Donner les amplitudes mesurées (cm, degrés, pixels) avant correction.
-- Une **planche de 12 images** (une toutes les 0,1 s, personnage vu de dos qui avance tout droit, caméra de jeu, 1080×1920) : `9b-00-avant-planche.png`.
-
-**2. Corrections (seulement celles que la mesure justifie, une à la fois, en remesurant) :**
-- **A (joystick/rotation)** : lisser l'entrée de déplacement (par exemple `Vector2.SmoothDamp` sur 0,06 à 0,1 s dans `PlayerController`), petit seuil angulaire (ne pas pivoter pour moins de ~5° d'écart quand le doigt est près du centre), rayon du joystick passé à 140–160 unités avec le rond de fond à la même taille (étape 9a point 4), zone morte 0,12–0,15 ; en mode « joystick dynamique » : si le doigt dépasse le rayon, le rond de fond **suit le doigt** au lieu de rester fixe, la direction restant celle du doigt par rapport au centre. `turnSpeed` : tester 540 °/s, avec un virage progressif (pas d'à-coup).
-- **B (animation)** : `lockRootPositionXZ = false` dans `ConfigureAnimation` (changement dans le générateur pour que les réimports gardent le réglage) ; si le balancement reste visible, atténuer en code dans un `LateUpdate` du `HumanAnimator` : retirer une partie du décalage latéral des `Hips` par rapport au joueur (filtre passe-bas), sans toucher à l'animation d'origine. Les clients et les employés partagent le même contrôleur : vérifier qu'ils n'ont pas changé d'aspect de façon gênante.
-- **C (caméra)** : suivi plus ferme (par exemple `smooth` 12 à 14) ou `Vector3.SmoothDamp` à temps court, mis à jour en `LateUpdate` après le mouvement ; vérifier que le joueur reste proche du centre de l'écran en marchant (écart latéral à l'écran ≤ 15 px à 1080 px de large) et que `Peek` (la caméra qui regarde un objectif) garde son effet.
-- **D (pile)** : si la mesure montre qu'elle domine, limiter l'amplitude **latérale** de l'oscillation (garder le retard dans l'axe du déplacement, l'effet « pile qui se balance » de CLAUDE.md doit rester visible mais discret).
-- Ne pas modifier la vitesse du joueur (4,2) ni la logique de jeu.
-
-**3. Vérification (mêmes mesures qu'au point 1, après correction) :**
-- Test droit : rotation Y constante à ±0,5° ; écart latéral des `Hips` ≤ 3 cm dans le repère du joueur (ordre de grandeur à confirmer par la mesure d'origine : donner l'avant/après) ; position écran du joueur stable à ±6 px (1080 px de large) quand il va tout droit.
-- Test « pouce qui tremble » : la rotation Y du personnage doit suivre la direction voulue sans zigzag visible (amplitude divisée par au moins 3 par rapport à l'avant).
-- Planche de 12 images `9b-01-apres-planche.png` à comparer avec l'avant ; même planche en virage : `9b-02-apres-virage.png`.
-- Comparer éditeur et build WebGL (même test dans le navigateur, avec le build de 9a) et le dire dans Résultats.
-
-**4. Après le build :** Sébastien rejouera sur l'iPhone et **enverra une nouvelle vidéo**. Si le balancement persiste sur iPhone alors que les mesures sont bonnes dans l'éditeur, noter les valeurs mesurées dans Questions : ce sera un réglage (animation Mixamo à remplacer, par exemple « Jog Forward » en place) à décider avec lui.
-
-**Critères de réussite :** 0 erreur ; causes mesurées et chiffrées avant/après ; en marchant droit, le technicien avance sans se balancer visiblement de gauche à droite ; les virages restent vifs mais sans zigzag ; la caméra ne fait plus glisser le personnage ; la pile garde son léger retard ; gameplay et vitesse inchangés ; tout dans le même build WebGL que 9a (même lien Vercel, même branche).
-
----
+- **Nouvelle vidéo iPhone** : peux-tu rejouer (ouvrir l'adresse d'aperçu Vercel + `/webgl/`, vider les données du site Safari si besoin) et envoyer une vidéo ? Le balancement des hanches (108 cm -> 1,2 cm) et l'écran gris après la première dalle devraient avoir disparu.
+- **Pile de caisses** : si elle te semble encore balancer, je la mesurerai et limiterai son oscillation latérale (piste D).
+- **Rendu WebGL** : toujours sans ombres temps réel ni post-traitement (voir la question précédente) ; à reprendre plus tard.
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

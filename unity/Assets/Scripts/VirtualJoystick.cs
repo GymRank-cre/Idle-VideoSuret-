@@ -9,8 +9,8 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler,
     [SerializeField] PlayerController player;
     [SerializeField] RectTransform background; // rond de fond, enfant de cette zone
     [SerializeField] RectTransform knob;       // petit rond mobile, enfant du fond
-    [SerializeField] float radius = 100f;      // course max du knob, en unités du Canvas
-    [SerializeField, Range(0f, 0.5f)] float deadZone = 0.1f;
+    [SerializeField] float radius = 150f;      // course max du knob, en unités du Canvas
+    [SerializeField, Range(0f, 0.5f)] float deadZone = 0.13f;
 
     RectTransform area;
     int activePointer = int.MinValue;
@@ -41,6 +41,12 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler,
         if (eventData.pointerId != activePointer) return;
 
         Vector2 delta = ToLocal(eventData) - background.anchoredPosition;
+        if (delta.magnitude > radius)
+        {
+            // joystick dynamique : au-delà du rayon le rond de fond suit le doigt ; la direction reste celle du doigt par rapport au centre
+            background.anchoredPosition += delta - Vector2.ClampMagnitude(delta, radius);
+            delta = ToLocal(eventData) - background.anchoredPosition;
+        }
         delta = Vector2.ClampMagnitude(delta, radius);
         knob.anchoredPosition = delta;
 

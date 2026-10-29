@@ -74,7 +74,8 @@ public static class HumanCharacterBuilder
             || importer.avatarSetup != ModelImporterAvatarSetup.CopyFromOther
             || importer.sourceAvatar != avatar
             || importer.clipAnimations == null || importer.clipAnimations.Length == 0
-            || !importer.clipAnimations[0].loopTime;
+            || !importer.clipAnimations[0].loopTime
+            || importer.clipAnimations[0].lockRootPositionXZ; // 9b : le décalage latéral du centre de masse ne doit plus rester dans la pose
 
         if (needsSetup)
         {
@@ -93,7 +94,7 @@ public static class HumanCharacterBuilder
                 // « In Place » : on fige la position et la rotation de la racine dans la pose
                 clip.lockRootRotation = true;
                 clip.lockRootHeightY = true;
-                clip.lockRootPositionXZ = true;
+                clip.lockRootPositionXZ = false; // mesuré en 9b : « baked » = les hanches balancent d'environ 1 m ; le déplacement vient du PlayerController
                 clip.keepOriginalOrientation = true;
                 clip.keepOriginalPositionY = true;
                 clip.keepOriginalPositionXZ = true;

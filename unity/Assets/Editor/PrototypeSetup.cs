@@ -324,7 +324,7 @@ public static class PrototypeSetup
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         GameObject labelGo = new GameObject("PriceLabel", typeof(TextMesh), typeof(FaceCamera));
         labelGo.transform.SetParent(pad.transform, false);
-        labelGo.transform.localPosition = new Vector3(0f, 0.7f, 0f); // le prix est sous le titre, bien séparé
+        labelGo.transform.localPosition = new Vector3(0f, 0.55f, 0f); // le prix est sous le titre, bien séparé
         TextMesh label = labelGo.GetComponent<TextMesh>();
         label.font = font;
         label.fontSize = 100;
@@ -335,7 +335,7 @@ public static class PrototypeSetup
         labelGo.GetComponent<MeshRenderer>().sharedMaterial = font.material;
 
         if (!string.IsNullOrEmpty(title))
-            BuildPadTitle(pad.transform, font, title);
+            BuildPadTitle(labelGo.transform, font, title); // enfant du prix : décalage dans le repère de la caméra (en pixels écran)
 
         if (popObject.GetComponent<PopIn>() == null) popObject.AddComponent<PopIn>();
 
@@ -359,11 +359,11 @@ public static class PrototypeSetup
     }
 
     // Titre fixe au-dessus du prix (« EMBAUCHE ») : texte jaune avec un contour sombre décalé.
-    static void BuildPadTitle(Transform pad, Font font, string title)
+    static void BuildPadTitle(Transform priceLabel, Font font, string title)
     {
         GameObject root = new GameObject("Title", typeof(FaceCamera));
-        root.transform.SetParent(pad, false);
-        root.transform.localPosition = new Vector3(0f, 3.5f, 0f);
+        root.transform.SetParent(priceLabel, false);
+        root.transform.localPosition = new Vector3(0f, 1.45f, 0f); // « vers le haut de l'écran », quel que soit l'angle de vue
         foreach (bool shadow in new[] { true, false })
         {
             GameObject t = new GameObject(shadow ? "Shadow" : "Text", typeof(TextMesh));
@@ -373,11 +373,11 @@ public static class PrototypeSetup
             tm.font = font;
             tm.text = title;
             tm.fontSize = 100;
-            tm.characterSize = 0.062f;
+            tm.characterSize = 0.056f;
             tm.fontStyle = FontStyle.Bold;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.alignment = TextAlignment.Center;
-            tm.color = shadow ? new Color(0.05f, 0.07f, 0.1f) : new Color(1f, 0.85f, 0.2f);
+            tm.color = shadow ? new Color(0.05f, 0.07f, 0.1f) : Color.white; // blanc : lisible aussi sur le jaune de la dalle
             t.GetComponent<MeshRenderer>().sharedMaterial = font.material;
         }
     }
@@ -552,18 +552,19 @@ public static class PrototypeSetup
         area.transform.SetParent(canvasGo.transform, false);
         RectTransform areaRt = area.GetComponent<RectTransform>();
         areaRt.anchorMin = Vector2.zero;
-        areaRt.anchorMax = new Vector2(0.6f, 1f);
+        areaRt.anchorMax = new Vector2(1f, 1f); // tout l'écran : droitiers et gauchers posent le pouce où ils veulent
         areaRt.offsetMin = Vector2.zero;
         areaRt.offsetMax = Vector2.zero;
         area.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f); // invisible mais capte les touches
 
-        RectTransform bg = MakeCircle("Background", areaRt, circle, 200f, new Color(1f, 1f, 1f, 0.25f));
-        RectTransform knob = MakeCircle("Knob", bg, circle, 90f, new Color(1f, 1f, 1f, 0.7f));
+        RectTransform bg = MakeCircle("Background", areaRt, circle, 330f, new Color(1f, 1f, 1f, 0.38f)); // adapté au pouce
+        RectTransform knob = MakeCircle("Knob", bg, circle, 120f, new Color(1f, 1f, 1f, 0.85f));
 
         var so = new SerializedObject(area.GetComponent<VirtualJoystick>());
         so.FindProperty("player").objectReferenceValue = player;
         so.FindProperty("background").objectReferenceValue = bg;
         so.FindProperty("knob").objectReferenceValue = knob;
+        so.FindProperty("radius").floatValue = 150f; // course du rond, accordée à sa nouvelle taille
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
