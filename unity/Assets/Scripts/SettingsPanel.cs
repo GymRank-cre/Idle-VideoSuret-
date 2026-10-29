@@ -16,6 +16,7 @@ public class SettingsPanel : MonoBehaviour
     [SerializeField] Button eraseButton;
     [SerializeField] Button confirmYes;
     [SerializeField] Button confirmNo;
+    [SerializeField] Text versionText;  // numéro du build, pour savoir quelle version tourne sur le téléphone
     [SerializeField] Color onColor = new Color(0.2f, 0.7f, 0.3f);
     [SerializeField] Color offColor = new Color(0.35f, 0.38f, 0.43f);
     [SerializeField] float knobTravel = 36f;
@@ -27,6 +28,7 @@ public class SettingsPanel : MonoBehaviour
         audioManager = AudioManager.Instance;
         panel.SetActive(false);
         confirmBox.SetActive(false);
+        if (versionText != null) versionText.text = "Version : " + BuildInfo.Version;
 
         openButton.onClick.AddListener(() => { Click(); panel.SetActive(!panel.activeSelf); confirmBox.SetActive(false); Refresh(); });
         closeButton.onClick.AddListener(() => { Click(); panel.SetActive(false); });

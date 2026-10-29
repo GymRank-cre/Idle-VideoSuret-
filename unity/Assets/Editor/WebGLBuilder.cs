@@ -83,6 +83,7 @@ public static class WebGLBuilder
             return;
         }
 
+        WriteBuildVersion();
         EnsureTemplate();
         EnsureSceneInBuildSettings();
         ApplySettings();
@@ -117,6 +118,32 @@ public static class WebGLBuilder
         // retour à la cible précédente : le jeu de l'éditeur reste identique
         if (previousTarget != BuildTarget.WebGL)
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(previousTarget), previousTarget);
+    }
+
+    // Numéro de build lisible dans les réglages : date, heure et hash court du dépôt git (s'il est disponible).
+    static void WriteBuildVersion()
+    {
+        string version = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo("git", "-C \"E:/PROJET 1/sync\" rev-parse --short HEAD")
+            {
+                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
+            };
+            using (System.Diagnostics.Process git = System.Diagnostics.Process.Start(psi))
+            {
+                string hash = git.StandardOutput.ReadToEnd().Trim();
+                git.WaitForExit(3000);
+                if (hash.Length > 0 && hash.Length < 20) version += " · " + hash;
+            }
+        }
+        catch { /* git absent : la date suffit */ }
+
+        string dir = Path.Combine(Directory.GetCurrentDirectory(), "Assets/Resources");
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "BuildVersion.txt"), version);
+        AssetDatabase.ImportAsset("Assets/Resources/BuildVersion.txt");
+        Debug.Log("Numéro de build : " + version);
     }
 
     static void ApplySettings()
@@ -244,6 +271,10 @@ public static class WebGLBuilder
     <div id=""loading"">Chargement...</div>
     <script src=""Build/{{{ LOADER_FILENAME }}}""></script>
     <script>
+      // Contexte WebGL perdu (iPhone verrouillé, changement d'application) : Unity ne le récupère pas, on recharge la page
+      // (la partie est sauvegardée toutes les 10 s et à la mise en pause).
+      var canvasEl = document.querySelector(""#unity-canvas"");
+      canvasEl.addEventListener(""webglcontextlost"", function (e) { e.preventDefault(); setTimeout(function () { location.reload(); }, 400); }, false);
       createUnityInstance(document.querySelector(""#unity-canvas""), {
         dataUrl: ""Build/{{{ DATA_FILENAME }}}"",
         frameworkUrl: ""Build/{{{ FRAMEWORK_FILENAME }}}"",

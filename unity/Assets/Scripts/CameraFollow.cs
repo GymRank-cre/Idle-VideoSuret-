@@ -1,6 +1,7 @@
 using UnityEngine;
 
 // Caméra fixe en hauteur qui suit le joueur en douceur.
+// Auto-réparation : une valeur invalide (NaN / infinie) ne reste jamais, sinon la scène 3D disparaît et seule l'interface reste.
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] Transform target;
@@ -12,6 +13,9 @@ public class CameraFollow : MonoBehaviour
 
     Camera cam;
     float baseFov;
+    bool repairLogged;
+
+    public int RepairCount { get; private set; } // lu par le panneau de diagnostic
 
     void Awake()
     {
@@ -19,13 +23,33 @@ public class CameraFollow : MonoBehaviour
         baseFov = cam.fieldOfView;
     }
 
+    static bool Finite(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
+    static bool Finite(Vector3 v) => Finite(v.x) && Finite(v.y) && Finite(v.z);
+
+    void Repair(string what)
+    {
+        RepairCount++;
+        if (repairLogged) return; // une seule trace dans le journal
+        repairLogged = true;
+        Debug.LogWarning("CameraFollow : " + what + " invalide, caméra recalée.");
+    }
+
     // Même largeur de vue quelle que soit la forme de l'écran (étroit ou barres de Safari) : seul le champ vertical change.
     void UpdateFov()
     {
+        if (!Finite(cam.fieldOfView))
+        {
+            cam.fieldOfView = baseFov;
+            Repair("champ de vision");
+        }
+
         float aspect = cam.aspect;
-        if (aspect <= 0.01f) return;
+        if (!(aspect > 0.01f) || !Finite(aspect)) return; // aspect NaN, nul ou énorme : on garde le dernier champ valide
+
         float tanHalf = Mathf.Tan(baseFov * 0.5f * Mathf.Deg2Rad) * referenceAspect / aspect;
-        cam.fieldOfView = Mathf.Clamp(2f * Mathf.Atan(tanHalf) * Mathf.Rad2Deg, fovLimits.x, fovLimits.y);
+        float fov = 2f * Mathf.Atan(tanHalf) * Mathf.Rad2Deg;
+        if (!Finite(fov)) { cam.fieldOfView = baseFov; Repair("champ de vision calculé"); return; }
+        cam.fieldOfView = Mathf.Clamp(fov, fovLimits.x, fovLimits.y);
     }
 
     Transform peekTarget;
@@ -42,21 +66,40 @@ public class CameraFollow : MonoBehaviour
 
     void LateUpdate()
     {
-        if (target == null) return;
+        if (target == null || !Finite(target.position)) return;
         if (cam != null) UpdateFov();
+
+        // Position actuelle invalide : le lissage d'un NaN reste NaN pour toujours, on recale d'un coup.
+        if (!Finite(transform.position))
+        {
+            transform.position = target.position + offset;
+            peekTarget = null;
+            Repair("position de la caméra");
+        }
 
         Vector3 focus = target.position;
         if (peekTarget != null)
         {
-            peekElapsed += Time.deltaTime;
-            float k = Mathf.Clamp01(peekElapsed / peekDuration);
-            float bump = Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(k * Mathf.PI))); // sin(pi) peut valoir -1e-7 (WebGL) : racine d'un négatif = NaN = écran gris // aller rapide, court maintien, retour
-            focus = Vector3.Lerp(target.position, peekTarget.position, bump);
-            if (k >= 1f) peekTarget = null;
+            if (!Finite(peekTarget.position) || !Finite(Time.deltaTime))
+            {
+                peekTarget = null;
+                Repair("cible du Peek");
+            }
+            else
+            {
+                peekElapsed += Time.deltaTime;
+                float k = Mathf.Clamp01(peekElapsed / peekDuration);
+                // aller rapide, court maintien, retour ; sin(pi) peut valoir -1e-7 (WebGL) : racine d'un négatif = NaN
+                float bump = Mathf.Sqrt(Mathf.Max(0f, Mathf.Sin(k * Mathf.PI)));
+                focus = Vector3.Lerp(target.position, peekTarget.position, bump);
+                if (k >= 1f) peekTarget = null;
+            }
         }
+
         Vector3 desired = focus + offset;
-        if (float.IsNaN(desired.x) || float.IsNaN(desired.y) || float.IsNaN(desired.z)) { peekTarget = null; return; } // garde-fou : la caméra ne devient jamais invalide
+        if (!Finite(desired)) { peekTarget = null; Repair("position visée"); return; }
         float t = 1f - Mathf.Exp(-smooth * Time.deltaTime);
+        if (!Finite(t)) t = 1f;
         transform.position = Vector3.Lerp(transform.position, desired, t);
     }
 }

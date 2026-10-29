@@ -17,6 +17,10 @@
     <div id="loading">Chargement...</div>
     <script src="Build/WebGL.loader.js"></script>
     <script>
+      // Contexte WebGL perdu (iPhone verrouillé, changement d'application) : Unity ne le récupère pas, on recharge la page
+      // (la partie est sauvegardée toutes les 10 s et à la mise en pause).
+      var canvasEl = document.querySelector("#unity-canvas");
+      canvasEl.addEventListener("webglcontextlost", function (e) { e.preventDefault(); setTimeout(function () { location.reload(); }, 400); }, false);
       createUnityInstance(document.querySelector("#unity-canvas"), {
         dataUrl: "Build/WebGL.data.unityweb",
         frameworkUrl: "Build/WebGL.framework.js.unityweb",
