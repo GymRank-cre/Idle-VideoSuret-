@@ -126,7 +126,12 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 6. **Conclusion** : la cause la plus probable reste **H1 (état de caméra invalide)** : `NaN` à la fin du `Peek`, corrigé en 9a et durci ici, très probablement l'**ancien build**. Si l'écran gris revient sur ce build, le numéro de build et le panneau de diagnostic (caméra : position, champ, aspect, réparations, messages) permettront de trancher à partir d'une simple capture.
 7. **Poids du dépôt** : `git count-objects` dans mon clone local : **pack de 733 Mo** (bien au-dessus du seuil de 180 Mo annoncé ; chaque remplacement de `webgl/` ajoute ~17 Mo de nouvel objet dans l'historique, et mon clone contient aussi les anciennes poussées). Ce commit en ajoute encore ~17 Mo. **Je suggère de passer au déploiement direct depuis le PC (`vercel` en ligne de commande depuis `E:\PROJET 1\Builds\WebGL`, sans historique) avant le prochain remplacement de `webgl/`.**
 
-## Étape suivante : 10a puis 10b — « Satisfaisant et magnifique » (à faire **après 9c**, une étape à la fois)
+## Relecture cloud de l'étape 9c : validée (conclusion honnête, bon choix de ne pas conclure plus fort)
+- **Bien vu** : H2 testée pour de vrai (la perte de contexte n'est jamais récupérée par Unity) puis écartée comme cause de la capture (l'interface se dessinait), et la conclusion « H1, sans doute l'ancien build » est prudente. Rechargement automatique sur `webglcontextlost` : bon réflexe, la sauvegarde toutes les 10 s le rend sans risque. Numéro de build et panneau de diagnostic : exactement ce qu'il fallait, **pour la suite, tout bug visuel sur iPhone se règle avec une capture du panneau**.
+- **Nouveauté côté test** : le jeu est aussi publié comme **Artifact Claude** privé (https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X), ouvert sur l'iPhone de Sébastien : **ça marche** (« Ça marche sur mon iPhone »). Le cloud le republie à chaque nouveau `webgl/` poussé ; il lui faut donc que les builds restent **dans Git**.
+- **Réponse sur le poids** : **garder Git pour les builds** (le cloud en a besoin pour republier). Dans `E:\PROJET 1\sync`, lancer `git gc --prune=now` puis donner la **taille réelle de `.git`** et du dépôt distant (mon clone cloud fait 152 Mo). **Seuil d'alerte : 1 Go.** Si on l'atteint : branche orpheline `builds` à un seul commit (force-push à chaque build), avec l'accord de Sébastien ; pas avant. En attendant, **ne reconstruire `webgl/` qu'à la fin d'une étape**, pas à chaque essai.
+
+## Tâche en cours : 10a puis 10b — « Satisfaisant et magnifique » (9c est livrée et relue : **commencer 10a maintenant**, une étape à la fois)
 Sébastien : « Ça marche sur mon iPhone, je veux que le jeu soit satisfaisant à jouer et magnifique. » Lire d'abord la section « Satisfaisant et magnifique » de `unity/DESIGN.md`, **y compris la référence visuelle n°1 : « Idle Lumber » (https://apps.apple.com/fr/app/idle-lumber-gestion-dusine/id1552153525 ; ouvre les captures de la fiche pour t'en imprégner ; s'inspirer des principes, ne rien copier).** **Règle : chaque étape se livre avec des captures avant/après (390×844, caméra de jeu), des mesures d'images par seconde dans le navigateur, et rien ne casse le gameplay ni la sauvegarde.** Ne pas refaire ce qui existe déjà (étapes 8a à 8d : sons, billets, textes flottants, confettis…) : commencer par **lister en cinq lignes ce qui existe** et ce qui manque.
 
 ### 10a — La sensation de jeu (le toucher), mesurable
@@ -143,7 +148,8 @@ Contenu prévu (à détailler quand 10a sera livré ; **l'ordre de priorité sui
 
 ## Questions (à remplir par Claude Code local)
 - **Vidéo / capture iPhone** : sur le build actuel, ouvre Réglages > bas du panneau : peux-tu me dire le « Version : … » affiché ? Si l'écran gris revient, ouvre Réglages > Diagnostic et envoie une capture.
-- **Poids du dépôt (733 Mo en local, 17 Mo de plus à chaque build)** : on passe au déploiement direct depuis le PC (sans historique), ou on garde Git pour le build ?
+- **Poids du dépôt** : réponse du cloud dans la relecture de 9c (garder Git, `git gc --prune=now`, seuil 1 Go, un build par étape). Noter la taille réelle dans Résultats.
+- **Sébastien** : sur l'Artifact, Réglages (⚙) en bas : le « Version : … » doit afficher `2026-10-29 22:07 · 93ef5cd`.
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -486,5 +492,6 @@ Questions posées à l'époque (répondues plus haut) :
 - Test iPhone de Sébastien (vidéo) : joystick limité à la moitié gauche de l'écran et chevauchement des textes de dalle en WebGL. Étape 9a spécifiée.
 - Sébastien précise : le technicien « se balance gauche-droite » dès qu'il bouge. Étape 9b spécifiée (mesurer d'abord : joystick/rotation, animation Mixamo, caméra, pile ; puis corriger), à livrer dans le même build WebGL que 9a.
 - Sébastien veut « une autre façon de tester » : le build `webgl/` (9a+9b) est aussi publié comme **Artifact Claude** privé (https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X), ouvrable dans l'app Claude sans Vercel ni connexion. Les fichiers y sont renommés (`.unityweb` -> `.wasm` pour les trois fichiers gzip, le chargeur Unity reconnaît la compression par son contenu, pas par le nom). À chaque nouveau build poussé dans `webgl/`, le cloud republie le même lien. Rien à faire pour Claude Code local.
+- 9c livrée et relue (build 22:07 · 93ef5cd, diagnostic, caméra durcie, rechargement sur perte de contexte) ; Artifact republié ; 10a à faire maintenant (référence : Idle Lumber).
 - Sébastien confirme que le jeu marche sur son iPhone (Artifact Claude) et veut « satisfaisant à jouer et magnifique » : DESIGN.md (barre de qualité) et étapes 10a/10b spécifiées, à faire après 9c.
 - Sébastien envoie une capture iPhone (22 h 00) : interface visible mais scène 3D vide (écran gris). Étape 9c spécifiée (numéro de build visible, caméra auto-réparée, panneau de diagnostic, test de la perte de contexte WebGL).
