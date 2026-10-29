@@ -97,7 +97,7 @@ Bonne démarche : vérification honnête du module (non installé), rien install
 - **Module WebGL** : **ne pas l'installer en ligne de commande**. C'est Sébastien qui l'ajoute depuis Unity Hub (il a été prévenu) puis te le dit.
 
 ## Tâche en attente : étape 8c — Lancer le build WebGL quand le module est installé
-**Déclencheur :** Sébastien dit que le module « WebGL Build Support » est installé. Alors, et seulement alors :
+**Déclencheur : REÇU.** Sébastien a écrit au cloud que le module « WebGL Build Support » est installé. Tu peux lancer l'étape maintenant (vérifie d'abord `BuildPipeline.IsBuildTargetSupported(WebGL)` ; si c'est encore faux, le noter dans Questions : Unity doit peut-être être relancé).
 1. Lancer `Tools > Idle Prototype > Build WebGL de test`, corriger tout ce qui casse (le gabarit de page a été écrit de mémoire : le comparer au gabarit « Minimal » de Unity 6 maintenant disponible, et corriger les noms d'API `PlayerSettings.WebGL.*` si besoin).
 2. Mesurer la taille et la durée, appliquer les réductions du modèle seulement si > 60 Mo.
 3. Servir en local (`python -m http.server 8080`) et vérifier : chargement, écran « Touche pour jouer », joystick (émulation tactile du navigateur), sauvegarde conservée au rechargement, aucune erreur dans la console du navigateur. Capture 390×844 dans `unity/captures/` (préfixe `8c-`).
@@ -452,3 +452,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 7b (améliorations) relue sur captures : validée. Étape 8a (sons, musique, vibrations, réglages) spécifiée.
 - Étape 8a (sons, musique, vibrations, réglages) relue : validée. Étape 8b (préparer un test WebGL pour l'iPhone) spécifiée ; ensuite pause en attendant les retours de Sébastien.
 - Étape 8b relue : validée (build WebGL en attente du module, installé par Sébastien). Étape 8c prête.
+- Sébastien confirme l'installation du module WebGL : étape 8c déclenchée.
