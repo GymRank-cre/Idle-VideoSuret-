@@ -116,6 +116,18 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**K1b + Q1 — faits. Éditeur : compilation 0 erreur, Play 0 erreur, tests unitaires 38/38, test de fumée OK. Build WebGL refait (1 seul), `webgl/` remplacé, 60 i/s navigateur à 390x844 et 430x932 (avant 60).**
+**K1b**
+1. **Pile** : retard plafonné à 0,12 m latéral / 0,25 m arrière (avant 0,25 / 0,5), hauteur non étirée. Mesuré en course à 4,2 m/s avec 8 caisses : décalage haut/bas 0,00 m (colonne verticale) ; plafond théorique 0,28 m sur 1,9 m = 8° (objectif <= 15°). Capture `K1b-jeu-390x844.png` et `K1b-jeu-430x932.png`.
+2. **Écran titre** : logo remonté (y 140 -> 200), sous-titre à y 56 : plus d'espace, rien ne touche l'ombre (`K1b-ecran-titre.png`, capturé dans l'éditeur via `forceInEditor`).
+3. **Captures** : titre, dalle en gros plan (`K1b-dalle-gros-plan.png` : icône billet + prix), 390x844 et 430x932 : aucun texte coupé. **Non fait** : planche côte à côte avec `ui-01-jeu.png`, « +N » flottant isolé, dalle avec titre sur ruban (la 1re dalle n'a pas de titre ; à voir à la dalle EMBAUCHE).
+**Q1**
+4. **Test de fumée** `Tools/Idle Prototype/Test de fumée` (`Editor/SmokeTest.cs`) : Play automatique de 90 s, un robot joue (palette -> poste -> produits -> comptoir -> billets). Vérifie 0 erreur/avertissement, argent > 0, sauvegarde relue = état courant. Dernier résultat : **OK, argent max 280**. Le robot a d'abord échoué 3 fois (fenêtre Unity sans focus = jeu figé -> `Application.runInBackground`, puis cycle sans la phase « produits »).
+5. **Tests** (menu `Tests unitaires`, 38 vérifications) : nombres abrégés, `Loc`, migration de sauvegarde v1 -> v3, coût des améliorations croissant. Pas d'assembly de test (le code du jeu est dans l'assembly par défaut) : ce sont des tests du menu, pas des tests EditMode du Test Runner.
+6. **Table `Loc`** (`Scripts/Loc.cs`, FR) : textes des réglages, bon retour, améliorations, titre, diagnostic migrés. Restent hors table : textes du guide (ScriptableObject `GuideConfig`), noms d'améliorations (`UpgradeConfig`), titres de dalles.
+7. **Journal d'événements** (`Scripts/GameLog.cs`) : temps de jeu jusqu'à chaque déblocage, affiché dans le Diagnostic avec la durée de session (6 derniers).
+
+## Archive : résultats de K1 (Claude Code local)
 **K1 — Police et kit d'interface : fait (points 1 à 8). Éditeur : compilation 0 erreur, Build scene OK, Play 0 erreur, tests unitaires 18/18. Build WebGL refait (1 seul), `webgl/` remplacé, 60 i/s navigateur (avant 60). Capture `K1-jeu-390x844.png`.**
 1. **Police** Lilita One partout (`UiTheme.Font`, repli police intégrée) : HUD, guide, réglages, améliorations, hors-ligne, titre ; texte jeu blanc + contour encre 4 px + ombre.
 2. **Utilitaire** `Editor/UiTheme.cs` : palette, `Style(Text, taille, couleur, contour)`, `AddBase` (socle plein sous un élément).
@@ -240,6 +252,7 @@ Sébastien : « Ça marche sur mon iPhone, je veux que le jeu soit satisfaisant 
 Contenu prévu (à détailler quand 10a sera livré ; **l'ordre de priorité suit la référence « Idle Lumber » : 1) police grasse contourée et kit d'interface cohérent, 2) lisibilité des dalles (prix énorme blanc contouré + icône billet) et « +N $ » avec icône, 3) l'extérieur de l'atelier visible (parking, camionnette, rue, herbe, ciel) et fin des zones vides, 4) éclairage doux et couleurs saturées harmonisées, 5) bulles d'humeur des clients, 6) le monde qui vit seul (écrans, caméras, ventilateur, vapeur)**) : police arrondie grasse libre de droits partout (HUD, panneaux, texte 3D) à la place d'Arial ; éclairage chaud avec **ombres douces cuites** (lightmap) sur le décor fixe et ombres temps réel seulement pour les personnages si les images par seconde le permettent ; sol et murs plus riches (deux tons, plinthes, bandes jaune/noir, câbles, taches) ; décor vivant (étagères pleines, caméras dôme, écrans, néon « SÉCURITÉ » émissif, plantes) ; contour doux des personnages ; post-traitement léger (courbe de tons, vignette, saturation) activé seulement si la mesure le permet ; interface harmonisée (panneaux arrondis dégradés, icônes uniformes). **Question à régler avec lui avant :** quelle ambiance (cartoon lumineux, conseillée ; ou plus réaliste ; ou nuit néon) ?
 
 ## Questions (à remplir par Claude Code local)
+- **Tests EditMode du Test Runner** : il faudrait une assembly (.asmdef) pour le code du jeu ; OK pour la créer (refactor sans risque mais touche tous les scripts) ou on garde les tests par menu ? (défaut : menu)
 - **K1 sur l'iPhone** : lisibilité de la pile plus grosse, du HUD ardoise et de l'écran titre « Jouer » ? Capture bienvenue (390x844 ou 430x932) pour comparer aux maquettes.
 - **10a sur l'iPhone** : le cadrage plus serré (technicien ~9 %), la secousse et le zoom du déblocage te conviennent-ils, ou faut-il les adoucir ? Peux-tu envoyer une courte vidéo (course + paiement d'une dalle) ?
 - **Billets du comptoir en arc depuis le client** et poussière des employés : à faire dans 10a bis, ou on passe à 10b (beauté) ?

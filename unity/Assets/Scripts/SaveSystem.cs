@@ -246,7 +246,7 @@ public class SaveSystem : MonoBehaviour
     }
 
     // Conversion des anciens fichiers vers le format courant.
-    static SaveData Migrate(SaveData data)
+    public static SaveData Migrate(SaveData data)
     {
         if (data.version < 2)
         {

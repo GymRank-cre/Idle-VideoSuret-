@@ -105,7 +105,7 @@ public static class SaveBuilder
 
         RectTransform panel = Box("Panel", root.transform, round, new Color(0.10f, 0.13f, 0.18f, 0.9f), new Vector2(0f, 60f), new Vector2(860f, 900f));
         panel.gameObject.AddComponent<PopIn>(); // léger « pop » à l'ouverture
-        Label("Title", panel, "Bon retour !", 96, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 320f), new Vector2(800f, 140f));
+        Label("Title", panel, Loc.T("offline.title"), 96, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 320f), new Vector2(800f, 140f));
         Text duration = Label("Duration", panel, "Absent depuis 2 h 00 min", 46, new Color(0.85f, 0.88f, 0.92f), new Vector2(0f, 190f), new Vector2(800f, 90f));
         Text amount = Label("Amount", panel, "+$ 0", 150, new Color(0.45f, 0.95f, 0.5f), new Vector2(0f, 40f), new Vector2(800f, 220f));
 

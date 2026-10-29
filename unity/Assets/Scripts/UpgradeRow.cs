@@ -45,18 +45,18 @@ public class UpgradeRow : MonoBehaviour
         UpgradeConfig.Upgrade u = state.Config.Upgrades[index];
         int level = state.Level(index);
         nameText.text = u.displayName;
-        levelText.text = "Niv " + level + "/" + u.maxLevel;
+        levelText.text = Loc.T("upgrades.level", level, u.maxLevel);
 
         if (state.IsMax(index))
         {
-            effectText.text = "Niveau maximum";
-            buyLabel.text = "MAX";
+            effectText.text = Loc.T("upgrades.maxed");
+            buyLabel.text = Loc.T("upgrades.max");
             buyButton.interactable = false;
             buyImage.color = lockedColor;
             return;
         }
 
-        effectText.text = "Prochain : " + Short(u);
+        effectText.text = Loc.T("upgrades.next", Short(u));
         buyLabel.text = "$ " + NumberFormat.Short(state.NextCost(index));
         bool ok = state.CanAfford(index);
         buyImage.color = ok ? affordableColor : lockedColor;

@@ -38,6 +38,34 @@ public static class UnitTests
         Eq("-1,2K", NumberFormat.Short(-1234), "négatif");
         Eq("9,2ab", NumberFormat.Short(9200000000000000000L), "9,2ab (1e18 = groupe 6)");
 
+        // Loc
+        Eq("Version : 7", Loc.T("settings.version", 7), "Loc avec argument");
+        Eq("clé.inconnue", Loc.T("clé.inconnue"), "Loc clé inconnue renvoyée telle quelle");
+        Eq("Niv 2/10", Loc.T("upgrades.level", 2, 10), "Loc niveau");
+
+        // Migration de sauvegarde
+        var old = new SaveData { version = 1, money = 50, upgrades = null, settingsSaved = true };
+        SaveData m = SaveSystem.Migrate(old);
+        Eq(SaveData.CurrentVersion.ToString(), m.version.ToString(), "migration v1 -> version courante");
+        Eq("True", (m.upgrades != null).ToString(), "migration : liste d'améliorations créée");
+        Eq("False", m.settingsSaved.ToString(), "migration : réglages remis par défaut");
+        Eq("50", m.money.ToString(), "migration : l'argent est conservé");
+        SaveData cur = SaveSystem.Migrate(new SaveData { money = 9 });
+        Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
+
+        // Économie : coût des améliorations strictement positif et croissant
+        foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())
+        {
+            foreach (UpgradeConfig.Upgrade u in cfg.Upgrades)
+            {
+                bool growing = true;
+                for (int l = 1; l < u.maxLevel; l++) if (cfg.Cost(u, l) < cfg.Cost(u, l - 1)) growing = false;
+                Eq("True", growing.ToString(), "coût croissant : " + u.id);
+                Eq("True", (cfg.Cost(u, 0) > 0).ToString(), "coût > 0 : " + u.id);
+            }
+            break;
+        }
+
         if (failures.Count == 0)
             Debug.Log("Tests unitaires : " + count + " vérifications, toutes réussies.");
         else

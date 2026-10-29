@@ -197,7 +197,7 @@ public static class UpgradeBuilder
         back.pixelsPerUnitMultiplier = 0.9f;
         back.color = new Color(0.10f, 0.13f, 0.18f, 0.92f);
 
-        Label("Title", panel, "Améliorations", 70, new Color(1f, 0.85f, 0.2f), new Vector2(0f, panel.sizeDelta.y * 0.5f - 85f), new Vector2(700f, 110f));
+        Label("Title", panel, Loc.T("upgrades.title"), 70, new Color(1f, 0.85f, 0.2f), new Vector2(0f, panel.sizeDelta.y * 0.5f - 85f), new Vector2(700f, 110f));
         RectTransform close = Box("CloseButton", panel, circle, new Color(0.75f, 0.25f, 0.25f), new Vector2(panel.sizeDelta.x * 0.5f - 85f, panel.sizeDelta.y * 0.5f - 85f), new Vector2(90f, 90f), true);
         Rot(Box("X1", close, round, Color.white, Vector2.zero, new Vector2(14f, 52f), false), 45f);
         Rot(Box("X2", close, round, Color.white, Vector2.zero, new Vector2(14f, 52f), false), -45f);

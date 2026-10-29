@@ -28,7 +28,7 @@ public class SettingsPanel : MonoBehaviour
         audioManager = AudioManager.Instance;
         panel.SetActive(false);
         confirmBox.SetActive(false);
-        if (versionText != null) versionText.text = "Version : " + BuildInfo.Version;
+        if (versionText != null) versionText.text = Loc.T("settings.version", BuildInfo.Version);
 
         openButton.onClick.AddListener(() => { Click(); panel.SetActive(!panel.activeSelf); confirmBox.SetActive(false); Refresh(); });
         closeButton.onClick.AddListener(() => { Click(); panel.SetActive(false); });

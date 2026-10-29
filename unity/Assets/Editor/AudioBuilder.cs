@@ -79,7 +79,7 @@ public static class AudioBuilder
         back.pixelsPerUnitMultiplier = 0.9f;
         back.color = new Color(0.10f, 0.13f, 0.18f, 0.92f);
 
-        UpgradeBuilder.Label("Title", panel, "Réglages", 70, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 320f), new Vector2(600f, 110f));
+        UpgradeBuilder.Label("Title", panel, Loc.T("settings.title"), 70, new Color(1f, 0.85f, 0.2f), new Vector2(0f, 320f), new Vector2(600f, 110f));
         RectTransform close = UpgradeBuilder.Box("CloseButton", panel, circle, new Color(0.75f, 0.25f, 0.25f), new Vector2(345f, 325f), new Vector2(90f, 90f), true);
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X1", close, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), 45f);
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X2", close, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), -45f);
@@ -90,20 +90,20 @@ public static class AudioBuilder
 
         RectTransform erase = UpgradeBuilder.Box("EraseButton", panel, rounded, new Color(0.75f, 0.25f, 0.25f), new Vector2(0f, -250f), new Vector2(680f, 110f), true);
         erase.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", erase, "Effacer la sauvegarde", 46, Color.white, Vector2.zero, new Vector2(680f, 110f));
+        UpgradeBuilder.Label("Text", erase, Loc.T("settings.erase"), 46, Color.white, Vector2.zero, new Vector2(680f, 110f));
 
         // Confirmation
         RectTransform confirm = UpgradeBuilder.Box("ConfirmBox", panel, rounded, new Color(0.06f, 0.08f, 0.12f, 0.98f), new Vector2(0f, -60f), new Vector2(760f, 430f), false);
         confirm.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
         confirm.GetComponent<Image>().raycastTarget = true; // bloque les clics derrière
-        UpgradeBuilder.Label("Question", confirm, "Effacer toute la progression ?", 48, Color.white, new Vector2(0f, 110f), new Vector2(700f, 120f));
-        UpgradeBuilder.Label("Warn", confirm, "Cette action est définitive.", 36, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 30f), new Vector2(700f, 60f));
+        UpgradeBuilder.Label("Question", confirm, Loc.T("settings.erase.ask"), 48, Color.white, new Vector2(0f, 110f), new Vector2(700f, 120f));
+        UpgradeBuilder.Label("Warn", confirm, Loc.T("settings.erase.warn"), 36, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 30f), new Vector2(700f, 60f));
         RectTransform yes = UpgradeBuilder.Box("Yes", confirm, rounded, new Color(0.75f, 0.25f, 0.25f), new Vector2(-180f, -110f), new Vector2(300f, 110f), true);
         yes.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", yes, "Effacer", 48, Color.white, Vector2.zero, new Vector2(300f, 110f));
+        UpgradeBuilder.Label("Text", yes, Loc.T("settings.erase.yes"), 48, Color.white, Vector2.zero, new Vector2(300f, 110f));
         RectTransform no = UpgradeBuilder.Box("No", confirm, rounded, new Color(0.3f, 0.33f, 0.38f), new Vector2(180f, -110f), new Vector2(300f, 110f), true);
         no.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", no, "Annuler", 48, Color.white, Vector2.zero, new Vector2(300f, 110f));
+        UpgradeBuilder.Label("Text", no, Loc.T("settings.erase.no"), 48, Color.white, Vector2.zero, new Vector2(300f, 110f));
 
         // Numéro de build (lisible même si la scène 3D est vide) et accès au panneau de diagnostic
         Text version = UpgradeBuilder.Label("Version", panel, "Version : ?", 28, new Color(0.8f, 0.85f, 0.9f), new Vector2(-150f, -352f), new Vector2(520f, 60f));
@@ -111,7 +111,7 @@ public static class AudioBuilder
         version.horizontalOverflow = HorizontalWrapMode.Wrap;
         RectTransform diagButton = UpgradeBuilder.Box("DiagnosticButton", panel, rounded, new Color(0.3f, 0.33f, 0.38f), new Vector2(300f, -352f), new Vector2(250f, 70f), true);
         diagButton.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", diagButton, "Diagnostic", 32, Color.white, Vector2.zero, new Vector2(250f, 70f));
+        UpgradeBuilder.Label("Text", diagButton, Loc.T("settings.diag"), 32, Color.white, Vector2.zero, new Vector2(250f, 70f));
 
         // Panneau de diagnostic (au-dessus de tout, dans la zone sûre)
         RectTransform diag = UpgradeBuilder.Box("DiagnosticPanel", safe, rounded, new Color(0.04f, 0.05f, 0.08f, 0.95f), new Vector2(0f, 0f), new Vector2(1000f, 1250f), false);

@@ -22,8 +22,8 @@ public class OfflineWelcomeScreen : MonoBehaviour
     public void Show(long seconds, int amount, Action claimed)
     {
         onClaim = claimed;
-        durationText.text = "Absent depuis " + FormatDuration(seconds);
-        amountText.text = "+$ " + NumberFormat.Short(amount);
+        durationText.text = Loc.T("offline.away", FormatDuration(seconds));
+        amountText.text = Loc.T("offline.gain", NumberFormat.Short(amount));
         root.SetActive(true);
     }
 

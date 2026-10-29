@@ -81,6 +81,10 @@ public class DiagnosticPanel : MonoBehaviour
         {
             sb.Append("Caméra : introuvable\n");
         }
+        sb.Append(Loc.T("diag.session", Mathf.RoundToInt(GameLog.SessionSeconds))).Append('\n');
+        sb.Append(Loc.T("diag.events")).Append('\n');
+        if (GameLog.Entries.Count == 0) sb.Append("  ").Append(Loc.T("diag.none")).Append('\n');
+        for (int i = Mathf.Max(0, GameLog.Entries.Count - 6); i < GameLog.Entries.Count; i++) sb.Append("  ").Append(GameLog.Entries[i]).Append('\n');
         sb.Append("Messages (10 derniers) :\n");
         if (messages.Count == 0) sb.Append("  aucun\n");
         foreach (string m in messages) sb.Append("  ").Append(m).Append('\n');

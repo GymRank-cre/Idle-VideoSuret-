@@ -101,6 +101,7 @@ public class UnlockPad : MonoBehaviour
 
     void Unlock(bool silent = false)
     {
+        if (!silent) GameLog.Event("déblocage " + (string.IsNullOrEmpty(saveId) ? name : saveId));
         if (!silent)
         {
             AudioManager.Play(isHire ? SfxId.Hire : SfxId.Unlock);

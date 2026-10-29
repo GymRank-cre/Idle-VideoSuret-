@@ -1,7 +1,7 @@
 # Statut local (Claude Code, PC de Sébastien)
-- Date et heure : 29/10/2026 23:04
-- Étape en cours : Q1 (fondations qualité : test de fumée, tests EditMode, table Loc, journal d'événements)
+- Date et heure : 29/10/2026 23:20
+- Étape en cours : K1b + Q1 terminées et poussées ; démarrage de 11a (plan de 10 lignes d'abord)
 - État : en cours
-- Dernier build WebGL : K1 (poussé, commit 881d48f)
-- Prochaines actions : Q1 puis 11a (plan de 10 lignes d'abord)
+- Dernier build WebGL : K1b+Q1 (poussé)
+- Prochaines actions : plan 11a dans TACHES.md, puis code
 - Problème : aucun

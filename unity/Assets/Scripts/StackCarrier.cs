@@ -13,8 +13,8 @@ public class StackCarrier : MonoBehaviour
     [SerializeField] bool makesSound;         // vrai pour le joueur : son de ramassage
     [SerializeField] float itemHeight = 0.35f;
     [SerializeField] float followSpeed = 14f;
-    [SerializeField] float maxLateralLag = 0.25f; // la pile reste groupée derrière le dos : écart latéral maximum (m)
-    [SerializeField] float maxBackLag = 0.5f;     // et écart maximum vers l'arrière / l'avant (m)
+    [SerializeField] float maxLateralLag = 0.12f; // la pile reste groupée derrière le dos : écart latéral maximum (m)
+    [SerializeField] float maxBackLag = 0.25f;    // et écart maximum vers l'arrière / l'avant (m)
     [SerializeField] GameObject maxIndicator; // étiquette "MAX", facultative
     [SerializeField] float indicatorGap = 0.4f; // hauteur du panneau MAX au-dessus de la dernière caisse
 

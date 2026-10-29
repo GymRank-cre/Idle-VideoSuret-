@@ -42,14 +42,14 @@ public static class WebGLBuilder
 
         RectTransform panel = UpgradeBuilder.Box("Panel", root.transform, rounded, new Color(0.10f, 0.13f, 0.18f, 0.92f), new Vector2(0f, 40f), new Vector2(860f, 560f), false);
         panel.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        Text logo = UpgradeBuilder.Label("Logo", panel, "Idle Sécurité", 130, Color.white, new Vector2(0f, 140f), new Vector2(820f, 170f));
+        Text logo = UpgradeBuilder.Label("Logo", panel, Loc.T("title.logo"), 130, Color.white, new Vector2(0f, 200f), new Vector2(820f, 170f));
         UiTheme.Style(logo, 130, Color.white, 7f);
-        UpgradeBuilder.Label("Sub", panel, "Installation de sécurité électronique", 38, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 60f), new Vector2(780f, 70f));
+        UpgradeBuilder.Label("Sub", panel, Loc.T("title.sub"), 38, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 56f), new Vector2(780f, 70f));
         RectTransform tapBase = UpgradeBuilder.Box("TapBase", panel, rounded, new Color32(0x1F, 0x8F, 0x3A, 0xFF), new Vector2(0f, -124f), new Vector2(560f, 150f), false);
         tapBase.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
         RectTransform tap = UpgradeBuilder.Box("TapPill", panel, rounded, UiTheme.Green, new Vector2(0f, -110f), new Vector2(560f, 150f), false);
         tap.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        UpgradeBuilder.Label("Text", tap, "Jouer", 90, Color.white, Vector2.zero, new Vector2(560f, 150f));
+        UpgradeBuilder.Label("Text", tap, Loc.T("title.play"), 90, Color.white, Vector2.zero, new Vector2(560f, 150f));
 
         var so = new SerializedObject(host.GetComponent<TapToPlayScreen>());
         so.FindProperty("root").objectReferenceValue = root;
