@@ -34,6 +34,7 @@ public class Customer : MonoBehaviour
         OrderType = type;
         Quantity = quantity;
         delivered = 0;
+        valueSum = 0f;
         bubble.Hide();
     }
 
@@ -62,9 +63,13 @@ public class Customer : MonoBehaviour
         bubble.Show(OrderType, Remaining);
     }
 
-    public void Receive()
+    float valueSum;
+    public float AverageValueFactor => delivered > 0 ? valueSum / delivered : 1f; // x1 = produit assemblé
+
+    public void Receive(float valueFactor = 1f)
     {
         delivered++;
+        valueSum += valueFactor;
         bubble.Refresh(OrderType, Mathf.Max(Remaining, 0));
         if (IsComplete) { bubble.Complete(); hopTime = 0f; } // saut de joie
     }

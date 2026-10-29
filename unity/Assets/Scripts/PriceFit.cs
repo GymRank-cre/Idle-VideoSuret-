@@ -10,7 +10,6 @@ public class PriceFit : MonoBehaviour
     [SerializeField] float iconWidth = 0.9f;
     [SerializeField] float gap = 0.08f;
     [SerializeField] float baseScale = 1f;
-    [SerializeField] float height = 0.55f; // position z de la ligne (repère de la dalle)
 
     MeshRenderer meshRenderer;
     float scale = 1f;

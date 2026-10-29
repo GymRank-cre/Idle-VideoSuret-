@@ -122,13 +122,35 @@ public class ProductCarrier : MonoBehaviour
         return false;
     }
 
-    // Retire un produit du type demandé (livraison à un client) ; renvoie null si le joueur n'en porte pas.
-    public Product TryTake(ProductType type)
+    // Retire un produit du stade demandé (dépôt dans une machine de la chaîne) ; null si le joueur n'en porte pas.
+    public Product TryTakeStage(int stage)
     {
         for (int i = 0; i < carried.Count; i++)
         {
-            if (carried[i].Type != type) continue;
+            if (carried[i].Stage != stage) continue;
+            Product p = carried[i];
+            carried.RemoveAt(i);
+            p.transform.SetParent(null, true);
+            OnCountChanged?.Invoke();
+            return p;
+        }
+        return null;
+    }
 
+    // Retire un produit du type demandé (livraison à un client), le plus avancé dans la chaîne d'abord ;
+    // renvoie null si le joueur n'en porte pas.
+    public Product TryTake(ProductType type)
+    {
+        int best = -1;
+        for (int i = 0; i < carried.Count; i++)
+        {
+            if (carried[i].Type != type) continue;
+            if (best < 0 || carried[i].Stage > carried[best].Stage) best = i;
+        }
+
+        if (best >= 0)
+        {
+            int i = best;
             Product p = carried[i];
             carried.RemoveAt(i);
             p.transform.SetParent(null, true);

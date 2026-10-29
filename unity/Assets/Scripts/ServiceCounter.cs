@@ -14,6 +14,7 @@ public class ServiceCounter : MonoBehaviour
         public Vector3 from;
         public float elapsed;
         public bool employee;
+        public int stage;
     }
 
     [SerializeField] CustomerConfig config;
@@ -24,6 +25,7 @@ public class ServiceCounter : MonoBehaviour
     [SerializeField] float targetHeight = 1.1f;  // hauteur visée sur le client
     [SerializeField] UpgradeState upgrades;      // facultatif : amélioration du paiement
     [SerializeField] FeedbackSpawner feedback;   // facultatif
+    [SerializeField] MachineConfig[] stageMachines; // [0] = Test, [1] = Emballage : leur multiplicateur de valeur
 
     readonly List<Delivery> deliveries = new List<Delivery>();
     ObjectPool billPool;
@@ -59,7 +61,7 @@ public class ServiceCounter : MonoBehaviour
         if (product == null) return; // le joueur ne porte pas le bon produit
         timer = 0f;
 
-        deliveries.Add(new Delivery { product = product, customer = head, from = product.transform.position,
+        deliveries.Add(new Delivery { product = product, customer = head, stage = product.Stage, from = product.transform.position,
             employee = other.GetComponent<PlayerController>() == null });
     }
 
@@ -84,12 +86,19 @@ public class ServiceCounter : MonoBehaviour
 
             deliveries.RemoveAt(i);
             d.product.Recycle();
-            d.customer.Receive();
+            d.customer.Receive(StageFactor(d.stage));
             if (feedback != null) feedback.CrateArrived(target);
 
             if (d.customer.IsComplete && !HasDeliveryFor(d.customer))
                 CompleteOrder(d.customer, d.employee);
         }
+    }
+
+    // Valeur d'un produit selon son stade : x1 assemblé, puis le multiplicateur de la machine qui l'a traité.
+    public float StageFactor(int stage)
+    {
+        if (stage <= 0 || stageMachines == null || stage > stageMachines.Length || stageMachines[stage - 1] == null) return 1f;
+        return stageMachines[stage - 1].ValueMultiplier;
     }
 
     bool HasDeliveryFor(Customer c)
@@ -100,7 +109,7 @@ public class ServiceCounter : MonoBehaviour
 
     void CompleteOrder(Customer customer, bool byEmployee = false)
     {
-        int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * (upgrades != null ? upgrades.CustomerPay : 1f));
+        int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * customer.AverageValueFactor * (upgrades != null ? upgrades.CustomerPay : 1f));
         SpawnBills(total);
         AudioManager.PlayAt(SfxId.OrderPaid, customer.transform.position, byEmployee);
         if (feedback != null) feedback.ProductReady(customer.transform.position + Vector3.up * 1.9f); // pop de bonheur
