@@ -116,10 +116,15 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 8c, en attente du module WebGL)_
+**Étape 8c — bloquée : Unity doit être relancé pour charger le module WebGL. Aucun build produit (dossier `E:/PROJET 1/Builds/WebGL` vide).**
+- Le module est bien sur le disque (`PlaybackEngines/WebGLSupport`) et `BuildPipeline.IsBuildTargetSupported(WebGL)` = vrai, mais `BuildPlayer` lève `UnityException: Build target 'WebGL' not supported` (l'éditeur lancé avant l'installation ne l'a pas chargé) puis le menu affiche « Succeeded » avec 0,0 Mo : faux positif. Le menu ne vérifiait que `IsBuildTargetSupported`.
+- Corrections faites en route : (1) le gabarit de page a été comparé au gabarit « Minimal » de Unity 6 : le bloc `memoryUrl`/`MEMORY_FILENAME` (absent de Minimal) est retiré et `codeUrl` passe sous `#if USE_WASM` avec `workerUrl` sous `#if USE_THREADS`, le reste (variables `{{{ ... }}}`, `streamingAssetsUrl`, `productName`...) est conforme ; (2) la première tentative de build a révélé une vraie erreur de compilation WebGL : `Handheld` n'existe pas sur cette plateforme (`AudioManager.VibrateInternal`) : entouré de `#if !UNITY_WEBGL`. Compile toujours sans erreur dans l'éditeur Windows.
+- Les noms d'API `PlayerSettings.WebGL.*` compilent ; leur effet reste à constater au vrai build.
+- Observation : le projet embarque le paquet `com.unity.ai.inference` (Sentis) dont les shaders ralentissent beaucoup la compilation (variantes GLES3) et qui grossira le build ; s'il n'est pas utilisé par le jeu, le retirer allégerait le build WebGL (à confirmer avec Sébastien avant de toucher aux paquets).
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Relancer Unity** : ferme complètement Unity (éditeur) puis rouvre le projet `E:\PROJET 1\IdleSecurite` et dis-le-moi : je relance le build. Je ne peux pas le faire moi-même sans couper le pont MCP.
+- **Paquet `com.unity.ai.inference` (Sentis)** : est-il utilisé ? Sinon puis-je le retirer du projet (allège le build et les temps de compilation) ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

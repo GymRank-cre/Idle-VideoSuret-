@@ -201,6 +201,8 @@ public class AudioManager : MonoBehaviour
         float now = Time.unscaledTime;
         if (now - lastVibration < config.MinVibrationGap) return;
         lastVibration = now;
-        Handheld.Vibrate();
+#if !UNITY_WEBGL
+        Handheld.Vibrate(); // pas de vibration sur WebGL
+#endif
     }
 }

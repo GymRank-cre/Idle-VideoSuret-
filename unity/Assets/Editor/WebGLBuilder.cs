@@ -155,9 +155,11 @@ public static class WebGLBuilder
       createUnityInstance(document.querySelector(""#unity-canvas""), {
         dataUrl: ""Build/{{{ DATA_FILENAME }}}"",
         frameworkUrl: ""Build/{{{ FRAMEWORK_FILENAME }}}"",
+#if USE_THREADS
+        workerUrl: ""Build/{{{ WORKER_FILENAME }}}"",
+#endif
+#if USE_WASM
         codeUrl: ""Build/{{{ CODE_FILENAME }}}"",
-#if MEMORY_FILENAME
-        memoryUrl: ""Build/{{{ MEMORY_FILENAME }}}"",
 #endif
 #if SYMBOLS_FILENAME
         symbolsUrl: ""Build/{{{ SYMBOLS_FILENAME }}}"",
