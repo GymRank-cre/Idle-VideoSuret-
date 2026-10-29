@@ -129,6 +129,25 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - **Vercel** : l'import du dépôt est à faire par Sébastien ; je ne peux pas vérifier qu'une branche non principale est déployée en « Preview » sur son compte (réglage « Ignored Build Step » / branches).
 - **Son sur iPhone** : à vérifier dès que le lien existe (Safari exige le toucher sur « Touche pour jouer »).
 
+## Relecture cloud de l'étape 8d + test iPhone de Sébastien : le jeu tourne, 4 défauts relevés sur sa vidéo
+Le build WebGL est en ligne (aperçu Vercel `/webgl/`) et joue sur l'iPhone de Sébastien (Safari). Sébastien a envoyé une **vidéo d'écran** (`ScreenRecording`, 19 s, 1170×2532) : le jeu est fluide, le guide, le HUD et la sauvegarde fonctionnent (partie reprise à « Embauche un livreur »). Défauts relevés :
+1. **Le joystick ne se déclenche que dans la moitié gauche de l'écran** (`JoystickArea` ancrée de `(0,0)` à `(0.6,1)` dans `PrototypeSetup.BuildJoystick`). Sébastien « ne peut pas mettre le doigt à droite » : sur téléphone on joue souvent au pouce droit. **Le rond du joystick n'apparaît jamais à droite.**
+2. **Titre et prix des dalles se chevauchent** (« LIVREUR » écrase « $ 250 », visible sur la vidéo à la dalle LIVREUR) : le chevauchement existe aussi dans la version WebGL, même si la capture de 6c l'avait corrigé en éditeur. Les textes 3D (`TextMesh`) et `FaceCamera.keepScreenSize` se comportent autrement en WebGL / sur écran étroit.
+3. **La zone de jeu est courte** dans le navigateur intégré de Safari (barres haut et bas, rapport hauteur/largeur ~ 1,95) : le joueur n'est pas au centre de la vue et on voit trop de sol vide en bas.
+4. **La pile de caisses** portée dans le dos paraît décalée/inclinée sur le côté du personnage quand il marche (visible sur la vidéo à 12 s) : acceptable, mais à surveiller.
+
+## Tâche en cours : étape 9a — Joystick plein écran et correctifs du test iPhone
+1. **Joystick sur tout l'écran** : la zone de capture du joystick doit couvrir **tout l'écran** (ancres `(0,0)` à `(1,1)`), sous les boutons. Les boutons (Améliorations, engrenage des réglages, panneaux, écran « Touche pour jouer », « Bon retour ») restent prioritaires : un toucher qui commence sur un bouton ou un panneau ouvert **ne démarre pas** le joystick (vérifier l'ordre des enfants du Canvas et `raycastTarget`). Garder un seul doigt actif pour le joystick (`pointerId`), le deuxième doigt est ignoré. Tester à la souris dans l'éditeur ET en émulation tactile dans le navigateur.
+2. **Chevauchement des textes de dalle** : séparer clairement titre et prix (distance mesurée en pixels écran, pas en mètres), tailles lisibles sur un iPhone, aucun recouvrement à 390×844 ni à 430×932, avec la caméra de jeu réelle. Capture dans le navigateur (émulation mobile) à l'appui.
+3. **Cadrage selon le rapport hauteur/largeur** : adapter automatiquement le champ de vision (ou la distance de la caméra) pour que la zone de jeu visible soit la même quelle que soit la forme de l'écran (écrans étroits de Safari comme plein écran), joueur au centre de la vue. Vérifier 390×844, 390×700 (barres Safari) et 430×932.
+4. **Retour visuel du joystick** : léger agrandissement du rond de fond (taille adaptée au pouce), opacité un peu plus forte.
+5. Reconstruire le build WebGL, remplacer `webgl/` dans le dépôt, pousser (même branche). Sébastien rouvrira le lien Vercel (nouvelle adresse d'aperçu).
+6. Captures `9a-` : joystick utilisé à droite (rond visible à droite), dalle LIVREUR sans chevauchement, trois formats d'écran.
+
+**Critères de réussite :** 0 erreur ; le joueur se déplace en posant le doigt n'importe où sur l'écran hors boutons ; les boutons restent cliquables ; textes de dalle lisibles ; cadrage cohérent sur les trois formats ; gameplay inchangé.
+
+---
+
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
 - Ajoutés : `StationConfig`, `ObjectPool`, `ProgressBar3D`, `InstallStation` ; `PrototypeSetup` construit le poste en `(-6, 0.1, 0)`, `Assets/Prototype/StationConfig.asset` (conservé s'il existe), prefab `Bill`, barre au-dessus du poste. `ResourcePile` non modifié.
@@ -467,3 +486,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 8c relue : validée (build WebGL 17 Mo fonctionnel dans Chrome mobile). Étape 8d : mise en ligne du build via l'intégration Git de Vercel (Sébastien sur téléphone).
 - Sébastien a importé le dépôt dans Vercel : commit de déclenchement de l'aperçu de la branche (test du build WebGL sur iPhone, URL `<aperçu>/webgl/`).
 - **Jalon : le build WebGL fonctionne sur l'iPhone de Sébastien** (Safari, aperçu Vercel `/webgl/`). Prochaine étape : retours de jeu de Sébastien (rythme, joystick, lisibilité, son) avant toute nouvelle fonction. Ne rien commencer sans spécification du cloud dans ce fichier.
+- Test iPhone de Sébastien (vidéo) : joystick limité à la moitié gauche de l'écran et chevauchement des textes de dalle en WebGL. Étape 9a spécifiée.
