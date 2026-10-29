@@ -30,6 +30,7 @@ public class OfflineWelcomeScreen : MonoBehaviour
     void Claim()
     {
         root.SetActive(false);
+        AudioManager.Play(SfxId.Click);
         onClaim?.Invoke();
     }
 

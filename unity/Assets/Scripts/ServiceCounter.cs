@@ -100,6 +100,7 @@ public class ServiceCounter : MonoBehaviour
     {
         int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * (upgrades != null ? upgrades.CustomerPay : 1f));
         SpawnBills(total);
+        AudioManager.Play(SfxId.OrderPaid);
         if (feedback != null) feedback.ProductReady(customer.transform.position + Vector3.up * 1.9f); // pop de bonheur
         queue.Pay(customer);
     }

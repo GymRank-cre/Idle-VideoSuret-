@@ -14,6 +14,7 @@ public class SaveSystem : MonoBehaviour
     [SerializeField] GameObject haulerObject;     // porteur de caisses (actif = embauché)
     [SerializeField] GameObject courierObject;    // livreur
     [SerializeField] UpgradeState upgradeState;
+    [SerializeField] AudioManager audioManager;
     [SerializeField] GuideConfig guideConfig;
     [SerializeField] OfflineConfig offlineConfig;
     [SerializeField] StationConfig stationConfig;
@@ -25,6 +26,8 @@ public class SaveSystem : MonoBehaviour
 
     // Vrai pendant un test « absence simulée » ou « effacer » en Play : plus aucune écriture.
     public static bool Suspended;
+
+    static string guideKey = "guide_done";
 
     SaveData loaded;
     SaveData pending;      // gain hors ligne en attente de récupération
@@ -38,6 +41,7 @@ public class SaveSystem : MonoBehaviour
     void Awake()
     {
         Suspended = false;
+        if (guideConfig != null) guideKey = guideConfig.DoneKey;
         loaded = Read();
         // Avant tous les Start : le guide lit ce drapeau.
         if (loaded != null && loaded.guideDone && guideConfig != null)
@@ -48,6 +52,8 @@ public class SaveSystem : MonoBehaviour
     {
         if (loaded == null) return; // nouvelle partie : le gameplay est inchangé
 
+        if (audioManager != null && loaded.settingsSaved)
+            audioManager.Apply(loaded.soundOn, loaded.musicOn, loaded.vibrationOn);
         wallet.Add(loaded.money);
         if (upgradeState != null)
             foreach (SaveData.UpgradeLevel u in loaded.upgrades)
@@ -67,7 +73,8 @@ public class SaveSystem : MonoBehaviour
                 loaded.employees.Contains("courier"), offlineConfig, stationConfig, haulerConfig, courierConfig, customerConfig,
                 upgradeState != null ? upgradeState.JobDuration : 1f,
                 upgradeState != null ? upgradeState.EmployeeSpeed : 1f,
-                upgradeState != null ? upgradeState.CustomerPay : 1f);
+                upgradeState != null ? upgradeState.CustomerPay : 1f,
+                upgradeState != null ? upgradeState.EmployeeExtraCapacity : 0);
             pending.pendingSeconds = Math.Max(0, elapsed);
         }
 
@@ -116,6 +123,10 @@ public class SaveSystem : MonoBehaviour
             money = wallet.Money,
             lastSaveUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             guideDone = guideConfig != null && PlayerPrefs.GetInt(guideConfig.DoneKey, 0) == 1,
+            settingsSaved = audioManager != null,
+            soundOn = audioManager == null || audioManager.SoundOn,
+            musicOn = audioManager != null && audioManager.MusicOn,
+            vibrationOn = audioManager == null || audioManager.VibrationOn,
             pendingOffline = pending != null ? pending.pendingOffline : 0,
             pendingSeconds = pending != null ? pending.pendingSeconds : 0
         };
@@ -200,10 +211,23 @@ public class SaveSystem : MonoBehaviour
             data.version = 2;
         }
         if (data.upgrades == null) data.upgrades = new System.Collections.Generic.List<SaveData.UpgradeLevel>();
+        if (data.version < 3)
+        {
+            data.settingsSaved = false; // v2 : pas de réglages, valeurs par défaut
+            data.version = 3;
+        }
         return data;
     }
 
     // ------------------------------------------------------------------ outils de test (menus de l'éditeur)
+
+    // Bouton « Effacer la sauvegarde » des réglages : fichier, copie de secours et mémoire du guide.
+    public static void EraseEverything()
+    {
+        DeleteSave();
+        PlayerPrefs.DeleteKey(guideKey);
+        PlayerPrefs.Save();
+    }
 
     public static void DeleteSave()
     {

@@ -11,7 +11,7 @@ public static class UpgradeBuilder
     {
         string path = Root + "/UpgradeConfig.asset";
         UpgradeConfig config = AssetDatabase.LoadAssetAtPath<UpgradeConfig>(path);
-        if (config != null) return config; // réglages conservés s'il existe
+        if (config != null) return EnsureEmployeeCapacity(config); // réglages conservés s'il existe
 
         config = ScriptableObject.CreateInstance<UpgradeConfig>();
         AssetDatabase.CreateAsset(config, path);
@@ -25,6 +25,7 @@ public static class UpgradeBuilder
             new object[] { "job_speed", "Vitesse de fabrication", UpgradeKind.JobSpeed, 100, 0.07f },
             new object[] { "customer_pay", "Paiement des clients", UpgradeKind.CustomerPay, 120, 0.08f },
             new object[] { "employee_speed", "Vitesse des employés", UpgradeKind.EmployeeSpeed, 140, 0.08f },
+            new object[] { "employee_capacity", "Capacité des employés", UpgradeKind.EmployeeCapacity, 160, 1f },
         };
         list.arraySize = rows.Length;
         for (int i = 0; i < rows.Length; i++)
@@ -39,6 +40,29 @@ public static class UpgradeBuilder
             e.FindPropertyRelative("effectPerLevel").floatValue = (float)rows[i][4];
         }
         so.ApplyModifiedPropertiesWithoutUndo();
+        return config;
+    }
+
+    // Un asset créé avant la 6e amélioration la reçoit sans perdre les réglages existants.
+    static UpgradeConfig EnsureEmployeeCapacity(UpgradeConfig config)
+    {
+        foreach (UpgradeConfig.Upgrade u in config.Upgrades)
+            if (u.kind == UpgradeKind.EmployeeCapacity) return config;
+
+        var so = new SerializedObject(config);
+        SerializedProperty list = so.FindProperty("upgrades");
+        int i = list.arraySize;
+        list.arraySize = i + 1;
+        SerializedProperty e = list.GetArrayElementAtIndex(i);
+        e.FindPropertyRelative("id").stringValue = "employee_capacity";
+        e.FindPropertyRelative("displayName").stringValue = "Capacité des employés";
+        e.FindPropertyRelative("kind").enumValueIndex = (int)UpgradeKind.EmployeeCapacity;
+        e.FindPropertyRelative("baseCost").intValue = 160;
+        e.FindPropertyRelative("costGrowth").floatValue = 1.35f;
+        e.FindPropertyRelative("maxLevel").intValue = 10;
+        e.FindPropertyRelative("effectPerLevel").floatValue = 1f;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(config);
         return config;
     }
 
@@ -86,13 +110,31 @@ public static class UpgradeBuilder
         foreach (ServiceCounter c in Object.FindObjectsByType<ServiceCounter>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             SetRef(c, "upgrades", state);
         foreach (Employee e in Object.FindObjectsByType<Employee>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
             SetRef(e, "upgrades", state);
+            StackCarrier haul = e.GetComponent<StackCarrier>(); // « Capacité des employés » : caisses du porteur
+            SetRef(haul, "upgrades", state);
+            SetBool(haul, "employee", true);
+        }
         foreach (Courier c in Object.FindObjectsByType<Courier>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
             SetRef(c, "upgrades", state);
+            SetRef(c.GetComponent<ProductCarrier>(), "upgrades", state); // produits portés par le livreur
+        }
 
         CameraFollow follow = Camera.main != null ? Camera.main.GetComponent<CameraFollow>() : null;
         foreach (UnlockPad pad in Object.FindObjectsByType<UnlockPad>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             SetRef(pad, "cameraFollow", follow);
+    }
+
+    static void SetBool(Object target, string field, bool value)
+    {
+        if (target == null) return;
+        var so = new SerializedObject(target);
+        SerializedProperty p = so.FindProperty(field);
+        if (p == null) return;
+        p.boolValue = value;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     static void SetRef(Object target, string field, Object value)
@@ -124,6 +166,11 @@ public static class UpgradeBuilder
         Box("ArrowStem", button, round, Color.white, new Vector2(0f, -14f), new Vector2(26f, 44f), false);
         RectTransform dot = Box("Dot", button, circle, new Color(1f, 0.25f, 0.2f), new Vector2(56f, 56f), new Vector2(46f, 46f), false);
         Box("DotRim", dot, circle, new Color(1f, 1f, 1f, 0.9f), Vector2.zero, new Vector2(24f, 24f), false);
+
+        // Le bouton n'apparaît qu'après l'embauche du porteur (dalle EMBAUCHE), avec un gonflement.
+        button.gameObject.AddComponent<PopIn>();
+        button.gameObject.SetActive(false);
+        AddReveal("HirePad", button.gameObject);
 
         // Panneau
         GameObject panelGo = new GameObject("UpgradePanel", typeof(RectTransform), typeof(PopIn));
@@ -171,6 +218,20 @@ public static class UpgradeBuilder
         pso.ApplyModifiedPropertiesWithoutUndo();
     }
 
+    static void AddReveal(string padName, GameObject extra)
+    {
+        foreach (UnlockPad pad in Object.FindObjectsByType<UnlockPad>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (pad.name != padName) continue;
+            var so = new SerializedObject(pad);
+            SerializedProperty list = so.FindProperty("revealOnUnlock");
+            int i = list.arraySize;
+            list.arraySize = i + 1;
+            list.GetArrayElementAtIndex(i).objectReferenceValue = extra;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
     static UpgradeRow BuildRow(RectTransform panel, Sprite round, Sprite circle, Sprite rounded, UpgradeConfig.Upgrade u, Vector2 pos, float height)
     {
         RectTransform row = Box("Row_" + u.id, panel, rounded, new Color(1f, 1f, 1f, 0.08f), pos, new Vector2(920f, height), false);
@@ -207,11 +268,15 @@ public static class UpgradeBuilder
         Color[] colors =
         {
             new Color(0.72f, 0.5f, 0.28f), new Color(0.25f, 0.55f, 0.95f), new Color(0.95f, 0.6f, 0.15f),
-            new Color(0.25f, 0.75f, 0.35f), new Color(0.6f, 0.4f, 0.9f)
+            new Color(0.25f, 0.75f, 0.35f), new Color(0.6f, 0.4f, 0.9f), new Color(0.2f, 0.7f, 0.75f)
         };
         RectTransform icon = Box("Icon", row, circle, colors[(int)kind], new Vector2(-370f, 0f), new Vector2(110f, 110f), false);
         switch (kind)
         {
+            case UpgradeKind.EmployeeCapacity: // deux caisses empilées
+                Box("CrateB", icon, round, new Color(0.95f, 0.85f, 0.62f), new Vector2(0f, -12f), new Vector2(56f, 30f), false);
+                Box("CrateT", icon, round, new Color(0.85f, 0.72f, 0.5f), new Vector2(0f, 18f), new Vector2(44f, 26f), false);
+                break;
             case UpgradeKind.StackCapacity: // caisse
                 Box("Crate", icon, round, new Color(0.95f, 0.85f, 0.62f), Vector2.zero, new Vector2(56f, 46f), false);
                 Box("Tape", icon, round, new Color(0.72f, 0.5f, 0.28f), Vector2.zero, new Vector2(12f, 46f), false);
@@ -233,12 +298,12 @@ public static class UpgradeBuilder
         }
     }
 
-    static void Rot(RectTransform rt, float angle)
+    internal static void Rot(RectTransform rt, float angle)
     {
         rt.localRotation = Quaternion.Euler(0f, 0f, angle);
     }
 
-    static RectTransform Box(string name, Transform parent, Sprite sprite, Color color, Vector2 pos, Vector2 size, bool button)
+    internal static RectTransform Box(string name, Transform parent, Sprite sprite, Color color, Vector2 pos, Vector2 size, bool button)
     {
         GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
         go.transform.SetParent(parent, false);
@@ -259,7 +324,7 @@ public static class UpgradeBuilder
         return rt;
     }
 
-    static Text Label(string name, Transform parent, string text, int size, Color color, Vector2 pos, Vector2 box)
+    internal static Text Label(string name, Transform parent, string text, int size, Color color, Vector2 pos, Vector2 box)
     {
         GameObject go = new GameObject(name, typeof(RectTransform), typeof(Text));
         go.transform.SetParent(parent, false);

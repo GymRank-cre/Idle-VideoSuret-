@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum UpgradeKind { StackCapacity, PlayerSpeed, JobSpeed, CustomerPay, EmployeeSpeed }
+public enum UpgradeKind { StackCapacity, PlayerSpeed, JobSpeed, CustomerPay, EmployeeSpeed, EmployeeCapacity }
 
 // Liste des améliorations achetables. Aucun niveau n'est écrit ici : les niveaux vivent dans UpgradeState (runtime).
 [CreateAssetMenu(fileName = "UpgradeConfig", menuName = "Idle/Upgrade Config")]
@@ -37,11 +37,12 @@ public class UpgradeConfig : ScriptableObject
             if (u.kind != kind) continue;
             switch (kind)
             {
-                case UpgradeKind.StackCapacity: return u.effectPerLevel * level;
+                case UpgradeKind.StackCapacity:
+                case UpgradeKind.EmployeeCapacity: return u.effectPerLevel * level;
                 case UpgradeKind.JobSpeed: return Mathf.Max(0.2f, 1f - u.effectPerLevel * level); // durée du travail
                 default: return 1f + u.effectPerLevel * level;
             }
         }
-        return kind == UpgradeKind.StackCapacity ? 0f : 1f;
+        return kind == UpgradeKind.StackCapacity || kind == UpgradeKind.EmployeeCapacity ? 0f : 1f;
     }
 }

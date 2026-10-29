@@ -112,10 +112,27 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-_(vide — étape 8a)_
+**Étape 8a — compile (0 erreur, 0 warning), Build scene OK, testée via MCP en Play. Captures `8a-01-bouton-engrenage` et `8a-02-reglages`. Je n'ai rien écouté (pas d'oreilles) : tout est mesuré par script.**
+
+**Suites de la relecture 7b (faites d'abord)**
+- Le **bouton Améliorations n'apparaît qu'après l'embauche du porteur** (`PopIn`, via `revealOnUnlock` de la dalle EMBAUCHE ; le déplacement de caméra ne vise que des dalles). Vérifié : caché au départ, toujours caché après la dalle du poste 2, visible après l'embauche du porteur. Au rechargement d'une partie où le porteur est embauché, il est visible.
+- **6e amélioration « Capacité des employés »** (+1 caisse portée par le porteur, +1 produit porté par le livreur, max 10, coût de base 160) : `UpgradeKind.EmployeeCapacity`, `StackCarrier.employee`, `ProductCarrier` lit l'amélioration, `OfflineEarnings` ajoute le bonus aux capacités du porteur et du livreur. Un asset `UpgradeConfig` existant reçoit la ligne sans perdre ses réglages.
+
+**8a — sons**
+- `SfxLibrary` : 10 clips générés par code au démarrage (`AudioManager.Awake`), jamais pendant le jeu : ramassage (pop), dépôt (choc sourd), produit prêt (ding), billet (2 notes), commande payée (2 tintements), déblocage (arpège), achat d'amélioration (accord montant), embauche (fanfare), clic, refus (bip grave). Chacun est branché : ramassage du joueur (`StackCarrier.makesSound`), dépôt et produit prêt (`InstallStation`), billets (`BillCollector`), commande (`ServiceCounter`), dalles (`UnlockPad`, fanfare pour les dalles d'embauche), achats, clics des boutons, refus quand on clique « $ coût » sans assez d'argent (le bouton reste cliquable pour pouvoir refuser). Vérifié que les 10 sons sont bien déclenchés en jeu.
+- **Mesures** (menu `Tools > Idle Prototype > Mesurer les sons`) : RMS commun à -20,0 dBFS pour les 10 sons (écart 0,0 dB, mesuré sur la partie sonore, hors silence), crêtes 0,17 à 0,46 (jamais au-dessus de 0,9). Durées : pop 0,10 s, dépôt 0,20 s, ding 0,50 s, billet 0,26 s, commande 0,70 s, déblocage 0,62 s, achat 0,70 s, embauche 0,95 s, clic 0,05 s, refus 0,30 s.
+- **Hauteur des billets** : testé : chaîne de 12 billets = 1,00 1,06 1,12 1,19 1,26 1,33 1,41 1,50 1,59 puis plafond 1,59 ; après 1 s de pause retour à 1,00 (fenêtre 0,6 s, 8 demi-tons, `MusicConfig`).
+- **`AudioManager`** : instance unique, pool de 8 sources 2D, 1 source de musique ; 8 demandes simultanées du même son = 3 lectures ; pool plein = remplace le son le plus ancien. **Allocation : 0 octet** pour 5 500 appels de lecture (`GC.GetAllocatedBytesForCurrentThread`).
+- **Musique** : `MusicConfig` (champ `AudioClip` facultatif) ; sans fichier, boucle de 32 s générée (nappe de sinus la mineur sur 4 accords + petite mélodie pentatonique, RMS -26,5 dBFS, crête 0,18, volume 0,22). **Je ne peux pas juger si elle est agréable : je l'ai désactivée par défaut** (`musicOnByDefault` = faux) ; à écouter puis à activer dans Réglages ou dans l'asset.
+- **Vibrations** : `Handheld.Vibrate()` seulement pour déblocage, embauche, achat ; 0,5 s mini entre deux ; seulement sur mobile (`Application.isMobilePlatform`) ; désactivable. **Non testé sur appareil** (impossible dans l'éditeur).
+- **Réglages** : bouton engrenage discret en haut au centre, panneau arrondi avec trois interrupteurs (Sons, Musique, Vibrations) et « Effacer la sauvegarde » avec confirmation (Annuler / Effacer ; efface fichier, copie de secours et guide, puis recharge la scène). Testé : interrupteurs mémorisés après arrêt/relance de Play (sauvegarde **version 3**, `settingsSaved`, migration 2 -> 3 = valeurs par défaut) ; Annuler laisse la sauvegarde ; Effacer la supprime. « Sons » coupe aussi la musique. Le périphérique audio absent n'a jamais produit d'erreur (Console propre).
+- **À écouter** : menu `Tools > Idle Prototype > Écouter les sons` : joue les 10 sons (1,2 s d'écart) avec leur nom dans la Console, puis 12 s de musique (API interne `AudioUtil` de l'éditeur ; si ton Unity la refuse, dis-le-moi).
+- Le jeu est identique visuellement, hors engrenage et bouton Améliorations caché au départ.
 
 ## Questions (à remplir par Claude Code local)
-_(vide)_
+- **Écoute** : peux-tu lancer `Écouter les sons` et me dire ce qui ne va pas (trop aigu, trop long, trop fort, musique fatigante) ? Je ne peux pas le juger moi-même.
+- **Musique par défaut** : activée ou non une fois écoutée ? Ou on attend un vrai fichier libre de droits ?
+- **Sons des employés** : le dépôt de caisses du porteur déclenche aussi le choc sourd (même poste) ; faut-il les rendre plus discrets que ceux du joueur ?
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**

@@ -60,8 +60,15 @@ public class UpgradePanel : MonoBehaviour
 
     void Toggle()
     {
-        if (panel.activeSelf) Close();
-        else Open();
+        if (panel.activeSelf)
+        {
+            Close();
+        }
+        else
+        {
+            AudioManager.Play(SfxId.Click);
+            Open();
+        }
     }
 
     void Open()
@@ -73,6 +80,7 @@ public class UpgradePanel : MonoBehaviour
 
     void Close()
     {
+        AudioManager.Play(SfxId.Click);
         panel.SetActive(false);
     }
 
@@ -86,6 +94,8 @@ public class UpgradePanel : MonoBehaviour
     void Purchased(int index)
     {
         rows[index].Pop();
+        AudioManager.Play(SfxId.Upgrade);
+        AudioManager.Vibrate();
         RefreshRows();
         if (feedback == null || player == null) return;
         feedback.Sparkle(player.position + Vector3.up * 1.3f);

@@ -66,6 +66,17 @@ public static class EmployeeBuilder
             .FirstOrDefault(p => p.name == "UnlockPad");
         SetReveal(station2Pad, haulerPad);
         SetReveal(haulerPad, courierPad);
+        MarkHire(haulerPad);
+        MarkHire(courierPad);
+    }
+
+    // Dalle d'embauche : fanfare au lieu de l'arpège de déblocage.
+    static void MarkHire(UnlockPad pad)
+    {
+        if (pad == null) return;
+        var so = new SerializedObject(pad);
+        so.FindProperty("isHire").boolValue = true;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     static void SetReveal(UnlockPad from, UnlockPad next)

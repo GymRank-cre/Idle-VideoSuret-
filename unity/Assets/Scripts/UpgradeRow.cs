@@ -22,7 +22,7 @@ public class UpgradeRow : MonoBehaviour
     {
         state = upgradeState;
         index = upgradeIndex;
-        buyButton.onClick.AddListener(() => state.TryBuy(index));
+        buyButton.onClick.AddListener(() => { if (!state.TryBuy(index)) AudioManager.Play(SfxId.Refuse); }); // argent insuffisant : bip grave
         Refresh();
     }
 
@@ -32,6 +32,7 @@ public class UpgradeRow : MonoBehaviour
         switch (u.kind)
         {
             case UpgradeKind.StackCapacity: return "+" + Mathf.RoundToInt(u.effectPerLevel) + " caisse";
+            case UpgradeKind.EmployeeCapacity: return "+" + Mathf.RoundToInt(u.effectPerLevel) + " charge employés";
             case UpgradeKind.PlayerSpeed: return "+" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % vitesse";
             case UpgradeKind.JobSpeed: return "-" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % durée";
             case UpgradeKind.CustomerPay: return "+" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % paiement";
@@ -58,7 +59,6 @@ public class UpgradeRow : MonoBehaviour
         effectText.text = "Prochain : " + Short(u);
         buyLabel.text = "$ " + state.NextCost(index);
         bool ok = state.CanAfford(index);
-        buyButton.interactable = ok;
         buyImage.color = ok ? affordableColor : lockedColor;
     }
 

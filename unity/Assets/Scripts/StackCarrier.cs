@@ -8,7 +8,9 @@ public class StackCarrier : MonoBehaviour
 {
     [SerializeField] Transform stackAnchor;   // vide placé dans le dos du joueur
     [SerializeField] int capacity = 8;
-    [SerializeField] UpgradeState upgrades;   // facultatif : améliorations de capacité (joueur seulement)
+    [SerializeField] UpgradeState upgrades;   // facultatif : améliorations de capacité
+    [SerializeField] bool employee;           // vrai : lit « Capacité des employés » au lieu de « Capacité de la pile »
+    [SerializeField] bool makesSound;         // vrai pour le joueur : son de ramassage
     [SerializeField] float itemHeight = 0.35f;
     [SerializeField] float followSpeed = 14f;
     [SerializeField] GameObject maxIndicator; // étiquette "MAX", facultative
@@ -17,7 +19,7 @@ public class StackCarrier : MonoBehaviour
     readonly List<Transform> items = new List<Transform>();
 
     public int Count => items.Count;
-    public int Capacity => capacity + (upgrades != null ? upgrades.ExtraCapacity : 0);
+    public int Capacity => capacity + (upgrades == null ? 0 : employee ? upgrades.EmployeeExtraCapacity : upgrades.ExtraCapacity);
     public event System.Action OnCountChanged;
     public bool IsFull => items.Count >= Capacity;
     public bool IsEmpty => items.Count == 0;
@@ -49,6 +51,7 @@ public class StackCarrier : MonoBehaviour
 
         item.SetParent(null); // suit en coordonnées monde, pour l'effet de balancement
         items.Add(item);
+        if (makesSound) AudioManager.Play(SfxId.Pickup);
         UpdateIndicator();
         return true;
     }

@@ -105,6 +105,7 @@ public class InstallStation : MonoBehaviour
                 flights.RemoveAt(i);
                 storedCrates++;
                 if (feedback != null) feedback.CrateArrived(CrateTarget);
+                AudioManager.Play(SfxId.Deposit);
             }
             else
             {
@@ -213,6 +214,7 @@ public class InstallStation : MonoBehaviour
             product.Init(type, pool.Release, OnProductTaken);
             slots[slot] = product;
             if (feedback != null) feedback.ProductReady(pos);
+            AudioManager.Play(SfxId.ProductReady);
         }
     }
 

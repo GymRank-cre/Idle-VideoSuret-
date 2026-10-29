@@ -9,6 +9,7 @@ public class ProductCarrier : MonoBehaviour
     [SerializeField] Transform carryAnchor;      // devant le torse ; les places sont posées autour de ce point
     [SerializeField] GameObject trayVisual;      // petit plateau, visible seulement quand on porte quelque chose
     [SerializeField, Min(1)] int capacity = 4;
+    [SerializeField] UpgradeState upgrades;      // facultatif : « Capacité des employés » (livreur seulement)
     [SerializeField] float pickupRadius = 1.4f;
     [SerializeField] float flightDuration = 0.2f;
     [SerializeField] float slotSpacingX = 0.3f;  // écart entre les 2 colonnes
@@ -27,8 +28,8 @@ public class ProductCarrier : MonoBehaviour
     readonly Collider[] hits = new Collider[32];
 
     public int Count => carried.Count;
-    public int Capacity => capacity;
-    public bool IsFull => carried.Count + flights.Count >= capacity;
+    public int Capacity => capacity + (upgrades != null ? upgrades.EmployeeExtraCapacity : 0);
+    public bool IsFull => carried.Count + flights.Count >= Capacity;
     public event Action OnCountChanged;
 
     void Start()

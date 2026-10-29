@@ -78,6 +78,7 @@ public static class PrototypeSetup
         carrierSo.FindProperty("stackAnchor").objectReferenceValue = anchor.transform;
         carrierSo.FindProperty("maxIndicator").objectReferenceValue = maxIndicator;
         carrierSo.FindProperty("itemHeight").floatValue = StackItemHeight;
+        carrierSo.FindProperty("makesSound").boolValue = true; // son de ramassage du joueur
         carrierSo.ApplyModifiedPropertiesWithoutUndo();
 
         // Caméra
@@ -119,6 +120,7 @@ public static class PrototypeSetup
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
         DemandBuilder.Build(); // production à la demande des clients (étape 6c)
         UpgradeBuilder.Build(); // améliorations : état, bouton et panneau (étape 7b)
+        AudioBuilder.Build(); // sons, musique, réglages (étape 8a)
         GuideBuilder.Build(); // flèche et phrase d'objectif du début de partie (étape 6b)
 
         SaveBuilder.Build(); // sauvegarde, gains hors ligne, écran « Bon retour » (étape 7a)

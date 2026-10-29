@@ -73,10 +73,11 @@ public class UpgradeState : MonoBehaviour
         EnsureLevels();
         for (int i = 0; i < levels.Length; i++)
             if (config.Upgrades[i].kind == kind) return config.Value(kind, levels[i]);
-        return kind == UpgradeKind.StackCapacity ? 0f : 1f;
+        return kind == UpgradeKind.StackCapacity || kind == UpgradeKind.EmployeeCapacity ? 0f : 1f;
     }
 
     public int ExtraCapacity => Mathf.RoundToInt(ValueOf(UpgradeKind.StackCapacity));
+    public int EmployeeExtraCapacity => Mathf.RoundToInt(ValueOf(UpgradeKind.EmployeeCapacity));
     public float PlayerSpeed => ValueOf(UpgradeKind.PlayerSpeed);
     public float JobDuration => ValueOf(UpgradeKind.JobSpeed);   // multiplicateur de durée (< 1 = plus rapide)
     public float CustomerPay => ValueOf(UpgradeKind.CustomerPay);

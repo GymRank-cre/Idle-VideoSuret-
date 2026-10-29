@@ -13,6 +13,7 @@ public class UnlockPad : MonoBehaviour
     [SerializeField] GameObject[] revealOnUnlock; // dalles suivantes, cachées tant que celle-ci n'est pas payée
     [SerializeField] FeedbackSpawner feedback;    // facultatif : étincelle quand une dalle suivante apparaît
     [SerializeField] CameraFollow cameraFollow;   // facultatif : montre brièvement la dalle qui apparaît
+    [SerializeField] bool isHire;                 // dalle d'embauche : fanfare au lieu de l'arpège
     [SerializeField] string saveId;               // identifiant stable pour la sauvegarde
 
     int remainingPrice;
@@ -84,6 +85,11 @@ public class UnlockPad : MonoBehaviour
 
     void Unlock(bool silent = false)
     {
+        if (!silent)
+        {
+            AudioManager.Play(isHire ? SfxId.Hire : SfxId.Unlock);
+            AudioManager.Vibrate();
+        }
         target.SetActive(true); // PopIn sur la cible fait le gonflement
         foreach (GameObject next in revealOnUnlock)
         {
@@ -93,7 +99,7 @@ public class UnlockPad : MonoBehaviour
             next.SetActive(true); // PopIn sur la dalle fait le gonflement
             if (silent) continue;
             if (feedback != null) feedback.ProductReady(next.transform.position + Vector3.up * 0.3f);
-            if (cameraFollow != null) cameraFollow.Peek(next.transform, 1.2f);
+            if (cameraFollow != null && nextPad != null) cameraFollow.Peek(next.transform, 1.2f);
         }
         gameObject.SetActive(false);
     }

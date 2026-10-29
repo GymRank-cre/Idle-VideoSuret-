@@ -6,7 +6,7 @@ public static class OfflineEarnings
 {
     public static int Compute(long elapsedSeconds, bool hasHauler, bool hasCourier, OfflineConfig offline,
         StationConfig station, EmployeeConfig hauler, EmployeeConfig courier, CustomerConfig customers,
-        float jobDurationMultiplier = 1f, float employeeSpeedMultiplier = 1f, float payMultiplier = 1f)
+        float jobDurationMultiplier = 1f, float employeeSpeedMultiplier = 1f, float payMultiplier = 1f, int employeeCapacityBonus = 0)
     {
         if (!hasHauler || !hasCourier) return 0;
         if (station.Products == null || station.Products.Length == 0) return 0;
@@ -16,8 +16,8 @@ public static class OfflineEarnings
         double capped = Mathf.Min(seconds, offline.MaxHours * 3600f);
 
         double stationRate = station.ProductsPerJob / ((double)station.JobDuration * jobDurationMultiplier);
-        double haulerRate = hauler.Capacity / ((double)offline.HaulerCycleSeconds / employeeSpeedMultiplier) / station.CratesPerJob;
-        double courierRate = courier.Capacity / ((double)offline.CourierCycleSeconds / employeeSpeedMultiplier);
+        double haulerRate = (hauler.Capacity + employeeCapacityBonus) / ((double)offline.HaulerCycleSeconds / employeeSpeedMultiplier) / station.CratesPerJob;
+        double courierRate = (courier.Capacity + employeeCapacityBonus) / ((double)offline.CourierCycleSeconds / employeeSpeedMultiplier);
         double customerRate = (customers.MinQuantity + customers.MaxQuantity) * 0.5 / customers.SpawnInterval;
         double rate = System.Math.Min(System.Math.Min(stationRate, haulerRate), System.Math.Min(courierRate, customerRate));
 

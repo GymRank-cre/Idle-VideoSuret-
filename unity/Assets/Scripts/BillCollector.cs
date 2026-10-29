@@ -56,6 +56,7 @@ public class BillCollector : MonoBehaviour
             if (t >= 1f)
             {
                 wallet.Add(f.bill.Value);
+                AudioManager.PlayBill();
                 if (feedback != null) feedback.BillCollected(target, f.bill.Value);
                 f.bill.Recycle();
                 flights.RemoveAt(i);

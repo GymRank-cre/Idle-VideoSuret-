@@ -70,6 +70,7 @@ public static class SaveBuilder
         so.FindProperty("haulerObject").objectReferenceValue = hauler;
         so.FindProperty("courierObject").objectReferenceValue = courier;
         so.FindProperty("upgradeState").objectReferenceValue = Object.FindFirstObjectByType<UpgradeState>();
+        so.FindProperty("audioManager").objectReferenceValue = Object.FindFirstObjectByType<AudioManager>();
         so.FindProperty("guideConfig").objectReferenceValue = GuideBuilder.LoadOrCreateConfig();
         so.FindProperty("offlineConfig").objectReferenceValue = LoadOrCreateConfig();
         so.FindProperty("stationConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<StationConfig>(Root + "/StationConfig.asset");
