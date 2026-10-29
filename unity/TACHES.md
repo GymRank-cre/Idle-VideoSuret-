@@ -85,20 +85,26 @@ Le panneau « Améliorations » (panneau arrondi, icônes, niveaux, boutons vert
 - **Plafond d'économie** : oui, ajouter une 6e amélioration « **Capacité des employés** » (+1 caisse portée par le porteur, +1 produit porté par le livreur, par niveau, max 10, coût de base 160). Mettre à jour `OfflineEarnings` en conséquence.
 - **Gain hors ligne** : cohérent pour l'instant ; on re-calibrera quand d'autres postes seront débloqués.
 
-## Tâche en cours : étape 8a — Sons, musique, vibrations et réglages
+## Relecture cloud de l'étape 8a : validée (rigueur des mesures)
+Sons générés sans allocation, volumes alignés à −20 dBFS, hauteur progressive des billets, réglages mémorisés, effacement avec confirmation, bouton d'améliorations caché jusqu'à l'embauche, 6e amélioration : tout est conforme. Le jugement à l'oreille revient à Sébastien (menu `Écouter les sons`). Réponses :
+- **Musique par défaut** : désactivée tant que Sébastien n'a pas écouté (comme tu l'as fait).
+- **Sons des employés** : oui, **plus discrets** : volume à 35 % de celui du joueur, et atténués avec la distance à la caméra (inaudibles au-delà de 12 m) pour ne pas faire un brouhaha avec deux employés.
 
-**Objectif :** que le jeu *sonne* bien. Le son est la moitié du plaisir d'un idle arcade. Sans fichiers externes pour l'instant (tout généré par code), avec un emplacement pour de vrais fichiers plus tard.
-1. **`SfxLibrary`** : génère des `AudioClip` par code (formes d'onde simples avec enveloppe : sinus, carré doux, bruit filtré) pour : ramassage de caisse (pop court), dépôt au poste (choc sourd), produit prêt (ding), ramassage de billet (pièce, deux notes), commande payée (tiroir-caisse : deux tintements), déblocage de dalle (arpège montant), achat d'amélioration (accord montant), embauche (petite fanfare), clic d'interface, refus (argent insuffisant, bip grave). Chaque clip créé une fois au démarrage, pas à chaque lecture (règle : pas d'allocation en jeu).
-2. **Hauteur progressive des billets** : les billets ramassés à moins de 0,6 s d'écart montent d'un demi-ton à chaque billet (jusqu'à 8 puis plafond), puis retombent : c'est le « cha-ching » qui rend les gains addictifs.
-3. **`AudioManager`** (une seule instance) : pool de 8 `AudioSource` pour les effets, 1 source pour la musique, volumes et coupures lus depuis les réglages ; sons 2D, limite d'un même son à 3 lectures simultanées.
-4. **Musique** : `MusicConfig` (ScriptableObject) avec un champ `AudioClip` facultatif (Sébastien fournira un fichier libre de droits plus tard) ; en attendant une **boucle d'ambiance très douce** générée par code (nappe + petite mélodie lente en pentatonique, volume bas). Ne doit pas fatiguer ni saturer ; si le résultat n'est pas agréable, désactiver la musique par défaut et le dire dans Résultats.
-5. **Vibrations** : appel `Handheld.Vibrate()` limité aux gros événements (déblocage de dalle, embauche, achat d'amélioration), avec un délai minimal de 0,5 s, et seulement sur appareil mobile ; coupable dans les réglages.
-6. **Réglages** : un petit bouton engrenage en haut au centre (sous la zone sûre, discret) qui ouvre un panneau dans le même style : interrupteurs **Sons**, **Musique**, **Vibrations**, bouton **Effacer la sauvegarde** avec confirmation. États sauvegardés dans `SaveData` (version 3, migration).
-7. Mesurer par script (sans écouter) : durée de chaque clip, crête et valeur RMS (aucun écrêtage au-dessus de 0,9, volumes homogènes à ±3 dB), absence d'allocation dans l'`Update` de lecture. Noter les valeurs dans Résultats. **Sébastien écoutera sur son PC** : prévoir un menu `Tools > Idle Prototype > Écouter les sons` qui joue tous les sons à la suite avec leur nom.
-8. Captures `8a-` : bouton engrenage, panneau de réglages.
+## Tâche en cours : étape 8b — Préparer un test sur iPhone par le navigateur (WebGL)
 
-**Critères de réussite :** 0 erreur ; chaque événement de la liste a son son ; les trois interrupteurs fonctionnent et sont mémorisés ; aucune erreur audio si le périphérique est absent ; le jeu reste identique visuellement.
-**Hors périmètre :** musique de qualité professionnelle (fichier à fournir), sons d'ambiance, retour haptique fin (nécessite un package), nouveaux mondes.
+**Contexte :** Sébastien a un iPhone, une licence Unity Personal et pas de Mac. Un build cloud iOS n'est pas possible gratuitement. La voie réaliste pour **sentir le jeu sur téléphone** est une version **WebGL** jouable dans Safari, hébergée sur un lien privé. Ne rien publier toi-même : préparer un dossier de build prêt à déployer.
+1. **Vérifier le module** : `WebGL Build Support` est-il installé ? Sinon le noter dans Questions avec la marche à suivre pour Sébastien (Unity Hub > Installations > Ajouter des modules) et passer à la suite (points 2 à 4 sont faisables sans le module).
+2. **SaveSystem compatible WebGL** : sur WebGL, `File.Replace`/`.tmp` et le dossier persistant sont fragiles (système de fichiers en mémoire). Ajouter un repli : sur `UNITY_WEBGL && !UNITY_EDITOR`, enregistrer le JSON dans `PlayerPrefs` (même `version`, même copie de secours sur une 2e clé) puis `PlayerPrefs.Save()`. Garder le comportement actuel partout ailleurs. Ne rien casser des migrations existantes.
+3. **Audio WebGL** : les navigateurs bloquent le son avant un geste de l'utilisateur. Démarrer musique et sons après le premier toucher (écran « Touche pour jouer » très simple, dans le style des panneaux, qui sert aussi de premier geste). Pas de vibration sur WebGL (ignorer proprement).
+4. **Réglages de build WebGL** (via un script éditeur `WebGLBuilder`, menu `Tools > Idle Prototype > Build WebGL de test`) : compression **Gzip** (Brotli exige HTTPS spécifique), `Decompression Fallback` activé (hébergement statique simple), pas de strip risqué, taille de mémoire raisonnable pour Safari iOS (≤ 256 Mo), qualité mobile (ombres douces limitées si besoin), `Run in background` désactivé. Sortie dans `E:\PROJET 1\Builds\WebGL` (hors du projet et hors du dépôt).
+5. **Poids** : relever la taille totale du build (cible < 60 Mo compressés). Si c'est trop gros, réduire d'abord le modèle humain (`Technicien.fbx` : 65 Mo) : supprimer ce qui n'est pas utilisé (animations inutiles, normales/tangentes, compression des maillages), et dire ce qui a été fait.
+6. **Test local** : servir le dossier avec un petit serveur local (`python -m http.server` ou équivalent), charger la page dans un navigateur de bureau et vérifier : chargement, joystick tactile émulé à la souris, sauvegarde conservée au rechargement, pas d'erreur dans la console du navigateur. Si un navigateur sans interface est disponible, le noter ; sinon Sébastien testera.
+7. **Ne pas déployer**. Dans Résultats : taille, durée du build, chemin du dossier, commande exacte à lancer pour servir en local, et la procédure proposée pour un hébergement gratuit (Vercel : `vercel` en ligne de commande depuis ce dossier, connexion par Sébastien).
+8. Captures : écran « Touche pour jouer », une capture de la page dans le navigateur de bureau en 390×844 (format iPhone).
+
+**Critères de réussite :** 0 erreur en éditeur ; le jeu éditeur est inchangé ; le dossier WebGL se charge en local et se joue ; la sauvegarde WebGL fonctionne ; taille indiquée.
+
+**Après la 8b : S'ARRÊTER.** Ne pas inventer de nouvelle étape : attendre que Sébastien ait joué (PC et iPhone) et que le cloud écrive la suite dans ce fichier. Si tu as terminé, continuer seulement à vérifier la branche toutes les 10 minutes.
 
 ---
 
@@ -112,27 +118,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 8a — compile (0 erreur, 0 warning), Build scene OK, testée via MCP en Play. Captures `8a-01-bouton-engrenage` et `8a-02-reglages`. Je n'ai rien écouté (pas d'oreilles) : tout est mesuré par script.**
-
-**Suites de la relecture 7b (faites d'abord)**
-- Le **bouton Améliorations n'apparaît qu'après l'embauche du porteur** (`PopIn`, via `revealOnUnlock` de la dalle EMBAUCHE ; le déplacement de caméra ne vise que des dalles). Vérifié : caché au départ, toujours caché après la dalle du poste 2, visible après l'embauche du porteur. Au rechargement d'une partie où le porteur est embauché, il est visible.
-- **6e amélioration « Capacité des employés »** (+1 caisse portée par le porteur, +1 produit porté par le livreur, max 10, coût de base 160) : `UpgradeKind.EmployeeCapacity`, `StackCarrier.employee`, `ProductCarrier` lit l'amélioration, `OfflineEarnings` ajoute le bonus aux capacités du porteur et du livreur. Un asset `UpgradeConfig` existant reçoit la ligne sans perdre ses réglages.
-
-**8a — sons**
-- `SfxLibrary` : 10 clips générés par code au démarrage (`AudioManager.Awake`), jamais pendant le jeu : ramassage (pop), dépôt (choc sourd), produit prêt (ding), billet (2 notes), commande payée (2 tintements), déblocage (arpège), achat d'amélioration (accord montant), embauche (fanfare), clic, refus (bip grave). Chacun est branché : ramassage du joueur (`StackCarrier.makesSound`), dépôt et produit prêt (`InstallStation`), billets (`BillCollector`), commande (`ServiceCounter`), dalles (`UnlockPad`, fanfare pour les dalles d'embauche), achats, clics des boutons, refus quand on clique « $ coût » sans assez d'argent (le bouton reste cliquable pour pouvoir refuser). Vérifié que les 10 sons sont bien déclenchés en jeu.
-- **Mesures** (menu `Tools > Idle Prototype > Mesurer les sons`) : RMS commun à -20,0 dBFS pour les 10 sons (écart 0,0 dB, mesuré sur la partie sonore, hors silence), crêtes 0,17 à 0,46 (jamais au-dessus de 0,9). Durées : pop 0,10 s, dépôt 0,20 s, ding 0,50 s, billet 0,26 s, commande 0,70 s, déblocage 0,62 s, achat 0,70 s, embauche 0,95 s, clic 0,05 s, refus 0,30 s.
-- **Hauteur des billets** : testé : chaîne de 12 billets = 1,00 1,06 1,12 1,19 1,26 1,33 1,41 1,50 1,59 puis plafond 1,59 ; après 1 s de pause retour à 1,00 (fenêtre 0,6 s, 8 demi-tons, `MusicConfig`).
-- **`AudioManager`** : instance unique, pool de 8 sources 2D, 1 source de musique ; 8 demandes simultanées du même son = 3 lectures ; pool plein = remplace le son le plus ancien. **Allocation : 0 octet** pour 5 500 appels de lecture (`GC.GetAllocatedBytesForCurrentThread`).
-- **Musique** : `MusicConfig` (champ `AudioClip` facultatif) ; sans fichier, boucle de 32 s générée (nappe de sinus la mineur sur 4 accords + petite mélodie pentatonique, RMS -26,5 dBFS, crête 0,18, volume 0,22). **Je ne peux pas juger si elle est agréable : je l'ai désactivée par défaut** (`musicOnByDefault` = faux) ; à écouter puis à activer dans Réglages ou dans l'asset.
-- **Vibrations** : `Handheld.Vibrate()` seulement pour déblocage, embauche, achat ; 0,5 s mini entre deux ; seulement sur mobile (`Application.isMobilePlatform`) ; désactivable. **Non testé sur appareil** (impossible dans l'éditeur).
-- **Réglages** : bouton engrenage discret en haut au centre, panneau arrondi avec trois interrupteurs (Sons, Musique, Vibrations) et « Effacer la sauvegarde » avec confirmation (Annuler / Effacer ; efface fichier, copie de secours et guide, puis recharge la scène). Testé : interrupteurs mémorisés après arrêt/relance de Play (sauvegarde **version 3**, `settingsSaved`, migration 2 -> 3 = valeurs par défaut) ; Annuler laisse la sauvegarde ; Effacer la supprime. « Sons » coupe aussi la musique. Le périphérique audio absent n'a jamais produit d'erreur (Console propre).
-- **À écouter** : menu `Tools > Idle Prototype > Écouter les sons` : joue les 10 sons (1,2 s d'écart) avec leur nom dans la Console, puis 12 s de musique (API interne `AudioUtil` de l'éditeur ; si ton Unity la refuse, dis-le-moi).
-- Le jeu est identique visuellement, hors engrenage et bouton Améliorations caché au départ.
+_(vide — étape 8b)_
 
 ## Questions (à remplir par Claude Code local)
-- **Écoute** : peux-tu lancer `Écouter les sons` et me dire ce qui ne va pas (trop aigu, trop long, trop fort, musique fatigante) ? Je ne peux pas le juger moi-même.
-- **Musique par défaut** : activée ou non une fois écoutée ? Ou on attend un vrai fichier libre de droits ?
-- **Sons des employés** : le dépôt de caisses du porteur déclenche aussi le choc sourd (même poste) ; faut-il les rendre plus discrets que ceux du joueur ?
+_(vide)_
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
@@ -391,6 +380,29 @@ Questions posées à l'époque (répondues plus haut) :
 - **Plafond d'économie** : au niveau 10 partout la fabrication dure 1,2 s, le débit est limité par le porteur (6 caisses par aller-retour), pas par le poste. Prochaine étape d'économie : améliorer aussi la capacité du porteur et du livreur ?
 - **Gain hors ligne** : le rendement n'augmente que par les niveaux achetés ; à 20 %, 2 h = ~4 300 $ sans niveau, ~8 400 $ avec 5 niveaux sur trois lignes. Cohérent avec les prix qui montent ?
 
+## Archive : résultats de l'étape 8a (Claude Code local)
+**Étape 8a — compile (0 erreur, 0 warning), Build scene OK, testée via MCP en Play. Captures `8a-01-bouton-engrenage` et `8a-02-reglages`. Je n'ai rien écouté (pas d'oreilles) : tout est mesuré par script.**
+
+**Suites de la relecture 7b (faites d'abord)**
+- Le **bouton Améliorations n'apparaît qu'après l'embauche du porteur** (`PopIn`, via `revealOnUnlock` de la dalle EMBAUCHE ; le déplacement de caméra ne vise que des dalles). Vérifié : caché au départ, toujours caché après la dalle du poste 2, visible après l'embauche du porteur. Au rechargement d'une partie où le porteur est embauché, il est visible.
+- **6e amélioration « Capacité des employés »** (+1 caisse portée par le porteur, +1 produit porté par le livreur, max 10, coût de base 160) : `UpgradeKind.EmployeeCapacity`, `StackCarrier.employee`, `ProductCarrier` lit l'amélioration, `OfflineEarnings` ajoute le bonus aux capacités du porteur et du livreur. Un asset `UpgradeConfig` existant reçoit la ligne sans perdre ses réglages.
+
+**8a — sons**
+- `SfxLibrary` : 10 clips générés par code au démarrage (`AudioManager.Awake`), jamais pendant le jeu : ramassage (pop), dépôt (choc sourd), produit prêt (ding), billet (2 notes), commande payée (2 tintements), déblocage (arpège), achat d'amélioration (accord montant), embauche (fanfare), clic, refus (bip grave). Chacun est branché : ramassage du joueur (`StackCarrier.makesSound`), dépôt et produit prêt (`InstallStation`), billets (`BillCollector`), commande (`ServiceCounter`), dalles (`UnlockPad`, fanfare pour les dalles d'embauche), achats, clics des boutons, refus quand on clique « $ coût » sans assez d'argent (le bouton reste cliquable pour pouvoir refuser). Vérifié que les 10 sons sont bien déclenchés en jeu.
+- **Mesures** (menu `Tools > Idle Prototype > Mesurer les sons`) : RMS commun à -20,0 dBFS pour les 10 sons (écart 0,0 dB, mesuré sur la partie sonore, hors silence), crêtes 0,17 à 0,46 (jamais au-dessus de 0,9). Durées : pop 0,10 s, dépôt 0,20 s, ding 0,50 s, billet 0,26 s, commande 0,70 s, déblocage 0,62 s, achat 0,70 s, embauche 0,95 s, clic 0,05 s, refus 0,30 s.
+- **Hauteur des billets** : testé : chaîne de 12 billets = 1,00 1,06 1,12 1,19 1,26 1,33 1,41 1,50 1,59 puis plafond 1,59 ; après 1 s de pause retour à 1,00 (fenêtre 0,6 s, 8 demi-tons, `MusicConfig`).
+- **`AudioManager`** : instance unique, pool de 8 sources 2D, 1 source de musique ; 8 demandes simultanées du même son = 3 lectures ; pool plein = remplace le son le plus ancien. **Allocation : 0 octet** pour 5 500 appels de lecture (`GC.GetAllocatedBytesForCurrentThread`).
+- **Musique** : `MusicConfig` (champ `AudioClip` facultatif) ; sans fichier, boucle de 32 s générée (nappe de sinus la mineur sur 4 accords + petite mélodie pentatonique, RMS -26,5 dBFS, crête 0,18, volume 0,22). **Je ne peux pas juger si elle est agréable : je l'ai désactivée par défaut** (`musicOnByDefault` = faux) ; à écouter puis à activer dans Réglages ou dans l'asset.
+- **Vibrations** : `Handheld.Vibrate()` seulement pour déblocage, embauche, achat ; 0,5 s mini entre deux ; seulement sur mobile (`Application.isMobilePlatform`) ; désactivable. **Non testé sur appareil** (impossible dans l'éditeur).
+- **Réglages** : bouton engrenage discret en haut au centre, panneau arrondi avec trois interrupteurs (Sons, Musique, Vibrations) et « Effacer la sauvegarde » avec confirmation (Annuler / Effacer ; efface fichier, copie de secours et guide, puis recharge la scène). Testé : interrupteurs mémorisés après arrêt/relance de Play (sauvegarde **version 3**, `settingsSaved`, migration 2 -> 3 = valeurs par défaut) ; Annuler laisse la sauvegarde ; Effacer la supprime. « Sons » coupe aussi la musique. Le périphérique audio absent n'a jamais produit d'erreur (Console propre).
+- **À écouter** : menu `Tools > Idle Prototype > Écouter les sons` : joue les 10 sons (1,2 s d'écart) avec leur nom dans la Console, puis 12 s de musique (API interne `AudioUtil` de l'éditeur ; si ton Unity la refuse, dis-le-moi).
+- Le jeu est identique visuellement, hors engrenage et bouton Améliorations caché au départ.
+
+Questions posées à l'époque (répondues plus haut) :
+- **Écoute** : peux-tu lancer `Écouter les sons` et me dire ce qui ne va pas (trop aigu, trop long, trop fort, musique fatigante) ? Je ne peux pas le juger moi-même.
+- **Musique par défaut** : activée ou non une fois écoutée ? Ou on attend un vrai fichier libre de droits ?
+- **Sons des employés** : le dépôt de caisses du porteur déclenche aussi le choc sourd (même poste) ; faut-il les rendre plus discrets que ceux du joueur ?
+
 ## Historique
 - Étape 0 : scripts de base compilés et validés (WASD, ramassage, MAX).
 - Étape 1 : joystick tactile `VirtualJoystick` ajouté ; compilation OK, déplacement OK via `SetMoveInput` ; glissé réel à confirmer par Sébastien.
@@ -418,3 +430,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Étape 6b relue : validée avec 4 points. Étapes 6c (dalles progressives, demande, équilibre) et 7a (sauvegarde, hors ligne) spécifiées.
 - Étapes 6c (dalles progressives, demande) et 7a (sauvegarde, hors ligne) relues : validées. Étape 7b (améliorations) spécifiée.
 - Étape 7b (améliorations) relue sur captures : validée. Étape 8a (sons, musique, vibrations, réglages) spécifiée.
+- Étape 8a (sons, musique, vibrations, réglages) relue : validée. Étape 8b (préparer un test WebGL pour l'iPhone) spécifiée ; ensuite pause en attendant les retours de Sébastien.
