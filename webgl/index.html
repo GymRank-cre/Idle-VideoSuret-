@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script>if (!location.pathname.endsWith("/") && !location.pathname.endsWith(".html")) location.replace(location.pathname + "/" + location.search);</script>
+    <title>IdleSecurite</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d12; overscroll-behavior: none; }
+      #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; background: #0b0d12; }
+      #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffd93a; font: bold 28px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas"></canvas>
+    <div id="loading">Chargement...</div>
+    <script src="Build/WebGL.loader.js"></script>
+    <script>
+      createUnityInstance(document.querySelector("#unity-canvas"), {
+        dataUrl: "Build/WebGL.data.unityweb",
+        frameworkUrl: "Build/WebGL.framework.js.unityweb",
+        codeUrl: "Build/WebGL.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "IdleSecurite",
+        productVersion: "0.1.0",
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      }, function (progress) {
+        document.querySelector("#loading").textContent = "Chargement " + Math.round(progress * 100) + " %";
+      }).then(function () {
+        document.querySelector("#loading").style.display = "none";
+      }).catch(function (message) { document.querySelector("#loading").textContent = "Erreur : " + message; });
+    </script>
+  </body>
+</html>

@@ -116,38 +116,18 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
-**Étape 8c — build WebGL fait, chargé et joué dans Chrome (émulation mobile 390x844) ; rien n'est déployé. Captures `8c-01` à `8c-04`.**
-
-- **Pont MCP** : il fallait reconnecter `/mcp` après le relancement d'Unity. Note : mon petit serveur de test sur le port 8080 a un moment pris la place du pont MCP (même port) ; je l'ai arrêté et j'ai utilisé 8090 ensuite. **Pour servir en local, utilise le port 8090 (ou autre que 8080).**
-- **Paquets Unity AI retirés** (autorisation de Sébastien) : `com.unity.ai.inference` (Sentis) du `manifest.json`, ce qui retire aussi ses dépendances propres (`com.unity.dt.app-ui`). Il n'y avait pas de `com.unity.ai.assistant` dans ce projet. Gardés : navigation, input system, ugui, URP, MCP. Après retrait : compile sans erreur, Build scene OK, boucle de jeu complète vérifiée (argent 25 après un cycle). Effet : plus de messages `NoSubscription` ni de variantes de shaders Sentis ; le dossier `Packages` n'est pas dans le clone, donc `manifest.json` n'y est pas copié (modification faite dans le projet local seulement).
-- **Build** : 1er build complet **251 s** (changement de plateforme et compilation des shaders), builds suivants 11 à 30 s. **Taille 17,1 Mo** (data 6,0 Mo + wasm 10,4 Mo + framework 0,1 Mo + loader 0,05 Mo + index.html), très loin de 60 Mo : **aucune réduction du modèle** appliquée. Dossier : `E:\PROJET 1\Builds\WebGL` (hors projet et hors dépôt).
-- **Problèmes trouvés et corrigés** :
-  1. `Handheld.Vibrate()` n'existe pas sur WebGL : erreur de compilation du player, entouré de `#if !UNITY_WEBGL`.
-  2. **Scène noire sur WebGL** (seuls le HUD et les ombres rondes s'affichaient) avec 250+ erreurs `GL_INVALID_OPERATION: Mismatch between texture format and sampler type` : le player utilisait le profil URP « PC » (Forward+, ombres, HDR, textures de profondeur). Correction dans `WebGLBuilder` : un profil `Assets/Settings/WebGL_RPAsset.asset` (copie du profil Mobile en rendu Forward, sans ombres temps réel, sans HDR/profondeur/opaque, sans cookies ni light layers) est imposé comme profil par défaut et pour chaque niveau de qualité **uniquement pendant le build**, puis tout est remis (chemins mémorisés dans EditorPrefs et remis après le rechargement de scripts ; un premier essai avec `finally` seul avait laissé les profils vides, réparé). Les profils PC et Mobile ne sont pas modifiés. Aussi `WebGlPostFxGate` (coupe le post-traitement sur WebGL seulement). Après correction : 0 avertissement GL, scène visible.
-  3. Gabarit de page comparé à « Minimal » d'Unity 6 et corrigé (voir plus haut).
-- **Test navigateur** (Chrome headless piloté par le protocole DevTools, émulation mobile 390x844 x2, tactile, carte graphique réelle) : la page charge, l'écran « Touche pour jouer » s'affiche (`8c-01`), le toucher le ferme et le jeu démarre (`8c-02`), le joystick tactile déplace le technicien : 7 caisses ramassées et le guide passe à « Dépose-les au poste bleu » (`8c-03`), la sauvegarde est bien écrite dans IndexedDB (clé `save_json` présente avant et après rechargement, `8c-04`). Console du navigateur : **0 erreur de jeu** ; seules 2 erreurs 404 sur `favicon.ico` (inoffensives) et des avertissements bénins (`apple-mobile-web-app-capable` déprécié, `getInternalformatParameter`, `JS_FileSystem_Sync` déprécié). Non testé : Safari sur iPhone réel, le son (le navigateur de test est silencieux), les performances sur téléphone.
-- **Commande exacte pour servir en local** : `cd "E:\PROJET 1\Builds\WebGL"` puis `python -m http.server 8090`, ouvrir `http://localhost:8090` (outils de développement > mode appareil 390x844).
-- **Procédure Vercel (à faire par Sébastien, rien n'est déployé)** : `npm i -g vercel`, `vercel login` (il se connecte lui-même), puis dans `E:\PROJET 1\Builds\WebGL` : `vercel` (accepter les valeurs par défaut, projet privé, laisser « Deployment Protection » activée), puis `vercel --prod` ; ouvrir l'URL dans Safari et « Ajouter à l'écran d'accueil ». Les fichiers `.unityweb` sont décompressés par le `decompressionFallback` (Chrome conseille d'ajouter `Content-Encoding: gzip`, ce que Vercel ne fait pas pour ces extensions : démarrage un peu plus lent, sans conséquence).
+**Étape 8d — le build WebGL est sur la branche, à la racine du dépôt : `webgl/index.html` (+ `webgl/Build/*`). Rien n'est déployé par moi (pas de CLI Vercel).**
+- Contenu poussé : `webgl/index.html` (1,8 ko) et `webgl/Build/` : `WebGL.data.unityweb` 6,0 Mo, `WebGL.wasm.unityweb` 10,4 Mo, `WebGL.framework.js.unityweb` 0,09 Mo, `WebGL.loader.js` 0,05 Mo ; **total 17,1 Mo**. Pas de dossier `TemplateData` : mon gabarit de page n'en utilise pas. Aucun secret (recherche de `key/secret/token/password` dans `webgl/` : rien). `.gitignore` n'exclut pas `webgl/`.
+- `vercel.json` : règles existantes de la PWA **inchangées** (`/sw.js`, `/manifest.json`, `/(.*)`, `cleanUrls`) ; j'ai ajouté seulement `Cache-Control: no-cache` pour `/webgl` et `/webgl/index.html` (+ `Content-Type: text/html`), insérées avant la règle générale. Pas de `buildCommand`, le site reste statique ; la maquette `demo/` n'a pas été touchée. Le fichier a été reformaté (indentation JSON), contenu équivalent.
+- Page : j'ai ajouté en tête de `index.html` une petite redirection qui ajoute la barre finale (`/webgl` -> `/webgl/`), sinon les chemins relatifs `Build/...` seraient faux ; le même code est dans le générateur de gabarit (`WebGLBuilder`, prochains builds).
+- Vérification : le dossier `webgl/` du clone, servi en local, charge et se joue comme avant (page chargée, « Touche pour jouer », sauvegarde conservée au rechargement, 0 erreur de jeu).
+- Attention : le service worker `sw.js` de la maquette (portée racine) intercepte aussi `/webgl/` (réseau d'abord, mise en cache des réponses) : sans conséquence pour le test, mais si le jeu semble « ancien » après une mise à jour, vider les données du site dans Safari.
+- **Sébastien : sur vercel.com, importer GymRank-cre/Idle-VideoSuret-, puis ouvrir le déploiement de la branche et ajouter /webgl/ à l'adresse (avec la barre finale).**
+- Poids du dépôt : +17 Mo ; je signalerai si les remplacements successifs de `webgl/` le font dépasser 200 Mo.
 
 ## Questions (à remplir par Claude Code local)
-- **Test sur iPhone réel** : à toi de dire si Safari charge, si la scène est visible, si le joystick répond et si le son démarre après « Touche pour jouer ». Je n'ai pu tester que dans Chrome.
-- **Rendu WebGL** : sans ombres temps réel ni post-traitement (tonemapping, bloom, vignette). Acceptable pour le test, ou veux-tu que je cherche à les remettre une par une (long) ?
-
-## Relecture cloud de l'étape 8c : validée — le jeu tourne dans un navigateur mobile
-Build WebGL de 17 Mo (très loin des 60 Mo), page chargée, « Touche pour jouer », joystick tactile, sauvegarde conservée au rechargement, 0 erreur de jeu. Très bonne trouvaille sur le profil URP « PC » qui rendait la scène noire, et sur le conflit de port 8080 avec le pont MCP. Réponses :
-- **Rendu WebGL sans ombres ni post-traitement** : acceptable pour le test sur iPhone. À reprendre plus tard, pas maintenant.
-- **Test sur iPhone** : Sébastien le fera dès que le lien existe.
-
-## Tâche en cours : étape 8d — Mettre le build WebGL en ligne par Vercel, sans ligne de commande côté Sébastien
-**Contexte :** Sébastien est loin de son PC (il utilise AnyDesk depuis son téléphone) et ne peut pas coller de commandes. Au lieu du CLI Vercel (connexion interactive), on passe par l'**intégration Git de Vercel** : Sébastien importe le dépôt GitHub depuis son téléphone, et chaque poussée de branche produit une URL d'aperçu.
-1. Copier le dossier du build (`E:\PROJET 1\Builds\WebGL`) dans le clone, à la **racine du dépôt**, sous `webgl/` (donc `webgl/index.html`, `webgl/Build/...`, `webgl/TemplateData/...`). **Ne pas** le mettre sous `unity/`. Ajouter `webgl/` au suivi Git (vérifier le `.gitignore`).
-2. Vérifier `vercel.json` à la racine : il règle des en-têtes pour la PWA du dépôt ; ne pas casser ces règles. Ajouter seulement ce qui est nécessaire pour servir le build (type de contenu et `Cache-Control: no-cache` pour `webgl/index.html`, cache long pour `webgl/Build/*` n'est pas nécessaire en test). Pas de `buildCommand`. Le site doit rester statique.
-3. Commit et poussée sur la **même branche** (pas de pull request). Message de commit clair, noter la taille poussée.
-4. Ne rien déployer toi-même, ne pas utiliser le CLI Vercel. Dans Résultats : chemin exact `webgl/index.html`, taille, et la phrase « Sébastien : sur vercel.com, importer GymRank-cre/Idle-VideoSuret-, puis ouvrir le déploiement de la branche et ajouter /webgl à l'adresse ».
-5. À chaque nouveau build WebGL ultérieur : remplacer `webgl/` et repousser (le dossier ne grossit pas, mais l'historique Git si : à signaler si le dépôt dépasse 200 Mo).
-**Critères de réussite :** `webgl/index.html` et son dossier `Build` sont sur la branche distante, le site statique du dépôt n'est pas cassé (la maquette `demo/` fonctionne toujours), aucun secret dans les fichiers poussés.
-
----
+- **Vercel** : l'import du dépôt est à faire par Sébastien ; je ne peux pas vérifier qu'une branche non principale est déployée en « Preview » sur son compte (réglage « Ignored Build Step » / branches).
+- **Son sur iPhone** : à vérifier dès que le lien existe (Safari exige le toucher sur « Touche pour jouer »).
 
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
