@@ -3,7 +3,7 @@ using UnityEngine;
 
 public enum SfxId
 {
-    Pickup, Deposit, ProductReady, Bill, OrderPaid, Unlock, Upgrade, Hire, Click, Refuse
+    Pickup, Deposit, ProductReady, Bill, OrderPaid, Unlock, Upgrade, Hire, Click, Refuse, Step
 }
 
 // Génère tous les effets sonores par code (formes d'onde simples avec enveloppe) : aucun fichier externe.
@@ -79,6 +79,11 @@ public static class SfxLibrary
             case SfxId.Click: // tic bref
                 data = Buffer(0.05f);
                 Tone(data, 0f, 0.05f, 1000f, 1f, 55f, Wave.Sine);
+                break;
+            case SfxId.Step: // pas : petit choc sourd et doux
+                data = Buffer(0.07f);
+                Sweep(data, 0f, 0.07f, 150f, 90f, 40f);
+                Noise(data, 0f, 0.03f, 0.2f, 80f, 0.1f);
                 break;
             default: // Refuse : bip grave en deux impulsions
                 data = Buffer(0.30f);

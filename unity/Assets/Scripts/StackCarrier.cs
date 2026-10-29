@@ -17,12 +17,16 @@ public class StackCarrier : MonoBehaviour
     [SerializeField] float indicatorGap = 0.4f; // hauteur du panneau MAX au-dessus de la dernière caisse
 
     readonly List<Transform> items = new List<Transform>();
+    float bounceTime = -1f;                       // rebond de la pile à chaque ajout
+    const float BounceDuration = 0.22f;
 
     public int Count => items.Count;
     public int Capacity => capacity + (upgrades == null ? 0 : employee ? upgrades.EmployeeExtraCapacity : upgrades.ExtraCapacity);
     public event System.Action OnCountChanged;
     public bool IsFull => items.Count >= Capacity;
     public bool MakesSound => makesSound;
+    // Où se posera la prochaine caisse (pour la faire voler jusque-là).
+    public Vector3 NextSlotPosition => stackAnchor != null ? stackAnchor.position + Vector3.up * (itemHeight * items.Count) : transform.position;
     public bool IsEmpty => items.Count == 0;
 
     void Start()
@@ -52,6 +56,7 @@ public class StackCarrier : MonoBehaviour
 
         item.SetParent(null); // suit en coordonnées monde, pour l'effet de balancement
         items.Add(item);
+        bounceTime = 0f;
         if (makesSound) AudioManager.Play(SfxId.Pickup);
         UpdateIndicator();
         return true;
@@ -76,9 +81,17 @@ public class StackCarrier : MonoBehaviour
         if (items.RemoveAll(i => i == null) > 0)
             UpdateIndicator();
 
+        float bounce = 0f;
+        if (bounceTime >= 0f)
+        {
+            bounceTime += Time.deltaTime;
+            if (bounceTime >= BounceDuration) bounceTime = -1f;
+            else bounce = Mathf.Sin(bounceTime / BounceDuration * Mathf.PI) * 0.05f; // petit rebond vertical, plus fort en haut
+        }
+
         for (int i = 0; i < items.Count; i++)
         {
-            Vector3 targetPos = stackAnchor.position + Vector3.up * (itemHeight * i);
+            Vector3 targetPos = stackAnchor.position + Vector3.up * (itemHeight * i + bounce * (i + 1f) / items.Count);
 
             // Plus l'objet est haut, plus il réagit lentement.
             float t = 1f - Mathf.Exp(-followSpeed / (1f + i * 0.35f) * Time.deltaTime);

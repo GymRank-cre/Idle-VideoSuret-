@@ -612,6 +612,21 @@ public static class WorkshopBuilder
         so.FindProperty("animator").objectReferenceValue = human.GetComponent<Animator>();
         so.ApplyModifiedPropertiesWithoutUndo();
 
+        // 10a : le corps se penche dans le sens de la marche, pas et poussière aux appuis du pied
+        HumanLean lean = human.GetComponent<HumanLean>();
+        if (lean == null) lean = human.AddComponent<HumanLean>();
+        var lso = new SerializedObject(lean);
+        lso.FindProperty("player").objectReferenceValue = player;
+        lso.ApplyModifiedPropertiesWithoutUndo();
+
+        FootFx feet = player.GetComponent<FootFx>();
+        if (feet == null) feet = player.gameObject.AddComponent<FootFx>();
+        var fso = new SerializedObject(feet);
+        fso.FindProperty("player").objectReferenceValue = player;
+        fso.FindProperty("animator").objectReferenceValue = human.GetComponent<Animator>();
+        fso.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
+        fso.ApplyModifiedPropertiesWithoutUndo();
+
         Shadow(p, new Vector3(0f, -1.07f, 0f), 1.4f).name = "ShadowBlob";
         return true;
     }

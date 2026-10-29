@@ -13,12 +13,15 @@ public class UnlockPad : MonoBehaviour
     [SerializeField] GameObject[] revealOnUnlock; // dalles suivantes, cachées tant que celle-ci n'est pas payée
     [SerializeField] FeedbackSpawner feedback;    // facultatif : étincelle quand une dalle suivante apparaît
     [SerializeField] CameraFollow cameraFollow;   // facultatif : montre brièvement la dalle qui apparaît
+    [SerializeField] Transform fillBar;           // barre qui se remplit au fil du paiement (bord de la dalle)
+    [SerializeField] float fillWidth = 3f;
     [SerializeField] bool isHire;                 // dalle d'embauche : fanfare au lieu de l'arpège
     [SerializeField] string saveId;               // identifiant stable pour la sauvegarde
 
     int remainingPrice;
     bool initialized;
     float timer;
+    float sparkTimer;
 
     public string SaveId => saveId;
     public int RemainingPrice { get { Init(); return remainingPrice; } } // une dalle encore cachée n'a pas eu de Awake
@@ -56,6 +59,12 @@ public class UnlockPad : MonoBehaviour
 
         remainingPrice -= amount;
         UpdateLabel();
+        sparkTimer += config.PayInterval;
+        if (feedback != null && sparkTimer >= 0.12f && remainingPrice > 0)
+        {
+            sparkTimer = 0f; // étincelles pendant le paiement
+            feedback.Sparkle(transform.position + new Vector3(Random.Range(-1.2f, 1.2f), 0.3f, Random.Range(-1.2f, 1.2f)));
+        }
 
         if (remainingPrice <= 0)
             Unlock();
@@ -71,6 +80,13 @@ public class UnlockPad : MonoBehaviour
     {
         if (priceLabel != null)
             priceLabel.text = "$ " + remainingPrice;
+        if (fillBar != null && config.Price > 0)
+        {
+            float k = 1f - (float)remainingPrice / config.Price;
+            fillBar.localScale = new Vector3(Mathf.Max(0.0001f, fillWidth * k), fillBar.localScale.y, fillBar.localScale.z);
+            Vector3 lp = fillBar.localPosition;
+            fillBar.localPosition = new Vector3(-fillWidth * 0.5f + fillWidth * k * 0.5f, lp.y, lp.z);
+        }
     }
 
     // Rechargement d'une partie : remet le prix restant ; à 0 la dalle est déjà payée.
@@ -89,6 +105,15 @@ public class UnlockPad : MonoBehaviour
         {
             AudioManager.Play(isHire ? SfxId.Hire : SfxId.Unlock);
             AudioManager.Vibrate();
+        }
+        if (!silent && feedback != null)
+        {
+            feedback.Confetti(transform.position);            // vraie fête : confettis,
+            if (cameraFollow != null)
+            {
+                cameraFollow.Shake(0.09f, 0.25f);             // secousse légère
+                cameraFollow.ZoomPulse(0.05f, 0.3f);          // et pulsation de zoom
+            }
         }
         target.SetActive(true); // PopIn sur la cible fait le gonflement
         foreach (GameObject next in revealOnUnlock)

@@ -20,6 +20,7 @@ public class Customer : MonoBehaviour
     Vector3 finalFacing = Vector3.forward;
     float speed;
     int delivered;
+    float hopTime = -1f;
 
     public OrderBubble Bubble => bubble;
     public ProductType OrderType { get; private set; }
@@ -65,7 +66,7 @@ public class Customer : MonoBehaviour
     {
         delivered++;
         bubble.Refresh(OrderType, Mathf.Max(Remaining, 0));
-        if (IsComplete) bubble.Complete();
+        if (IsComplete) { bubble.Complete(); hopTime = 0f; } // saut de joie
     }
 
     public void HideOrder()
@@ -106,6 +107,15 @@ public class Customer : MonoBehaviour
         else
         {
             Turn(finalFacing);
+        }
+
+        if (hopTime >= 0f && animator != null)
+        {
+            hopTime += Time.deltaTime;
+            Vector3 lp = animator.transform.localPosition;
+            lp.y = hopTime >= 0.4f ? 0f : 0.28f * Mathf.Sin(hopTime / 0.4f * Mathf.PI);
+            animator.transform.localPosition = lp;
+            if (hopTime >= 0.4f) hopTime = -1f;
         }
 
         if (animator != null)

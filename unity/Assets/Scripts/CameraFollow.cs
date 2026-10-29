@@ -14,6 +14,10 @@ public class CameraFollow : MonoBehaviour
     Camera cam;
     float baseFov;
     bool repairLogged;
+    Vector3 smoothPos;           // position lissée, sans la secousse
+    bool smoothInit;
+    float shakeAmp, shakeDur, shakeTime = -1f;
+    float zoomAmp, zoomDur, zoomTime = -1f;
 
     public int RepairCount { get; private set; } // lu par le panneau de diagnostic
 
@@ -21,6 +25,22 @@ public class CameraFollow : MonoBehaviour
     {
         cam = GetComponent<Camera>();
         baseFov = cam.fieldOfView;
+    }
+
+    // Secousse légère (≤ 0,1 m) : décroît jusqu'à zéro, ne bloque aucune commande.
+    public void Shake(float amplitude, float duration)
+    {
+        shakeAmp = Mathf.Min(amplitude, 0.1f);
+        shakeDur = Mathf.Max(0.05f, duration);
+        shakeTime = 0f;
+    }
+
+    // Pulsation de zoom : le champ se resserre un instant puis revient.
+    public void ZoomPulse(float strength, float duration)
+    {
+        zoomAmp = Mathf.Clamp(strength, 0f, 0.15f);
+        zoomDur = Mathf.Max(0.05f, duration);
+        zoomTime = 0f;
     }
 
     static bool Finite(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
@@ -49,7 +69,14 @@ public class CameraFollow : MonoBehaviour
         float tanHalf = Mathf.Tan(baseFov * 0.5f * Mathf.Deg2Rad) * referenceAspect / aspect;
         float fov = 2f * Mathf.Atan(tanHalf) * Mathf.Rad2Deg;
         if (!Finite(fov)) { cam.fieldOfView = baseFov; Repair("champ de vision calculé"); return; }
-        cam.fieldOfView = Mathf.Clamp(fov, fovLimits.x, fovLimits.y);
+        float zoom = 1f;
+        if (zoomTime >= 0f)
+        {
+            zoomTime += Time.deltaTime;
+            if (zoomTime >= zoomDur) zoomTime = -1f;
+            else zoom = 1f - zoomAmp * Mathf.Sin(zoomTime / zoomDur * Mathf.PI);
+        }
+        cam.fieldOfView = Mathf.Clamp(fov, fovLimits.x, fovLimits.y) * zoom;
     }
 
     Transform peekTarget;
@@ -70,9 +97,11 @@ public class CameraFollow : MonoBehaviour
         if (cam != null) UpdateFov();
 
         // Position actuelle invalide : le lissage d'un NaN reste NaN pour toujours, on recale d'un coup.
-        if (!Finite(transform.position))
+        if (!smoothInit) { smoothPos = transform.position; smoothInit = true; }
+        if (!Finite(smoothPos) || !Finite(transform.position))
         {
-            transform.position = target.position + offset;
+            smoothPos = target.position + offset;
+            transform.position = smoothPos;
             peekTarget = null;
             Repair("position de la caméra");
         }
@@ -100,6 +129,15 @@ public class CameraFollow : MonoBehaviour
         if (!Finite(desired)) { peekTarget = null; Repair("position visée"); return; }
         float t = 1f - Mathf.Exp(-smooth * Time.deltaTime);
         if (!Finite(t)) t = 1f;
-        transform.position = Vector3.Lerp(transform.position, desired, t);
+        smoothPos = Vector3.Lerp(smoothPos, desired, t);
+
+        Vector3 shake = Vector3.zero;
+        if (shakeTime >= 0f)
+        {
+            shakeTime += Time.deltaTime;
+            if (shakeTime >= shakeDur) shakeTime = -1f;
+            else shake = Random.insideUnitSphere * (shakeAmp * (1f - shakeTime / shakeDur));
+        }
+        transform.position = smoothPos + shake;
     }
 }

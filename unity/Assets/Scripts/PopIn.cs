@@ -3,7 +3,7 @@ using UnityEngine;
 // À l'activation, l'objet gonfle de 0 à sa taille d'origine.
 public class PopIn : MonoBehaviour
 {
-    [SerializeField] float duration = 0.3f;
+    [SerializeField] float duration = 0.45f;
 
     Vector3 fullScale;
     bool initialized;
@@ -24,8 +24,9 @@ public class PopIn : MonoBehaviour
     {
         elapsed += Time.deltaTime;
         float t = Mathf.Clamp01(elapsed / duration);
-        // léger dépassement puis retour, pour un effet "pop"
-        float s = 1f + 1.70158f * Mathf.Pow(t - 1f, 3f) + 0.70158f * Mathf.Pow(t - 1f, 2f);
+        // ressort : dépasse la taille finale puis oscille en s'amortissant
+        float u = elapsed / duration;
+        float s = t >= 1f ? 1f : 1f - Mathf.Exp(-6f * u) * Mathf.Cos(16f * u);
         transform.localScale = fullScale * s;
 
         if (t >= 1f)

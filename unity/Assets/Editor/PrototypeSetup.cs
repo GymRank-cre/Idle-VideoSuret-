@@ -18,7 +18,7 @@ public static class PrototypeSetup
     static readonly Vector3 Station1Position = new Vector3(-4.5f, 0.1f, 0f);
     static readonly Vector3 Station2Position = new Vector3(-4.5f, 0.1f, 7.5f);
     static readonly Vector3 PadPosition = new Vector3(-4.5f, 0.01f, 4f);
-    static readonly Vector3 CameraOffset = new Vector3(0f, 12f, -8f);
+    static readonly Vector3 CameraOffset = new Vector3(0f, 7.7f, -5.1f); // 10a : plus près (avant 12 / -8) pour un personnage plus gros, angle de 55° inchangé
     const float CameraFov = 65f;
 
     // ---- Échelle de la pile et vitesse du joueur (4e) ----
@@ -125,6 +125,7 @@ public static class PrototypeSetup
 
         SaveBuilder.Build(); // sauvegarde, gains hors ligne, écran « Bon retour » (étape 7a)
 
+        AddPressScale(); // 10a : tous les boutons réagissent à l'appui
         WebGLBuilder.Build(); // écran « Touche pour jouer » (étape 8b), au-dessus de tout le reste du Canvas
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
@@ -135,6 +136,12 @@ public static class PrototypeSetup
         AssetDatabase.SaveAssets();
         Selection.activeGameObject = player;
         Debug.Log("Scène du prototype créée : " + Root + "/Prototype.unity. Appuie sur Play, déplace-toi avec WASD jusqu'à la zone grise.");
+    }
+
+    static void AddPressScale()
+    {
+        foreach (Button b in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (b.GetComponent<PressScale>() == null) b.gameObject.AddComponent<PressScale>();
     }
 
     // Panneau « MAX » : pastille rouge arrondie avec le mot MAX en blanc à contour sombre, face caméra.
@@ -337,6 +344,24 @@ public static class PrototypeSetup
         if (!string.IsNullOrEmpty(title))
             BuildPadTitle(labelGo.transform, font, title); // enfant du prix : décalage dans le repère de la caméra (en pixels écran)
 
+        // Barre de remplissage au bord sud de la dalle : se remplit au fil du paiement
+        Material fillMat = MakeMaterial("PadFill", new Color(0.3f, 0.9f, 0.4f));
+        Material fillBack = MakeMaterial("PadFillBack", new Color(0.12f, 0.12f, 0.14f));
+        GameObject backBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        backBar.name = "FillBack";
+        backBar.transform.SetParent(pad.transform, false);
+        backBar.transform.localPosition = new Vector3(0f, 0.03f, -1.75f);
+        backBar.transform.localScale = new Vector3(3f, 0.04f, 0.22f);
+        backBar.GetComponent<Renderer>().sharedMaterial = fillBack;
+        Object.DestroyImmediate(backBar.GetComponent<Collider>());
+        GameObject fillBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        fillBar.name = "FillBar";
+        fillBar.transform.SetParent(pad.transform, false);
+        fillBar.transform.localPosition = new Vector3(-1.5f, 0.05f, -1.75f);
+        fillBar.transform.localScale = new Vector3(0.0001f, 0.05f, 0.16f);
+        fillBar.GetComponent<Renderer>().sharedMaterial = fillMat;
+        Object.DestroyImmediate(fillBar.GetComponent<Collider>());
+
         if (popObject.GetComponent<PopIn>() == null) popObject.AddComponent<PopIn>();
 
         Wallet wallet = Object.FindFirstObjectByType<Wallet>();
@@ -348,6 +373,7 @@ public static class PrototypeSetup
         so.FindProperty("priceLabel").objectReferenceValue = label;
         so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         so.FindProperty("saveId").stringValue = padName;
+        so.FindProperty("fillBar").objectReferenceValue = fillBar.transform;
         so.ApplyModifiedPropertiesWithoutUndo();
 
         if (startHidden) // dalle dévoilée plus tard par la précédente, avec un gonflement

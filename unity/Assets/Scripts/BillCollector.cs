@@ -51,7 +51,7 @@ public class BillCollector : MonoBehaviour
             Flight f = flights[i];
             f.elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(f.elapsed / flightDuration);
-            f.bill.transform.position = Vector3.Lerp(f.from, target, t);
+            f.bill.transform.position = Vector3.Lerp(f.from, target, t * t); // aspiré : le billet accélère vers le joueur
 
             if (t >= 1f)
             {

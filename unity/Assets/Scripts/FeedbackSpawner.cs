@@ -73,7 +73,26 @@ public class FeedbackSpawner : MonoBehaviour
         Burst(position, config.FloatColor);
     }
 
+    // Confettis de déblocage : plusieurs éclats colorés plus gros et plus longs.
+    public void Confetti(Vector3 position)
+    {
+        Color[] palette = { new Color(1f, 0.85f, 0.2f), new Color(0.3f, 0.9f, 1f), new Color(0.5f, 1f, 0.5f), new Color(1f, 0.55f, 0.2f) };
+        for (int i = 0; i < palette.Length; i++)
+            Burst(position + Vector3.up * 0.6f, palette[i], config.BurstCount * 2, config.BurstSpeed * 1.8f, 1.4f);
+    }
+
+    // Petit nuage de poussière sous les pieds en courant.
+    public void Dust(Vector3 position)
+    {
+        Burst(position + Vector3.up * 0.05f, new Color(0.8f, 0.75f, 0.65f, 0.7f), 3, 0.8f, 0.7f);
+    }
+
     void Burst(Vector3 position, Color color)
+    {
+        Burst(position, color, config.BurstCount, config.BurstSpeed, 1f);
+    }
+
+    void Burst(Vector3 position, Color color, int count, float speed, float sizeScale)
     {
         GameObject go = burstPool.Get(position, Quaternion.identity);
         var ps = go.GetComponent<ParticleSystem>();
@@ -81,11 +100,11 @@ public class FeedbackSpawner : MonoBehaviour
         var main = ps.main;
         main.startColor = color;
         main.startLifetime = config.BurstLifetime;
-        main.startSpeed = config.BurstSpeed;
-        main.startSize = new ParticleSystem.MinMaxCurve(config.BurstSize * 0.7f, config.BurstSize * 1.2f);
+        main.startSpeed = speed;
+        main.startSize = new ParticleSystem.MinMaxCurve(config.BurstSize * 0.7f * sizeScale, config.BurstSize * 1.2f * sizeScale);
 
         ps.Clear();
-        ps.Emit(config.BurstCount);
+        ps.Emit(count);
         bursts.Add(new ActiveBurst { go = go, releaseAt = Time.time + config.BurstLifetime + 0.2f });
     }
 
