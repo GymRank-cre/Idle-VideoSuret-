@@ -126,6 +126,10 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 - **Relancer Unity** : ferme complètement Unity (éditeur) puis rouvre le projet `E:\PROJET 1\IdleSecurite` et dis-le-moi : je relance le build. Je ne peux pas le faire moi-même sans couper le pont MCP.
 - **Paquet `com.unity.ai.inference` (Sentis)** : est-il utilisé ? Sinon puis-je le retirer du projet (allège le build et les temps de compilation) ?
 
+## Réponses de Sébastien aux Questions de l'étape 8c (transmises par le cloud)
+- **Unity est relancé** (Sébastien l'a écrit au cloud) : relance le build WebGL maintenant. Si `BuildPlayer` lève encore « not supported », le noter et vérifier que Unity a bien été fermé complètement (processus `Unity.exe`), pas seulement le projet.
+- **Package `com.unity.ai.inference` (Sentis) : OUI, tu peux le retirer**, ainsi que les autres packages Unity AI inutilisés (`com.unity.ai.assistant` et leurs dépendances propres) s'ils ne sont pas requis par le jeu. Procédure : retirer du `manifest.json` par l'éditeur (Package Manager > Remove) ou à la main, laisser Unity recompiler, vérifier 0 erreur, refaire Build scene + un test de jeu (boucle complète) avant le build WebGL. **Garder `com.unity.ai.navigation`** (NavMesh) et `com.unity.inputsystem`, `com.unity.ugui`, `com.unity.render-pipelines.universal`. Noter dans Résultats la liste exacte des packages retirés et leur effet sur la taille et la durée.
+
 ## Archive : résultats de l'étape 2 (Claude Code local)
 **Étape 2 — Poste d'installation : compile, testée via MCP en Play.**
 - Ajoutés : `StationConfig`, `ObjectPool`, `ProgressBar3D`, `InstallStation` ; `PrototypeSetup` construit le poste en `(-6, 0.1, 0)`, `Assets/Prototype/StationConfig.asset` (conservé s'il existe), prefab `Bill`, barre au-dessus du poste. `ResourcePile` non modifié.
@@ -460,3 +464,4 @@ Questions posées à l'époque (répondues plus haut) :
 - Sébastien confirme l'installation du module WebGL : étape 8c déclenchée.
 - Sébastien a installé Node.js et dispose d'un compte Vercel. Étape 8c : une fois le build local validé, lui donner les commandes exactes `npm i -g vercel` puis `vercel login` (il se connecte lui-même) puis `vercel` dans le dossier du build ; ne rien déployer sans sa validation.
 - Cloud, à propos du build WebGL (qui compile lentement les shaders du paquet d'IA Sentis) : si la taille ou la durée est mauvaise, proposer à Sébastien de **retirer les packages Unity AI inutilisés** (`com.unity.ai.assistant`, Sentis/Inference Engine et dépendances) du `manifest.json` : ils n'apportent rien au jeu, alourdissent le build et inondent la Console de messages `NoSubscription`. Ne le faire qu'avec son accord, après le premier build mesuré, et refaire un test complet ensuite.
+- Sébastien : Unity relancé, retrait de Sentis et des packages Unity AI inutilisés autorisé.
