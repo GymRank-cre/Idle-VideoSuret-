@@ -91,7 +91,7 @@ MonoBehaviour:
   offlineMinSeconds: 20
   welcomeMinSeconds: 60
   offerCount: 3
-  rewardFactor: 3.5
+  rewardFactor: 1.5
   nextOfferDelay: 8
   minQuantity: 3
   fillSecondsMin: 70

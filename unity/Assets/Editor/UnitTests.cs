@@ -214,6 +214,30 @@ public static class UnitTests
         Eq("False", mig.soundOn.ToString(), "migration v7 : réglages conservés");
         Eq("True", (SaveSystem.TryParse("{\"version\":99}", cfg) == null).ToString(), "version future refusée");
 
+        // ---------------------------------------------------------------- caméra de la scène (U2a)
+        foreach (float aspect in new[] { 390f / 844f, 0.56f, 1.5f })
+        {
+            Vector3 camPos; Quaternion camRot;
+            Vector3 slabMin = new Vector3(0f, -0.3f, 0f), slabSize = new Vector3(IdleLayout.FloorDepth, 0.3f, IdleLayout.FloorWidth);
+            float vy = aspect < 0.8f ? 0.72f : 0.5f;
+            IdleCameraRig.Compute(aspect, 30f, 55f, 225f, slabMin, slabSize, 0.96f, vy, out camPos, out camRot);
+            Matrix4x4 clip = Matrix4x4.Perspective(30f, aspect, 0.3f, 400f) * (Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(camPos, camRot, Vector3.one).inverse);
+            float minNx = 9f, maxNx = -9f, minNy = 9f, maxNy = -9f;
+            for (int ci = 0; ci < 8; ci++)
+            {
+                Vector3 corner = slabMin + new Vector3((ci & 1) != 0 ? slabSize.x : 0f, (ci & 2) != 0 ? slabSize.y : 0f, (ci & 4) != 0 ? slabSize.z : 0f);
+                Vector4 pp = clip * new Vector4(corner.x, corner.y, corner.z, 1f);
+                minNx = Mathf.Min(minNx, pp.x / pp.w); maxNx = Mathf.Max(maxNx, pp.x / pp.w); minNy = Mathf.Min(minNy, pp.y / pp.w); maxNy = Mathf.Max(maxNy, pp.y / pp.w);
+            }
+            Eq("True", (minNx >= -1f && maxNx <= 1f && minNy >= -1f && maxNy <= 1f).ToString(), "caméra (L/H " + F(aspect, "0.00") + ") : la dalle tient dans l'écran");
+            if (aspect < 0.8f) Eq("True", (maxNx - minNx > 1.8f).ToString(), "caméra portrait : la dalle remplit la largeur (" + F((maxNx - minNx) / 2f, "0.00") + ")");
+            Vector4 ctr = clip * new Vector4(slabSize.x * 0.5f, 0f, slabSize.z * 0.5f, 1f);
+            float vyOut = (ctr.y / ctr.w + 1f) * 0.5f;
+            Eq("True", (Mathf.Abs(vyOut - vy) < 0.04f).ToString(), "caméra : centre de la dalle à la hauteur " + vy + " (obtenu " + F(vyOut, "0.00") + ")");
+        }
+        Eq("(2.40, 0.00, 1.55)", new Vector3(IdleLayout.ToWorld(1.55f, 2.4f).x, 0f, IdleLayout.ToWorld(1.55f, 2.4f).z).ToString("F2", inv), "repère : x du web -> Z, y du web -> X");
+        Eq("5", IdleLayout.Stations.Length + "", "5 emplacements de postes");
+
         // ---------------------------------------------------------------- utilitaires conservés
         Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");
         {   // option « Moins de secousses »

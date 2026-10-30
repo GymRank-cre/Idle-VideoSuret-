@@ -9,7 +9,7 @@ using UnityEngine.UI;
 // réglages de build et menu `Tools > Idle Prototype > Build WebGL de test`. Ne publie rien.
 public static class WebGLBuilder
 {
-    const string ScenePath = "Assets/Prototype/Prototype.unity";
+    const string ScenePath = "Assets/Scenes/Idle.unity";
     const string OutputDir = "E:/PROJET 1/Builds/WebGL";
     const string TemplateDir = "Assets/WebGLTemplates/IdleMobile";
 

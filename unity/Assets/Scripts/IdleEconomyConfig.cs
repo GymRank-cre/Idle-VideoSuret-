@@ -84,7 +84,7 @@ public class IdleEconomyConfig : ScriptableObject
 
     [Header("Commandes")]
     [Min(1)] public int offerCount = 3;
-    [Min(0f)] public double rewardFactor = 3.5;        // récompense = quantité x valeur x 3,5 x bonus
+    [Min(0f)] public double rewardFactor = 1.5;        // récompense = quantité x valeur x 1,5 x bonus (3,5 ouvrait le 5e poste à 16 min au lieu de 25)
     [Min(0f)] public float nextOfferDelay = 8f;        // secondes avant une nouvelle offre après une acceptation
     [Min(1)] public int minQuantity = 3;
     public float fillSecondsMin = 70f;                 // une offre demande 70 à 130 s de production du poste

@@ -123,6 +123,9 @@ public static class UiSprites
         System.Func<int, int, bool> shape;
         switch (key)
         {
+            case "lock": shape = (x, y) =>
+                ((x >= 26 && x <= 102 && y >= 12 && y <= 68) && !(Dist(x, y, 64, 44) <= 8 || (x >= 60 && x <= 68 && y >= 24 && y <= 44)))
+                || (y >= 64 && Dist(x, y, 64, 68) <= 30 && Dist(x, y, 64, 68) >= 17); break;
             case "coin": shape = (x, y) => { float d = Dist(x, y, 64, 64); return d <= 54 && (d <= 34 || d >= 42); }; break;
             case "fast": shape = (x, y) => Chevron(x, y, 14) || Chevron(x, y, 58); break;
             case "moon": shape = (x, y) => Dist(x, y, 62, 64) <= 50 && Dist(x, y, 86, 72) > 40; break;
