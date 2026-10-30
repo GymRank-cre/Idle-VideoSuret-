@@ -40,9 +40,11 @@ public class IdlePlateInput : MonoBehaviour
         if (best == null) return;
 
         bool wasUnlock = host.Game.PlateStateOf(best.Station) == IdleGame.PlateState.Unlock;
+        long price = host.Game.PlatePrice(best.Station);
         IdleGame.PurchaseResult result = host.Game.BuyPlate(best.Station);
         OnPlateTouched?.Invoke(best.Station, result);
         IdlePurchaseSound.Play(result, wasUnlock);
+        if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(new Vector3(screen.x, screen.y, 0f), price);   // part du doigt (Canvas en superposition : position = pixels de l'écran)
     }
 
     static bool PressedThisFrame(out Vector2 position)

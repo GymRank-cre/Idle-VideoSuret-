@@ -18,6 +18,7 @@ public class IdleHud : MonoBehaviour
     [SerializeField] IdleSheet ordersSheet;
     [SerializeField] IdleSheet reputationSheet;
     [SerializeField] IdleSheet settingsSheet;
+    [SerializeField] IdleToasts toasts;
     [SerializeField] Button turboButton;
     [SerializeField] Image turboFace;
     [SerializeField] Sprite turboIdleFace;
@@ -60,7 +61,9 @@ public class IdleHud : MonoBehaviour
     {
         IdleHost host = IdleHost.Instance;
         if (host == null) return;
-        AudioManager.Play(host.Game.TryTurbo() ? SfxId.Unlock : SfxId.Refuse);
+        bool started = host.Game.TryTurbo();
+        AudioManager.Play(started ? SfxId.Unlock : SfxId.Refuse);
+        if (started) toasts.Show(Loc.T("toast.turbo", host.Game.Globals.turboLength), IdleToasts.Icon.Flame);
     }
 
     void Update()

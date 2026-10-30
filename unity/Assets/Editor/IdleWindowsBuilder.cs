@@ -10,6 +10,7 @@ public static class IdleWindowsBuilder
 {
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
     const float BottomOverlap = 30f, CardHeight = 166f, CardPitch = 176f;
+    const float MinTouch = 124f;    // unités du Canvas
     const int OrderCards = 6;       // 3 commandes en cours au plus (Réputation) + 3 offres
 
     static readonly Color Orange = new Color32(0xFF, 0x7A, 0x1A, 0xFF), OrangeTop = new Color32(0xF2, 0x8A, 0x2E, 0xFF), OrangeEdge = new Color32(0xD9, 0x5E, 0x00, 0xFF);
@@ -23,11 +24,13 @@ public static class IdleWindowsBuilder
     public struct Result
     {
         public IdleSheet orders, reputation, settings;
+        public IdleToasts toasts;
     }
 
     public static Result Build(Transform canvas, RectTransform safe, RectTransform drawerPanel, RectTransform cashPill, RectTransform proPill)
     {
         var result = new Result();
+        IdleTutorialHand hand = BuildHand(canvas);   // au-dessus du tiroir, sous les fenêtres
         result.orders = BuildOrders(canvas);
         RectTransform strip = BuildStrip(safe, result.orders);
         result.reputation = BuildReputation(canvas);
@@ -45,6 +48,13 @@ public static class IdleWindowsBuilder
         BuildWelcome(welcomeHost, chips);
         IdleToasts toasts = BuildToasts(toastsHost, drawerPanel);
 
+        var milestones = toastsHost.gameObject.AddComponent<IdleMilestoneToasts>();
+        var milestoneSo = new SerializedObject(milestones);
+        milestoneSo.FindProperty("toasts").objectReferenceValue = toasts;
+        milestoneSo.ApplyModifiedPropertiesWithoutUndo();
+        WireHand(hand, drawerPanel, result, welcomeHost.Find("Root").gameObject);
+        result.toasts = toasts;
+
         var feedback = toastsHost.gameObject.AddComponent<IdleOrderFeedback>();
         var so = new SerializedObject(feedback);
         so.FindProperty("toasts").objectReferenceValue = toasts;
@@ -59,6 +69,56 @@ public static class IdleWindowsBuilder
         for (int i = 0; i < views.Length; i++) stations.GetArrayElementAtIndex(i).objectReferenceValue = views[i];
         so.ApplyModifiedPropertiesWithoutUndo();
         return result;
+    }
+
+    // ------------------------------------------------------------------ main de tutoriel
+
+    static IdleTutorialHand BuildHand(Transform canvas)
+    {
+        RectTransform root = NewRect("TutorialHand", canvas);
+        Stretch(root);
+        RectTransform hand = NewRect("Hand", root);
+        hand.anchorMin = hand.anchorMax = new Vector2(0.5f, 0.5f);
+        hand.pivot = new Vector2(0f, 1f);
+        hand.sizeDelta = new Vector2(Px(54f), Px(54f));
+        Image picture = AddIcon(hand, "Picture", "Ico_hand", 54f, false);
+        RectTransform p = picture.rectTransform;
+        p.anchorMin = p.anchorMax = p.pivot = new Vector2(0.2f, 0.9f);   // pivote autour du bout du doigt, comme le web
+        p.anchoredPosition = Vector2.zero;
+        var shadow = picture.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = new Color(UiTheme.Ink.r, UiTheme.Ink.g, UiTheme.Ink.b, 0.45f);
+        shadow.effectDistance = new Vector2(0f, -Px(3f));
+        hand.gameObject.SetActive(false);
+        return root.gameObject.AddComponent<IdleTutorialHand>();
+    }
+
+    static void WireHand(IdleTutorialHand hand, RectTransform drawerPanel, Result windows, GameObject welcomeRoot)
+    {
+        var drawer = drawerPanel.GetComponentInParent<IdleDrawer>(true);
+        var drawerSo = new SerializedObject(drawer);
+        drawerSo.FindProperty("tutorial").objectReferenceValue = hand;
+
+        var so = new SerializedObject(hand);
+        Transform handRect = hand.transform.Find("Hand");
+        so.FindProperty("hand").objectReferenceValue = handRect;
+        so.FindProperty("picture").objectReferenceValue = handRect.Find("Picture");
+        so.FindProperty("bestBar").objectReferenceValue = drawerSo.FindProperty("bestBar").objectReferenceValue;
+        so.FindProperty("list").objectReferenceValue = drawerSo.FindProperty("list").objectReferenceValue;
+        so.FindProperty("welcomeRoot").objectReferenceValue = welcomeRoot;
+        so.FindProperty("offsetX").floatValue = Px(6f);
+        so.FindProperty("tapMove").vector2Value = new Vector2(-Px(4f), Px(8f));
+
+        SerializedProperty sourceRows = drawerSo.FindProperty("rows");
+        SerializedProperty rows = so.FindProperty("rows");
+        rows.arraySize = sourceRows.arraySize;
+        for (int i = 0; i < sourceRows.arraySize; i++) rows.GetArrayElementAtIndex(i).objectReferenceValue = sourceRows.GetArrayElementAtIndex(i).objectReferenceValue;
+
+        IdleSheet[] sheets = { windows.orders, windows.reputation, windows.settings };
+        SerializedProperty list = so.FindProperty("sheets");
+        list.arraySize = sheets.Length;
+        for (int i = 0; i < sheets.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = sheets[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        drawerSo.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ feuille commune
@@ -115,11 +175,8 @@ public static class IdleWindowsBuilder
         scroll.movementType = ScrollRect.MovementType.Elastic;
         scroll.scrollSensitivity = Px(20f);
 
-        // croix rouge en haut à droite de l'écran, dans la zone sûre
-        RectTransform safe = NewRect("Safe", root);
-        Stretch(safe);
-        safe.gameObject.AddComponent<SafeAreaFitter>();
-        Button close = ColorButton(safe, "Close", Px(40f), Px(40f), Px(12f), RedTop, UiTheme.Red, RedEdge);
+        // croix rouge dans le coin haut droit de la feuille
+        Button close = ColorButton(sheet, "Close", Px(40f), Px(40f), Px(12f), RedTop, UiTheme.Red, RedEdge);
         var closeRect = (RectTransform)close.transform;
         closeRect.anchorMin = closeRect.anchorMax = Vector2.one;
         closeRect.pivot = Vector2.one;
@@ -154,6 +211,8 @@ public static class IdleWindowsBuilder
         var shadow = face.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(UiTheme.Ink.r, UiTheme.Ink.g, UiTheme.Ink.b, 0.28f);
         shadow.effectDistance = new Vector2(0f, -Px(2f));
+        float grow = Mathf.Max(0f, (MinTouch - height) * 0.5f);   // zone tactile plus grande que le dessin si besoin
+        face.raycastPadding = new Vector4(0f, -grow, 0f, -grow);
         var button = face.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         face.gameObject.AddComponent<PressScale>();
@@ -324,6 +383,7 @@ public static class IdleWindowsBuilder
             Image bg = Rounded("Line" + i, strip, new Color(UiTheme.Slate.r, UiTheme.Slate.g, UiTheme.Slate.b, 0.92f), Px(14f));
             AddShadow(bg, 0.4f, Px(3f));
             TopStretch(bg.rectTransform, 0f, 0f, Px(i * 50f), Px(44f));
+            bg.raycastPadding = new Vector4(0f, -2f, 0f, -2f);
             var button = bg.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
             bg.gameObject.AddComponent<PressScale>();
@@ -560,12 +620,18 @@ public static class IdleWindowsBuilder
             var layout = bg.gameObject.AddComponent<HorizontalLayoutGroup>();
             int padX = Mathf.RoundToInt(Px(18f)), padY = Mathf.RoundToInt(Px(8f));
             layout.padding = new RectOffset(padX, padX, padY, padY);
+            layout.spacing = Px(6f);
+            layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
             var fit = bg.gameObject.AddComponent<ContentSizeFitter>();
             fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            Text text = AddText(rt, "Text", "", 24f, UiTheme.Yellow, TextAnchor.MiddleCenter);
+            Image icon = AddIcon(rt, "Icon", "cadenas", 32f, true);
+            icon.gameObject.SetActive(false);
+            Text text = AddText(rt, "Text", "", 26f, UiTheme.Yellow, TextAnchor.MiddleCenter);
             text.lineSpacing = 0.95f;
             var group = bg.gameObject.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
@@ -574,8 +640,11 @@ public static class IdleWindowsBuilder
             slot.FindPropertyRelative("rect").objectReferenceValue = rt;
             slot.FindPropertyRelative("text").objectReferenceValue = text;
             slot.FindPropertyRelative("group").objectReferenceValue = group;
+            slot.FindPropertyRelative("icon").objectReferenceValue = icon;
             bg.gameObject.SetActive(false);
         }
+        so.FindProperty("lockSprite").objectReferenceValue = Ui("cadenas");
+        so.FindProperty("flameSprite").objectReferenceValue = Ui("flamme");
         so.ApplyModifiedPropertiesWithoutUndo();
         return toasts;
     }

@@ -10,9 +10,14 @@ public class IdleToasts : MonoBehaviour
         public RectTransform rect;
         public Text text;
         public CanvasGroup group;
+        public UnityEngine.UI.Image icon;
     }
 
+    public enum Icon { None, Lock, Flame }
+
     [SerializeField] Slot[] slots;
+    [SerializeField] Sprite lockSprite;
+    [SerializeField] Sprite flameSprite;
     [SerializeField] RectTransform drawerPanel;
     [SerializeField, Min(0.1f)] float lifetime = 2.6f;
     [SerializeField] float gapAboveDrawer = 72f;
@@ -26,7 +31,7 @@ public class IdleToasts : MonoBehaviour
         elapsed = new float[slots.Length];
     }
 
-    public void Show(string text)
+    public void Show(string text, Icon icon = Icon.None)
     {
         int chosen = 0;
         for (int i = 0; i < slots.Length; i++)
@@ -35,6 +40,8 @@ public class IdleToasts : MonoBehaviour
             if (elapsed[i] > elapsed[chosen]) chosen = i;     // tout est pris : on remplace le plus ancien
         }
         slots[chosen].text.text = text;
+        slots[chosen].icon.gameObject.SetActive(icon != Icon.None);
+        if (icon != Icon.None) slots[chosen].icon.sprite = icon == Icon.Lock ? lockSprite : flameSprite;
         slots[chosen].rect.gameObject.SetActive(true);
         elapsed[chosen] = 0f;
         Animate(chosen);

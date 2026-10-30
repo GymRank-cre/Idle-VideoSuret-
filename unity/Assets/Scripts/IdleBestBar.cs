@@ -13,6 +13,8 @@ public class IdleBestBar : MonoBehaviour
     [SerializeField] IdleBuyButton buyButton;
     [SerializeField] RectTransform waitFill;
 
+    public RectTransform BuyRect => (RectTransform)buyButton.transform;
+
     void Start()
     {
         buyButton.Button.onClick.AddListener(Buy);
@@ -24,7 +26,10 @@ public class IdleBestBar : MonoBehaviour
         bool found, hasGoal;
         IdleEconomy.Option goal;
         IdleEconomy.Option o = game.Advice(out found, out hasGoal, out goal);
-        if (found) IdlePurchaseSound.Play(game.BuyAdvised(), o.kind == IdleEconomy.Kind.Unlock);
+        if (!found) return;
+        IdleGame.PurchaseResult result = game.BuyAdvised();
+        IdlePurchaseSound.Play(result, o.kind == IdleEconomy.Kind.Unlock);
+        if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(buyButton.transform.position, IdleEconomy.Ceil(o.cost));
     }
 
     public void Refresh(IdleGame game, IdleEconomy.Option o, bool found, bool hasGoal, IdleEconomy.Option goal)

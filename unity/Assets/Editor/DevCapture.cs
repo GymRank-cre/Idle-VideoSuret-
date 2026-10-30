@@ -43,6 +43,8 @@ public static class DevCapture
                 foreach (IdleSheet sheet in Object.FindObjectsByType<IdleSheet>(FindObjectsSortMode.None)) sheet.Fit();
                 foreach (IdleToasts toasts in Object.FindObjectsByType<IdleToasts>(FindObjectsSortMode.None)) toasts.Reposition();
                 Canvas.ForceUpdateCanvases();
+                foreach (IdleTutorialHand hand in Object.FindObjectsByType<IdleTutorialHand>(FindObjectsSortMode.None)) hand.Place();
+                Canvas.ForceUpdateCanvases();
                 canvas.enabled = false;
             }
             cam.Render();

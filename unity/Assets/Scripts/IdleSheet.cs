@@ -30,7 +30,6 @@ public class IdleSheet : MonoBehaviour
     public void Open()
     {
         gameObject.SetActive(true);
-        transform.SetAsLastSibling();
         elapsed = MotionSettings.ReduceMotion ? duration : 0f;
         Animate();
         Fit();

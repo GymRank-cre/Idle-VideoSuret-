@@ -13,6 +13,8 @@ public class IdleChips : MonoBehaviour
         public CanvasGroup group;
     }
 
+    public static IdleChips Instance { get; private set; }
+
     [SerializeField] Chip[] chips;
     [SerializeField] RectTransform cashTarget;
     [SerializeField] RectTransform proTarget;
@@ -26,6 +28,7 @@ public class IdleChips : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         elapsed = new float[chips.Length];
         from = new Vector3[chips.Length];
         toPro = new bool[chips.Length];
@@ -46,6 +49,12 @@ public class IdleChips : MonoBehaviour
             Animate(i);
             return;
         }
+    }
+
+    // Argent dépensé : la puce part du bouton acheté vers la pastille d'argent.
+    public static void Spent(Vector3 worldFrom, long price)
+    {
+        if (Instance != null) Instance.Fly(worldFrom, "−" + NumberFormat.Short(price), false);
     }
 
     void Update()

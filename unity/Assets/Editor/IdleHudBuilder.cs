@@ -44,6 +44,7 @@ public static class IdleHudBuilder
         so.FindProperty("ordersSheet").objectReferenceValue = windows.orders;
         so.FindProperty("reputationSheet").objectReferenceValue = windows.reputation;
         so.FindProperty("settingsSheet").objectReferenceValue = windows.settings;
+        so.FindProperty("toasts").objectReferenceValue = windows.toasts;
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 

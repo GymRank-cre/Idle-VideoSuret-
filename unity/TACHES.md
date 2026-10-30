@@ -116,6 +116,20 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**U3d — Main de tutoriel, messages, puces, plus la retouche de la croix : FAIT, U3 TERMINÉ (sans build). Compilation 0/0, tests 169/169 (2 nouveaux), test de fumée OK. Captures : `captures/U3d-main-bandeau-390x844.png`, `U3d-main-ligne-390x844.png`, `U3d-messages-390x844.png`, `U3d-message-turbo-390x844.png`, `U3d-croix-390x844.png`.**
+- **Main de tutoriel** (`IdleTutorialHand`, règles du web) : pendant les **12 premiers achats**, dès que le conseil est abordable. Sur le bouton du bandeau pour les **3 premiers achats**, puis sur le bouton de la ligne s'il est entièrement visible dans la liste ; elle tapote comme le web (0,8 s). **Vérifié** : elle vise « ACHETER », puis « Ajouter » de la bonne ligne au 4e achat, se cache quand une fenêtre est ouverte et revient à la fermeture. Avec « moins d'effets », elle reste mais ne tapote plus (code écrit, pas regardé).
+- **Messages** : « Test débloqué ! » avec cadenas, « Réception ×2 ! », « Turbo ×2 pendant 60 s ! » avec flamme, en plus de « Commande livrée ! ». Ils restent lisibles au-dessus d'une fenêtre ouverte.
+- **Puces** : en plus de +$ et +Pro à la livraison (U3c), une puce « −prix » part du bouton vers la pastille d'argent à chaque achat par le tiroir (pool de 6, coupées par « moins d'effets »). Pour un achat par plaque au sol, elle part du point touché, comme le web. **Vérifié par un vrai clic sur la plaque** (puce « −7 » créée au point touché, position relue) ; aucune capture de cette puce en vol.
+- **Retouche** : la **croix est dans le coin haut droit de la feuille**, elle ne recouvre plus l'engrenage (`U3d-croix`).
+- **Zones tactiles** : Refuser (111 -> 124 unités), croix (111 -> 124), lignes du bandeau de commandes (122 -> 126) : j'avais laissé passer ces trois-là en U3c.
+- **Rattrapage d'U3c, vrais clics** : **Refuser** remplace bien l'offre, **toucher le voile** ferme la fenêtre. Restent non cliqués : l'interrupteur Moins d'effets, l'ouverture par le bandeau. Toujours pas vus : le « MAX » de Réputation, Bon retour au retour de pause, les fenêtres en 320x568.
+- **Limite des tests de la main** : j'ai forcé le compteur d'achats pour aller vite. Je n'ai pas joué les 12 premiers achats d'affilée.
+
+**Questions**
+1. Mes questions restent ouvertes : musique par défaut, arrondi des prix, son du Turbo, sens du dégradé du tiroir, « +0,7 » sans « /s ».
+
+**Prochaine étape : UW-5** (écran titre avec `ecran-titre-9x16.jpg` et bouton JOUER, icône d'app).
+
 **U3c — Fenêtres, plus les 2 retouches de U3b : FAIT (sans build). Compilation 0/0, tests 167/167, test de fumée OK. Captures : `captures/U3c-commandes-390x844.png`, `U3c-commande-en-cours-390x844.png`, `U3c-bandeau-390x844.png`, `U3c-livraison-390x844.png`, `U3c-reputation-390x844.png`, `U3c-reglages-390x844.png`, `U3c-reglages-effacer-390x844.png`, `U3c-bon-retour-390x844.png`.**
 - **DÉFAUT GRAVE TROUVÉ ET CORRIGÉ : le jeu était muet depuis U1.** `AudioManager` n'avait jamais été remis dans la nouvelle scène : tous les « sons » d'achat que j'ai annoncés depuis U2b ne jouaient rien. Il est dans la scène, avec le déblocage au premier toucher pour le navigateur (`IdleAudioUnlock`). Vérifié : un effet est bien en lecture après un achat. **Aucun son n'a été écouté à l'oreille**, et la musique reste coupée par défaut (réglage de `MusicConfig`).
 - **Retouche 1** : pastille de niveau remontée de 6 px, elle ne touche plus « Vitesse » ni « Ajouter » ; la liste commence 6 px plus haut pour ne pas la couper.

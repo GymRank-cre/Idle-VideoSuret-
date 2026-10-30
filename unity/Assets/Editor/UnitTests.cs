@@ -287,6 +287,10 @@ public static class UnitTests
         Eq("", string.Join(", ", missing), "textes des fenêtres");
         Eq("8", cfg.clientCount.ToString(), "8 clients, 8 portraits");
 
+        // main de tutoriel
+        Eq("True False False False", IdleTutorialHand.Wanted(0, false, true) + " " + IdleTutorialHand.Wanted(0, true, true) + " " + IdleTutorialHand.Wanted(0, false, false) + " " + IdleTutorialHand.Wanted(12, false, true), "main : abordable, sans fenêtre, 12 premiers achats");
+        Eq("True True False False", IdleTutorialHand.Wanted(11, false, true) + " " + IdleTutorialHand.UseBar(2) + " " + IdleTutorialHand.UseBar(3) + " " + IdleTutorialHand.Wanted(13, false, true), "main : bandeau pour les 3 premiers achats, puis les lignes");
+
         // états des lignes du tiroir
         var rg = new IdleGame(cfg, 6, 0);
         Eq("Open Next Far Far Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3) + " " + IdleStationRow.StateOf(rg, 4), "lignes au départ");

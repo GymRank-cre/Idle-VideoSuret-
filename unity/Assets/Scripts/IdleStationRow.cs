@@ -34,20 +34,34 @@ public class IdleStationRow : MonoBehaviour
 
     void Start()
     {
-        speedButton.Button.onClick.AddListener(() => BuyUpgrade(true));
-        addButton.Button.onClick.AddListener(() => BuyUpgrade(false));
+        speedButton.Button.onClick.AddListener(() => BuyUpgrade(true, speedButton));
+        addButton.Button.onClick.AddListener(() => BuyUpgrade(false, addButton));
         unlockButton.Button.onClick.AddListener(BuyUnlock);
     }
 
-    void BuyUpgrade(bool speedAxis)
+    void BuyUpgrade(bool speedAxis, IdleBuyButton button)
     {
         IdleGame game = IdleHost.Instance.Game;
-        IdlePurchaseSound.Play(game.BuyUpgrade(station, speedAxis, game.BuyMode), false);
+        long price = game.UpgradePrice(station, speedAxis, game.BuyMode);
+        IdleGame.PurchaseResult result = game.BuyUpgrade(station, speedAxis, game.BuyMode);
+        IdlePurchaseSound.Play(result, false);
+        if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(button.transform.position, price);
     }
 
     void BuyUnlock()
     {
-        IdlePurchaseSound.Play(IdleHost.Instance.Game.BuyUnlock(station), true);
+        IdleGame game = IdleHost.Instance.Game;
+        long price = game.UnlockPrice(station);
+        IdleGame.PurchaseResult result = game.BuyUnlock(station);
+        IdlePurchaseSound.Play(result, true);
+        if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(unlockButton.transform.position, price);
+    }
+
+    // Le bouton qui réalise ce conseil : la main de tutoriel vient le tapoter.
+    public RectTransform ButtonFor(IdleEconomy.Option option)
+    {
+        if (option.kind == IdleEconomy.Kind.Unlock) return (RectTransform)unlockButton.transform;
+        return (RectTransform)(option.speedAxis ? speedButton : addButton).transform;
     }
 
     public void Refresh(IdleGame game, IdleEconomy.Option best, bool hasBest)

@@ -8,6 +8,7 @@ public class IdleDrawer : MonoBehaviour
     [SerializeField] RectTransform list;                // zone de la liste : son bas suit la zone sûre
     [SerializeField] IdleBestBar bestBar;
     [SerializeField] IdleStationRow[] rows;
+    [SerializeField] IdleTutorialHand tutorial;
     [SerializeField, Range(0.1f, 0.9f)] float heightShare = 0.47f;
     [SerializeField, Min(0f)] float minHeight = 831f;   // 300 px du web
     [SerializeField, Min(0f)] float maxHeight = 1191f;  // 430 px du web
@@ -51,6 +52,7 @@ public class IdleDrawer : MonoBehaviour
         IdleEconomy.Option best = game.Advice(out found, out hasGoal, out goal);
         bestBar.Refresh(game, best, found, hasGoal, goal);
         for (int i = 0; i < rows.Length; i++) rows[i].Refresh(game, best, found);
+        tutorial.Refresh(game, best, found);
     }
 
     public void Fit()
