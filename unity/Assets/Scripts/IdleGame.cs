@@ -164,6 +164,13 @@ public class IdleGame
         return (float)Math.Min(1.0 / cycle, cap);
     }
 
+    // Gain d'argent qu'un cycle VISUEL d'un poste représente (revenu / fréquence visuelle, turbo compris) : chiffre « +x » qui monte.
+    public double CycleGain(int station)
+    {
+        float f = VisualFrequency(station);
+        return f > 0f ? Eco.Income(station, Stations[station], g) * BoostMultiplier / f : 0.0;
+    }
+
     // Une plaque au sol par poste : ouvert -> achète sa meilleure option ; prochain verrouillé -> déblocage ; les suivants sont cachés.
     public PlateState PlateStateOf(int station)
     {

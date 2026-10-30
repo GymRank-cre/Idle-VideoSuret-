@@ -29,6 +29,7 @@ public static class IdleSceneBuilder
         BuildRoad(world);
         BuildTrees(world);
         BuildSlots(world);
+        BuildFeedback(world);
         BuildBelts(world);
         BuildPlates(world);
         BuildCars(world);
@@ -220,6 +221,25 @@ public static class IdleSceneBuilder
             so.FindProperty("lockIcon").objectReferenceValue = sr;
             so.FindProperty("machine").objectReferenceValue = machine.gameObject;
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    // ------------------------------------------------------------------ retour visuel (U2d) : textes flottants et confettis
+
+    static void BuildFeedback(Transform parent)
+    {
+        var go = new GameObject("Feedback", typeof(FeedbackSpawner));
+        go.transform.SetParent(parent, false);
+        var so = new SerializedObject(go.GetComponent<FeedbackSpawner>());
+        so.FindProperty("config").objectReferenceValue = AssetDatabase.LoadAssetAtPath<FeedbackConfig>("Assets/Prototype/FeedbackConfig.asset");
+        so.FindProperty("floatingTextPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_FloatingText.prefab");
+        so.FindProperty("burstPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_Burst.prefab");
+        so.ApplyModifiedPropertiesWithoutUndo();
+        foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
+        {
+            var vso = new SerializedObject(view);
+            vso.FindProperty("feedback").objectReferenceValue = go.GetComponent<FeedbackSpawner>();
+            vso.ApplyModifiedPropertiesWithoutUndo();
         }
     }
 
@@ -423,10 +443,15 @@ public static class IdleSceneBuilder
         var holder = new GameObject("Text").transform;
         holder.SetParent(parent, false);
         holder.localRotation = rotation;
+        if (overlay)   // texte des plaques : le contour est dessiné par le shader, un seul maillage
+        {
+            main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color, true);
+            return holder;
+        }
         float o = 0.024f;
         Vector2[] offsets = { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o) };
-        foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink, overlay);
-        main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color, overlay);
+        foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink, false);
+        main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color, false);
         return holder;
     }
 
@@ -439,7 +464,9 @@ public static class IdleSceneBuilder
         if (m == null) { m = new Material(Shader.Find("Idle/OverlayText")); AssetDatabase.CreateAsset(m, path); }
         m.shader = Shader.Find("Idle/OverlayText");
         m.mainTexture = font.material.mainTexture;
-        m.renderQueue = main ? 3540 : 3530;
+        m.SetColor("_OutlineColor", UiTheme.Ink);
+        m.SetFloat("_OutlineWidth", 3f);
+        m.renderQueue = 3540;
         EditorUtility.SetDirty(m);
         return m;
     }

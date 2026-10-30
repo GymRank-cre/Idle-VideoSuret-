@@ -254,6 +254,14 @@ public static class UnitTests
         vg.Stations[4].speed = 1000; vg.Recalc();
         Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
 
+        // gain affiché à chaque cycle visuel
+        var cg = new IdleGame(cfg, 6, 0);
+        Eq("1", F(cg.CycleGain(0)), "Réception au départ : 1 $ par cycle (0,625 $/s / 0,625 cycles/s)");
+        cg.Stations[0].speed = 100; cg.Recalc();
+        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.Income) < 1e-9).ToString(), "gain par cycle x fréquence = revenu (même plafonné)");
+        cg.TryTurbo();
+        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.Income) < 1e-9).ToString(), "turbo compris");
+
         // camionnette de l'Expédition
         Eq("0.00 0.00 0.65 -2.20 0.00 0.00", F(ShipMachine.VanOffset(0.5f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.72f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.8f, 2.6f, 2.2f), "0.00")
            + " " + F(ShipMachine.VanOffset(0.88f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(1.0f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0f, 2.6f, 2.2f), "0.00"), "camionnette : à l'arrêt, part, arrive, s'arrête");

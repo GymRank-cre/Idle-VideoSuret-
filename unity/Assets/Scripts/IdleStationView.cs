@@ -20,10 +20,15 @@ public class IdleStationView : MonoBehaviour
     [SerializeField] Color lockNextColor = new Color32(0xFF, 0xC4, 0x00, 0xFF);
     [SerializeField] Color lockFarColor = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
     [SerializeField, Min(0.1f)] float appearSpeed = 2.2f;
+    [SerializeField] FeedbackSpawner feedback;      // textes « +x » et confettis (pools)
+    [SerializeField] float floatHeight = 2.6f;      // hauteur de départ du « +x » au-dessus du poste
+    [SerializeField, Min(0.1f)] float squashDecay = 2.4f;   // le « squash » d'un achat s'éteint en ~0,4 s
+    [SerializeField] float squashAmount = 0.12f;
 
     IMachineAnim anim;
     bool known, wasOpen, wasNext;
-    float phase, appear = 1f;
+    float phase, appear = 1f, bump;
+    IdleGame subscribed;
 
     public int Station => station;
     public float Phase => phase;
@@ -34,11 +39,33 @@ public class IdleStationView : MonoBehaviour
         anim = machine != null ? machine.GetComponent<IMachineAnim>() : null;
     }
 
+    void Subscribe(IdleGame game)
+    {
+        if (subscribed != null) return;
+        subscribed = game;
+        game.OnPurchased += OnBought;
+        game.OnMilestone += OnMilestone;
+        game.OnUnlocked += OnUnlocked;
+    }
+
+    void OnDestroy()
+    {
+        if (subscribed == null) return;
+        subscribed.OnPurchased -= OnBought;
+        subscribed.OnMilestone -= OnMilestone;
+        subscribed.OnUnlocked -= OnUnlocked;
+    }
+
+    void OnBought(int s) { if (s == station && !MotionSettings.ReduceMotion) bump = 1f; }                 // petit « squash » du poste acheté
+    void OnMilestone(int s) { if (s == station && feedback != null && !MotionSettings.ReduceMotion) feedback.Confetti(transform.position); }   // palier x2
+    void OnUnlocked(int s) { if (s == station && feedback != null && !MotionSettings.ReduceMotion) feedback.Confetti(transform.position); }    // poste ouvert
+
     void Update()
     {
         IdleHost host = IdleHost.Instance;
         if (host == null || host.Game == null) return;
         IdleGame game = host.Game;
+        Subscribe(game);
         bool open = game.Stations[station].unlocked;
         bool next = !open && game.PlateStateOf(station) == IdleGame.PlateState.Unlock;
 
@@ -62,10 +89,15 @@ public class IdleStationView : MonoBehaviour
         }
 
         float dt = Time.deltaTime;
+        float before = phase;
         phase += dt * game.VisualFrequency(station);
+        if (feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
+            feedback.Message(transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Short((long)game.CycleGain(station)));
+        if (bump > 0f) bump = Mathf.Max(0f, bump - dt * squashDecay);
         if (appear < 1f) appear = Mathf.Min(1f, appear + dt * appearSpeed);
         float scale = appear < 1f ? EaseOutBack(appear) : 1f;
-        transform.localScale = new Vector3(scale, scale, scale);   // le poste (centré) pousse ; son fantôme est caché à ce moment-là
+        float squash = bump * squashAmount;   // écrasé en hauteur, élargi sur les côtés, puis retour en ressort
+        transform.localScale = new Vector3(scale * (1f + squash * 0.6f), scale * (1f - squash), scale * (1f + squash * 0.6f));   // le poste (centré) pousse ; son fantôme est caché à ce moment-là
         if (anim != null) anim.Animate(phase - Mathf.Floor(phase), Time.time);
     }
 
