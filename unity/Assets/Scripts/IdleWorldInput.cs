@@ -117,7 +117,7 @@ public class IdleWorldInput : MonoBehaviour
         if (pad != null) { Buy(pad, screen, game); return; }
 
         int station = StationAt(screen);
-        if (station >= 0) selection.Tap(station);
+        if (station >= 0 && game.CrewReady) selection.Tap(station);
         else selection.Deselect();
     }
 
@@ -126,7 +126,7 @@ public class IdleWorldInput : MonoBehaviour
         long price = game.PadPrice(pad.Station, pad.Kind);
         IdleGame.PurchaseResult result = game.BuyPad(pad.Station, pad.Kind);
         pad.Touched();
-        IdlePurchaseSound.Play(result, pad.Kind == IdleGame.PadKind.Unlock);
+        IdlePurchaseSound.Play(result, pad.Kind == IdleGame.PadKind.Unlock || pad.Kind == IdleGame.PadKind.Hire);
         if (!IdlePurchaseSound.Bought(result)) return;
         IdleChips.Spent(new Vector3(screen.x, screen.y, 0f), price);   // part du doigt (Canvas en superposition : position = pixels de l'écran)
         if (!MotionSettings.ReduceMotion) fx.PadRing(pad.Position);

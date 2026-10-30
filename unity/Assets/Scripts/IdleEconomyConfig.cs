@@ -36,12 +36,21 @@ public class IdleEconomyConfig : ScriptableObject
     [Header("Postes (dans l'ordre de la chaîne)")]
     public Station[] stations =
     {
-        new Station("recep", "station.recep", 1.6f, 1, 0),
-        new Station("assem", "station.assem", 3.0f, 12, 180),
-        new Station("test", "station.test", 4.5f, 144, 14400),
-        new Station("pack", "station.pack", 6.0f, 1728, 1152000),
-        new Station("ship", "station.ship", 8.0f, 20736, 92160000),
+        new Station("recep", "station.recep", 1.6f, 1, 0),      // la serre : elle ne vend rien, elle alimente l'Assemblage
+        new Station("assem", "station.assem", 3.0f, 12, 0),     // ouvert d'emblée : c'est la sortie de la chaîne
+        new Station("test", "station.test", 4.5f, 144, 150000),
+        new Station("pack", "station.pack", 6.0f, 1728, 10000000),
+        new Station("ship", "station.ship", 8.0f, 20736, 600000000),
     };
+
+    [Header("Chaîne de départ : recrutements, tas, stock, drone")]
+    public double[] hirePrices = { 25, 30, 45 };       // robot découpeur, robot graveur, drone récolteur ; leur somme ne dépasse jamais `startCash`
+    [Min(0f)] public double chainBufferSeconds = 8;    // un tas entre deux robots garde tant de secondes de production
+    [Min(1f)] public double chainBufferMin = 6;
+    [Min(0f)] public double chainStockSeconds = 30;    // le stock garde tant de secondes du plus rapide des deux postes
+    [Min(1f)] public double chainStockMin = 30;
+    [Min(0.1f)] public double droneTrip = 2f;          // secondes pour un aller-retour
+    [Min(0f)] public double droneMinLoad = 1;          // le drone attend d'avoir au moins ça à porter
 
     [Header("Améliorations")]
     [Min(0f)] public double speedStep = 0.12;          // vitesse = 1 + speedStep x niveau
@@ -97,7 +106,7 @@ public class IdleEconomyConfig : ScriptableObject
     [Min(1f)] public double beltSpeedCap = 3;          // les tapis accélèrent avec la Vitesse du poste, jusqu'à ce facteur
     [Min(1)] public int beltBaseItems = 2;             // caisses sur un tapis au départ
     [Min(1)] public int addPerBeltItem = 6;            // une caisse de plus par tranche de niveaux « Ajouter »
-    [Min(1)] public int stackBase = 4;                 // caisses sur la palette de la Réception
+    [Min(1)] public int stackBase = 4;                 // pile du poste
     [Min(1)] public int stackMax = 8;
     [Min(1)] public int addPerStackCrate = 5;
     [Min(1)] public int clientCount = 8;               // clients différents (clés Loc client.N.name)
@@ -107,7 +116,7 @@ public class IdleEconomyConfig : ScriptableObject
     public float[] visualCap = { 1.6f, 1.2f, 1.2f, 1.0f, 0.45f };   // cycles visuels par seconde au plus (même si la production va plus vite)
 
     [Header("Départ et achat conseillé")]
-    public double startCash = 10;
+    public double startCash = 100;
     public double newStationFavor = 0.35;              // un nouveau poste est favorisé (délai de remboursement x0,35)
     public double goalFarSeconds = 12;                 // objectif trop loin : on conseille le meilleur achat abordable
 }

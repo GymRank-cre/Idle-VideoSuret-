@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 
-// Contenu du fichier de sauvegarde (JsonUtility), version 8 : jeu idle sans personnage (U1).
+// Contenu du fichier de sauvegarde (JsonUtility), version 9 : jeu idle sans personnage (U1), chaîne de départ à recruter.
 // Les anciens champs de la version 7 (argent entier, Points Pro, niveaux de Réputation) restent lisibles pour la migration ;
 // tout le reste de l'ancien jeu (postes à poser, employés, piles de caisses...) est ignoré par JsonUtility.
 [Serializable]
 public class SaveData
 {
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     [Serializable]
     public class StationSave
@@ -48,6 +48,8 @@ public class SaveData
     public double boostRemaining;            // secondes de turbo restantes
     public double boostCooldown;             // secondes avant que le turbo soit de nouveau prêt
     public int buyMode = 1;                  // 1, 10 ou 0 (= max)
+    public int crew;                         // v9 : robots recrutés
+    public double chainCut, chainRaw, chainStock, chainLoad, dronePhase;   // v9 : matière en circulation
     public bool settingsSaved;               // faux = anciennes sauvegardes, réglages par défaut
     public bool soundOn = true;
     public bool musicOn;
@@ -55,7 +57,7 @@ public class SaveData
     public int money;                        // v7 seulement : argent entier de l'ancien jeu (migré vers `cash`)
 }
 
-// Migration des anciens fichiers vers la v8. Règle de Sébastien (U1) : on garde l'argent, les Points Pro et la Réputation,
+// Migration des anciens fichiers vers la v9. Règle de Sébastien (U1) : on garde l'argent, les Points Pro et la Réputation,
 // et on remet les postes à zéro (le jeu a changé de nature).
 public static class SaveMigration
 {
@@ -88,6 +90,11 @@ public static class SaveMigration
             d.orderSeq = 1; d.ordersDone = 0;
             d.nextOfferIn = 0; d.boostRemaining = 0; d.boostCooldown = 0;
             d.version = 8;
+        }
+        if (d.version < 9)   // une partie en cours ne repasse pas par les recrutements
+        {
+            d.crew = config.hirePrices.Length;
+            d.version = 9;
         }
         while (d.stations.Count < config.stations.Length) d.stations.Add(new SaveData.StationSave());
         if (d.stations.Count > 0) d.stations[0].unlocked = true;

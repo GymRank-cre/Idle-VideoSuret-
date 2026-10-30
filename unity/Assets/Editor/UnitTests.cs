@@ -75,12 +75,13 @@ public static class UnitTests
 
         // ---------------------------------------------------------------- économie (port de econ.js)
         var cfg = ScriptableObject.CreateInstance<IdleEconomyConfig>();
+        void Ready(IdleGame g) { g.Crew = cfg.hirePrices.Length; g.Recalc(); }   // équipe complète, sans passer par les recrutements
         var eco = new IdleEconomy(cfg);
         var g0 = eco.GlobalsFor(new int[cfg.reputation.Length]);
         Eq("5", cfg.stations.Length.ToString(), "5 postes");
         Eq("1,12,144,1728,20736", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.value))), "valeurs des postes");
         Eq("1.6,3,4.5,6,8", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.cycle))), "cycles des postes");
-        Eq("0,180,14400,1152000,92160000", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.unlock, "0"))), "prix de déblocage");
+        Eq("0,0,150000,10000000,600000000", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.unlock, "0"))), "prix de déblocage");
         Eq("1 1 1 4 1 60 240", F(g0.revenue) + " " + F(g0.speed) + " " + F(g0.cost) + " " + F(g0.offlineHours) + " " + g0.slots + " " + F(g0.turboLength) + " " + F(g0.turboCooldown), "bonus à zéro");
 
         var s0 = new IdleEconomy.StationLevels { unlocked = true };
@@ -97,67 +98,81 @@ public static class UnitTests
         Eq("22", IdleEconomy.Ceil(eco.BulkCost(true, 0, 0, 2, g0)).ToString(), "2 niveaux de vitesse : 10 + 11,9 -> 22");
         Eq("1 1 2", eco.MaxAffordable(true, 0, 0, 10.5, g0) + " " + eco.MaxAffordable(true, 0, 0, 21, g0) + " " + eco.MaxAffordable(true, 0, 0, 22, g0), "achat max");
         Eq("0", eco.MaxAffordable(true, 0, 0, 9, g0).ToString(), "achat max : trop cher");
-        Eq("180", F(eco.UnlockCost(1, g0)), "déblocage de l'Assemblage");
-        var list = new List<IdleEconomy.StationLevels> { s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        Eq("150000", F(eco.UnlockCost(2, g0)), "déblocage du Test");
+        var list = new List<IdleEconomy.StationLevels> { s0.Copy(), s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
         var opts = eco.Options(list, g0, 1);
-        Eq("3", opts.Count.ToString(), "options : vitesse, ajout, déblocage du poste suivant");
-        Eq("4", F(opts[2].delta), "gain du déblocage de l'Assemblage (12 / 3 s)");
+        Eq("5", opts.Count.ToString(), "options : vitesse et ajout des 2 postes ouverts, déblocage du suivant");
+        Eq("32", F(opts[4].delta), "gain du déblocage du Test (144 / 4,5 s)");
         Eq("False", opts[0].milestone.ToString(), "pas de palier au niveau 1");
         bool found;
         IdleEconomy.Option best = eco.Best(opts, cfg.newStationFavor, out found);
         Eq("True", found.ToString(), "un meilleur achat existe");
 
-        // robot de simulation de sim.js (attention toutes les 5 s) : déblocages vers 60 / 190 / 645 / 3285 s (tolérance 15 %)
+        // le début de la chaîne : le plus lent décide
+        Eq("0.3333 4", F(eco.ChainRate(list, g0)) + " " + F(eco.TotalIncome(list, g0)), "revenu de départ : le débit de l'Assemblage x 12 $");
+        Eq("0 3.5", F(eco.UpgradeGain(list, g0, 0, false, 1)) + " " + F(eco.UpgradeGain(list, g0, 1, false, 1)), "Ajouter : rien sur la serre, qui n'est pas le goulot ; 3,5 $/s sur l'Assemblage, limité par la serre");
+        Eq("0.3333", F(eco.ChainRate(list, g0)), "le calcul du gain ne touche pas aux niveaux");
+        var pair = new List<IdleEconomy.StationLevels> { new IdleEconomy.StationLevels { unlocked = true, speed = 6, add = 4 }, s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        Eq("24", F(eco.ChainValue(pair, g0)), "palier de la serre : la pièce sortie vaut x2");
+        var tied = new List<IdleEconomy.StationLevels> { new IdleEconomy.StationLevels { unlocked = true, add = 7 }, new IdleEconomy.StationLevels { unlocked = true, add = 14 }, new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        bool tiedFound; eco.Best(eco.Options(tied, g0, 1), cfg.newStationFavor, out tiedFound);
+        Eq("True", tiedFound.ToString(), "serre et Assemblage à égalité parfaite : le conseil trouve quand même un achat");
+
+        // robot qui touche « Meilleur achat » toutes les 3 s : le rythme ne dérive pas sans qu'on le décide (tolérance 15 %)
         {
-            var sim = new List<IdleEconomy.StationLevels>(); for (int i = 0; i < 5; i++) sim.Add(new IdleEconomy.StationLevels { unlocked = i == 0 });
-            double cash = cfg.startCash, t = 0; var unlockAt = new double[5];
-            while (t < 4000)
+            var rb = new IdleGame(cfg, 7, 0); var openAt = new double[5];
+            for (double t = 0; t < 3600; t += 3)
             {
-                cash += eco.TotalIncome(sim, g0) * 5; t += 5;
-                for (int guard = 0; guard < 40; guard++)
-                {
-                    var all = eco.Options(sim, g0, 1);
-                    bool ok; var b = eco.Best(all, 0.35, out ok); if (!ok) break;
-                    bool havePick = false; var pick = default(IdleEconomy.Option);
-                    if (b.cost <= cash) { pick = b; havePick = true; }
-                    else
-                    {
-                        double wait = (b.cost - cash) / System.Math.Max(1e-9, eco.TotalIncome(sim, g0));
-                        if (wait > 15)
-                            foreach (var o in all)
-                            {
-                                double sc = o.kind == IdleEconomy.Kind.Unlock ? o.payback * 0.35 : o.payback;
-                                if (o.cost > cash) continue;
-                                double pc = pick.kind == IdleEconomy.Kind.Unlock ? pick.payback * 0.35 : pick.payback;
-                                if (!havePick || sc < pc) { pick = o; havePick = true; }
-                            }
-                    }
-                    if (!havePick) break;
-                    cash -= pick.cost;
-                    if (pick.kind == IdleEconomy.Kind.Unlock) { sim[pick.station].unlocked = true; unlockAt[pick.station] = t; }
-                    else if (pick.speedAxis) sim[pick.station].speed++; else sim[pick.station].add++;
-                }
+                rb.Tick(3);
+                rb.BuyAdvised();
+                while (rb.Offers.Count > 0 && rb.Active.Count < rb.ActiveSlots && rb.Accept(rb.Offers[0].id)) { }
+                for (int r = 0; r < rb.Rep.Length; r++) rb.BuyRep(r);
+                for (int i = 2; i < 5; i++) if (openAt[i] == 0 && rb.Stations[i].unlocked) openAt[i] = t;
             }
-            double[] target = { 0, 60, 190, 645, 3285 };
-            for (int i = 1; i < 5; i++)
-                Eq("True", (unlockAt[i] > 0 && System.Math.Abs(unlockAt[i] - target[i]) <= target[i] * 0.15).ToString(), "robot : poste " + (i + 1) + " débloqué vers " + target[i] + " s (mesuré " + unlockAt[i] + " s)");
+            double[] target = { 0, 0, 354, 1110, 3354 };
+            for (int i = 2; i < 5; i++)
+                Eq("True", (openAt[i] > 0 && System.Math.Abs(openAt[i] - target[i]) <= target[i] * 0.15).ToString(), "rythme : poste " + (i + 1) + " vers " + target[i] + " s (mesuré " + openAt[i] + " s)");
         }
+
+        // la matière circule d'étape en étape, et chacune attend la précédente
+        var ch = new IdleChain(cfg);
+        Eq("0 0 0", F(ch.Step(10, 0, 1, 1)) + " " + F(ch.Cut) + " " + F(ch.Stock), "sans robot : rien ne bouge");
+        ch.Step(100, 1, 1, 1);
+        Eq("8 0 False", F(ch.Cut) + " " + F(ch.Raw) + " " + ch.Cutting, "découpeur seul : le tas se remplit (8 s de production), puis il s'arrête");
+        ch.Step(100, 2, 1, 1);
+        Eq("8 8 0", F(ch.Cut) + " " + F(ch.Raw) + " " + F(ch.Stock), "avec le graveur : les deux tas sont pleins, rien n'arrive au stock");
+        ch.Step(200, 3, 1, 0);
+        Eq("30 True", F(ch.Stock) + " " + (ch.Load == 0 && ch.DronePhase == 0), "avec le drone : stock plein, il ne repart plus");
+        var fl = new IdleChain(cfg);
+        fl.Step(30, 3, 1, 2);
+        double flowMade = fl.Step(300, 3, 1, 2);
+        Eq("True", (System.Math.Abs(flowMade - 300) < 5).ToString(), "serre plus lente : l'Assemblage sort le débit de la serre (" + F(flowMade) + " pièces en 300 s)");
+        var sl = new IdleChain(cfg);
+        double slowMade = sl.Step(330, 3, 2, 1);
+        Eq("True", (slowMade > 290 && slowMade <= 330 && sl.Stock <= sl.StockSize(2, 1)).ToString(), "Assemblage plus lent : il sort son propre débit, le stock reste borné (" + F(slowMade) + " pièces, stock " + F(sl.Stock) + ")");
 
         // ---------------------------------------------------------------- partie (achats, commandes, Réputation, turbo, hors ligne)
         var game = new IdleGame(cfg, 7, 1000);
-        Eq("10", F(game.Cash), "argent de départ");
-        Eq("0.625", F(game.Income), "revenu de départ");
-        Eq("TooExpensive", game.BuyUnlock(1).ToString(), "déblocage trop cher au départ");
-        Eq("Invalid", game.BuyUnlock(2).ToString(), "seul le prochain poste peut être débloqué");
-        Eq("Ok", game.BuyUpgrade(0, true, 1).ToString(), "1re vitesse achetée (10 $)");
-        Eq("0", F(game.Cash), "argent après l'achat");
+        double hireTotal = 0; foreach (double price in cfg.hirePrices) hireTotal += price;
+        Eq("100 0 True", F(game.Cash) + " " + F(game.Income) + " " + (hireTotal <= cfg.startCash), "au départ : de quoi recruter les 3 robots, rien ne rapporte encore");
+        Eq("Invalid Invalid Invalid", game.BuyUpgrade(0, true, 1) + " " + game.BuyUnlock(2) + " " + game.BuyHire(1), "avant l'équipe complète : ni amélioration, ni déblocage, ni robot dans le désordre");
+        Eq("Ok Ok", game.BuyHire(0) + " " + game.BuyHire(1), "découpeur puis graveur");
+        Eq("0", F(game.Income), "deux robots : toujours rien");
+        Eq("Ok True 0", game.BuyHire(2) + " " + game.CrewReady + " " + F(game.Cash), "drone : équipe complète, tout l'argent de départ dépensé");
+        Eq("Invalid", game.BuyHire(0).ToString(), "robot déjà recruté");
+        Eq("4", F(game.Income), "revenu de départ");
+        Eq("Invalid", game.BuyUnlock(1).ToString(), "Assemblage déjà ouvert");
+        Eq("Invalid", game.BuyUnlock(3).ToString(), "seul le prochain poste peut être débloqué");
+        game.Tick(60);
+        Eq("True", (game.Cash > 200 && game.Cash < 240).ToString(), "60 s : l'argent arrive à la sortie, une fois le stock alimenté (" + F(game.Cash) + " $)");
+        double beforeRun = game.Earned;
+        game.Tick(600);
+        Eq("True", (System.Math.Abs(game.Earned - beforeRun - game.Income * 600) < game.Income * 3).ToString(), "gain réel = revenu affiché, en régime établi");
+        Eq("Ok", game.BuyUpgrade(0, true, 1).ToString(), "1re vitesse achetée");
         Eq("1", game.Stations[0].speed.ToString(), "niveau de vitesse");
-        Eq("TooExpensive", game.BuyUpgrade(0, false, 1).ToString(), "ajout trop cher");
-        game.Tick(10);
-        Eq("True", (game.Cash > 6.9 && game.Cash < 7.1).ToString(), "10 s de production (revenu 0,7 $/s)");
         game.Cash = 1e6; game.Recalc();
-        Eq("Ok", game.BuyUnlock(1).ToString(), "déblocage de l'Assemblage");
-        Eq("True", game.Stations[1].unlocked.ToString(), "poste débloqué");
+        Eq("Ok", game.BuyUnlock(2).ToString(), "déblocage du Test");
+        Eq("True", game.Stations[2].unlocked.ToString(), "poste débloqué");
         long maxPrice = game.UpgradePrice(0, true, 0);
         double cashBefore = game.Cash;
         game.BuyUpgrade(0, true, 0);
@@ -165,7 +180,7 @@ public static class UnitTests
         Eq("True", (game.Eco.MilestoneCount(game.Stations[0].speed + game.Stations[0].add) >= 1).ToString(), "achat MAX : palier x2 franchi");
 
         // commandes
-        var og = new IdleGame(cfg, 3, 0); og.Cash = 1e9; og.BuyUnlock(1); og.Recalc();
+        var og = new IdleGame(cfg, 3, 0); Ready(og); og.Cash = 1e9; og.Recalc();
         og.Tick(0.1);
         Eq("3", og.Offers.Count.ToString(), "3 offres affichées");
         int id0 = og.Offers[0].id;
@@ -188,7 +203,7 @@ public static class UnitTests
         Eq("True", (og.BuyRep(4) && !og.BuyRep(4)).ToString(), "Carnet : 2 niveaux maximum");
 
         // turbo
-        var tg = new IdleGame(cfg, 1, 500);
+        var tg = new IdleGame(cfg, 1, 500); Ready(tg);
         double baseIncome = tg.Income;
         Eq("True", tg.TryTurbo().ToString(), "turbo lancé");
         Eq("True", (System.Math.Abs(tg.Income - 2 * baseIncome) < 1e-9).ToString(), "turbo : revenu x2");
@@ -200,7 +215,7 @@ public static class UnitTests
         Eq("True", tg.TurboReady.ToString(), "turbo prêt de nouveau");
 
         // hors ligne
-        var og2 = new IdleGame(cfg, 1, 0); double inc2 = og2.Income;
+        var og2 = new IdleGame(cfg, 1, 0); Ready(og2); double inc2 = og2.Income;
         Eq("0", F(og2.Offline(10).gain), "absence de 10 s : rien");
         var off = og2.Offline(100);
         Eq("True", (System.Math.Abs(off.gain - inc2 * 100) < 1e-6 && !off.capped && off.showWelcome).ToString(), "absence de 100 s : revenu x 100 s");
@@ -209,14 +224,18 @@ public static class UnitTests
         og2.Pro = 1000; og2.BuyRep(5); og2.Recalc();
         Eq("6", F(og2.Globals.offlineHours), "Veille automatique : +2 h de plafond");
 
-        // sauvegarde v8 : aller-retour identique
-        var sg = new IdleGame(cfg, 5, 100); sg.Cash = 1e7; sg.BuyUnlock(1); sg.BuyUpgrade(0, true, 5); sg.BuyUpgrade(1, false, 3); sg.Pro = 9; sg.ProTotal = 9; sg.BuyRep(0); sg.Tick(1);
+        // sauvegarde v9 : aller-retour identique
+        var sg = new IdleGame(cfg, 5, 100); Ready(sg); sg.Cash = 1e7; sg.BuyUnlock(2); sg.BuyUpgrade(0, true, 5); sg.BuyUpgrade(1, false, 3); sg.Pro = 9; sg.ProTotal = 9; sg.BuyRep(0); sg.Tick(1);
         sg.Accept(sg.Offers[0].id); sg.TryTurbo(); sg.Tick(5);
         string json1 = JsonUtility.ToJson(sg.ToSave(12345));
         var sg2 = new IdleGame(cfg, 5, 100);
         sg2.Load(JsonUtility.FromJson<SaveData>(json1));
         Eq(json1, JsonUtility.ToJson(sg2.ToSave(12345)), "sauvegarde -> chargement -> sauvegarde : identique");
         Eq("True", (System.Math.Abs(sg2.Income - sg.Income) < 1e-9 && sg2.Active.Count == 1).ToString(), "état rechargé : revenu et commande en cours");
+        Eq("3 True", sg2.Crew + " " + (System.Math.Abs(sg2.Chain.Stock - sg.Chain.Stock) < 1e-6 && System.Math.Abs(sg2.Chain.DronePhase - sg.Chain.DronePhase) < 1e-6), "état rechargé : équipe et matière en circulation");
+        var half = new SaveData { cash = 0, crew = 2 };
+        var hg = new IdleGame(cfg, 1, 0); hg.Load(half);
+        Eq("2 45", hg.Crew + " " + F(hg.Cash), "sauvegarde sans argent avant l'équipe complète : de quoi finir de recruter");
 
         // sauvegarde abîmée ou valeurs absurdes
         var bad = new SaveData { cash = double.NaN, earned = -5, proPoints = -3, version = 8 };
@@ -224,7 +243,7 @@ public static class UnitTests
         bad.reputation.Add(new SaveData.ReputationLevel { id = "rev", level = 99 });
         bad.reputation.Add(new SaveData.ReputationLevel { id = "inconnu", level = 5 });
         var bg = new IdleGame(cfg, 1, 0); bg.Load(bad);
-        Eq("10 0 True", F(bg.Cash) + " " + bg.Pro + " " + (bg.Stations[0].unlocked && bg.Stations[0].speed == 0 && bg.Stations[0].add <= 100000), "valeurs absurdes : repli sûr");
+        Eq("100 0 True", F(bg.Cash) + " " + bg.Pro + " " + (bg.Stations[0].unlocked && bg.Stations[0].speed == 0 && bg.Stations[0].add <= 100000), "valeurs absurdes : repli sûr");
         Eq("10", bg.Rep[bg.Eco.RepIndex("rev")].ToString(), "niveau de Réputation borné au maximum");
         Eq("null", SaveSystem.TryParse("pas du json", cfg) == null ? "null" : "objet", "fichier abîmé : nouvelle partie");
         Eq("null", SaveSystem.TryParse("", cfg) == null ? "null" : "objet", "fichier vide : nouvelle partie");
@@ -233,20 +252,28 @@ public static class UnitTests
         string v7 = "{\"version\":7,\"money\":500,\"proPoints\":7,\"lastSaveUtc\":42,\"reputation\":[{\"id\":\"revenue\",\"level\":3},{\"id\":\"chain\",\"level\":2},{\"id\":\"discount\",\"level\":1},{\"id\":\"stack\",\"level\":4}],"
                   + "\"pads\":[{\"id\":\"TestPad\",\"remaining\":0}],\"employees\":[\"hauler\"],\"soundOn\":false,\"settingsSaved\":true}";
         SaveData mig = SaveSystem.TryParse(v7, cfg);
-        Eq("8 500 7 True", mig.version + " " + F(mig.cash) + " " + mig.proPoints + " " + (mig.stations.Count == 5 && mig.stations[0].unlocked && !mig.stations[1].unlocked), "migration v7 : argent, Points Pro, postes à zéro");
+        Eq("9 500 7 True", mig.version + " " + F(mig.cash) + " " + mig.proPoints + " " + (mig.stations.Count == 5 && mig.stations[0].unlocked && !mig.stations[1].unlocked), "migration v7 : argent, Points Pro, postes à zéro");
         var mg = new IdleGame(cfg, 1, 0); mg.Load(mig);
         Eq("3 2 1", mg.Rep[mg.Eco.RepIndex("rev")] + " " + mg.Rep[mg.Eco.RepIndex("spd")] + " " + mg.Rep[mg.Eco.RepIndex("cost")], "migration v7 : Réputation (revenus, cadence, remises)");
         Eq("False", mig.soundOn.ToString(), "migration v7 : réglages conservés");
+        Eq("True True", mg.CrewReady + " " + mg.Stations[1].unlocked, "migration : pas de recrutement à refaire, Assemblage ouvert");
+        string v8 = "{\"version\":8,\"cash\":5000.0,\"stations\":[{\"unlocked\":true,\"speed\":3,\"add\":2},{\"unlocked\":false,\"speed\":0,\"add\":0}]}";
+        var m8 = new IdleGame(cfg, 1, 0); m8.Load(SaveSystem.TryParse(v8, cfg));
+        Eq("3 5000 3 True", m8.Crew + " " + F(m8.Cash) + " " + m8.Stations[0].speed + " " + m8.Stations[1].unlocked, "migration v8 : la partie continue, la chaîne tourne");
         Eq("True", (SaveSystem.TryParse("{\"version\":99}", cfg) == null).ToString(), "version future refusée");
 
         // ---------------------------------------------------------------- plaques d'achat au sol (U2b)
         var pg = new IdleGame(cfg, 2, 0);
-        Eq("Open Unlock Hidden Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4), "plaques : ouvert, prochain à débloquer, le reste caché");
-        var S = IdleGame.PadKind.Speed; var A = IdleGame.PadKind.Add; var U = IdleGame.PadKind.Unlock;
+        var S = IdleGame.PadKind.Speed; var A = IdleGame.PadKind.Add; var U = IdleGame.PadKind.Unlock; var H = IdleGame.PadKind.Hire;
+        Eq("True False False False", pg.PadVisible(0, H) + " " + pg.PadVisible(1, H) + " " + pg.PadVisible(0, S) + " " + pg.PadVisible(1, A), "au départ : seule la plaque du premier robot");
+        Eq("25 0 0", pg.PadPrice(0, H) + " " + pg.PadPrice(1, H) + " " + pg.PadPrice(0, S), "prix de la plaque de recrutement");
+        Eq("Ok False True", pg.BuyPad(0, H) + " " + pg.PadVisible(0, H) + " " + pg.PadVisible(1, H), "recrutement par la plaque : la suivante apparaît");
+        pg = new IdleGame(cfg, 2, 0); Ready(pg);
+        Eq("Open Open Unlock Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4), "plaques : ouverts, prochain à débloquer, le reste caché");
         Eq("True True False", pg.PadVisible(0, S) + " " + pg.PadVisible(0, A) + " " + pg.PadVisible(0, U), "poste ouvert : plaques Vitesse et Ajouter");
-        Eq("False False True", pg.PadVisible(1, S) + " " + pg.PadVisible(1, A) + " " + pg.PadVisible(1, U), "prochain poste : plaque Débloquer");
-        Eq("False False False", pg.PadVisible(2, S) + " " + pg.PadVisible(2, A) + " " + pg.PadVisible(2, U), "postes suivants : aucune plaque");
-        Eq("10 7 180 0", pg.PadPrice(0, S) + " " + pg.PadPrice(0, A) + " " + pg.PadPrice(1, U) + " " + pg.PadPrice(2, U), "prix des plaques ; plaque cachée : pas de prix");
+        Eq("False False True", pg.PadVisible(2, S) + " " + pg.PadVisible(2, A) + " " + pg.PadVisible(2, U), "prochain poste : plaque Débloquer");
+        Eq("False False False", pg.PadVisible(3, S) + " " + pg.PadVisible(3, A) + " " + pg.PadVisible(3, U), "postes suivants : aucune plaque");
+        Eq("10 7 150000 0", pg.PadPrice(0, S) + " " + pg.PadPrice(0, A) + " " + pg.PadPrice(2, U) + " " + pg.PadPrice(3, U), "prix des plaques ; plaque cachée : pas de prix");
         pg.Cash = 5;
         Eq("TooExpensive", pg.BuyPad(0, A).ToString(), "toucher la plaque sans argent : refusé");
         Eq("Invalid", pg.BuyPad(3, U).ToString(), "plaque cachée : achat impossible");
@@ -257,8 +284,9 @@ public static class UnitTests
         Eq("True 0 1", (pg.Cash < cash0) + " " + pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Ajouter : un niveau d'Ajouter, argent dépensé");
         Eq("Ok", pg.BuyPad(0, S).ToString(), "plaque Vitesse : achat");
         Eq("1 1", pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Vitesse : un niveau de Vitesse");
-        Eq("Ok", pg.BuyPad(1, U).ToString(), "plaque de déblocage : poste débloqué");
-        Eq("True Open Unlock", pg.Stations[1].unlocked + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2), "après le déblocage : poste ouvert, le suivant à débloquer");
+        pg.Cash = 1e6;
+        Eq("Ok", pg.BuyPad(2, U).ToString(), "plaque de déblocage : poste débloqué");
+        Eq("True Open Unlock", pg.Stations[2].unlocked + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3), "après le déblocage : poste ouvert, le suivant à débloquer");
         pg.BuyMode = 10; pg.Cash = 1e9;
         int before10 = pg.Stations[0].add;
         Eq("True", (pg.PadPrice(0, A) > 0).ToString(), "mode x10 : prix sur la plaque");
@@ -272,7 +300,11 @@ public static class UnitTests
         bool af, ah; IdleEconomy.Option ag;
         var ap = new IdleGame(cfg, 2, 0);
         IdleEconomy.Option ao = ap.Advice(out af, out ah, out ag);
-        Eq("True False", IdleGame.IsAdvised(ao, 0, A) + " " + IdleGame.IsAdvised(ao, 0, S), "le conseil désigne une seule plaque");
+        Eq("True False", IdleGame.IsAdvised(ao, 0, H) + " " + IdleGame.IsAdvised(ao, 0, S), "avant l'équipe complète, le conseil est le recrutement suivant");
+        Eq("Ok 1", ap.BuyAdvised() + " " + ap.Crew, "Meilleur achat : recrute");
+        Ready(ap);
+        ao = ap.Advice(out af, out ah, out ag);
+        Eq("True False False", IdleGame.IsAdvised(ao, 1, A) + " " + IdleGame.IsAdvised(ao, 1, S) + " " + IdleGame.IsAdvised(ao, 0, A), "le conseil désigne une seule plaque, sur le goulot");
 
         // ---------------------------------------------------------------- caméra libre et gestes (UL)
         Eq("False True", IdleWorldInput.Moved(9f, 1f) + " " + IdleWorldInput.Moved(9.5f, 1f), "seuil du glissement : 9 px");
@@ -285,6 +317,7 @@ public static class UnitTests
         Eq("True", (Vector3.Distance(IdleFraming.ToWorld(IdleFraming.ToPlan(planPoint)), planPoint) < 0.001f).ToString(), "plan a, b : aller-retour");
         Eq("0,41 0,41", Fr(IdleFramingViewX(cfg, 0)) + " " + Fr(IdleFramingViewX(cfg, 1)), "cadrage : la colonne de droite est exclue");
         var fg = new IdleGame(cfg, 2, 0);
+        Ready(fg); fg.Stations[1].unlocked = false;
         float fh = 24.5f, fw = fh * 390f / 844f;   // ce que voit la caméra au zoom 1 sur un écran 390 x 844
         IdleFraming.View v1 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
         fg.Stations[1].unlocked = true;
@@ -294,6 +327,11 @@ public static class UnitTests
         Eq("True True", (v1.zoom >= v2.zoom) + " " + (v2.zoom > v5.zoom), "cadrage : plus il y a de postes, moins on zoome");
         Eq("True True", (v1.zoom <= IdleFraming.DefaultMaxZoom) + " " + (v5.zoom >= IdleFraming.MinZoom), "cadrage : zoom entre 1 et 2,6");
         Eq("(1.2, 4.5)", Inv(v1.focus), "cadrage d'un poste ouvert : milieu de ses plaques et du poste suivant (a -1,95 à 4,25 ; b 1,1 à 6,95, + 0,5)");
+        var fs = new IdleGame(cfg, 2, 0);
+        IdleFraming.View vStart = IdleFraming.Default(fs, fw, fh, 55f, 0.18f);
+        Ready(fs);
+        IdleFraming.View vRun = IdleFraming.Default(fs, fw, fh, 55f, 0.18f);
+        Eq("True (-0.2, 3.5)", (vStart.zoom > vRun.zoom * 1.3f) + " " + Inv(vStart.focus), "pendant les recrutements : la caméra est sur la serre et le stock, elle recule quand la chaîne démarre");
         Eq("True", (v5.focus.y > v1.focus.y).ToString(), "cadrage de 5 postes : centré plus bas sur la dalle");
         Eq("3,10", Fr(IdleFraming.Station(2, 3.1f).zoom), "sélection : on ne dézoome pas");
         Eq("2,00", Fr(IdleFraming.Station(2, 1f).zoom), "sélection : zoom d'au moins 2");
@@ -306,7 +344,7 @@ public static class UnitTests
 
         // ---------------------------------------------------------------- animation des machines (U2c)
         var vg = new IdleGame(cfg, 4, 0);
-        Eq("0.625", F(vg.VisualFrequency(0)), "fréquence visuelle de la Réception au départ : 1 / 1,6 s");
+        Eq("0.625", F(vg.VisualFrequency(0)), "fréquence visuelle de la serre au départ : 1 / 1,6 s");
         vg.Stations[0].speed = 50; vg.Recalc();
         Eq("1.6", F(vg.VisualFrequency(0)), "fréquence visuelle plafonnée à 1,6 cycles/s");
         vg.Stations[4].unlocked = true; vg.Recalc();
@@ -361,17 +399,18 @@ public static class UnitTests
 
         // états des lignes du tiroir
         var rg = new IdleGame(cfg, 6, 0);
-        Eq("Open Next Far Far Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3) + " " + IdleStationRow.StateOf(rg, 4), "lignes au départ");
-        rg.Cash = 1e9; rg.BuyUnlock(1);
-        Eq("Open Open Next Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3), "lignes après un déblocage");
+        Eq("Open Open Next Far Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3) + " " + IdleStationRow.StateOf(rg, 4), "lignes au départ");
+        Ready(rg); rg.Cash = 1e9; rg.BuyUnlock(2);
+        Eq("Open Open Open Next", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3), "lignes après un déblocage");
 
         // gain affiché à chaque cycle visuel
         var cg = new IdleGame(cfg, 6, 0);
-        Eq("1", F(cg.CycleGain(0)), "Réception au départ : 1 $ par cycle (0,625 $/s / 0,625 cycles/s)");
+        Eq("1", F(cg.CycleGain(0)), "1er poste au départ : 1 par cycle (0,625 /s / 0,625 cycles/s)");
+        Eq("12", F(cg.CycleGain(1)), "Assemblage au départ : 12 $ par cycle");
         cg.Stations[0].speed = 100; cg.Recalc();
-        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.Income) < 1e-9).ToString(), "gain par cycle x fréquence = revenu (même plafonné)");
+        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.StationIncome(0) * cg.BoostMultiplier) < 1e-9).ToString(), "gain par cycle x fréquence = revenu (même plafonné)");
         cg.TryTurbo();
-        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.Income) < 1e-9).ToString(), "turbo compris");
+        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.StationIncome(0) * cg.BoostMultiplier) < 1e-9).ToString(), "turbo compris");
 
         // camionnette de l'Expédition
         Eq("0.00 0.00 0.65 -2.20 0.00 0.00", F(ShipMachine.VanOffset(0.5f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.72f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.8f, 2.6f, 2.2f), "0.00")

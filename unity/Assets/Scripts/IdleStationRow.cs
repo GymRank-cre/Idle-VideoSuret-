@@ -84,7 +84,7 @@ public class IdleStationRow : MonoBehaviour
     void RefreshOpen(IdleGame game, IdleEconomy.Option best, bool hasBest)
     {
         IdleEconomy.StationLevels st = game.Stations[station];
-        incomeText.text = NumberFormat.Rate(game.Eco.Income(station, st, game.Globals) * game.BoostMultiplier);
+        incomeText.text = station == IdleEconomy.SerreStation ? Loc.T("drawer.chips", NumberFormat.Gain(game.Eco.ItemsPerSecond(station, st, game.Globals))) : NumberFormat.Rate(game.StationIncome(station) * game.BoostMultiplier);
         int level = st.speed + st.add;
         if (level != shownLevel)
         {
@@ -101,12 +101,12 @@ public class IdleStationRow : MonoBehaviour
         int level = speedAxis ? st.speed : st.add;
         int count = game.ResolveCount(station, speedAxis, game.BuyMode);
         long price = game.UpgradePrice(station, speedAxis, game.BuyMode);
-        double delta = game.Eco.Income(station, game.Eco.With(st, speedAxis, count), game.Globals) - game.Eco.Income(station, st, game.Globals);
+        double delta = game.UpgradeGain(station, speedAxis, count);
         bool isBest = hasBest && best.kind == IdleEconomy.Kind.Upgrade && best.station == station && best.speedAxis == speedAxis;
         button.SetPrice(price);
         button.SetDelta(delta > 0 ? "+" + NumberFormat.RateValue(delta * game.BoostMultiplier) : "·");
         button.SetLevel(count > 1 ? Loc.T("drawer.levelplus", level, count) : Loc.T("drawer.level", level));
-        button.SetState(game.Cash >= price, isBest, isBest);
+        button.SetState(game.CrewReady && game.Cash >= price, isBest, isBest);
     }
 
     void RefreshNext(IdleGame game, IdleEconomy.Option best, bool hasBest)
@@ -114,7 +114,7 @@ public class IdleStationRow : MonoBehaviour
         long price = game.UnlockPrice(station);
         bool isBest = hasBest && best.kind == IdleEconomy.Kind.Unlock && best.station == station;
         unlockButton.SetPrice(price);
-        unlockButton.SetState(game.Cash >= price, isBest, isBest);
+        unlockButton.SetState(game.CrewReady && game.Cash >= price, isBest, isBest);
     }
 
     void Update()

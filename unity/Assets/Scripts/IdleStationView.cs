@@ -107,14 +107,15 @@ public class IdleStationView : MonoBehaviour
 
         float dt = Time.deltaTime;
         float before = phase;
-        phase += dt * game.VisualFrequency(station);
-        if (feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
+        if (game.StationWorking(station)) phase += dt * game.VisualFrequency(station);
+        bool earns = station != IdleEconomy.SerreStation;   // la serre ne vend rien : l'argent arrive à la sortie de l'Assemblage
+        if (earns && feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
             feedback.StationGain(station, transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
         sinceLot += dt;
         if (appear >= 1f && !MotionSettings.ReduceMotion)
         {
             if (fx != null && Mathf.FloorToInt(phase - fxPhase) != Mathf.FloorToInt(before - fxPhase)) fx.Cycle(station, transform.position);
-            if (sinceLot >= lotEvery && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && IdleBills.Instance != null)
+            if (earns && sinceLot >= lotEvery && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && IdleBills.Instance != null)
             {
                 sinceLot = 0f;
                 IdleBills.Instance.Send(transform.position + Vector3.up * 0.8f, lotSize);

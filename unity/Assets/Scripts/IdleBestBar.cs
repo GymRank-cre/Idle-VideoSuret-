@@ -28,9 +28,10 @@ public class IdleBestBar : MonoBehaviour
         IdleEconomy.Option goal;
         IdleEconomy.Option o = game.Advice(out found, out hasGoal, out goal);
         if (!found) return;
-        if (!rig.IsOnScreen(IdleLayout.StationCenter(o.station))) rig.FrameStation(o.station);   // on montre ce qu'on vient d'acheter
+        int where = o.kind == IdleEconomy.Kind.Hire ? IdleEconomy.SerreStation : o.station;
+        if (!rig.IsOnScreen(IdleLayout.StationCenter(where))) rig.FrameStation(where);   // on montre ce qu'on vient d'acheter
         IdleGame.PurchaseResult result = game.BuyAdvised();
-        IdlePurchaseSound.Play(result, o.kind == IdleEconomy.Kind.Unlock);
+        IdlePurchaseSound.Play(result, o.kind != IdleEconomy.Kind.Upgrade);
         if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(buyButton.transform.position, IdleEconomy.Ceil(o.cost));
     }
 
@@ -43,19 +44,26 @@ public class IdleBestBar : MonoBehaviour
             return;
         }
         IdleEconomyConfig cfg = game.Eco.Config;
-        string name = Loc.T(cfg.stations[o.station].nameKey);
-        if (o.kind == IdleEconomy.Kind.Unlock) SetTitle(Loc.T("drawer.best.unlock", name), null);
+        long price = IdleEconomy.Ceil(o.cost);
+        if (o.kind == IdleEconomy.Kind.Hire)
+        {
+            SetTitle(Loc.T("drawer.best.hire", Loc.T("hire." + o.station + ".name")), null);
+            detailText.text = Loc.T("hire." + o.station + ".desc");
+        }
         else
         {
-            IdleEconomy.StationLevels st = game.Stations[o.station];
-            SetTitle(Loc.T("drawer.best.line", name, Loc.T(o.speedAxis ? "drawer.speed" : "drawer.add")), Loc.T("drawer.best.level", (o.speedAxis ? st.speed : st.add) + 1));
+            string name = Loc.T(cfg.stations[o.station].nameKey);
+            if (o.kind == IdleEconomy.Kind.Unlock) SetTitle(Loc.T("drawer.best.unlock", name), null);
+            else
+            {
+                IdleEconomy.StationLevels st = game.Stations[o.station];
+                SetTitle(Loc.T("drawer.best.line", name, Loc.T(o.speedAxis ? "drawer.speed" : "drawer.add")), Loc.T("drawer.best.level", (o.speedAxis ? st.speed : st.add) + 1));
+            }
+            double payback = o.delta > 0 ? price / o.delta : 0;
+            string detail = Loc.T("drawer.best.detail", NumberFormat.Rate(o.delta), NumberFormat.Time(payback));
+            if (hasGoal) detail += Loc.T("drawer.best.goal", GoalName(cfg, goal));
+            detailText.text = detail;
         }
-
-        long price = IdleEconomy.Ceil(o.cost);
-        double payback = o.delta > 0 ? price / o.delta : 0;
-        string detail = Loc.T("drawer.best.detail", NumberFormat.Rate(o.delta), NumberFormat.Time(payback));
-        if (hasGoal) detail += Loc.T("drawer.best.goal", GoalName(cfg, goal));
-        detailText.text = detail;
 
         bool affordable = game.Cash >= price;
         buyButton.SetPrice(price);

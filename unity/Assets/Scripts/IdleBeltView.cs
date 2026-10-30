@@ -59,7 +59,7 @@ public class IdleBeltView : MonoBehaviour
             if (!on) continue;
 
             // le poste qui alimente ce tapis : sa Vitesse l'accélère, son niveau « Ajouter » y met plus de caisses
-            float speed = game.BeltSpeedFactor(i) * Time.deltaTime;
+            float speed = game.StationWorking(i + 1) ? game.BeltSpeedFactor(i) * Time.deltaTime : 0f;   // sans matière, le tapis s'arrête
             travelled[i] += itemSpeed * speed;
             scrolled[i] += chevronSpeed * speed;
 

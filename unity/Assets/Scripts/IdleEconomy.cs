@@ -19,7 +19,7 @@ public class IdleEconomy
         public int slots;
     }
 
-    public enum Kind { Upgrade, Unlock }
+    public enum Kind { Upgrade, Unlock, Hire }
 
     public struct Option
     {
@@ -32,6 +32,8 @@ public class IdleEconomy
         public double payback;     // coût / gain
         public bool milestone;     // l'achat franchit un palier x2
     }
+
+    public const int SerreStation = 0, AssemblyStation = 1;   // le début de la chaîne : la serre alimente l'Assemblage
 
     readonly IdleEconomyConfig config;
     readonly double[] baseSpeedCost, baseAddCost;
@@ -124,11 +126,35 @@ public class IdleEconomy
         return st.unlocked ? ItemsPerSecond(i, st, g) * MoneyPerItem(i, st, g) : 0;
     }
 
+    // Débit du début de la chaîne : le plus lent de la serre et de l'Assemblage décide.
+    public double ChainRate(IList<StationLevels> st, Globals g)
+    {
+        if (!st[SerreStation].unlocked || !st[AssemblyStation].unlocked) return 0;
+        return Math.Min(ItemsPerSecond(SerreStation, st[SerreStation], g), ItemsPerSecond(AssemblyStation, st[AssemblyStation], g));
+    }
+
+    // Ce que rapporte une pièce à la sortie de l'Assemblage : les paliers de la serre comptent aussi.
+    public double ChainValue(IList<StationLevels> st, Globals g)
+    {
+        return MoneyPerItem(AssemblyStation, st[AssemblyStation], g) * Math.Pow(2, MilestoneCount(st[SerreStation].speed + st[SerreStation].add));
+    }
+
     public double TotalIncome(IList<StationLevels> st, Globals g)
     {
-        double t = 0;
-        for (int i = 0; i < st.Count; i++) t += Income(i, st[i], g);
+        double t = ChainRate(st, g) * ChainValue(st, g);
+        for (int i = AssemblyStation + 1; i < st.Count; i++) t += Income(i, st[i], g);
         return t;
+    }
+
+    // Gain de revenu de k niveaux de plus : nul sur le poste du début de la chaîne qui n'est pas le goulot.
+    public double UpgradeGain(IList<StationLevels> st, Globals g, int i, bool speedAxis, int k)
+    {
+        StationLevels before = st[i];
+        double now = TotalIncome(st, g);
+        st[i] = With(before, speedAxis, k);
+        double after = TotalIncome(st, g);
+        st[i] = before;
+        return after - now;
     }
 
     // ------------------------------------------------------------------ coûts
@@ -177,7 +203,7 @@ public class IdleEconomy
             {
                 bool speedAxis = axis == 0;
                 double cost = BulkCost(speedAxis, i, speedAxis ? s.speed : s.add, k, g);
-                double delta = Income(i, With(s, speedAxis, k), g) - Income(i, s, g);
+                double delta = UpgradeGain(st, g, i, speedAxis, k);
                 result.Add(new Option
                 {
                     kind = Kind.Upgrade, station = i, speedAxis = speedAxis, count = k, cost = cost, delta = delta,
@@ -210,6 +236,9 @@ public class IdleEconomy
             if (double.IsInfinity(score) || double.IsNaN(score)) continue;
             if (!found || score < bestScore) { best = o; bestScore = score; found = true; }
         }
+        if (found) return best;
+        // serre et Assemblage à égalité parfaite : aucun achat seul ne rapporte, le moins cher débloque la situation
+        foreach (Option o in options) if (!found || o.cost < best.cost) { best = o; found = true; }
         return best;
     }
 

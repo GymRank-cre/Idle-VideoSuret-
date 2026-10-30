@@ -41,6 +41,7 @@ public static class IdleFraming
     }
 
     // Les postes ouverts, le prochain à débloquer et leurs plaques, dans la zone libre : la colonne de boutons de droite (`rightColumn`, en part de la largeur)
+    // Pendant les recrutements, la serre et le stock seulement : la caméra recule quand la chaîne démarre.
     // est exclue, et le cadre se décale vers la gauche tant qu'il y a la place. `visibleWidth` et `visibleHeight` : ce que voit la caméra au zoom 1, en mètres.
     public static View Default(IdleGame game, float visibleWidth, float visibleHeight, float pitch, float rightColumn)
     {
@@ -55,11 +56,16 @@ public static class IdleFraming
         for (int i = 0; i < game.Stations.Count; i++)
         {
             IdleGame.PlateState state = game.PlateStateOf(i);
-            if (state == IdleGame.PlateState.Hidden) continue;
+            if (state == IdleGame.PlateState.Hidden || (!game.CrewReady && i != IdleEconomy.SerreStation)) continue;
             Vector2 corner = IdleLayout.Stations[i];
             float size = IdleLayout.StationSize;
             Add(corner); Add(corner + new Vector2(size, size)); Add(corner + new Vector2(size, 0f)); Add(corner + new Vector2(0f, size));
-            if (state == IdleGame.PlateState.Open)
+            if (!game.CrewReady)
+            {
+                foreach (Vector2 pad in IdleLayout.PadHire) Add(pad);
+                Add(IdleLayout.Stock);
+            }
+            else if (state == IdleGame.PlateState.Open)
             {
                 Add(IdleLayout.PadPosition(i, IdleGame.PadKind.Speed));
                 Add(IdleLayout.PadPosition(i, IdleGame.PadKind.Add));

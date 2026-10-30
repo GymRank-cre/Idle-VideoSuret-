@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Construit les machines de la scène idle (U2c, UW-3). Les coordonnées de ce fichier sont celles du web, relatives au coin arrière du poste :
+// Construit les machines de la scène idle (U2c, UW-3 ; la serre : seulement sa charpente). Les coordonnées de ce fichier sont celles du web, relatives au coin arrière du poste :
 // (x, y, z) du web devient (Z, X, Y) dans Unity. Chaque machine a un corps fixe en plusieurs aspects (un maillage par aspect, échangés selon le niveau)
 // et de petites pièces mobiles animées par un script `IMachineAnim` selon la phase du cycle.
 public static class IdleMachineBuilder
@@ -132,7 +132,7 @@ public static class IdleMachineBuilder
             Platform(root, a);
             switch (i)
             {
-                case 0: ReceptionBody(root, a); break;
+                case 0: SerreBody(root, a); break;
                 case 1: AssemblyBody(root, a); break;
                 case 2: ScannerBody(root, a); break;
                 case 3: PackerBody(root, a); break;
@@ -144,7 +144,6 @@ public static class IdleMachineBuilder
 
         switch (i)
         {
-            case 0: ReceptionParts(root); break;
             case 1: AssemblyParts(root); break;
             case 2: ScannerParts(root); break;
             case 3: PackerParts(root); break;
@@ -463,65 +462,29 @@ public static class IdleMachineBuilder
         return Single(kit, name, parent, hex).transform;
     }
 
-    // ------------------------------------------------------------------ 1. Réception : quai, porte à lamelles, gyrophare, palette de caisses
+    // ------------------------------------------------------------------ 1. Serre : bac à cristaux sous une charpente (robots, tas et drone : IdleChainBuilder)
 
-    static void ReceptionBody(Transform root, int a)
+    static void SerreBody(Transform root, int a)
     {
-        string wall = Paint[a];
-        Box(root, wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.1f);
-        Part(RoofKit(1.22f), root, Shade(wall, -0.25f), Matrix4x4.identity);
-        Box(root, Yellow, 0.24f, 0.26f, 0.14f, 1.12f, 0.02f, 0.86f);
-        Flat(root, "#22303F", 0.3f, 0.27f, 0.2f, 1.0f, 0.012f, 0.75f);
-        for (int s = 1; s < 6; s++) Flat(root, "#9FB0C2", 0.3f, 0.285f, 0.2f + 0.75f * s / 6f, 1.0f, 0.008f, 0.03f);
-        Box(root, Yellow, 0.1f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
-        Box(root, Yellow, 1.4f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
+        string frame = Paint[a];
+        Box(root, "#22303F", 0.06f, 0.06f, 0.12f, 1.48f, 1.02f, 0.07f, 0.1f);
+        Box(root, frame, 0.02f, 0.02f, 0.12f, 1.56f, 0.05f, 0.16f);
+        Box(root, frame, 0.02f, 1.05f, 0.12f, 1.56f, 0.05f, 0.16f);
+        Box(root, frame, 0.02f, 0.02f, 0.12f, 0.05f, 1.08f, 0.16f);
+        Box(root, frame, 1.53f, 0.02f, 0.12f, 0.05f, 1.08f, 0.16f);
 
-        // palette en bois : planches et traverses
-        Box(root, "#8A5A2B", 0.35f, 0.6f, 0.12f, 0.95f, 0.95f, 0.05f, 0.1f);
-        for (int s = 0; s < 4; s++) Flat(root, "#B07A3A", 0.35f, 0.6f + s * 0.245f, 0.17f, 0.95f, 0.2f, 0.05f, 0.1f);
+        // charpente légère : on doit voir les cristaux à travers
+        foreach (float x in new[] { 0.02f, 1.5f })
+            foreach (float y in new[] { 0.02f, 1.02f })
+                Box(root, frame, x, y, 0.12f, 0.08f, 0.08f, 0.98f);
+        string beam = "#" + ColorUtility.ToHtmlStringRGB(Shade(frame, -0.25f));
+        Box(root, beam, 0.02f, 0.02f, 1.1f, 1.56f, 0.08f, 0.08f);
+        Box(root, beam, 0.02f, 1.02f, 1.1f, 1.56f, 0.08f, 0.08f);
+        Box(root, beam, 0.02f, 0.02f, 1.1f, 0.08f, 1.08f, 0.08f);
+        Box(root, beam, 1.5f, 0.02f, 1.1f, 0.08f, 1.08f, 0.08f);
 
-        if (a >= 2)   // module : une pile de plus contre le mur
-        {
-            Box(root, "#D9A25B", 0.02f, 0.3f, 0.12f, 0.26f, 0.3f, 0.26f, 0.15f);
-            Box(root, "#E5B96B", 0.04f, 0.32f, 0.38f, 0.22f, 0.26f, 0.22f, 0.15f);
-        }
-        if (a >= 3) Antenna(root, 0.5f, 0.12f, 1.3f);
-    }
-
-    static void ReceptionParts(Transform root)
-    {
-        // gyrophare : un cylindre dont le matériau alterne
-        var beaconKit = new MeshKit();
-        beaconKit.Cylinder(new Vector3(0.13f, 1.3f, IdleLayout.StationSize - 0.22f), 0.1f, 0.12f, 8);
-        Material on = M("#FFC400"), off = M("#B58A00");
-        GameObject beacon = beaconKit.ToObject("Beacon", root, on);
-
-        // 8 caisses sur la palette (4 en bas, 4 au-dessus) : boîte + ruban, mises à l'échelle en hauteur par l'animation
-        var crates = new Transform[8];
-        for (int q = 0; q < crates.Length; q++)
-        {
-            int layer = q / 4, slot = q % 4;
-            float qx = 0.42f + (slot % 2) * 0.45f, qy = 0.67f + (slot / 2) * 0.45f;
-            var crate = new GameObject("Crate_" + q).transform;
-            crate.SetParent(root, false);
-            crate.localPosition = new Vector3(qy + 0.2f, 0.22f + layer * 0.375f, qx + 0.2f);
-            var box = new MeshKit();
-            box.BevelBox(new Vector3(-0.2f, 0f, -0.2f), new Vector3(0.4f, 0.36f, 0.4f), 0.03f);
-            Part(box, crate, "#D9A25B", 0.15f);
-            var tape = new MeshKit();
-            tape.Box(new Vector3(-0.2f, 0.36f, -0.05f), new Vector3(0.4f, 0.012f, 0.1f));
-            Part(tape, crate, Yellow, 0.15f);
-            crates[q] = crate;
-        }
-
-        var machine = root.gameObject.AddComponent<ReceptionMachine>();
-        var so = new SerializedObject(machine);
-        SerializedProperty list = so.FindProperty("crates");
-        list.arraySize = crates.Length;
-        for (int q = 0; q < crates.Length; q++) list.GetArrayElementAtIndex(q).objectReferenceValue = crates[q];
-        so.FindProperty("beacon").objectReferenceValue = beacon.GetComponent<Renderer>();
-        so.FindProperty("beaconOn").objectReferenceValue = on;
-        so.FindProperty("beaconOff").objectReferenceValue = off;
-        so.ApplyModifiedPropertiesWithoutUndo();
+        if (a >= 2)   // module : rampes de lumière
+            for (int s = 0; s < 2; s++) Box(root, "#8DF1FF", 0.1f, 0.36f + s * 0.4f, 1.1f, 1.4f, 0.05f, 0.05f, 1f);
+        if (a >= 3) Antenna(root, 0.5f, 0.05f, 1.18f);
     }
 }

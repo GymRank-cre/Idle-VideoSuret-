@@ -35,6 +35,7 @@ public static class IdleSceneBuilder
         BuildSlots(world);
         BuildFeedback(world);
         BuildBelts(world);
+        IdleChainBuilder.Build(world, Object.FindFirstObjectByType<FeedbackSpawner>());
         BuildPads(world);
         BuildCars(world);
         BuildContactShadows(world, shadows);
@@ -392,7 +393,7 @@ public static class IdleSceneBuilder
         fxSo.FindProperty("system").objectReferenceValue = fxObject.GetComponent<ParticleSystem>();
         fxSo.ApplyModifiedPropertiesWithoutUndo();
 
-        float[] fxPhase = { 0.02f, 0.45f, 0.6f, 0.5f, 0.72f };   // caisse posée, caméra montée, balayage, presse en bas, départ de la camionnette
+        float[] fxPhase = { 0.02f, 0.45f, 0.6f, 0.5f, 0.72f };   // cristal coupé, caméra montée, balayage, presse en bas, départ de la camionnette
         foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
         {
             var vso = new SerializedObject(view);
@@ -443,7 +444,7 @@ public static class IdleSceneBuilder
         Texture2D chevrons = ChevronTexture();
         topMat.SetTexture("_BaseMap", chevrons);
         topMat.mainTexture = chevrons;
-        string[] itemHex = { "#D9A25B", "#E9EEF3", "#4FB3FF", "#E5B96B" };
+        string[] itemHex = { "#3DDC5A", "#E9EEF3", "#4FB3FF", "#E5B96B" };
         string[] detailHex = { "#FFC400", "#1FA0FF", "#3DDC5A", "#FFFFFF" };
         var belts = new Transform[IdleLayout.Belts.Length];
         var tops = new Renderer[belts.Length];
@@ -550,6 +551,15 @@ public static class IdleSceneBuilder
             k.FlatQuad(PadIcon(0f, -6f), 6f * PadUnit, 16f * PadUnit);
             k.FlatQuad(PadIcon(0f, -6f), 16f * PadUnit, 6f * PadUnit);
         }
+        else if (kind == IdleGame.PadKind.Hire)
+        {
+            k.SetPaint(affordable ? "#7FE3FF" : "#9AA6B3");     // tête de robot
+            k.FlatQuad(PadIcon(0f, -6f), 18f * PadUnit, 15f * PadUnit);
+            k.FlatQuad(PadIcon(0f, -16f), 3f * PadUnit, 6f * PadUnit);
+            k.SetPaint("#141C26");
+            k.FlatQuad(PadIcon(-4f, -7f), 4f * PadUnit, 4f * PadUnit);
+            k.FlatQuad(PadIcon(4f, -7f), 4f * PadUnit, 4f * PadUnit);
+        }
         return k.ToMesh("Pad_" + kind + (affordable ? "_On" : "_Wait"));
     }
 
@@ -559,16 +569,17 @@ public static class IdleSceneBuilder
         root.SetParent(parent, false);
         Material face = IdleMaterials.Overlay("PadFace", "#FFFFFF", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
         Font font = UiTheme.Font;
-        var kinds = new[] { IdleGame.PadKind.Speed, IdleGame.PadKind.Add, IdleGame.PadKind.Unlock };
-        var on = new Mesh[3];
-        var wait = new Mesh[3];
-        for (int k = 0; k < 3; k++) { on[k] = PadMesh(kinds[k], true); wait[k] = PadMesh(kinds[k], false); }
+        var kinds = new[] { IdleGame.PadKind.Speed, IdleGame.PadKind.Add, IdleGame.PadKind.Unlock, IdleGame.PadKind.Hire };
+        var on = new Mesh[kinds.Length];
+        var wait = new Mesh[kinds.Length];
+        for (int k = 0; k < kinds.Length; k++) { on[k] = PadMesh(kinds[k], true); wait[k] = PadMesh(kinds[k], false); }
 
         var views = new List<IdlePadView>();
         for (int i = 0; i < IdleLayout.Stations.Length; i++)
-            for (int k = 0; k < 3; k++)
+            for (int k = 0; k < kinds.Length; k++)
             {
                 IdleGame.PadKind kind = kinds[k];
+                if (kind == IdleGame.PadKind.Hire && i >= IdleLayout.PadHire.Length) continue;   // une plaque par robot à recruter
                 var pad = new GameObject("Pad_" + i + "_" + kind, typeof(IdlePadView)).transform;
                 pad.SetParent(root, false);
                 pad.position = IdleLayout.ToWorld(IdleLayout.PadPosition(i, kind), 0.03f);
@@ -583,13 +594,13 @@ public static class IdleSceneBuilder
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = false;
 
-                if (kind == IdleGame.PadKind.Unlock)
+                if (kind == IdleGame.PadKind.Unlock || kind == IdleGame.PadKind.Hire)
                 {
                     var tag = new GameObject("NewTag").transform;
                     tag.SetParent(visual, false);
                     tag.localPosition = PadPoint(9f, -9f, 0.3f);
                     tag.gameObject.AddComponent<FaceCamera>();
-                    MakeFlatText(tag, Loc.T("pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
+                    MakeFlatText(tag, Loc.T(kind == IdleGame.PadKind.Hire ? "pad.hire" : "pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
                 }
                 var priceRoot = new GameObject("Price").transform;
                 priceRoot.SetParent(visual, false);

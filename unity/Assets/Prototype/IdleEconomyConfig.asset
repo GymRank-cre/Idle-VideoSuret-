@@ -22,22 +22,32 @@ MonoBehaviour:
     nameKey: station.assem
     cycle: 3
     value: 12
-    unlock: 180
+    unlock: 0
   - id: test
     nameKey: station.test
     cycle: 4.5
     value: 144
-    unlock: 14400
+    unlock: 150000
   - id: pack
     nameKey: station.pack
     cycle: 6
     value: 1728
-    unlock: 1152000
+    unlock: 10000000
   - id: ship
     nameKey: station.ship
     cycle: 8
     value: 20736
-    unlock: 92160000
+    unlock: 600000000
+  hirePrices:
+  - 25
+  - 30
+  - 45
+  chainBufferSeconds: 8
+  chainBufferMin: 6
+  chainStockSeconds: 30
+  chainStockMin: 30
+  droneTrip: 2
+  droneMinLoad: 1
   speedStep: 0.12
   growthSpeed: 1.19
   growthAdd: 1.26
@@ -102,6 +112,6 @@ MonoBehaviour:
   proBigQuantity: 100
   clientCount: 8
   sayCount: 6
-  startCash: 10
+  startCash: 100
   newStationFavor: 0.35
   goalFarSeconds: 12

@@ -9,7 +9,7 @@ public static class IdleLayout
     public const float SlabThickness = 0.3f;
     public const float StationSize = 1.6f;
 
-    // Coin « arrière » de l'empreinte de chaque poste (x, y du web) : Réception, Assemblage, Test, Emballage, Expédition.
+    // Coin « arrière » de l'empreinte de chaque poste (x, y du web) : Serre, Assemblage, Test, Emballage, Expédition.
     public static readonly Vector2[] Stations =
     {
         new Vector2(0.55f, 0.55f), new Vector2(3.2f, 0.55f), new Vector2(4.9f, 2.7f), new Vector2(3.2f, 4.4f), new Vector2(0.55f, 4.4f),
@@ -22,8 +22,15 @@ public static class IdleLayout
     public static readonly Vector2[] PadAdd = { new Vector2(1.9f, 2.8f), new Vector2(4.55f, 2.8f), new Vector2(7.1f, 4.05f), new Vector2(4.55f, 6.85f), new Vector2(1.9f, 6.85f) };
     public static readonly Vector2[] PadUnlock = { new Vector2(1.35f, 2.8f), new Vector2(4.0f, 2.8f), new Vector2(7.1f, 3.5f), new Vector2(4.0f, 6.85f), new Vector2(1.35f, 6.85f) };
 
+    public static readonly Vector2[] PadHire = { new Vector2(0.85f, 2.8f), new Vector2(1.35f, 2.8f), new Vector2(1.9f, 2.8f) };   // un recrutement à la fois
+
+    // Début de la chaîne (x, y du web) : du découpeur au stock, le long du bord avant de la serre, puis le tapis vers l'Assemblage.
+    public static readonly Vector2 CutterSpot = new Vector2(0.95f, 1.8f), CutPile = new Vector2(1.32f, 1.92f), EtcherSpot = new Vector2(1.68f, 1.8f), RawPile = new Vector2(2.0f, 1.92f);
+    public static readonly Vector2 Stock = new Vector2(2.72f, 2.08f);
+
     public static Vector2 PadPosition(int station, IdleGame.PadKind kind)
     {
+        if (kind == IdleGame.PadKind.Hire) return PadHire[station];
         return (kind == IdleGame.PadKind.Speed ? PadSpeed : kind == IdleGame.PadKind.Add ? PadAdd : PadUnlock)[station];
     }
 
