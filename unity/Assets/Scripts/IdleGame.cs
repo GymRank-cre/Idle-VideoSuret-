@@ -49,6 +49,7 @@ public class IdleGame
     public bool BoostActive => Now < BoostUntil;
     public double BoostMultiplier => BoostActive ? cfg.turboMultiplier : 1;
     public double Income => incomeCache * BoostMultiplier;     // revenu réel par seconde (turbo compris)
+    public int BuyMode = 1;                             // 1, 10 ou 0 (= maximum abordable) : sélecteur du tiroir et plaques au sol
     public double BoostRemaining => Math.Max(0, BoostUntil - Now);
     public double BoostCooldownRemaining => Math.Max(0, BoostReadyAt - Now);
 
@@ -150,6 +151,62 @@ public class IdleGame
         RefreshOffers();
         Changed();
         return PurchaseResult.Ok;
+    }
+
+    public enum PlateState { Hidden, Unlock, Open }
+
+    // Une plaque au sol par poste : ouvert -> achète sa meilleure option ; prochain verrouillé -> déblocage ; les suivants sont cachés.
+    public PlateState PlateStateOf(int station)
+    {
+        if (Stations[station].unlocked) return PlateState.Open;
+        return station == NextLockedStation() ? PlateState.Unlock : PlateState.Hidden;
+    }
+
+    // Meilleure option d'un poste ouvert (meilleur délai de remboursement entre Vitesse et Ajouter), pour `k` niveaux (0 = maximum).
+    public IdleEconomy.Option BestOfStation(int station, int k)
+    {
+        IdleEconomy.StationLevels st = Stations[station];
+        IdleEconomy.Option best = default(IdleEconomy.Option);
+        bool have = false;
+        for (int axis = 0; axis < 2; axis++)
+        {
+            bool speedAxis = axis == 0;
+            int level = speedAxis ? st.speed : st.add;
+            int count = k > 0 ? k : Math.Max(1, Eco.MaxAffordable(speedAxis, station, level, Cash, g));
+            double cost = Eco.BulkCost(speedAxis, station, level, count, g);
+            double delta = Eco.Income(station, Eco.With(st, speedAxis, count), g) - Eco.Income(station, st, g);
+            double payback = delta > 0 ? cost / delta : 1e18;
+            if (!have || payback < best.payback)
+            {
+                best = new IdleEconomy.Option { kind = IdleEconomy.Kind.Upgrade, station = station, speedAxis = speedAxis, count = count, cost = cost, delta = delta, payback = payback };
+                have = true;
+            }
+        }
+        return best;
+    }
+
+    // Prix entier affiché sur la plaque d'un poste (0 si la plaque est cachée).
+    public long PlatePrice(int station)
+    {
+        switch (PlateStateOf(station))
+        {
+            case PlateState.Open: return IdleEconomy.Ceil(BestOfStation(station, BuyMode).cost);
+            case PlateState.Unlock: return UnlockPrice(station);
+            default: return 0;
+        }
+    }
+
+    public bool PlateAffordable(int station) { long p = PlatePrice(station); return p > 0 && Cash >= p; }
+
+    // Touche sur une plaque : achète ce qu'elle propose.
+    public PurchaseResult BuyPlate(int station)
+    {
+        switch (PlateStateOf(station))
+        {
+            case PlateState.Open: return BuyUpgrade(station, BestOfStation(station, BuyMode).speedAxis, BuyMode);
+            case PlateState.Unlock: return BuyUnlock(station);
+            default: return PurchaseResult.Invalid;
+        }
     }
 
     // Achat conseillé du moment (et son objectif lointain éventuel).
@@ -302,7 +359,7 @@ public class IdleGame
         {
             version = SaveData.CurrentVersion, cash = Cash, earned = Earned, buys = Buys, proPoints = Pro, proTotal = ProTotal,
             lastSaveUtc = utcSeconds, orderSeq = OrderSeq, ordersDone = OrdersDone,
-            nextOfferIn = Math.Max(0, NextOfferAt - Now), boostRemaining = BoostRemaining, boostCooldown = BoostCooldownRemaining,
+            buyMode = BuyMode, nextOfferIn = Math.Max(0, NextOfferAt - Now), boostRemaining = BoostRemaining, boostCooldown = BoostCooldownRemaining,
         };
         foreach (var s in Stations) d.stations.Add(new SaveData.StationSave { unlocked = s.unlocked, speed = s.speed, add = s.add });
         for (int i = 0; i < Rep.Length; i++) d.reputation.Add(new SaveData.ReputationLevel { id = cfg.reputation[i].id, level = Rep[i] });
@@ -338,6 +395,7 @@ public class IdleGame
             int ix = Eco.RepIndex(r.id);
             if (ix >= 0) Rep[ix] = Math.Max(0, Math.Min(r.level, cfg.reputation[ix].maxLevel));
         }
+        BuyMode = d.buyMode == 10 || d.buyMode == 0 ? d.buyMode : 1;
         OrderSeq = Math.Max(1, d.orderSeq); OrdersDone = Math.Max(0, d.ordersDone);
         NextOfferAt = Now + Math.Max(0, d.nextOfferIn);
         BoostUntil = Now + Math.Max(0, d.boostRemaining);

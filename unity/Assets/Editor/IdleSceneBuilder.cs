@@ -1,11 +1,13 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 // Construit la scène du jeu idle (`Tools > Idle Prototype > Build scene`). U2a : caméra, dalle en damier à bord jaune, décor (herbe,
-// arbres, route, voitures) et 5 emplacements de postes en fantômes avec cadenas. Les machines, tapis et plaques arrivent en U2b/U2c.
+// arbres, route, voitures) et 5 emplacements de postes en fantômes avec cadenas. U2b : 4 tapis animés (chevrons et caisses) et
+// 5 plaques d'achat au sol touchables. Les machines arrivent en U2c.
 // Tout ce qui partage une couleur est fusionné en un seul maillage (peu d'appels de dessin) ; aucune ombre temps réel.
 public static class IdleSceneBuilder
 {
@@ -27,6 +29,8 @@ public static class IdleSceneBuilder
         BuildRoad(world);
         BuildTrees(world);
         BuildSlots(world);
+        BuildBelts(world);
+        BuildPlates(world);
         BuildCars(world);
         EditorSceneManager.SaveScene(scene, ScenePath);
         WebGLBuilder.EnsureSceneInBuildSettings();
@@ -204,6 +208,246 @@ public static class IdleSceneBuilder
             sr.sprite = lockSprite;
             sr.color = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
         }
+    }
+
+
+    // ------------------------------------------------------------------ tapis (U2b)
+
+    const float BeltWidth = 0.5f, BeltHeight = 0.13f, ChevronPeriod = 0.45f;
+
+    static Texture2D ChevronTexture()
+    {
+        const string path = "Assets/Prototype/Textures/BeltChevron.png";
+        Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (existing != null) return existing;
+        if (!AssetDatabase.IsValidFolder("Assets/Prototype/Textures")) AssetDatabase.CreateFolder("Assets/Prototype", "Textures");
+        const int n = 64;
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        Color bed = new Color32(0x46, 0x54, 0x6A, 0xFF), mark = new Color32(0x68, 0x7B, 0x98, 0xFF);
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float edge = Mathf.Abs(x - (n - 1) * 0.5f);
+                float band = 38f - edge * 0.9f;                       // chevron : pointe vers le haut de la texture = sens de la marche
+                tex.SetPixel(x, y, Mathf.Abs(y - band) < 4.5f ? mark : bed);
+            }
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.wrapMode = TextureWrapMode.Repeat;
+        importer.mipmapEnabled = false;
+        importer.filterMode = FilterMode.Bilinear;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    static void BuildBelts(Transform parent)
+    {
+        var root = new GameObject("Belts").transform;
+        root.SetParent(parent, false);
+        Material bedMat = IdleMaterials.Get("BeltBed", "#46546A");
+        Material railMat = IdleMaterials.Get("BeltRail", "#FFC400");
+        Material topMat = IdleMaterials.Get("BeltTop", "#FFFFFF");
+        Texture2D chevrons = ChevronTexture();
+        topMat.SetTexture("_BaseMap", chevrons);
+        topMat.mainTexture = chevrons;
+        string[] itemHex = { "#D9A25B", "#E9EEF3", "#4FB3FF", "#E5B96B" };
+        string[] detailHex = { "#FFC400", "#1FA0FF", "#3DDC5A", "#FFFFFF" };
+        var belts = new Transform[IdleLayout.Belts.Length];
+        var tops = new Renderer[belts.Length];
+        for (int bi = 0; bi < belts.Length; bi++)
+        {
+            Transform belt = new GameObject("Belt_" + bi).transform;
+            belt.SetParent(root, false);
+            belts[bi] = belt;
+            Vector2[] web = IdleLayout.Belts[bi];
+            var body = new MeshKit(); var top = new MeshKit(); var rails = new MeshKit();
+            float ext = BeltWidth * 0.5f, acc = 0f;
+            for (int k = 0; k < web.Length - 1; k++)
+            {
+                Vector3 p = IdleLayout.ToWorld(web[k]), q = IdleLayout.ToWorld(web[k + 1]);
+                Vector3 dir = (q - p).normalized, nrm = new Vector3(-dir.z, 0f, dir.x);
+                float len = Vector3.Distance(p, q);
+                Vector3 p2 = p - dir * ext, q2 = q + dir * ext;   // chaque tronçon dépasse d'une demi-largeur : les coins sont pleins
+                Vector3 c0 = p2 - nrm * ext, c1 = p2 + nrm * ext, c2 = q2 + nrm * ext, c3 = q2 - nrm * ext;
+                Vector3 min = Vector3.Min(Vector3.Min(c0, c1), Vector3.Min(c2, c3)), max = Vector3.Max(Vector3.Max(c0, c1), Vector3.Max(c2, c3));
+                body.Box(new Vector3(min.x, 0f, min.z), new Vector3(max.x - min.x, BeltHeight, max.z - min.z));
+                float v0 = (acc - ext) / ChevronPeriod, v1 = (acc + len + ext) / ChevronPeriod;
+                Vector3 up = new Vector3(0f, BeltHeight + 0.004f, 0f);
+                top.UvQuad(c0 + up, c1 + up, c2 + up, c3 + up, new Vector2(0f, v0), new Vector2(1f, v0), new Vector2(1f, v1), new Vector2(0f, v1));
+                foreach (float side in new[] { -1f, 1f })   // rails jaunes de chaque côté
+                {
+                    Vector3 a = p2 + nrm * side * (ext + 0.01f), b = q2 + nrm * side * (ext + 0.01f), t = nrm * 0.0175f;
+                    Vector3 rmin = Vector3.Min(Vector3.Min(a - t, a + t), Vector3.Min(b - t, b + t)), rmax = Vector3.Max(Vector3.Max(a - t, a + t), Vector3.Max(b - t, b + t));
+                    rails.Box(new Vector3(rmin.x, BeltHeight, rmin.z), new Vector3(rmax.x - rmin.x, 0.04f, rmax.z - rmin.z));
+                }
+                acc += len;
+            }
+            body.ToObject("Body", belt, bedMat);
+            tops[bi] = top.ToObject("Top", belt, topMat).GetComponent<Renderer>();
+            rails.ToObject("Rails", belt, railMat);
+
+            // caisses qui avancent (leur nombre dépend de la longueur ; IdleBeltView les déplace)
+            Material itemMat = IdleMaterials.Get("Item_" + itemHex[bi].TrimStart('#'), itemHex[bi]);
+            Material detailMat = IdleMaterials.Get("ItemDetail_" + detailHex[bi].TrimStart('#'), detailHex[bi]);
+            int count = Mathf.Max(2, Mathf.RoundToInt(acc / 0.95f));
+            for (int k = 0; k < count; k++)
+            {
+                var item = new GameObject("Item_" + k).transform;
+                item.SetParent(belt, false);
+                float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
+                var box = new MeshKit();
+                box.Box(new Vector3(-s * 0.5f, 0f, -s * 0.5f), new Vector3(s, h, s));
+                box.ToObject("Box", item, itemMat);
+                var detail = new MeshKit();
+                if (bi == 0 || bi == 3) detail.Box(new Vector3(-0.04f, h, -s * 0.5f), new Vector3(0.08f, 0.012f, s));   // ruban d'emballage
+                else detail.Cylinder(new Vector3(0f, h, 0f), 0.07f, 0.08f);                                        // voyant
+                detail.ToObject("Detail", item, detailMat);
+            }
+        }
+        var view = new GameObject("BeltView", typeof(IdleBeltView));
+        view.transform.SetParent(root, false);
+        var so = new SerializedObject(view.GetComponent<IdleBeltView>());
+        SetObjects(so.FindProperty("belts"), belts);
+        SetObjects(so.FindProperty("chevronTops"), tops);
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static void SetObjects(SerializedProperty array, Object[] objects)
+    {
+        array.arraySize = objects.Length;
+        for (int i = 0; i < objects.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = objects[i];
+    }
+
+    // ------------------------------------------------------------------ plaques d'achat au sol (U2b)
+
+    const float PlateSize = 1.25f;
+
+    static void BuildPlates(Transform parent)
+    {
+        var root = new GameObject("Plates").transform;
+        root.SetParent(parent, false);
+        Material baseMat = IdleMaterials.Get("PlateBase", "#2A3644");
+        Material greenMat = IdleMaterials.Get("PlateGreen", "#3DDC5A");
+        Material yellowMat = IdleMaterials.Get("PlateYellow", "#FFC400");
+        Material arrowOn = IdleMaterials.Get("PlateArrowOn", "#8CFF9E");
+        Material arrowOff = IdleMaterials.Get("PlateArrowOff", "#9AA6B3");
+        Font font = UiTheme.Font;
+        Vector3 textUp = new Vector3(0f, 0f, -1f);               // « haut » du texte sur le sol : vers le haut-gauche de l'écran
+        Vector3 along = new Vector3(-1f, 0f, 0f);                // sens de lecture : de gauche à droite en montant vers la droite
+        Quaternion flat = Quaternion.Euler(90f, 180f, 0f);       // texte couché sur le sol, aligné sur l'axe de la dalle
+        var views = new IdlePlateView[IdleLayout.Plates.Length];
+        for (int i = 0; i < views.Length; i++)
+        {
+            var plate = new GameObject("Plate_" + i, typeof(IdlePlateView)).transform;
+            plate.SetParent(root, false);
+            plate.position = IdleLayout.ToWorld(IdleLayout.Plates[i], 0.012f);
+            var visual = new GameObject("Visual").transform;
+            visual.SetParent(plate, false);
+            RoundedBox.Make(visual, "Base", new Vector3(0f, 0.025f, 0f), new Vector3(PlateSize, 0.05f, PlateSize), 0.1f, baseMat);
+
+            float half = PlateSize * 0.5f - 0.08f, lw = 0.07f, top = 0.052f;
+            var solid = new MeshKit();
+            solid.Box(new Vector3(-half, top, -half), new Vector3(half * 2, 0.006f, lw));
+            solid.Box(new Vector3(-half, top, half - lw), new Vector3(half * 2, 0.006f, lw));
+            solid.Box(new Vector3(-half, top, -half), new Vector3(lw, 0.006f, half * 2));
+            solid.Box(new Vector3(half - lw, top, -half), new Vector3(lw, 0.006f, half * 2));
+            GameObject green = solid.ToObject("BorderGreen", visual, greenMat);
+            var dashed = new MeshKit();
+            for (float t = -half; t < half - 0.1f; t += 0.26f)
+            {
+                float l = Mathf.Min(0.16f, half - t);
+                dashed.Box(new Vector3(t, top, -half), new Vector3(l, 0.006f, lw));
+                dashed.Box(new Vector3(t, top, half - lw), new Vector3(l, 0.006f, lw));
+                dashed.Box(new Vector3(-half, top, t), new Vector3(lw, 0.006f, l));
+                dashed.Box(new Vector3(half - lw, top, t), new Vector3(lw, 0.006f, l));
+            }
+            GameObject yellow = dashed.ToObject("BorderYellow", visual, yellowMat);
+
+            var arrowKit = new MeshKit();
+            arrowKit.FlatArrow(textUp * 0.3f + new Vector3(0f, top + 0.012f, 0f), along, 0.42f, 0.3f);   // flèche vers le haut à droite
+            GameObject arrow = arrowKit.ToObject("Arrow", visual, arrowOff);
+
+            var tag = new GameObject("NewTag").transform;
+            tag.SetParent(visual, false);
+            tag.localPosition = textUp * 0.38f + new Vector3(0f, top + 0.012f, 0f);
+            MakeFlatText(tag, "NOUVEAU", font, 70, 0.034f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _);
+
+            var priceRoot = new GameObject("Price").transform;
+            priceRoot.SetParent(visual, false);
+            priceRoot.localPosition = -textUp * 0.12f + new Vector3(0f, top + 0.015f, 0f);
+            TextMesh main;
+            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.085f, flat, Color.white, out main);
+            var texts = new List<TextMesh> { main };
+            foreach (TextMesh outline in label.GetComponentsInChildren<TextMesh>()) if (outline != main) texts.Add(outline);
+
+            var view = plate.GetComponent<IdlePlateView>();
+            var so = new SerializedObject(view);
+            so.FindProperty("station").intValue = i;
+            so.FindProperty("visual").objectReferenceValue = visual;
+            so.FindProperty("borderAffordable").objectReferenceValue = green;
+            so.FindProperty("borderWaiting").objectReferenceValue = yellow;
+            so.FindProperty("arrow").objectReferenceValue = arrow;
+            so.FindProperty("arrowRenderer").objectReferenceValue = arrow.GetComponent<Renderer>();
+            so.FindProperty("arrowOn").objectReferenceValue = arrowOn;
+            so.FindProperty("arrowOff").objectReferenceValue = arrowOff;
+            so.FindProperty("newTag").objectReferenceValue = tag.gameObject;
+            SetObjects(so.FindProperty("priceTexts"), texts.ToArray());
+            so.ApplyModifiedPropertiesWithoutUndo();
+            views[i] = view;
+        }
+        var input = new GameObject("PlateInput", typeof(IdlePlateInput));
+        input.transform.SetParent(root, false);
+        var iso = new SerializedObject(input.GetComponent<IdlePlateInput>());
+        SetObjects(iso.FindProperty("plates"), views);
+        iso.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Texte couché sur le sol : le texte principal et 4 copies sombres décalées en diagonale (contour).
+    static Transform MakeFlatText(Transform parent, string text, Font font, int fontSize, float characterSize, Quaternion rotation, Color color, out TextMesh main)
+    {
+        var holder = new GameObject("Text").transform;
+        holder.SetParent(parent, false);
+        holder.localRotation = rotation;
+        float o = 0.03f;
+        Vector2[] offsets = { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o) };
+        foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink);
+        main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color);
+        return holder;
+    }
+
+    // Deux matériaux de police : le contour est dessiné avant le texte (file de rendu plus basse), pour ne jamais le recouvrir.
+    static Material FontMaterial(Font font, bool main)
+    {
+        string path = "Assets/Prototype/Materials/Idle_Font" + (main ? "Main" : "Outline") + ".mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(font.material); AssetDatabase.CreateAsset(m, path); }
+        m.mainTexture = font.material.mainTexture;
+        m.renderQueue = main ? 3010 : 3005;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    static TextMesh MakeTextMesh(Transform parent, string name, string text, Font font, int fontSize, float characterSize, Vector3 localPos, Color color)
+    {
+        var go = new GameObject(name, typeof(TextMesh));
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = localPos;
+        var tm = go.GetComponent<TextMesh>();
+        tm.font = font;
+        tm.text = text;
+        tm.fontSize = fontSize;
+        tm.characterSize = characterSize;
+        tm.anchor = TextAnchor.MiddleCenter;
+        tm.alignment = TextAlignment.Center;
+        tm.color = color;
+        var r = go.GetComponent<MeshRenderer>();
+        r.sharedMaterial = FontMaterial(font, name == "Main");
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = false;
+        return tm;
     }
 
     // ------------------------------------------------------------------ voitures qui passent sur la route

@@ -214,6 +214,36 @@ public static class UnitTests
         Eq("False", mig.soundOn.ToString(), "migration v7 : réglages conservés");
         Eq("True", (SaveSystem.TryParse("{\"version\":99}", cfg) == null).ToString(), "version future refusée");
 
+        // ---------------------------------------------------------------- plaques d'achat au sol (U2b)
+        var pg = new IdleGame(cfg, 2, 0);
+        Eq("Open Unlock Hidden Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4), "plaques : ouvert, prochain à débloquer, le reste caché");
+        Eq("7 True", pg.PlatePrice(0) + " " + pg.PlateAffordable(0), "plaque du 1er poste : 7 $ (Ajouter, meilleur remboursement), abordable avec 10 $");
+        pg.Cash = 5;
+        Eq("False", pg.PlateAffordable(0).ToString(), "plaque : pas assez d'argent");
+        Eq("TooExpensive", pg.BuyPlate(0).ToString(), "toucher la plaque sans argent : refusé");
+        Eq("180", pg.PlatePrice(1).ToString(), "plaque de déblocage de l'Assemblage : 180");
+        Eq("0", pg.PlatePrice(2).ToString(), "plaque cachée : pas de prix");
+        Eq("Invalid", pg.BuyPlate(3).ToString(), "plaque cachée : achat impossible");
+        pg.Cash = 1000;
+        double cash0 = pg.Cash;
+        Eq("Ok", pg.BuyPlate(0).ToString(), "plaque du poste ouvert : achat");
+        Eq("True", (pg.Cash < cash0 && pg.Stations[0].speed + pg.Stations[0].add == 1).ToString(), "un niveau acheté, argent dépensé");
+        Eq("Ok", pg.BuyPlate(1).ToString(), "plaque de déblocage : poste débloqué");
+        Eq("True Open Unlock", pg.Stations[1].unlocked + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2), "après le déblocage : poste ouvert, le suivant à débloquer");
+        pg.BuyMode = 10; pg.Cash = 1e9;
+        long p10 = pg.PlatePrice(0);
+        int before10 = pg.Stations[0].speed + pg.Stations[0].add;
+        pg.BuyPlate(0);
+        Eq("True", (pg.Stations[0].speed + pg.Stations[0].add - before10 == 10 && p10 > 0).ToString(), "mode x10 : 10 niveaux d'un coup");
+        pg.BuyMode = 0;
+        pg.Cash = 1e5;
+        int beforeMax = pg.Stations[0].speed + pg.Stations[0].add;
+        pg.BuyPlate(0);
+        Eq("True", (pg.Stations[0].speed + pg.Stations[0].add - beforeMax > 10 && pg.Cash >= 0).ToString(), "mode MAX : plusieurs niveaux, argent jamais négatif");
+        var pj = JsonUtility.ToJson(pg.ToSave(1));
+        var pg2 = new IdleGame(cfg, 2, 0); pg2.Load(JsonUtility.FromJson<SaveData>(pj));
+        Eq("0", pg2.BuyMode.ToString(), "mode d'achat sauvegardé");
+
         // ---------------------------------------------------------------- caméra de la scène (U2a)
         foreach (float aspect in new[] { 390f / 844f, 0.56f, 1.5f })
         {
