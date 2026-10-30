@@ -357,6 +357,15 @@ public static class UnitTests
                 Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");
                 Eq("Karim", Loc.Or("client.0.name", "autre"), "Loc.Or : la table l'emporte");
             }
+            {   // P1 : main de tutoriel, placement selon la cible
+                float a;
+                Vector2 inside = HandMath.Clamp(new Vector2(0.5f, 0.5f), out a);
+                Eq("(0.50, 0.50) True", inside.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a) < 0.01f).ToString(), "main : cible visible, main dessus, doigt vers le haut");
+                Vector2 right = HandMath.Clamp(new Vector2(1.4f, 0.5f), out a);
+                Eq("(0.88, 0.50) True", right.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a + 90f) < 0.01f).ToString(), "main : cible à droite hors écran, doigt tourné vers la droite");
+                Vector2 up = HandMath.Clamp(new Vector2(0.5f, 1.5f), out a);
+                Eq("(0.50, 0.80) True", up.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a) < 0.01f).ToString(), "main : cible au-dessus hors écran, doigt vers le haut");
+            }
             Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
             Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
             Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");

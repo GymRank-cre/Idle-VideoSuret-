@@ -107,15 +107,19 @@ public class ObjectiveGuide : MonoBehaviour
             Vector4 clip = m * new Vector4(point.x, point.y, point.z, 1f);
             vp = new Vector3(clip.x / clip.w * 0.5f + 0.5f, clip.y / clip.w * 0.5f + 0.5f, clip.w);
         }
-        bool visible = vp.z > 0f && vp.x > 0f && vp.x < 1f && vp.y > 0f && vp.y < 1f;
+        bool visible = vp.z > 0f;   // derrière la caméra : la flèche 3D suffit
+        float angle = 0f;
         if (visible)
         {
+            Vector2 clamped = HandMath.Clamp(new Vector2(vp.x, vp.y), out angle);   // hors écran : la main se pose au bord et son doigt tourne vers la cible
+            vp.x = clamped.x; vp.y = clamped.y;
             var root = (RectTransform)canvas.rootCanvas.transform;
             Vector3 world = root.TransformPoint(new Vector3(root.rect.xMin + vp.x * root.rect.width, root.rect.yMin + vp.y * root.rect.height, 0f));
             Vector2 local = ((RectTransform)hand.parent).InverseTransformPoint(world);
             float tap = Mathf.Abs(Mathf.Sin(Time.unscaledTime * config.HandTapSpeed));   // 0 = en l'air, 1 = au contact
             hand.anchoredPosition = local + Vector2.down * (config.HandTapDistance * (1f - tap));
             hand.localScale = Vector3.one * (1f - 0.1f * tap);
+            hand.localRotation = Quaternion.Euler(0f, 0f, angle);
         }
         if (hand.gameObject.activeSelf != visible) hand.gameObject.SetActive(visible);
     }
