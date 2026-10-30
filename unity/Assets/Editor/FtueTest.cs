@@ -31,7 +31,7 @@ public static class FtueTest
         new Milestone { key = "courier", label = "livreur (le poste tourne seul)", target = 60f * 3f },
         new Milestone { key = "test", label = "machine Test débloquée", target = 240f },
         new Milestone { key = "pack", label = "machine Emballage débloquée", target = 270f },
-        new Milestone { key = "belt", label = "premier tapis (après l'Emballage)", target = 330f },
+        new Milestone { key = "belt", label = "premier tapis (après l'Emballage)", target = 390f },
         new Milestone { key = "offer", label = "première offre de commande", target = 300f },
     };
 
@@ -105,6 +105,11 @@ public static class FtueTest
         float t = (float)(EditorApplication.timeSinceStartup - start);
 
         Detect(t);
+        if (t - lastLogged >= 30f)
+        {
+            lastLogged = t;
+            Debug.Log("Rythme t=" + Clock(t) + " argent=" + wallet.Money + " phase=" + phase + " dalle=" + (padTarget != null ? padTarget.name + "(" + padTarget.RemainingPrice + ")" : "-") + " pos=" + player.transform.position.ToString("F1") + " caisses=" + (carrier != null ? carrier.Count : -1));
+        }
         if (t >= Duration) { Finish(); return; }
         Drive();
     }

@@ -115,7 +115,7 @@ public static class PrototypeSetup
 
         BuildJoystick(player.GetComponent<PlayerController>());
         BuildHud(player, carrier);
-        UnlockPad station2Pad = BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null);
+        UnlockPad station2Pad = BuildUnlockPad(station2, station2, PadPosition, "UnlockPad", "UnlockConfig", null, 60);
         CustomerBuilder.Build(stationConfig, billPrefab); // clients, comptoir, file d'attente, corbeille (étape 5b)
         EmployeeBuilder.Build(); // dalle d'embauche et employé automatique et livreur (étapes 6a et 6b)
         ChainBuilder.Build(); // machines Test et Emballage, dalles et valeur par stade (11a-2)

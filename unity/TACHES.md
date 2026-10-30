@@ -116,6 +116,19 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**Q2 final (décisions du cloud appliquées) : 1re dalle 100 -> 60 $ (`UnlockConfig`, via `PrototypeSetup`), cible du tapis 6:30 dans le test.** Passage avec journal toutes les 30 s (prix Emballage 500, tapis 700 / 1500) :
+| jalon | cible | mesuré | écart |
+|---|---|---|---|
+| 1re caisse | 0:10 | 0:01 | -90 % |
+| 1er billet | 0:20 | 0:12 | -35 % |
+| 1re dalle payée | 0:30 | 0:48 | +62 % (un autre passage : 0:28) |
+| 1er employé | 2:00 | 1:20 | -33 % |
+| livreur | 3:00 | 1:50 | -39 % |
+| machine Test | 4:00 | 2:36 | -35 % |
+| Emballage | 4:30 | 3:49 | -15 % |
+| 1re offre de commande | 5:00 | 3:51 | -23 % |
+| 1er tapis | 6:30 | non atteint en 7:00 (argent 174, robot bloqué dès 4:30) | à voir |
+Lecture : le robot est **bruité** (1re dalle de 0:28 à 1:06 selon le passage) ; **de 4:30 à 7:00 il reste figé à l'assemblage avec 8 caisses** : sans tapis, il ne sait pas transporter les produits entre machines, donc l'économie cale à 174 $ (artefact du robot, pas du jeu : un joueur porte lui-même). Trois passages précédents ont aussi échoué (argent final 0, livreur jamais atteint) sans cause trouvée, non reproduit ensuite ; à surveiller. **Consigne du guide (point 4 du cloud)** : `ObjectiveGuide` s'arrête après employé, livreur puis « Améliorations » ; **elle ne dit rien de Test, Emballage ni tapis** -> à ajouter en polissage (proposition : étapes TEST, EMBALLAGE, TAPIS dans cet ordre).
 **Q2 — Test de rythme (outil `Tools > Idle Prototype > Test de rythme (7 min)`, fichier `Editor/FtueTest.cs`) : fait, partiellement concluant.** Un robot joue une partie neuve à vitesse réelle (ramasse, dépose, apporte, encaisse, paie une dalle dès qu'il en a les moyens). Il ne livre PAS de commande : Points Pro et réputation ne sont pas évalués. Le robot n'est pas déterministe (1re dalle à 0:41, 0:49, 1:06, 0:50 selon les passages).
 Meilleur passage (prix Emballage 500, tapis 700 / 1500), cible tolérée +50 % :
 | jalon | cible | mesuré | écart |
