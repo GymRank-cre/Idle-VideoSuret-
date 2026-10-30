@@ -96,6 +96,12 @@ public class FeedbackSpawner : MonoBehaviour
             Burst(position + Vector3.up * 0.6f, ConfettiColors[i], 10, 6.5f, 1.6f, 1.4f, true);
     }
 
+    // Grand nuage de poussière au sol : un poste vient d'arriver.
+    public void DustRing(Vector3 position)
+    {
+        Burst(position + Vector3.up * 0.12f, new Color(0.86f, 0.8f, 0.68f, 0.85f), 28, 2.8f, 2.6f, 0.8f, false);
+    }
+
     // Petit nuage de poussière sous les pieds en courant.
     public void Dust(Vector3 position)
     {

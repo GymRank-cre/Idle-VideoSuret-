@@ -171,6 +171,22 @@ public class IdleGame
         return f > 0f ? Eco.Income(station, Stations[station], g) * BoostMultiplier / f : 0.0;
     }
 
+    // Ce que le joueur VOIT de ses achats : « Vitesse » accélère le tapis du poste, « Ajouter » y met plus de caisses et grossit la pile.
+    public float BeltSpeedFactor(int station)
+    {
+        return (float)Math.Min(cfg.beltSpeedCap, (1 + cfg.speedStep * Stations[station].speed) * g.speed);
+    }
+
+    public int BeltItemCount(int station, int max)
+    {
+        return Math.Min(max, cfg.beltBaseItems + Stations[station].add / cfg.addPerBeltItem);
+    }
+
+    public int StackSize(int station)
+    {
+        return Math.Min(cfg.stackMax, cfg.stackBase + Stations[station].add / cfg.addPerStackCrate);
+    }
+
     // Une plaque au sol par poste : ouvert -> achète sa meilleure option ; prochain verrouillé -> déblocage ; les suivants sont cachés.
     public PlateState PlateStateOf(int station)
     {

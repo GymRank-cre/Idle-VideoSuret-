@@ -93,6 +93,13 @@ public class IdleEconomyConfig : ScriptableObject
     public int proBase = 1;
     public int proFromStation = 2;                     // +1 Point Pro à partir de ce poste
     public int proBigQuantity = 100;                   // +1 Point Pro pour 100 pièces ou plus
+    public int[] aspectLevels = { 10, 25, 50, 100 };   // niveau cumulé d'un poste où sa machine change d'aspect (5 aspects en tout)
+    [Min(1f)] public double beltSpeedCap = 3;          // les tapis accélèrent avec la Vitesse du poste, jusqu'à ce facteur
+    [Min(1)] public int beltBaseItems = 2;             // caisses sur un tapis au départ
+    [Min(1)] public int addPerBeltItem = 6;            // une caisse de plus par tranche de niveaux « Ajouter »
+    [Min(1)] public int stackBase = 4;                 // caisses sur la palette de la Réception
+    [Min(1)] public int stackMax = 8;
+    [Min(1)] public int addPerStackCrate = 5;
     [Min(1)] public int clientCount = 8;               // clients différents (clés Loc client.N.name)
     [Min(1)] public int sayCount = 6;                  // répliques différentes (clés Loc order.say.N)
 

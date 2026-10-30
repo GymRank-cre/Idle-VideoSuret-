@@ -61,6 +61,66 @@ public class MeshKit
         tris.Add(i); tris.Add(i + 2); tris.Add(i + 3);
     }
 
+    // Contour d'un carré à coins arrondis, vu de dessus (x, z), en partant du milieu d'un côté.
+    static List<Vector2> RoundedPath(float half, float radius, int arc = 6)
+    {
+        var path = new List<Vector2>();
+        Vector2[] centers = { new Vector2(half - radius, half - radius), new Vector2(-half + radius, half - radius), new Vector2(-half + radius, -half + radius), new Vector2(half - radius, -half + radius) };
+        for (int c = 0; c < 4; c++)
+            for (int i = 0; i <= arc; i++)
+            {
+                float a = (c + (float)i / arc) * Mathf.PI * 0.5f;
+                path.Add(centers[c] + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
+            }
+        return path;
+    }
+
+    // Plaque plate à coins arrondis : le dessus, et une jupe vers `bottom` si on la demande.
+    public void RoundedPlate(float half, float radius, float y, float bottom = float.NaN)
+    {
+        List<Vector2> p = RoundedPath(half, radius);
+        var center = new Vector3(0f, y, 0f);
+        for (int i = 0; i < p.Count; i++)
+        {
+            Vector2 a = p[i], b = p[(i + 1) % p.Count];
+            Tri(center, new Vector3(b.x, y, b.y), new Vector3(a.x, y, a.y));
+            if (float.IsNaN(bottom)) continue;
+            Quad(new Vector3(a.x, y, a.y), new Vector3(b.x, y, b.y), new Vector3(b.x, bottom, b.y), new Vector3(a.x, bottom, a.y));
+        }
+    }
+
+    // Anneau à coins arrondis, plein ou en pointillés (`dash` > 0 : longueur des traits, `gap` : des vides).
+    public void RoundedRing(float half, float radius, float width, float y, float dash = 0f, float gap = 0f)
+    {
+        List<Vector2> outer = RoundedPath(half, radius), inner = RoundedPath(half - width, Mathf.Max(0.01f, radius - width));
+        float along = 0f;
+        for (int i = 0; i < outer.Count; i++)
+        {
+            int j = (i + 1) % outer.Count;
+            bool on = dash <= 0f || along % (dash + gap) < dash;
+            along += Vector2.Distance(outer[i], outer[j]);
+            if (!on) continue;
+            Quad(new Vector3(outer[i].x, y, outer[i].y), new Vector3(inner[i].x, y, inner[i].y), new Vector3(inner[j].x, y, inner[j].y), new Vector3(outer[j].x, y, outer[j].y));
+        }
+    }
+
+    // Tube vertical à deux teintes (colonne de lumière : opaque en bas, transparente en haut).
+    public void Tube(float radius, float height, int segments, Color32 bottom, Color32 top)
+    {
+        for (int i = 0; i < segments; i++)
+        {
+            float a0 = i * Mathf.PI * 2f / segments, a1 = (i + 1) * Mathf.PI * 2f / segments;
+            Vector3 p0 = new Vector3(Mathf.Cos(a0) * radius, 0f, Mathf.Sin(a0) * radius), p1 = new Vector3(Mathf.Cos(a1) * radius, 0f, Mathf.Sin(a1) * radius);
+            Vector3 up = Vector3.up * height;
+            int v = verts.Count;
+            verts.Add(p0); verts.Add(p0 + up); verts.Add(p1 + up); verts.Add(p1);
+            for (int k = 0; k < 4; k++) uvs.Add(Vector2.zero);
+            colors.Add(bottom); colors.Add(top); colors.Add(top); colors.Add(bottom);
+            tris.Add(v); tris.Add(v + 2); tris.Add(v + 1);
+            tris.Add(v); tris.Add(v + 3); tris.Add(v + 2);
+        }
+    }
+
     // Boîte aux arêtes biseautées : 6 faces réduites, 12 chanfreins, 8 coins. Les chanfreins prennent la lumière : c'est ce qui enlève l'aspect « cube ».
     public void BevelBox(Vector3 min, Vector3 size, float bevel)
     {

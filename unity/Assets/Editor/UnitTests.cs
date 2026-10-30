@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -290,6 +291,23 @@ public static class UnitTests
         // écran titre : l'image couvre toujours tout l'écran, sans déformation
         Eq("1000,1769", IdleTitleScreen.CoverSize(new Vector2(1000, 1000), 0.5654f).x.ToString("0") + "," + IdleTitleScreen.CoverSize(new Vector2(1000, 1000), 0.5654f).y.ToString("0"), "écran large : largeur d'abord, le bas est coupé");
         Eq("477,844", IdleTitleScreen.CoverSize(new Vector2(390, 844), 0.5654f).x.ToString("0") + "," + IdleTitleScreen.CoverSize(new Vector2(390, 844), 0.5654f).y.ToString("0"), "téléphone étroit : hauteur d'abord, les côtés sont coupés");
+
+        // l'usine grandit
+        Eq("0 0 1 1 2 3 4 4", eco.AspectOf(0) + " " + eco.AspectOf(9) + " " + eco.AspectOf(10) + " " + eco.AspectOf(24) + " " + eco.AspectOf(25) + " " + eco.AspectOf(50) + " " + eco.AspectOf(100) + " " + eco.AspectOf(500), "aspects : un de plus à 10, 25, 50 et 100");
+        var ug = new IdleGame(cfg, 6, 0);
+        var fr = new System.Globalization.CultureInfo("fr-FR");
+        Eq("1,00", ug.BeltSpeedFactor(0).ToString("0.00", fr), "tapis : vitesse de départ");
+        ug.Stations[0].speed = 10; ug.Recalc();
+        Eq("2,20", ug.BeltSpeedFactor(0).ToString("0.00", fr), "tapis : accéléré par la Vitesse");
+        ug.Stations[0].speed = 500; ug.Recalc();
+        Eq("3,00", ug.BeltSpeedFactor(0).ToString("0.00", fr), "tapis : vitesse plafonnée");
+        Eq("2", ug.BeltItemCount(0, 6).ToString(), "tapis : caisses au départ");
+        Eq("4", ug.StackSize(0).ToString(), "pile : caisses au départ");
+        ug.Stations[0].add = 12;
+        Eq("4 6", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plus de caisses sur le tapis et dans la pile");
+        ug.Stations[0].add = 600;
+        Eq("6 8", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plafonné");
+        Eq("0,00 0,50 1,00 1,00 0,50 0,00", string.Join(" ", new[] { 0f, 0.4f, 0.8f, 1.5f, 1.85f, 2.2f }.Select(t => IdleCameraRig.FocusAmount(t, 0.8f, 0.7f, 0.7f).ToString("0.00", fr))), "caméra : aller, pause, retour");
 
         // main de tutoriel
         Eq("True False False False", IdleTutorialHand.Wanted(0, false, true) + " " + IdleTutorialHand.Wanted(0, true, true) + " " + IdleTutorialHand.Wanted(0, false, false) + " " + IdleTutorialHand.Wanted(12, false, true), "main : abordable, sans fenêtre, 12 premiers achats");

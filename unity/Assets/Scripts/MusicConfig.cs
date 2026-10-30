@@ -6,9 +6,9 @@ using UnityEngine;
 public class MusicConfig : ScriptableObject
 {
     [SerializeField] AudioClip clip;
-    [SerializeField, Range(0f, 1f)] float musicVolume = 0.22f;
+    [SerializeField, Range(0f, 1f)] float musicVolume = 0.4f;
     [SerializeField, Range(0f, 1f)] float sfxVolume = 0.8f;
-    [SerializeField] bool musicOnByDefault = false; // générée par code, à écouter avant de l'activer par défaut
+    [SerializeField] bool musicOnByDefault = true;
     [SerializeField] bool soundOnByDefault = true;
     [SerializeField] bool vibrationOnByDefault = true;
     [SerializeField, Min(0.1f)] float minVibrationGap = 0.5f;

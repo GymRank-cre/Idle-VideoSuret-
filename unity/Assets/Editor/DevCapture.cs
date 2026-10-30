@@ -96,6 +96,51 @@ public static class DevCapture
         }
     }
 
+    // Le même poste à tous ses aspects, côte à côte : une caméra rapprochée, un cadre par aspect.
+    public static string CaptureAspects(string path, int station, int tile = 300)
+    {
+        IdleMachineAspect target = null;
+        foreach (IdleMachineAspect a in Object.FindObjectsByType<IdleMachineAspect>(FindObjectsSortMode.None))
+            if (a.GetComponentInParent<IdleStationView>().Station == station) target = a;
+        if (target == null) return "poste fermé";
+
+        Camera main = Camera.main;
+        int count = IdleMachineBuilder.AspectCount;
+        var sheet = new Texture2D(tile * count, tile, TextureFormat.RGBA32, false);
+        var go = new GameObject("CaptureAspects");
+        var cam = go.AddComponent<Camera>();
+        cam.CopyFrom(main);
+        cam.enabled = false;
+        cam.fieldOfView = 14f;
+        go.transform.rotation = main.transform.rotation;
+        go.transform.position = target.transform.parent.position + Vector3.up * 0.55f - go.transform.forward * 15f;
+        var rt = new RenderTexture(tile, tile, 24, RenderTextureFormat.ARGB32);
+        cam.targetTexture = rt;
+        try
+        {
+            for (int a = 0; a < count; a++)
+            {
+                target.Apply(a);
+                cam.Render();
+                Texture2D one = Read(rt, tile, tile);
+                sheet.SetPixels(a * tile, 0, tile, tile, one.GetPixels());
+                Object.DestroyImmediate(one);
+            }
+            sheet.Apply();
+            File.WriteAllBytes(path, sheet.EncodeToPNG());
+            return "ok " + path;
+        }
+        finally
+        {
+            RenderTexture.active = null;
+            cam.targetTexture = null;
+            Object.DestroyImmediate(go);
+            rt.Release();
+            Object.DestroyImmediate(rt);
+            Object.DestroyImmediate(sheet);
+        }
+    }
+
     static Texture2D Read(RenderTexture source, int width, int height)
     {
         RenderTexture.active = source;

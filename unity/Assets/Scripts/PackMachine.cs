@@ -2,7 +2,7 @@ using UnityEngine;
 
 // Emballage (poste 4) : une cabine blanche à entête orange dont la presse descend puis remonte entre 25 % et 75 % du cycle
 // (hauteur 1,95 - 0,62 sin(...), comme le web), et un colis emballé qui apparaît devant la cabine à mi-cycle.
-public class PackMachine : MonoBehaviour, IMachineAnim
+public class PackMachine : MonoBehaviour, IMachineAnim, IMachineAspect
 {
     [SerializeField] Transform ram;             // piston de la presse
     [SerializeField] Transform plate;           // plateau de la presse (un peu plus bas que le piston)
@@ -10,6 +10,8 @@ public class PackMachine : MonoBehaviour, IMachineAnim
     [SerializeField] float topHeight = 1.95f;   // hauteur du bas du piston en haut de course
     [SerializeField] float stroke = 0.62f;      // course de la presse
     [SerializeField] float plateOffset = 0.1f;  // le plateau est plus bas que le piston
+
+    [SerializeField, Min(1f)] float bigPress = 1.3f;   // presse plus grande à partir de l'aspect 2
 
     float ramX, ramZ, plateX, plateZ;
     bool ready;
@@ -19,6 +21,13 @@ public class PackMachine : MonoBehaviour, IMachineAnim
         ramX = ram.localPosition.x; ramZ = ram.localPosition.z;
         plateX = plate.localPosition.x; plateZ = plate.localPosition.z;
         ready = true;
+    }
+
+    public void SetAspect(int aspect)
+    {
+        float s = aspect >= 2 ? bigPress : 1f;
+        ram.localScale = new Vector3(s, 1f, s);
+        plate.localScale = new Vector3(s, 1f, s);
     }
 
     public void Animate(float phase, float time)

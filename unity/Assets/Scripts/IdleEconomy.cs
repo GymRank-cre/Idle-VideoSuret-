@@ -62,6 +62,14 @@ public class IdleEconomy
         return n;
     }
 
+    // Aspect de la machine d'un poste : 0 au départ, +1 à chaque niveau de `aspectLevels` atteint.
+    public int AspectOf(int totalLevel)
+    {
+        int aspect = 0;
+        foreach (int level in config.aspectLevels) if (totalLevel >= level) aspect++;
+        return aspect;
+    }
+
     public int NextMilestone(int totalLevel)
     {
         foreach (int m in config.milestones) if (totalLevel < m) return m;

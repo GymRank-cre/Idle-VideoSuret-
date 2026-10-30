@@ -15,8 +15,9 @@ public class IdleBeltView : MonoBehaviour
     float[] lengths;
     Transform[][] items;
     bool[] shown;
+    float[] travelled, scrolled;
+    int[] visibleItems;
     MaterialPropertyBlock block;
-    float time;
     static readonly int BaseMapST = Shader.PropertyToID("_BaseMap_ST");
 
     void Awake()
@@ -26,6 +27,9 @@ public class IdleBeltView : MonoBehaviour
         lengths = new float[n];
         items = new Transform[n][];
         shown = new bool[n];
+        travelled = new float[n];
+        scrolled = new float[n];
+        visibleItems = new int[n];
         block = new MaterialPropertyBlock();
         for (int i = 0; i < n; i++)
         {
@@ -47,24 +51,34 @@ public class IdleBeltView : MonoBehaviour
     {
         IdleHost host = IdleHost.Instance;
         if (host == null || host.Game == null) return;
-        time += Time.deltaTime;
+        IdleGame game = host.Game;
         for (int i = 0; i < belts.Length; i++)
         {
-            bool on = i + 1 < host.Game.Stations.Count && host.Game.Stations[i + 1].unlocked;
+            bool on = i + 1 < game.Stations.Count && game.Stations[i + 1].unlocked;
             if (on != shown[i]) { shown[i] = on; belts[i].gameObject.SetActive(on); }
             if (!on) continue;
+
+            // le poste qui alimente ce tapis : sa Vitesse l'accélère, son niveau « Ajouter » y met plus de caisses
+            float speed = game.BeltSpeedFactor(i) * Time.deltaTime;
+            travelled[i] += itemSpeed * speed;
+            scrolled[i] += chevronSpeed * speed;
 
             // chevrons : la texture défile dans le sens de la marche
             if (chevronTops != null && i < chevronTops.Length && chevronTops[i] != null)
             {
-                block.SetVector(BaseMapST, new Vector4(1f, 1f, 0f, -time * chevronSpeed / chevronPeriod));
+                block.SetVector(BaseMapST, new Vector4(1f, 1f, 0f, -scrolled[i] / chevronPeriod));
                 chevronTops[i].SetPropertyBlock(block);
             }
 
             // caisses : régulièrement espacées, elles avancent en boucle
-            int n = items[i].Length;
+            int n = game.BeltItemCount(i, items[i].Length);
+            if (n != visibleItems[i])
+            {
+                visibleItems[i] = n;
+                for (int k = 0; k < items[i].Length; k++) items[i][k].gameObject.SetActive(k < n);
+            }
             if (n == 0 || lengths[i] <= 0f) continue;
-            float step = lengths[i] / n, offset = (time * itemSpeed) % step;
+            float step = lengths[i] / n, offset = travelled[i] % step;
             for (int k = 0; k < n; k++) items[i][k].position = PointAt(i, offset + k * step);
         }
     }

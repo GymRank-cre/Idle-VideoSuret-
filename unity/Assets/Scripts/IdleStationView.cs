@@ -1,6 +1,17 @@
 using UnityEngine;
 
 // Une machine qui sait s'animer selon la phase de son cycle (0 -> 1) ; implémentée par chaque machine de la scène idle (U2c).
+// Une machine qui change avec les achats : son aspect (paliers) et sa charge (« Ajouter »).
+public interface IMachineAspect
+{
+    void SetAspect(int aspect);
+}
+
+public interface IMachineLoad
+{
+    void SetLoad(int count);
+}
+
 public interface IMachineAnim
 {
     void Animate(float phase, float time);
@@ -26,6 +37,7 @@ public class IdleStationView : MonoBehaviour
     [SerializeField] float squashAmount = 0.12f;
 
     IMachineAnim anim;
+    IMachineLoad load;
     bool known, wasOpen, wasNext;
     float phase, appear = 1f, bump;
     IdleGame subscribed;
@@ -37,6 +49,7 @@ public class IdleStationView : MonoBehaviour
     void Awake()
     {
         anim = machine != null ? machine.GetComponent<IMachineAnim>() : null;
+        load = machine != null ? machine.GetComponent<IMachineLoad>() : null;
     }
 
     void Subscribe(IdleGame game)
@@ -98,6 +111,7 @@ public class IdleStationView : MonoBehaviour
         float scale = appear < 1f ? EaseOutBack(appear) : 1f;
         float squash = bump * squashAmount;   // écrasé en hauteur, élargi sur les côtés, puis retour en ressort
         transform.localScale = new Vector3(scale * (1f + squash * 0.6f), scale * (1f - squash), scale * (1f + squash * 0.6f));   // le poste (centré) pousse ; son fantôme est caché à ce moment-là
+        if (load != null) load.SetLoad(game.StackSize(station));
         if (anim != null) anim.Animate(phase - Mathf.Floor(phase), Time.time);
     }
 

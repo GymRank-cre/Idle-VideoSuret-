@@ -554,9 +554,10 @@ public static class IdleWindowsBuilder
         so.FindProperty("sheet").objectReferenceValue = s.script;
 
         so.FindProperty("soundToggle").objectReferenceValue = ToggleCard(s.content, "Sound", Loc.T("settings.sound"), 2f);
-        so.FindProperty("motionToggle").objectReferenceValue = ToggleCard(s.content, "Motion", Loc.T("settings.effects"), 70f);
+        so.FindProperty("musicToggle").objectReferenceValue = ToggleCard(s.content, "Music", Loc.T("settings.music"), 70f);
+        so.FindProperty("motionToggle").objectReferenceValue = ToggleCard(s.content, "Motion", Loc.T("settings.effects"), 138f);
 
-        RectTransform erase = CardAt(s.content, "Erase", Px(138f), 58f, Cream);
+        RectTransform erase = CardAt(s.content, "Erase", Px(206f), 58f, Cream);
         Text label = AddPlainText(erase, "Label", Loc.T("settings.erase.game"), 18f, UiTheme.Ink, TextAnchor.MiddleLeft);
         TopStretch(label.rectTransform, Px(14f), Px(160f), Px(16f), Px(26f));
         Button eraseButton = ColorButton(erase, "Button", Px(148f), Px(38f), Px(13f), RedTop, UiTheme.Red, RedEdge);
@@ -570,11 +571,11 @@ public static class IdleWindowsBuilder
         so.FindProperty("eraseLabel").objectReferenceValue = eraseLabel;
 
         Text version = AddText(s.content, "Version", "", 13f, Color.white, TextAnchor.MiddleCenter, 1f);
-        TopStretch(version.rectTransform, 0f, 0f, Px(206f), Px(20f));
+        TopStretch(version.rectTransform, 0f, 0f, Px(274f), Px(20f));
         so.FindProperty("versionText").objectReferenceValue = version;
 
-        s.content.sizeDelta = new Vector2(0f, Px(230f));
-        so.FindProperty("contentHeight").floatValue = Px(230f);
+        s.content.sizeDelta = new Vector2(0f, Px(298f));
+        so.FindProperty("contentHeight").floatValue = Px(298f);
         so.FindProperty("knobTravel").floatValue = Px(13f);
         so.ApplyModifiedPropertiesWithoutUndo();
         return s.script;

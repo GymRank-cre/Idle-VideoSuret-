@@ -3,7 +3,7 @@ using UnityEngine;
 
 public enum SfxId
 {
-    Pickup, Deposit, ProductReady, Bill, OrderPaid, Unlock, Upgrade, Hire, Click, Refuse, Step
+    Pickup, Deposit, ProductReady, Bill, OrderPaid, Unlock, Upgrade, Hire, Click, Refuse, Step, LevelUp
 }
 
 // Génère tous les effets sonores par code (formes d'onde simples avec enveloppe) : aucun fichier externe.
@@ -55,6 +55,14 @@ public static class SfxLibrary
                 Tone(data, 0.14f, 0.50f, 1319f, 1f, 7f, Wave.Sine);
                 Tone(data, 0.14f, 0.40f, 2637f, 0.4f, 9f, Wave.Sine);
                 Noise(data, 0f, 0.03f, 0.25f, 60f, 0.4f);
+                break;
+            case SfxId.LevelUp: // fanfare courte : quatre notes qui montent
+                data = Buffer(0.72f);
+                Tone(data, 0f, 0.16f, 784f, 1f, 9f, Wave.SoftSquare);
+                Tone(data, 0.10f, 0.16f, 988f, 1f, 9f, Wave.SoftSquare);
+                Tone(data, 0.20f, 0.16f, 1175f, 1f, 9f, Wave.SoftSquare);
+                Tone(data, 0.30f, 0.42f, 1568f, 1f, 6f, Wave.SoftSquare);
+                Tone(data, 0.30f, 0.42f, 3136f, 0.25f, 8f, Wave.Sine);
                 break;
             case SfxId.Unlock: // arpège montant
                 data = Buffer(0.62f);

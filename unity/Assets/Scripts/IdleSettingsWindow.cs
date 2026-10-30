@@ -7,6 +7,7 @@ public class IdleSettingsWindow : MonoBehaviour
 {
     [SerializeField] IdleSheet sheet;
     [SerializeField] Button soundToggle;
+    [SerializeField] Button musicToggle;
     [SerializeField] Button motionToggle;
     [SerializeField] Button eraseButton;
     [SerializeField] Text eraseLabel;
@@ -26,6 +27,7 @@ public class IdleSettingsWindow : MonoBehaviour
         {
             wired = true;
             soundToggle.onClick.AddListener(ToggleSound);
+            musicToggle.onClick.AddListener(ToggleMusic);
             motionToggle.onClick.AddListener(ToggleMotion);
             eraseButton.onClick.AddListener(Erase);
         }
@@ -38,6 +40,13 @@ public class IdleSettingsWindow : MonoBehaviour
     {
         AudioManager audio = AudioManager.Instance;
         if (audio != null) audio.SetSound(!audio.SoundOn);
+        Refresh();
+    }
+
+    void ToggleMusic()
+    {
+        AudioManager audio = AudioManager.Instance;
+        if (audio != null) audio.SetMusic(!audio.MusicOn);
         Refresh();
     }
 
@@ -74,6 +83,7 @@ public class IdleSettingsWindow : MonoBehaviour
     {
         AudioManager audio = AudioManager.Instance;
         Show(soundToggle, audio != null && audio.SoundOn);
+        Show(musicToggle, audio != null && audio.MusicOn);
         Show(motionToggle, MotionSettings.ReduceMotion);
         versionText.text = Loc.T("settings.footer", BuildInfo.Version, NumberFormat.Short((long)IdleHost.Instance.Game.Earned));
     }

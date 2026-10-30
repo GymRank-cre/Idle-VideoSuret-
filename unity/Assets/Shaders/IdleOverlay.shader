@@ -17,18 +17,27 @@ Shader "Idle/Overlay"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
             CBUFFER_END
-            struct Attributes { float4 positionOS : POSITION; };
-            struct Varyings { float4 positionCS : SV_POSITION; };
+            struct Attributes { float4 positionOS : POSITION; half4 color : COLOR; };
+            struct Varyings { float4 positionCS : SV_POSITION; half4 color : COLOR; };
             Varyings vert(Attributes input)
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.color = input.color;
                 return output;
             }
-            half4 frag(Varyings input) : SV_Target { return _BaseColor; }
+            half4 frag(Varyings input) : SV_Target
+            {
+                half3 vertexColor = input.color.rgb;
+                #if !defined(UNITY_COLORSPACE_GAMMA)
+                    vertexColor = SRGBToLinear(vertexColor);   // les couleurs des sommets sont écrites en sRGB
+                #endif
+                return half4(_BaseColor.rgb * vertexColor, _BaseColor.a);   // l'alpha des sommets sert à la brillance ailleurs : ignoré ici
+            }
             ENDHLSL
         }
     }

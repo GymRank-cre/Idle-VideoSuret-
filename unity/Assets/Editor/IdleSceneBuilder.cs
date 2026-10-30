@@ -38,6 +38,7 @@ public static class IdleSceneBuilder
         BuildPlates(world);
         BuildCars(world);
         BuildContactShadows(world, shadows);
+        BuildUnlockShow(world);
         IdleHudBuilder.Build();
         EditorSceneManager.SaveScene(scene, ScenePath);
         WebGLBuilder.EnsureSceneInBuildSettings();
@@ -174,9 +175,9 @@ public static class IdleSceneBuilder
         const float Wall = 0.07f, Rim = 0.15f;
 
         // muret gris tout autour, joints sombres
-        decor.SetPaint("#A3ACB6", 0.15f);
+        decor.SetPaint("#98A6B4", 0.15f);
         decor.BevelBox(new Vector3(-Wall, -t, -Wall), new Vector3(w + 2f * Wall, t - 0.03f, d + 2f * Wall), 0.02f);
-        decor.SetPaint("#7E8894");
+        decor.SetPaint("#76838F");
         const float Seam = 0.016f, Block = 0.8f;
         for (float x = Block; x < w; x += Block)
         {
@@ -189,11 +190,11 @@ public static class IdleSceneBuilder
             decor.Box(new Vector3(-Wall - 0.004f, -t, z), new Vector3(0.006f, t - 0.04f, Seam));
         }
 
-        decor.SetPaint("#CBD6E2", 0.35f);
+        decor.SetPaint("#D5DEE7", 0.35f);
         decor.Box(new Vector3(0, -0.03f, 0), new Vector3(w, 0.03f, d));
 
         // damier : une case sur deux, cases de 1 m (les dernières sont coupées par le bord)
-        decor.SetPaint("#B4C2D2", 0.35f);
+        decor.SetPaint("#C6D1DD", 0.35f);
         for (int x = 0; x < Mathf.CeilToInt(IdleLayout.FloorWidth); x++)
             for (int y = 0; y < Mathf.CeilToInt(IdleLayout.FloorDepth); y++)
             {
@@ -253,6 +254,28 @@ public static class IdleSceneBuilder
             }
             SoftShadow(shadows, b + new Vector3(0.14f * s, 0.012f, 0.14f * s), 0.2f * s, 0.2f * s, 0.36f * s, 0.5f);
         }
+    }
+
+    // ------------------------------------------------------------------ arrivée d'un poste : colonne de lumière, poussière, caméra
+
+    static void BuildUnlockShow(Transform parent)
+    {
+        var kit = new MeshKit();
+        kit.Tube(0.95f, 7f, 16, new Color32(255, 240, 170, 170), new Color32(255, 240, 170, 0));
+        GameObject beam = kit.ToObject("UnlockBeam", parent, IdleMaterials.ContactShadow());
+        var show = new GameObject("UnlockShow", typeof(IdleUnlockShow));
+        show.transform.SetParent(parent, false);
+        var so = new SerializedObject(show.GetComponent<IdleUnlockShow>());
+        so.FindProperty("cameraRig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
+        so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
+        so.FindProperty("beam").objectReferenceValue = beam.transform;
+        var views = new IdleStationView[IdleLayout.Stations.Length];
+        foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
+            views[new SerializedObject(v).FindProperty("station").intValue] = v;
+        SerializedProperty list = so.FindProperty("stations");
+        list.arraySize = views.Length;
+        for (int i = 0; i < views.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = views[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ ombres de contact : un seul maillage, un groupe par poste
@@ -352,6 +375,7 @@ public static class IdleSceneBuilder
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_FloatingText.prefab");
         var textSo = new SerializedObject(prefab.GetComponent<FloatingText>());
         textSo.FindProperty("outlinedFont").objectReferenceValue = FloatFontMaterial(UiTheme.Font);
+        textSo.FindProperty("messageScale").floatValue = 0.5f;
         textSo.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(prefab);
         foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
@@ -440,7 +464,7 @@ public static class IdleSceneBuilder
             tops[bi] = top.ToObject("Top", belt, topMat).GetComponent<Renderer>();
 
             // caisses qui avancent (leur nombre dépend de la longueur ; IdleBeltView les déplace)
-            int count = Mathf.Max(2, Mathf.RoundToInt(acc / 0.95f));
+            int count = Mathf.Max(3, Mathf.RoundToInt(acc / 0.5f));   // réserve : « Ajouter » en montre de plus en plus
             float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
             var itemKit = new MeshKit();   // boîte + détail dans un maillage, le même pour toutes les caisses du tapis
             itemKit.SetPaint(itemHex[bi], 0.3f);
@@ -482,7 +506,7 @@ public static class IdleSceneBuilder
     {
         var root = new GameObject("Plates").transform;
         root.SetParent(parent, false);
-        Material baseMat = IdleMaterials.Overlay("PlateBase", "#2A3644", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
+        Material baseMat = IdleMaterials.Overlay("PlateBase", "#FFFFFF", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
         Material greenMat = IdleMaterials.Overlay("PlateGreen", "#3DDC5A", 3510);
         Material yellowMat = IdleMaterials.Overlay("PlateYellow", "#FFC400", 3510);
         Material arrowOn = IdleMaterials.Overlay("PlateArrowOn", "#8CFF9E", 3520);
@@ -499,24 +523,23 @@ public static class IdleSceneBuilder
             plate.position = IdleLayout.ToWorld(IdleLayout.Plates[i], 0.012f);
             var visual = new GameObject("Visual").transform;
             visual.SetParent(plate, false);
-            RoundedBox.Make(visual, "Base", new Vector3(0f, 0.025f, 0f), new Vector3(PlateSize, 0.05f, PlateSize), 0.1f, baseMat);
+            // pastille arrondie : liseré clair, relief sombre, dessus ardoise
+            float half = PlateSize * 0.5f, corner = 0.26f, top = 0.052f;
+            var baseKit = new MeshKit();
+            baseKit.SetPaint("#141C26");
+            baseKit.RoundedPlate(half, corner, 0f);                                    // ombre dure dessous
+            baseKit.SetPaint("#6F7F93");
+            baseKit.RoundedPlate(half - 0.015f, corner - 0.015f, 0.05f);               // liseré clair
+            baseKit.SetPaint("#2A3644");
+            baseKit.RoundedPlate(half - 0.05f, corner - 0.05f, 0.052f);
+            baseKit.ToObject("Base", visual, baseMat);
 
-            float half = PlateSize * 0.5f - 0.07f, lw = 0.06f, top = 0.052f;
+            float ring = half - 0.075f, ringCorner = corner - 0.075f, lw = 0.05f;
             var solid = new MeshKit();
-            solid.Box(new Vector3(-half, top, -half), new Vector3(half * 2, 0.006f, lw));
-            solid.Box(new Vector3(-half, top, half - lw), new Vector3(half * 2, 0.006f, lw));
-            solid.Box(new Vector3(-half, top, -half), new Vector3(lw, 0.006f, half * 2));
-            solid.Box(new Vector3(half - lw, top, -half), new Vector3(lw, 0.006f, half * 2));
+            solid.RoundedRing(ring, ringCorner, lw, top);
             GameObject green = solid.ToObject("BorderGreen", visual, greenMat);
             var dashed = new MeshKit();
-            for (float t = -half; t < half - 0.1f; t += 0.26f)
-            {
-                float l = Mathf.Min(0.16f, half - t);
-                dashed.Box(new Vector3(t, top, -half), new Vector3(l, 0.006f, lw));
-                dashed.Box(new Vector3(t, top, half - lw), new Vector3(l, 0.006f, lw));
-                dashed.Box(new Vector3(-half, top, t), new Vector3(lw, 0.006f, l));
-                dashed.Box(new Vector3(half - lw, top, t), new Vector3(lw, 0.006f, l));
-            }
+            dashed.RoundedRing(ring, ringCorner, lw, top, 0.14f, 0.1f);
             GameObject yellow = dashed.ToObject("BorderYellow", visual, yellowMat);
 
             var arrowKit = new MeshKit();

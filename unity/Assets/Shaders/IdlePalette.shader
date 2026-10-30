@@ -10,6 +10,7 @@ Shader "Idle/Palette"
         _FootHeight ("Hauteur du pied assombri (m)", Float) = 0.45
         _FootDark ("Assombrissement du pied", Range(0, 1)) = 0.32
         _FootBase ("Niveau du sol (m)", Float) = 0
+        _Flash ("Éclair blanc (changement d'aspect)", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -31,6 +32,7 @@ Shader "Idle/Palette"
                 float _FootHeight;
                 float _FootDark;
                 float _FootBase;
+                float _Flash;
             CBUFFER_END
             struct Attributes
             {
@@ -70,7 +72,7 @@ Shader "Idle/Palette"
                 lit *= 1.0 - _FootDark * (1.0 - foot) * side;
 
                 output.positionCS = position.positionCS;
-                output.color = lit;
+                output.color = lerp(lit, half3(1.0, 1.0, 1.0), _Flash);
                 return output;
             }
             half4 frag(Varyings input) : SV_Target { return half4(input.color, 1.0); }

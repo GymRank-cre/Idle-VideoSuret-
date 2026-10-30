@@ -14,17 +14,57 @@ public class IdleCameraRig : MonoBehaviour
     [SerializeField, Range(0.3f, 0.9f)] float portraitHeight = 0.72f;    // hauteur (viewport) du centre de la dalle en portrait
     [SerializeField, Range(0.3f, 1f)] float portraitLimit = 0.8f;        // en dessous de ce rapport L/H on considère l'écran « portrait »
 
+    [SerializeField, Min(0.1f)] float focusIn = 0.8f;       // la caméra glisse vers le nouveau poste...
+    [SerializeField, Min(0f)] float focusHold = 0.7f;       // ...s'y arrête...
+    [SerializeField, Min(0.1f)] float focusOut = 0.7f;      // ...puis revient toute seule
+    [SerializeField, Range(0f, 1f)] float focusShift = 0.55f;
+    [SerializeField, Range(0f, 0.5f)] float focusZoom = 0.2f;
+
     Camera cam;
     float lastAspect;
+    Vector3 basePosition;
+    Vector3 focusOffset;
+    float focusTime = -1f;
 
     void Awake()
     {
         cam = GetComponent<Camera>();
     }
 
-    void OnEnable() { Apply(true); }
+    void OnEnable()
+    {
+        Apply(true);
+        if (focusTime >= 0f) transform.position = basePosition + focusOffset * FocusAmount(focusTime, focusIn, focusHold, focusOut);
+    }
 
-    void LateUpdate() { Apply(false); }
+    void LateUpdate()
+    {
+        Apply(false);
+        if (focusTime < 0f) return;
+        focusTime += Time.unscaledDeltaTime;
+        float k = FocusAmount(focusTime, focusIn, focusHold, focusOut);
+        transform.position = basePosition + focusOffset * k;
+        if (focusTime >= focusIn + focusHold + focusOut) focusTime = -1f;
+    }
+
+    // Glisse vers ce point de la scène, puis revient toute seule. Ignoré avec « moins de secousses ».
+    public void FocusOn(Vector3 world)
+    {
+        if (MotionSettings.ReduceMotion) return;
+        Vector3 center = slabMin + new Vector3(slabSize.x * 0.5f, slabSize.y, slabSize.z * 0.5f);
+        focusOffset = (world - center) * focusShift + transform.forward * (Vector3.Distance(basePosition, center) * focusZoom);
+        focusTime = 0f;
+    }
+
+    // Part du mouvement (0 à 1) au temps t : aller adouci, pause, retour adouci. Fonction pure, testée.
+    public static float FocusAmount(float t, float fadeIn, float hold, float fadeOut)
+    {
+        if (t <= 0f) return 0f;
+        if (t < fadeIn) return Mathf.SmoothStep(0f, 1f, t / fadeIn);
+        if (t < fadeIn + hold) return 1f;
+        if (t < fadeIn + hold + fadeOut) return 1f - Mathf.SmoothStep(0f, 1f, (t - fadeIn - hold) / fadeOut);
+        return 0f;
+    }
 
     void Apply(bool force)
     {
@@ -37,6 +77,7 @@ public class IdleCameraRig : MonoBehaviour
         Vector3 pos; Quaternion rot;
         Compute(aspect, fieldOfView, pitch, yaw, slabMin, slabSize, fill, aspect < portraitLimit ? portraitHeight : 0.5f, out pos, out rot);
         transform.SetPositionAndRotation(pos, rot);
+        basePosition = pos;
     }
 
     // Position et rotation de la caméra : la dalle (boîte slabMin..slabMin+slabSize) tient dans

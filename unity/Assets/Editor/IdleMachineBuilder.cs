@@ -2,14 +2,25 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-// Construit les machines de la scène idle (U2c). Les coordonnées de ce fichier sont celles du web, relatives au coin arrière du poste :
-// (x, y, z) du web devient (Z, X, Y) dans Unity. Chaque machine = quelques maillages par couleur + de petits objets mobiles animés
-// par un script `IMachineAnim` selon la phase du cycle.
+// Construit les machines de la scène idle (U2c, UW-3). Les coordonnées de ce fichier sont celles du web, relatives au coin arrière du poste :
+// (x, y, z) du web devient (Z, X, Y) dans Unity. Chaque machine a un corps fixe en plusieurs aspects (un maillage par aspect, échangés selon le niveau)
+// et de petites pièces mobiles animées par un script `IMachineAnim` selon la phase du cycle.
 public static class IdleMachineBuilder
 {
-    const string Wall = "#4F8FD6";
-
     const float Bevel = 0.035f, Gloss = 0.7f;
+    const string Yellow = "#FFC400", Ink = "#1E2A38", Screen = "#27D3E6", Metal = "#C3CCD7";
+
+    // couleur principale par poste et par aspect : le joueur voit l'usine monter en gamme
+    static readonly string[][] Paint =
+    {
+        new[] { "#2F7BE0", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
+        new[] { "#8BA0B6", "#5F8FB0", "#6C63B5", "#B5525A", "#D9A520" },
+        new[] { "#2F7BE0", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
+        new[] { "#F2F5F8", "#DFF6FA", "#ECE6FF", "#FFE3DE", "#FFF1C2" },
+        new[] { "#7D93AB", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
+    };
+
+    public const int AspectCount = 5;
 
     // Boîte aux coordonnées du web (x, y, z, largeur selon x, profondeur selon y, hauteur), arêtes biseautées.
     public static void B(MeshKit k, float x, float y, float z, float w, float d, float h)
@@ -26,19 +37,149 @@ public static class IdleMachineBuilder
         merged.Clear();
     }
 
-    static Material M(string hex, float smooth = 0f) { return IdleMaterials.Get("M_" + hex.TrimStart('#'), hex, smooth); }
-
-    static void Part(MeshKit kit, Transform parent, string hex, float gloss = Gloss)
-    {
-        Part(kit, parent, hex, Matrix4x4.identity, gloss);
-    }
-
-    static void Part(MeshKit kit, Transform parent, string hex, Matrix4x4 m, float gloss = Gloss)
+    static void Part(MeshKit kit, Transform parent, Color32 color, Matrix4x4 m)
     {
         MeshKit into;
         if (!merged.TryGetValue(parent, out into)) { into = new MeshKit(); merged[parent] = into; }
-        into.Append(kit, MeshKit.Color(hex, gloss), m);
+        into.Append(kit, color, m);
     }
+
+    static void Part(MeshKit kit, Transform parent, string hex, float gloss = Gloss) { Part(kit, parent, MeshKit.Color(hex, gloss), Matrix4x4.identity); }
+
+    // Une boîte d'une couleur, ajoutée au maillage de `parent`.
+    static void Box(Transform parent, string hex, float x, float y, float z, float w, float d, float h, float gloss = Gloss)
+    {
+        var k = new MeshKit();
+        B(k, x, y, z, w, d, h);
+        Part(k, parent, hex, gloss);
+    }
+
+    // Pièce fine, sans biseau.
+    static void Flat(Transform parent, string hex, float x, float y, float z, float w, float d, float h, float gloss = Gloss)
+    {
+        var k = new MeshKit();
+        k.Box(new Vector3(y, z, x), new Vector3(d, h, w));
+        Part(k, parent, hex, gloss);
+    }
+
+    static void Round(Transform parent, string hex, float x, float y, float z, float radius, float h, int segments = 8, float gloss = Gloss)
+    {
+        var k = new MeshKit();
+        k.Cylinder(new Vector3(y, z, x), radius, h, segments);
+        Part(k, parent, hex, gloss);
+    }
+
+    static Color32 Shade(string hex, float amount, float gloss = Gloss)
+    {
+        Color32 c = MeshKit.Color(hex, gloss);
+        byte a = c.a;
+        c = amount >= 0f ? Color32.Lerp(c, new Color32(255, 255, 255, 255), amount) : Color32.Lerp(c, new Color32(0, 0, 0, 255), -amount);
+        c.a = a;
+        return c;
+    }
+
+    // Bande de sécurité jaune et noire, couchée sur le dessus d'une pièce ou posée sur une face.
+    static void Hazard(Transform root, float x, float y, float z, float length, bool alongX, float width = 0.07f, float height = 0.012f)
+    {
+        const float Step = 0.16f;
+        int n = Mathf.Max(1, Mathf.RoundToInt(length / Step));
+        float s = length / n;
+        for (int i = 0; i < n; i++)
+        {
+            string hex = i % 2 == 0 ? Yellow : Ink;
+            if (alongX) Flat(root, hex, x + i * s, y, z, s, width, height, 0.3f);
+            else Flat(root, hex, x, y + i * s, z, width, s, height, 0.3f);
+        }
+    }
+
+    // Trois petits boutons colorés sur une console.
+    static void Buttons(Transform root, float x, float y, float z, float spacing)
+    {
+        string[] hex = { "#3DDC5A", "#FFC400", "#F2453D" };
+        for (int i = 0; i < hex.Length; i++) Flat(root, hex[i], x + i * spacing, y, z, 0.07f, 0.02f, 0.07f, 0.9f);
+    }
+
+    static void Antenna(Transform root, float x, float y, float z)
+    {
+        Round(root, Metal, x, y, z, 0.022f, 0.42f, 6);
+        Round(root, Metal, x, y, z + 0.26f, 0.11f, 0.03f, 8);
+        Round(root, "#F2453D", x, y, z + 0.42f, 0.04f, 0.06f, 6, 0.9f);
+    }
+
+    // Embase commune : plus l'aspect monte, plus elle s'équipe (bandes de sécurité, balises, liseré doré).
+    static void Platform(Transform root, int aspect)
+    {
+        Box(root, aspect >= 4 ? "#F0D060" : "#B8C4D0", -0.05f, -0.05f, 0f, 1.7f, 1.7f, 0.12f, 0.3f);
+        if (aspect >= 1)
+        {
+            Hazard(root, -0.02f, 1.54f, 0.12f, 1.64f, true);
+            Hazard(root, 1.54f, -0.02f, 0.12f, 1.56f, false);
+        }
+        if (aspect >= 2)
+        {
+            foreach (float x in new[] { -0.02f, 1.5f })
+            {
+                Box(root, Ink, x, 1.5f, 0.12f, 0.12f, 0.12f, 0.1f);
+                Box(root, "#8DF1FF", x + 0.02f, 1.52f, 0.22f, 0.08f, 0.08f, 0.1f, 1f);
+            }
+        }
+    }
+
+    // Machine du poste `i` ; renvoie la racine (désactivée tant que le poste est verrouillé : c'est IdleStationView qui l'active).
+    public static Transform Build(Transform parent, int i)
+    {
+        var root = new GameObject("Machine").transform;
+        root.SetParent(parent, false);
+        root.localPosition = new Vector3(-IdleLayout.StationSize * 0.5f, 0f, -IdleLayout.StationSize * 0.5f);   // coin arrière du poste
+        Label(root, i);
+
+        var meshes = new Mesh[AspectCount];
+        for (int a = 0; a < AspectCount; a++)
+        {
+            Platform(root, a);
+            switch (i)
+            {
+                case 0: ReceptionBody(root, a); break;
+                case 1: AssemblyBody(root, a); break;
+                case 2: ScannerBody(root, a); break;
+                case 3: PackerBody(root, a); break;
+                case 4: ShippingBody(root, a); break;
+            }
+            meshes[a] = merged[root].ToMesh("Machine" + i + "_Aspect" + a);
+            merged.Remove(root);
+        }
+
+        switch (i)
+        {
+            case 0: ReceptionParts(root); break;
+            case 1: AssemblyParts(root); break;
+            case 2: ScannerParts(root); break;
+            case 3: PackerParts(root); break;
+            case 4: ShippingParts(root); break;
+        }
+        Flush();
+
+        var body = new GameObject("Body", typeof(MeshFilter), typeof(MeshRenderer));
+        body.transform.SetParent(root, false);
+        body.GetComponent<MeshFilter>().sharedMesh = meshes[0];
+        var renderer = body.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = IdleMaterials.Palette();
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+
+        var aspect = root.gameObject.AddComponent<IdleMachineAspect>();
+        var so = new SerializedObject(aspect);
+        so.FindProperty("station").intValue = i;
+        so.FindProperty("body").objectReferenceValue = body.GetComponent<MeshFilter>();
+        so.FindProperty("bodyRenderer").objectReferenceValue = renderer;
+        SerializedProperty list = so.FindProperty("aspects");
+        list.arraySize = AspectCount;
+        for (int a = 0; a < AspectCount; a++) list.GetArrayElementAtIndex(a).objectReferenceValue = meshes[a];
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return root;
+    }
+
+    static Material M(string hex, float smooth = 0f) { return IdleMaterials.Get("M_" + hex.TrimStart('#'), hex, smooth); }
 
     // Pièce qui bouge seule : son propre objet (un appel de dessin), mais le matériau commun.
     static GameObject Single(MeshKit kit, string name, Transform parent, string hex)
@@ -48,36 +189,8 @@ public static class IdleMachineBuilder
         return painted.ToObject(name, parent, IdleMaterials.Palette());
     }
 
-    // Embase commune à tous les postes (dalle gris clair de 1,7 m).
-    static void Platform(Transform root)
-    {
-        var k = new MeshKit();
-        B(k, -0.05f, -0.05f, 0f, 1.7f, 1.7f, 0.12f);
-        Part(k, root, "#B8C4D0", 0.3f);
-    }
-
-    // Machine du poste `i` ; renvoie la racine (désactivée tant que le poste est verrouillé : c'est IdleStationView qui l'active).
-    public static Transform Build(Transform parent, int i)
-    {
-        var root = new GameObject("Machine").transform;
-        root.SetParent(parent, false);
-        root.localPosition = new Vector3(-IdleLayout.StationSize * 0.5f, 0f, -IdleLayout.StationSize * 0.5f);   // coin arrière du poste
-        Platform(root);
-        Label(root, i);
-        switch (i)
-        {
-            case 0: Reception(root); break;
-            case 1: Assembly(root); break;
-            case 2: Scanner(root); break;
-            case 3: Packer(root); break;
-            case 4: Shipping(root); break;
-        }
-        Flush();
-        return root;
-    }
-
     // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
-    static readonly float[] LabelHeight = { 1.55f, 1.6f, 2.15f, 2.1f, 1.5f };
+    static readonly float[] LabelHeight = { 1.7f, 1.6f, 2.15f, 2.1f, 1.6f };
 
     static void Label(Transform root, int i)
     {
@@ -93,37 +206,53 @@ public static class IdleMachineBuilder
         IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
     }
 
+    static MeshKit RoofKit(float z)
+    {
+        var k = new MeshKit();
+        B(k, -0.03f, -0.03f, z, IdleLayout.StationSize + 0.06f, 0.32f, 0.08f);
+        return k;
+    }
+
     // ------------------------------------------------------------------ 5. Expédition : quai, camionnette qui part et revient
 
-    static void Shipping(Transform root)
+    static void ShippingBody(Transform root, int a)
     {
-        var wall = new MeshKit();
-        B(wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.0f);
-        Part(wall, root, "#7D93AB");
-        var door = new MeshKit();
-        B(door, 0.25f, 0.26f, 0.2f, 1.1f, 0.012f, 0.7f);
-        Part(door, root, "#22303F");
-        var parcel = new MeshKit();
-        B(parcel, 1.5f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f);
-        Part(parcel, root, "#E5B96B");
+        string wall = Paint[4][a];
+        Box(root, wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.0f);
+        Part(RoofKit(1.12f), root, Shade(wall, -0.25f), Matrix4x4.identity);
+        Box(root, Yellow, 0.2f, 0.26f, 0.14f, 1.2f, 0.02f, 0.82f);
+        Flat(root, "#22303F", 0.25f, 0.27f, 0.2f, 1.1f, 0.012f, 0.7f);
+        for (int s = 1; s < 6; s++) Flat(root, "#4A5A6C", 0.25f, 0.28f, 0.2f + 0.7f * s / 6f, 1.1f, 0.008f, 0.016f);
+        Box(root, Yellow, 0.06f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
+        Box(root, Yellow, 1.44f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
+        Box(root, "#E5B96B", 1.5f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f, 0.15f);
+        Flat(root, Yellow, 1.5f, 1.42f, 0.4f, 0.3f, 0.06f, 0.012f, 0.15f);
+        Hazard(root, 0.02f, 1.3f, 0.12f, 0.9f, true, 0.07f);
+        if (a >= 2)   // module : plus de colis qui attendent
+        {
+            Box(root, "#E5B96B", 1.15f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f, 0.15f);
+            Box(root, "#D9A25B", 1.32f, 1.33f, 0.4f, 0.3f, 0.26f, 0.24f, 0.15f);
+        }
+        if (a >= 3) Antenna(root, 1.3f, 0.12f, 1.2f);
+    }
 
+    static void ShippingParts(Transform root)
+    {
         // camionnette : un objet qui porte tout (corps, cabine, pare-brise, roues) et glisse vers l'avant (axe X)
         var van = new GameObject("Van").transform;
         van.SetParent(root, false);
-        var body = new MeshKit();
-        B(body, 0.3f, 0.55f, 0.18f, 1.15f, 0.72f, 0.6f);
-        Part(body, van, "#FFFFFF");
-        var cab = new MeshKit();
-        B(cab, 1.45f, 0.6f, 0.18f, 0.5f, 0.6f, 0.42f);
-        Part(cab, van, "#1FA0FF");
-        var glass = new MeshKit();
-        B(glass, 1.95f, 0.67f, 0.32f, 0.012f, 0.43f, 0.18f);
-        Part(glass, van, "#BFE3FF");
+        Box(van, "#FFFFFF", 0.3f, 0.55f, 0.18f, 1.15f, 0.72f, 0.6f, 0.9f);
+        Flat(van, "#1FA0FF", 0.3f, 1.27f, 0.42f, 1.15f, 0.01f, 0.1f);              // bande bleue
+        Box(van, "#1FA0FF", 1.45f, 0.6f, 0.18f, 0.5f, 0.6f, 0.42f);
+        Box(van, "#FFFFFF", 1.45f, 0.6f, 0.6f, 0.34f, 0.6f, 0.14f, 0.9f);
+        Flat(van, "#BFE3FF", 1.95f, 0.67f, 0.32f, 0.012f, 0.43f, 0.18f, 1f);
+        Flat(van, "#FFE27A", 1.95f, 0.64f, 0.22f, 0.012f, 0.08f, 0.06f, 1f);       // phares
+        Flat(van, "#FFE27A", 1.95f, 1.1f, 0.22f, 0.012f, 0.08f, 0.06f, 1f);
         foreach (float wx in new[] { 0.6f, 1.2f })   // deux roues du côté visible (y = +0,72 du corps), axe le long de X
         {
             var wk = new MeshKit();
             wk.Cylinder(new Vector3(0f, -0.06f, 0f), 0.17f, 0.12f, 10);
-            Part(wk, van, "#1E2A38", Matrix4x4.TRS(new Vector3(0.55f + 0.72f, 0.1f, wx), Quaternion.Euler(0f, 0f, 90f), Vector3.one), 0.2f);
+            Part(wk, van, MeshKit.Color(Ink, 0.2f), Matrix4x4.TRS(new Vector3(0.55f + 0.72f, 0.1f, wx), Quaternion.Euler(0f, 0f, 90f), Vector3.one));
         }
 
         var machine = root.gameObject.AddComponent<ShipMachine>();
@@ -134,30 +263,31 @@ public static class IdleMachineBuilder
 
     // ------------------------------------------------------------------ 4. Emballage : cabine blanche, presse, colis fini
 
-    static void Packer(Transform root)
+    static void PackerBody(Transform root, int a)
     {
-        var cabinet = new MeshKit();
-        B(cabinet, 0.15f, 0.15f, 0.12f, 1.3f, 1.3f, 0.78f);
-        Part(cabinet, root, "#F2F5F8");
-        var header = new MeshKit();
-        B(header, 0.15f, 0.15f, 0.9f, 1.3f, 0.55f, 0.16f);
-        Part(header, root, "#FF7A1A");
-        var opening = new MeshKit();
-        B(opening, 0.3f, 0.7f, 0.35f, 1.0f, 0.012f, 0.43f);
-        Part(opening, root, "#22303F");
-        var lamp = new MeshKit();
-        lamp.Cylinder(new Vector3(0.35f, 1.06f, 1.2f), 0.16f, 0.18f, 8);
-        Part(lamp, root, "#FFC400");
+        Box(root, Paint[3][a], 0.15f, 0.15f, 0.12f, 1.3f, 1.3f, 0.78f);
+        Box(root, a >= 4 ? "#F0B21C" : "#FF7A1A", 0.15f, 0.15f, 0.9f, 1.3f, 0.55f, 0.16f);
+        Box(root, "#22303F", 0.3f, 1.42f, 0.34f, 1.0f, 0.03f, 0.44f, 0.3f);       // ouverture
+        Hazard(root, 0.3f, 1.44f, 0.8f, 1.0f, true, 0.02f, 0.07f);
+        Flat(root, "#FF7A1A", 1.45f, 0.5f, 0.3f, 0.02f, 0.6f, 0.5f);              // pupitre sur le flanc
+        Flat(root, Screen, 1.47f, 0.58f, 0.52f, 0.012f, 0.44f, 0.2f, 1f);
+        for (int i = 0; i < 3; i++) Flat(root, i == 0 ? "#3DDC5A" : i == 1 ? Yellow : "#F2453D", 1.47f, 0.6f + i * 0.14f, 0.36f, 0.012f, 0.08f, 0.08f, 0.9f);
+        Box(root, Yellow, 0.05f, 1.42f, 0.12f, 0.12f, 0.1f, 0.24f);               // butées
+        Box(root, Yellow, 1.43f, 1.42f, 0.12f, 0.12f, 0.1f, 0.24f);
+        Round(root, Yellow, 0.35f, 1.2f, 1.06f, 0.16f, 0.18f);
+        if (a >= 3) Antenna(root, 1.2f, 0.4f, 1.06f);
+    }
 
+    static void PackerParts(Transform root)
+    {
         // piston et plateau : maillages d'origine (0,0,0) ; l'animation règle leur hauteur
         Transform ram = MovingBox(root, "Ram", new Vector3(0.72f, 0f, 0.58f), new Vector3(0.44f, 0.7f, 0.44f), "#B5C0CC");
         Transform plate = MovingBox(root, "Plate", new Vector3(0.54f, 0f, 0.4f), new Vector3(0.8f, 0.14f, 0.8f), "#8F9BA9");
 
         var package = new GameObject("Package").transform;
         package.SetParent(root, false);
-        var box = new MeshKit();
-        B(box, 0.6f, 1.05f, 0.14f, 0.36f, 0.36f, 0.3f);
-        Part(box, package, "#E5B96B");
+        Box(package, "#E5B96B", 0.6f, 1.05f, 0.14f, 0.36f, 0.36f, 0.3f, 0.15f);
+        Flat(package, Yellow, 0.74f, 1.05f, 0.44f, 0.08f, 0.36f, 0.012f, 0.15f);
 
         var machine = root.gameObject.AddComponent<PackMachine>();
         var so = new SerializedObject(machine);
@@ -179,19 +309,32 @@ public static class IdleMachineBuilder
 
     // ------------------------------------------------------------------ 3. Test : portique bleu, faisceau qui balaie, écran de résultat
 
-    static void Scanner(Transform root)
+    static void ScannerBody(Transform root, int a)
     {
-        var posts = new MeshKit();
-        B(posts, 0f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
-        B(posts, 1.3f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
-        Part(posts, root, "#2F7FD0");
+        string body = Paint[2][a];
+        Box(root, body, 0f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
+        Box(root, body, 1.3f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
         var beam = new MeshKit();
         B(beam, -0.02f, 0.05f, 1.02f, IdleLayout.StationSize + 0.04f, 1.5f, 0.34f);
-        Part(beam, root, "#4FB3FF");
-        var box = new MeshKit();
-        B(box, 0.5f, 0.5f, 1.36f, 0.6f, 0.16f, 0.46f);
-        Part(box, root, "#1E2A38");
+        Part(beam, root, Shade(body, 0.2f), Matrix4x4.identity);
+        Box(root, Ink, 0.5f, 0.5f, 1.36f, 0.6f, 0.16f, 0.46f);
 
+        // bandes lumineuses à l'entrée du portique, pieds jaunes
+        Flat(root, "#8DF1FF", 0.3f, 1.54f, 0.25f, 0.03f, 0.02f, 0.7f, 1f);
+        Flat(root, "#8DF1FF", 1.27f, 1.54f, 0.25f, 0.03f, 0.02f, 0.7f, 1f);
+        Box(root, Yellow, -0.03f, 1.42f, 0.12f, 0.36f, 0.16f, 0.14f);
+        Box(root, Yellow, 1.27f, 1.42f, 0.12f, 0.36f, 0.16f, 0.14f);
+        Hazard(root, 0.02f, 1.54f, 1.06f, 1.56f, true, 0.02f, 0.06f);
+        if (a >= 2)   // module : rampes lumineuses sur le flanc
+        {
+            Flat(root, "#8DF1FF", 1.6f, 0.3f, 0.4f, 0.02f, 1.0f, 0.04f, 1f);
+            Flat(root, "#8DF1FF", 1.6f, 0.3f, 0.7f, 0.02f, 1.0f, 0.04f, 1f);
+        }
+        if (a >= 3) Antenna(root, 1.3f, 0.3f, 1.36f);
+    }
+
+    static void ScannerParts(Transform root)
+    {
         Material cyan = M("#27D3E6"), green = M("#3DDC5A"), yellow = M("#FFC400");
         var screenKit = new MeshKit();
         B(screenKit, 0.54f, 0.66f, 1.4f, 0.52f, 0.012f, 0.38f);
@@ -218,22 +361,34 @@ public static class IdleMachineBuilder
 
     // ------------------------------------------------------------------ 2. Assemblage : établi, bras orange, pupitre, caméra blanche
 
-    static void Assembly(Transform root)
+    static void AssemblyBody(Transform root, int a)
     {
-        var bench = new MeshKit();
-        B(bench, 0.1f, 0.55f, 0.12f, 1.4f, 0.85f, 0.5f);
-        Part(bench, root, "#8BA0B6");
-        var top = new MeshKit();
-        B(top, 0.1f, 0.55f, 0.62f, 1.4f, 0.85f, 0.06f);
-        Part(top, root, "#C3CCD7");
-        var baseKit = new MeshKit();
-        baseKit.Cylinder(new Vector3(0.8f, 0.68f, 0.55f), 0.2f, 0.22f, 10);
-        Part(baseKit, root, "#FF7A1A");
+        Box(root, Paint[1][a], 0.1f, 0.55f, 0.12f, 1.4f, 0.85f, 0.5f);
+        Box(root, Metal, 0.1f, 0.55f, 0.62f, 1.4f, 0.85f, 0.06f, 0.9f);
+        Hazard(root, 0.12f, 1.33f, 0.68f, 1.36f, true, 0.06f);
+        Hazard(root, 0.12f, 1.4f, 0.3f, 1.36f, true, 0.012f, 0.08f);
+        Round(root, "#3B4758", 0.8f, 0.68f, 0.55f, 0.24f, 0.1f, 12);              // socle du bras
+        Round(root, "#FF7A1A", 0.8f, 0.68f, 0.65f, 0.2f, 0.12f, 12);
 
-        // pupitre de commande avec son écran qui clignote
-        var console = new MeshKit();
-        B(console, 0.1f, 0.12f, 0.12f, 0.5f, 0.3f, 0.75f);
-        Part(console, root, "#2B3C50");
+        // pupitre de commande : son écran clignote, boutons colorés
+        Box(root, "#2B3C50", 0.1f, 0.12f, 0.12f, 0.5f, 0.3f, 0.75f);
+        Buttons(root, 0.18f, 0.42f, 0.32f, 0.12f);
+        if (a >= 2)   // module : un second pupitre
+        {
+            Box(root, "#2B3C50", 1.0f, 0.12f, 0.12f, 0.5f, 0.3f, 0.5f);
+            Flat(root, Screen, 1.05f, 0.42f, 0.3f, 0.4f, 0.012f, 0.24f, 1f);
+        }
+        if (a >= 3)   // module : un petit bras fixe de plus au bout de l'établi
+        {
+            Round(root, "#3B4758", 1.32f, 0.7f, 0.68f, 0.13f, 0.08f, 10);
+            Box(root, "#FF7A1A", 1.26f, 0.64f, 0.76f, 0.12f, 0.12f, 0.42f);
+            Box(root, "#FFA24D", 1.26f, 0.64f, 1.14f, 0.12f, 0.5f, 0.1f);
+            Box(root, Yellow, 1.24f, 1.08f, 1.08f, 0.16f, 0.14f, 0.16f);
+        }
+    }
+
+    static void AssemblyParts(Transform root)
+    {
         var screenKit = new MeshKit();
         B(screenKit, 0.15f, 0.42f, 0.45f, 0.4f, 0.012f, 0.35f);
         Material screenA = M("#27D3E6"), screenB = M("#1FA0FF");
@@ -248,9 +403,7 @@ public static class IdleMachineBuilder
         // caméra blanche déposée sur l'établi à mi-cycle
         var camera = new GameObject("Camera").transform;
         camera.SetParent(root, false);
-        var body = new MeshKit();
-        B(body, 1.15f, 0.85f, 0.68f, 0.38f, 0.3f, 0.2f);
-        Part(body, camera, "#F2F5F8");
+        Box(camera, "#F2F5F8", 1.15f, 0.85f, 0.68f, 0.38f, 0.3f, 0.2f);
         var lens = new MeshKit();
         lens.Cylinder(new Vector3(1.0f, 0.88f, 1.34f), 0.08f, 0.06f, 8);
         Part(lens, camera, "#1FA0FF");
@@ -285,50 +438,60 @@ public static class IdleMachineBuilder
 
     // ------------------------------------------------------------------ 1. Réception : quai, porte à lamelles, gyrophare, palette de caisses
 
-    static void Reception(Transform root)
+    static void ReceptionBody(Transform root, int a)
     {
-        var wall = new MeshKit();
-        B(wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.1f);
-        Part(wall, root, Wall);
-        var door = new MeshKit();
-        B(door, 0.3f, 0.26f, 0.2f, 1.0f, 0.012f, 0.75f);
-        Part(door, root, "#22303F");
-        var slats = new MeshKit();
-        for (int s = 1; s < 5; s++) B(slats, 0.3f, 0.27f, 0.2f + 0.75f * s / 5f, 1.0f, 0.008f, 0.014f);
-        Part(slats, root, "#4A5A6C");
+        string wall = Paint[0][a];
+        Box(root, wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.1f);
+        Part(RoofKit(1.22f), root, Shade(wall, -0.25f), Matrix4x4.identity);
+        Box(root, Yellow, 0.24f, 0.26f, 0.14f, 1.12f, 0.02f, 0.86f);
+        Flat(root, "#22303F", 0.3f, 0.27f, 0.2f, 1.0f, 0.012f, 0.75f);
+        for (int s = 1; s < 6; s++) Flat(root, "#9FB0C2", 0.3f, 0.285f, 0.2f + 0.75f * s / 6f, 1.0f, 0.008f, 0.03f);
+        Box(root, Yellow, 0.1f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
+        Box(root, Yellow, 1.4f, 0.3f, 0.12f, 0.1f, 0.1f, 0.42f);
 
+        // palette en bois : planches et traverses
+        Box(root, "#8A5A2B", 0.35f, 0.6f, 0.12f, 0.95f, 0.95f, 0.05f, 0.1f);
+        for (int s = 0; s < 4; s++) Flat(root, "#B07A3A", 0.35f, 0.6f + s * 0.245f, 0.17f, 0.95f, 0.2f, 0.05f, 0.1f);
+
+        if (a >= 2)   // module : une pile de plus contre le mur
+        {
+            Box(root, "#D9A25B", 0.02f, 0.3f, 0.12f, 0.26f, 0.3f, 0.26f, 0.15f);
+            Box(root, "#E5B96B", 0.04f, 0.32f, 0.38f, 0.22f, 0.26f, 0.22f, 0.15f);
+        }
+        if (a >= 3) Antenna(root, 0.5f, 0.12f, 1.3f);
+    }
+
+    static void ReceptionParts(Transform root)
+    {
         // gyrophare : un cylindre dont le matériau alterne
         var beaconKit = new MeshKit();
-        beaconKit.Cylinder(new Vector3(0.13f, 1.22f, IdleLayout.StationSize - 0.22f), 0.1f, 0.12f, 8);
+        beaconKit.Cylinder(new Vector3(0.13f, 1.3f, IdleLayout.StationSize - 0.22f), 0.1f, 0.12f, 8);
         Material on = M("#FFC400"), off = M("#B58A00");
         GameObject beacon = beaconKit.ToObject("Beacon", root, on);
 
-        var pallet = new MeshKit();
-        B(pallet, 0.35f, 0.6f, 0.12f, 0.95f, 0.95f, 0.1f);
-        Part(pallet, root, "#B07A3A");
-
-        // 4 caisses sur la palette (la 4e en dernier) : boîte + ruban d'emballage, mises à l'échelle en hauteur par l'animation
-        var crates = new Transform[4];
-        for (int q = 0; q < 4; q++)
+        // 8 caisses sur la palette (4 en bas, 4 au-dessus) : boîte + ruban, mises à l'échelle en hauteur par l'animation
+        var crates = new Transform[8];
+        for (int q = 0; q < crates.Length; q++)
         {
-            float qx = 0.42f + (q % 2) * 0.45f, qy = 0.67f + (q / 2) * 0.45f;
+            int layer = q / 4, slot = q % 4;
+            float qx = 0.42f + (slot % 2) * 0.45f, qy = 0.67f + (slot / 2) * 0.45f;
             var crate = new GameObject("Crate_" + q).transform;
             crate.SetParent(root, false);
-            crate.localPosition = new Vector3(qy + 0.2f, 0.22f, qx + 0.2f);
+            crate.localPosition = new Vector3(qy + 0.2f, 0.22f + layer * 0.375f, qx + 0.2f);
             var box = new MeshKit();
             box.BevelBox(new Vector3(-0.2f, 0f, -0.2f), new Vector3(0.4f, 0.36f, 0.4f), 0.03f);
             Part(box, crate, "#D9A25B", 0.15f);
             var tape = new MeshKit();
             tape.Box(new Vector3(-0.2f, 0.36f, -0.05f), new Vector3(0.4f, 0.012f, 0.1f));
-            Part(tape, crate, "#FFC400", 0.15f);
+            Part(tape, crate, Yellow, 0.15f);
             crates[q] = crate;
         }
 
         var machine = root.gameObject.AddComponent<ReceptionMachine>();
         var so = new SerializedObject(machine);
         SerializedProperty list = so.FindProperty("crates");
-        list.arraySize = 4;
-        for (int q = 0; q < 4; q++) list.GetArrayElementAtIndex(q).objectReferenceValue = crates[q];
+        list.arraySize = crates.Length;
+        for (int q = 0; q < crates.Length; q++) list.GetArrayElementAtIndex(q).objectReferenceValue = crates[q];
         so.FindProperty("beacon").objectReferenceValue = beacon.GetComponent<Renderer>();
         so.FindProperty("beaconOn").objectReferenceValue = on;
         so.FindProperty("beaconOff").objectReferenceValue = off;
