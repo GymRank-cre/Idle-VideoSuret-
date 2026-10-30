@@ -1,6 +1,6 @@
 # RÉSUMÉ DU MATIN (mis à jour par le cloud, pour Sébastien)
 
-**Dernière mise à jour : 29/10, 23 h 40 (heure du PC) ; 11b terminée et relue.** Ce fichier est réécrit à chaque relecture.
+**Dernière mise à jour : 29/10, 23 h 40 (heure du PC) ; 11c relue.** Ce fichier est réécrit à chaque relecture.
 
 ## Où tu en es
 - **Fait et relu** : 9a (joystick plein écran), 9b (balancement corrigé), 9c (écran gris : version visible dans ⚙, diagnostic), 10a (sensation de jeu), **K1 (police Lilita One, HUD en pastilles ardoise, écran titre « Jouer », dalles lisibles, nombres abrégés)**.
@@ -8,7 +8,8 @@
 - **K1b et Q1 faites** (pile verticale, titre dégagé, test de fumée de 90 s, 38 vérifications, textes rangés, journal de déblocages) ; le jeu dans l'app Claude est au build K1b+Q1.
 - **En cours côté PC** : **11a** (la chaîne de production : machines, tapis, goulots) : **11a-1 faite et relue** (machine générique, stocks, voyants, prix de dalle dans la plaque) ; **11a-2 (machines Test et Emballage, produits testé/emballé avec valeur croissante) et 11a-3 (tapis, vue d'ensemble de la caméra) faites et relues** ; **11a-4 faite : la 11a est terminée** (machines arrondies et animées, pastilles de stock, tapis courts, livreur de bout en bout, gains hors ligne de la chaîne, sauvegarde v4, build). **Le jeu de l'app Claude est au build 11a.** Gain mesuré : ~650 $/min avec la chaîne complète, contre ~270 sans. Plan relu et approuvé (6 ajustements : vue d'ensemble de la caméra, machines arrondies et non cubiques, objets lisibles à chaque étape, valeur croissante par maillon).
 - **11b faite et relue** (dalles d'amélioration par machine : Vitesse et Ajouter, niveaux, paliers ×2 aux niveaux 10/25/50, flèche verte « meilleur achat » sur le goulot, pastille « Niv N », sauvegarde v5). **Le jeu de l'app Claude est au build 11b.**
-- **En cours côté PC maintenant : 11c** (commandes de clients : panneau avec portraits, quai d'expédition, camionnette avec bulle d'humeur, Points Pro).
+- **11c faite (logique validée)** : panneau « Commandes » avec 3 clients (portraits, contenu, $ et Points Pro, Refuser/Accepter/x2 bientôt), quai d'expédition, camionnette avec bulle d'humeur, Points Pro (pastille cyan). **Le jeu de l'app Claude est au build 11c.** À corriger côté PC (11c-bis, demandé) : croix de fermeture cachée, portraits à fond noir, texte qui déborde, boutons mal alignés, barre de commande et pastille Points Pro vides sur une capture, guide qui n'est pas à jour.
+- **En cours côté PC maintenant : 11c-bis puis 10b** (la beauté : extérieur de l'atelier, ciel, sol varié, éclairage doux, décor vivant, machines moins « glacières »).
 - **File d'attente** : 11b (chaîne de production à tapis) -> 11b (améliorations par machine) -> 11c (commandes de clients) -> 10b (décor) -> 11d (Points Pro) -> 11e (caméra d'ensemble) -> 11f (deuxième usine).
 
 ## À tester demain matin (2 minutes)
