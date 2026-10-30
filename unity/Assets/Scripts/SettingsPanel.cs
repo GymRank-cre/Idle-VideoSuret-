@@ -13,6 +13,7 @@ public class SettingsPanel : MonoBehaviour
     [SerializeField] Button soundToggle;
     [SerializeField] Button musicToggle;
     [SerializeField] Button vibrationToggle;
+    [SerializeField] Button motionToggle;      // P4 : « Moins de secousses »
     [SerializeField] Button eraseButton;
     [SerializeField] Button confirmYes;
     [SerializeField] Button confirmNo;
@@ -35,6 +36,7 @@ public class SettingsPanel : MonoBehaviour
         soundToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetSound(!audioManager.SoundOn); });
         musicToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetMusic(!audioManager.MusicOn); });
         vibrationToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetVibration(!audioManager.VibrationOn); });
+        motionToggle.onClick.AddListener(() => { MotionSettings.ReduceMotion = !MotionSettings.ReduceMotion; Refresh(); });
         eraseButton.onClick.AddListener(() => { confirmBox.SetActive(true); });
         confirmNo.onClick.AddListener(() => { confirmBox.SetActive(false); });
         confirmYes.onClick.AddListener(EraseAndRestart);
@@ -51,6 +53,7 @@ public class SettingsPanel : MonoBehaviour
 
     void Refresh()
     {
+        Show(motionToggle, MotionSettings.ReduceMotion);
         if (audioManager == null) return;
         Show(soundToggle, audioManager.SoundOn);
         Show(musicToggle, audioManager.MusicOn);

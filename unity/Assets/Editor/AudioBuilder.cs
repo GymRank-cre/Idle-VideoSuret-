@@ -84,11 +84,12 @@ public static class AudioBuilder
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X1", close, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), 45f);
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X2", close, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), -45f);
 
-        Button sound = Toggle(panel, rounded, circle, "Sons", 170f);
-        Button music = Toggle(panel, rounded, circle, "Musique", 40f);
-        Button vibration = Toggle(panel, rounded, circle, "Vibrations", -90f);
+        Button sound = Toggle(panel, rounded, circle, "Sons", 215f);
+        Button music = Toggle(panel, rounded, circle, "Musique", 100f);
+        Button vibration = Toggle(panel, rounded, circle, "Vibrations", -15f);
+        Button motion = Toggle(panel, rounded, circle, Loc.T("settings.motion"), -130f);
 
-        RectTransform erase = UpgradeBuilder.Box("EraseButton", panel, rounded, new Color(0.75f, 0.25f, 0.25f), new Vector2(0f, -250f), new Vector2(680f, 110f), true);
+        RectTransform erase = UpgradeBuilder.Box("EraseButton", panel, rounded, new Color(0.75f, 0.25f, 0.25f), new Vector2(0f, -265f), new Vector2(680f, 110f), true);
         erase.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
         UpgradeBuilder.Label("Text", erase, Loc.T("settings.erase"), 46, Color.white, Vector2.zero, new Vector2(680f, 110f));
 
@@ -144,6 +145,7 @@ public static class AudioBuilder
         so.FindProperty("soundToggle").objectReferenceValue = sound;
         so.FindProperty("musicToggle").objectReferenceValue = music;
         so.FindProperty("vibrationToggle").objectReferenceValue = vibration;
+        so.FindProperty("motionToggle").objectReferenceValue = motion;
         so.FindProperty("eraseButton").objectReferenceValue = erase.GetComponent<Button>();
         so.FindProperty("confirmYes").objectReferenceValue = yes.GetComponent<Button>();
         so.FindProperty("confirmNo").objectReferenceValue = no.GetComponent<Button>();

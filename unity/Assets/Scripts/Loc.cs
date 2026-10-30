@@ -7,6 +7,7 @@ public static class Loc
     static readonly Dictionary<string, string> fr = new Dictionary<string, string>
     {
         { "settings.title", "Réglages" },
+        { "settings.motion", "Moins de secousses" },
         { "settings.erase", "Effacer la sauvegarde" },
         { "settings.erase.ask", "Effacer toute la progression ?" },
         { "settings.erase.warn", "Cette action est définitive." },

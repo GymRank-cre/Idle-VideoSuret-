@@ -322,6 +322,19 @@ public static class UnitTests
                 Eq("False", ps.IsPressed.ToString(), "relâché : plus d'appui");
                 Object.DestroyImmediate(go);
             }
+            Eq("21.0", AccessibilityAudit.Contrast(Color.white, Color.black).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "contraste blanc / noir");
+            Eq("1.0", AccessibilityAudit.Contrast(Color.gray, Color.gray).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "contraste d'une couleur avec elle-même");
+            Eq(AccessibilityAudit.Contrast(Color.white, Color.black).ToString("0.00"), AccessibilityAudit.Contrast(Color.black, Color.white).ToString("0.00"), "contraste symétrique");
+            {   // P4 : l'option « Moins de secousses » coupe la secousse et le glissement de caméra
+                bool before = MotionSettings.ReduceMotion;
+                MotionSettings.ReduceMotion = false;
+                Eq("0.08", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "secousse normale");
+                Eq("True", MotionSettings.AllowCameraGlide.ToString(), "glissement permis");
+                MotionSettings.ReduceMotion = true;
+                Eq("0.00", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "secousse coupée");
+                Eq("False", MotionSettings.AllowCameraGlide.ToString(), "glissement coupé");
+                MotionSettings.ReduceMotion = before;
+            }
             Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
             Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
             Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");

@@ -1,6 +1,6 @@
 # Statut local (Claude Code, PC de Sébastien)
-- Date et heure : 30/10/2026 07:10
-- Étape en cours : P3 (états de boutons, clic unique) poussée ; prochaine : P4 accessibilité (sans build)
+- Date et heure : 30/10/2026 07:24
+- Étape en cours : P4 (accessibilité) poussée ; prochaine : P5 table Loc (sans build)
 - État : en cours
 - Dernier build WebGL : 11e + K2 + Q2 (commit 167aedc)
 - Prochaines actions : P1 (main de tutoriel + étapes TEST/EMBALLAGE/TAPIS du guide), P2... sans build

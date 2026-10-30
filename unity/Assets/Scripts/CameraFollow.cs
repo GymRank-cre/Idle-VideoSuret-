@@ -46,6 +46,8 @@ public class CameraFollow : MonoBehaviour
     // Secousse légère (≤ 0,1 m) : décroît jusqu'à zéro, ne bloque aucune commande.
     public void Shake(float amplitude, float duration)
     {
+        amplitude = MotionSettings.ShakeAmplitude(amplitude);   // option « Moins de secousses »
+        if (amplitude <= 0f) return;
         shakeAmp = Mathf.Min(amplitude, 0.1f);
         shakeDur = Mathf.Max(0.05f, duration);
         shakeTime = 0f;
@@ -54,6 +56,7 @@ public class CameraFollow : MonoBehaviour
     // Pulsation de zoom : le champ se resserre un instant puis revient.
     public void ZoomPulse(float strength, float duration)
     {
+        if (!MotionSettings.AllowCameraGlide) return;   // option « Moins de secousses »
         zoomAmp = Mathf.Clamp(strength, 0f, 0.15f);
         zoomDur = Mathf.Max(0.05f, duration);
         zoomTime = 0f;
@@ -102,6 +105,7 @@ public class CameraFollow : MonoBehaviour
     // Déplace doucement la caméra vers `look` puis la ramène sur le joueur (les commandes ne sont pas bloquées).
     public void Peek(Transform look, float duration)
     {
+        if (!MotionSettings.AllowCameraGlide) return;   // option « Moins de secousses » : la caméra ne glisse plus
         peekTarget = look;
         peekDuration = Mathf.Max(0.1f, duration);
         peekElapsed = 0f;

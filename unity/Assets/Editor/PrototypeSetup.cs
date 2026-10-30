@@ -151,6 +151,8 @@ public static class PrototypeSetup
         foreach (Button b in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             if (b.GetComponent<PressScale>() == null) b.gameObject.AddComponent<PressScale>();
 
+        AccessibilityAudit.ExpandTouchAreas(); // P4 : zones tactiles >= 122, sans changer l'apparence
+
         // P3 : ces boutons jouent leur propre son (achat, embauche, refus, déverrouillage audio) : pas de clic commun
         var own = new System.Collections.Generic.List<Button>();
         foreach (OrderCard c in Object.FindObjectsByType<OrderCard>(FindObjectsInactive.Include, FindObjectsSortMode.None)) own.Add(c.Accept);
