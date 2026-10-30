@@ -42,6 +42,7 @@ public static class IdleMachineBuilder
             case 0: Reception(root); break;
             case 1: Assembly(root); break;
             case 2: Scanner(root); break;
+            case 3: Packer(root); break;
         }
         return root;
     }
@@ -61,6 +62,51 @@ public static class IdleMachineBuilder
         var pillObject = pill.ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
         pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
         IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+    }
+
+    // ------------------------------------------------------------------ 4. Emballage : cabine blanche, presse, colis fini
+
+    static void Packer(Transform root)
+    {
+        var cabinet = new MeshKit();
+        B(cabinet, 0.15f, 0.15f, 0.12f, 1.3f, 1.3f, 0.78f);
+        Part(cabinet, "Cabinet", root, "#F2F5F8");
+        var header = new MeshKit();
+        B(header, 0.15f, 0.15f, 0.9f, 1.3f, 0.55f, 0.16f);
+        Part(header, "Header", root, "#FF7A1A");
+        var opening = new MeshKit();
+        B(opening, 0.3f, 0.7f, 0.35f, 1.0f, 0.012f, 0.43f);
+        Part(opening, "Opening", root, "#22303F");
+        var lamp = new MeshKit();
+        lamp.Cylinder(new Vector3(0.35f, 1.06f, 1.2f), 0.16f, 0.18f, 8);
+        Part(lamp, "Lamp", root, "#FFC400");
+
+        // piston et plateau : maillages d'origine (0,0,0) ; l'animation règle leur hauteur
+        Transform ram = MovingBox(root, "Ram", new Vector3(0.72f, 0f, 0.58f), new Vector3(0.44f, 0.7f, 0.44f), "#B5C0CC");
+        Transform plate = MovingBox(root, "Plate", new Vector3(0.54f, 0f, 0.4f), new Vector3(0.8f, 0.14f, 0.8f), "#8F9BA9");
+
+        var package = new GameObject("Package").transform;
+        package.SetParent(root, false);
+        var box = new MeshKit();
+        B(box, 0.6f, 1.05f, 0.14f, 0.36f, 0.36f, 0.3f);
+        Part(box, "Box", package, "#E5B96B");
+
+        var machine = root.gameObject.AddComponent<PackMachine>();
+        var so = new SerializedObject(machine);
+        so.FindProperty("ram").objectReferenceValue = ram;
+        so.FindProperty("plate").objectReferenceValue = plate;
+        so.FindProperty("package").objectReferenceValue = package.gameObject;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Boîte dont l'origine est son coin bas (position XZ fixée ici, hauteur réglée plus tard) ; taille donnée en (profondeur X, hauteur, largeur Z).
+    static Transform MovingBox(Transform parent, string name, Vector3 positionXZ, Vector3 size, string hex)
+    {
+        var kit = new MeshKit();
+        kit.Box(Vector3.zero, size);
+        GameObject go = Part(kit, name, parent, hex);
+        go.transform.localPosition = positionXZ;
+        return go.transform;
     }
 
     // ------------------------------------------------------------------ 3. Test : portique bleu, faisceau qui balaie, écran de résultat
