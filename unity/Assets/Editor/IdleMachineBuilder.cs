@@ -41,6 +41,7 @@ public static class IdleMachineBuilder
         {
             case 0: Reception(root); break;
             case 1: Assembly(root); break;
+            case 2: Scanner(root); break;
         }
         return root;
     }
@@ -60,6 +61,45 @@ public static class IdleMachineBuilder
         var pillObject = pill.ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
         pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
         IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+    }
+
+    // ------------------------------------------------------------------ 3. Test : portique bleu, faisceau qui balaie, écran de résultat
+
+    static void Scanner(Transform root)
+    {
+        var posts = new MeshKit();
+        B(posts, 0f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
+        B(posts, 1.3f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
+        Part(posts, "Posts", root, "#2F7FD0");
+        var beam = new MeshKit();
+        B(beam, -0.02f, 0.05f, 1.02f, IdleLayout.StationSize + 0.04f, 1.5f, 0.34f);
+        Part(beam, "Beam", root, "#4FB3FF");
+        var box = new MeshKit();
+        B(box, 0.5f, 0.5f, 1.36f, 0.6f, 0.16f, 0.46f);
+        Part(box, "ControlBox", root, "#1E2A38");
+
+        Material cyan = M("#27D3E6"), green = M("#3DDC5A"), yellow = M("#FFC400");
+        var screenKit = new MeshKit();
+        B(screenKit, 0.54f, 0.66f, 1.4f, 0.52f, 0.012f, 0.38f);
+        GameObject screen = screenKit.ToObject("Screen", root, cyan);
+        var beaconKit = new MeshKit();
+        beaconKit.Cylinder(new Vector3(0.2f, 1.36f, 0.22f), 0.09f, 0.1f, 8);
+        GameObject beacon = beaconKit.ToObject("Beacon", root, yellow);
+
+        // faisceau : plan vertical cyan translucide (boîte très fine, centrée) déplacé par l'animation
+        var scan = new MeshKit();
+        scan.Box(new Vector3(-0.012f, -0.42f, -0.5f), new Vector3(0.024f, 0.84f, 1.0f));
+        GameObject plane = scan.ToObject("Scan", root, IdleMaterials.Get("ScanBeam", "#27D3E6", 0f, true, 0.5f));
+
+        var machine = root.gameObject.AddComponent<TestMachine>();
+        var so = new SerializedObject(machine);
+        so.FindProperty("scanPlane").objectReferenceValue = plane.transform;
+        so.FindProperty("screen").objectReferenceValue = screen.GetComponent<Renderer>();
+        so.FindProperty("beacon").objectReferenceValue = beacon.GetComponent<Renderer>();
+        so.FindProperty("okMaterial").objectReferenceValue = green;
+        so.FindProperty("screenWaiting").objectReferenceValue = cyan;
+        so.FindProperty("beaconWaiting").objectReferenceValue = yellow;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ 2. Assemblage : établi, bras orange, pupitre, caméra blanche

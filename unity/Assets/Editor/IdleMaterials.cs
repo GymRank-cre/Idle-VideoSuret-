@@ -44,6 +44,22 @@ public static class IdleMaterials
         return m;
     }
 
+    // Aplat dessiné par-dessus tout (plaques d'achat) ; `queue` fixe l'ordre entre les pièces d'une même plaque.
+    public static Material Overlay(string name, string hex, int queue)
+    {
+        if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Prototype", "Materials");
+        string path = Folder + "/Idle_Overlay_" + name + ".mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/Overlay")); AssetDatabase.CreateAsset(m, path); }
+        m.shader = Shader.Find("Idle/Overlay");
+        Color c;
+        ColorUtility.TryParseHtmlString(hex, out c);
+        m.SetColor("_BaseColor", c);
+        m.renderQueue = queue;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
     public static Material Get(string name, string hex, float smoothness = 0f, bool transparent = false, float alpha = 1f)
     {
         Color c;

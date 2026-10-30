@@ -341,11 +341,11 @@ public static class IdleSceneBuilder
     {
         var root = new GameObject("Plates").transform;
         root.SetParent(parent, false);
-        Material baseMat = IdleMaterials.Get("PlateBase", "#2A3644");
-        Material greenMat = IdleMaterials.Get("PlateGreen", "#3DDC5A");
-        Material yellowMat = IdleMaterials.Get("PlateYellow", "#FFC400");
-        Material arrowOn = IdleMaterials.Get("PlateArrowOn", "#8CFF9E");
-        Material arrowOff = IdleMaterials.Get("PlateArrowOff", "#9AA6B3");
+        Material baseMat = IdleMaterials.Overlay("PlateBase", "#2A3644", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
+        Material greenMat = IdleMaterials.Overlay("PlateGreen", "#3DDC5A", 3510);
+        Material yellowMat = IdleMaterials.Overlay("PlateYellow", "#FFC400", 3510);
+        Material arrowOn = IdleMaterials.Overlay("PlateArrowOn", "#8CFF9E", 3520);
+        Material arrowOff = IdleMaterials.Overlay("PlateArrowOff", "#9AA6B3", 3520);
         Font font = UiTheme.Font;
         Vector3 textUp = new Vector3(0f, 0f, -1f);               // « haut » du texte sur le sol : vers le haut-gauche de l'écran
         Vector3 along = new Vector3(-1f, 0f, 0f);                // sens de lecture : de gauche à droite en montant vers la droite
@@ -385,13 +385,13 @@ public static class IdleSceneBuilder
             var tag = new GameObject("NewTag").transform;
             tag.SetParent(visual, false);
             tag.localPosition = textUp * 0.31f + new Vector3(0f, top + 0.012f, 0f);
-            MakeFlatText(tag, "NOUVEAU", font, 70, 0.027f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _);
+            MakeFlatText(tag, "NOUVEAU", font, 70, 0.027f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
 
             var priceRoot = new GameObject("Price").transform;
             priceRoot.SetParent(visual, false);
             priceRoot.localPosition = -textUp * 0.1f + new Vector3(0f, top + 0.015f, 0f);
             TextMesh main;
-            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.068f, flat, Color.white, out main);
+            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.068f, flat, Color.white, out main, true);
             var texts = new List<TextMesh> { main };
             foreach (TextMesh outline in label.GetComponentsInChildren<TextMesh>()) if (outline != main) texts.Add(outline);
 
@@ -418,19 +418,32 @@ public static class IdleSceneBuilder
     }
 
     // Texte couché sur le sol : le texte principal et 4 copies sombres décalées en diagonale (contour).
-    static Transform MakeFlatText(Transform parent, string text, Font font, int fontSize, float characterSize, Quaternion rotation, Color color, out TextMesh main)
+    static Transform MakeFlatText(Transform parent, string text, Font font, int fontSize, float characterSize, Quaternion rotation, Color color, out TextMesh main, bool overlay = false)
     {
         var holder = new GameObject("Text").transform;
         holder.SetParent(parent, false);
         holder.localRotation = rotation;
         float o = 0.024f;
         Vector2[] offsets = { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o) };
-        foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink);
-        main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color);
+        foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink, overlay);
+        main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color, overlay);
         return holder;
     }
 
     // Deux matériaux de police : le contour est dessiné avant le texte (file de rendu plus basse), pour ne jamais le recouvrir.
+    // Police pour le texte des plaques : même chose, mais dessinée par-dessus tout (sans test de profondeur).
+    static Material OverlayFontMaterial(Font font, bool main)
+    {
+        string path = "Assets/Prototype/Materials/Idle_OverlayFont" + (main ? "Main" : "Outline") + ".mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/OverlayText")); AssetDatabase.CreateAsset(m, path); }
+        m.shader = Shader.Find("Idle/OverlayText");
+        m.mainTexture = font.material.mainTexture;
+        m.renderQueue = main ? 3540 : 3530;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
     internal static Material FontMaterial(Font font, bool main)
     {
         string path = "Assets/Prototype/Materials/Idle_Font" + (main ? "Main" : "Outline") + ".mat";
@@ -442,7 +455,7 @@ public static class IdleSceneBuilder
         return m;
     }
 
-    internal static TextMesh MakeTextMesh(Transform parent, string name, string text, Font font, int fontSize, float characterSize, Vector3 localPos, Color color)
+    internal static TextMesh MakeTextMesh(Transform parent, string name, string text, Font font, int fontSize, float characterSize, Vector3 localPos, Color color, bool overlay = false)
     {
         var go = new GameObject(name, typeof(TextMesh));
         go.transform.SetParent(parent, false);
@@ -456,7 +469,7 @@ public static class IdleSceneBuilder
         tm.alignment = TextAlignment.Center;
         tm.color = color;
         var r = go.GetComponent<MeshRenderer>();
-        r.sharedMaterial = FontMaterial(font, name == "Main");
+        r.sharedMaterial = overlay ? OverlayFontMaterial(font, name == "Main") : FontMaterial(font, name == "Main");
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         r.receiveShadows = false;
         return tm;
