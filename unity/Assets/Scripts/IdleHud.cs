@@ -17,6 +17,7 @@ public class IdleHud : MonoBehaviour
     [SerializeField] Sprite turboIdleFace;
     [SerializeField] Sprite turboActiveFace;
     [SerializeField] Image turboCover;      // voile sur le bouton : sombre pendant la recharge, éclat qui pulse pendant le turbo
+    [SerializeField] GameObject turboTimePill;   // petite pastille sombre en bas du bouton : la flamme reste visible
     [SerializeField] Text turboText;
     [SerializeField] Color cooldownCover = new Color(0.055f, 0.086f, 0.125f, 0.55f);
     [SerializeField, Min(0.02f)] float refreshEvery = 0.1f;
@@ -98,6 +99,7 @@ public class IdleHud : MonoBehaviour
         turboFace.sprite = on ? turboActiveFace : turboIdleFace;
         bool busy = on || wait > 0;
         if (turboCover.gameObject.activeSelf != busy) turboCover.gameObject.SetActive(busy);
+        if (turboTimePill.activeSelf != busy) turboTimePill.SetActive(busy);
         if (on)
         {
             turboText.text = NumberFormat.Seconds(game.BoostRemaining);

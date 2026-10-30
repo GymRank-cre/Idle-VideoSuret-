@@ -86,6 +86,7 @@ public static class IdleHudBuilder
         Image gear = Pill("GearButton", bar, UiTheme.Slate);
         Size(gear.gameObject, Px(42f), Px(42f), -1f);
         gear.gameObject.AddComponent<Button>().transition = Selectable.Transition.None;
+        gear.raycastPadding = new Vector4(-Px(2f), -Px(2f), -Px(2f), -Px(2f));   // zone tactile de 122 unités au moins
         gear.gameObject.AddComponent<PressScale>();
         Image gearIcon = AddIcon(gear.transform, "Icon", "engrenage", 32f, false);
         Center(gearIcon.rectTransform, Vector2.zero);
@@ -120,11 +121,22 @@ public static class IdleHudBuilder
         rt.pivot = new Vector2(0.5f, 1f);
         rt.anchoredPosition = Vector2.zero;
         rt.sizeDelta = new Vector2(Px(58f), Px(58f));
-        Text cd = AddText(cover.transform, "Time", "", 17f, Color.white, TextAnchor.MiddleCenter);
-        Stretch(cd.rectTransform);
         hud.FindProperty("turboCover").objectReferenceValue = cover;
-        hud.FindProperty("turboText").objectReferenceValue = cd;
         cover.gameObject.SetActive(false);
+
+        // temps restant : pastille à cheval sur le bas de la face, la flamme reste visible
+        Image pill = Rounded("TimePill", turbo.transform, UiTheme.Ink, Px(10f));
+        pill.raycastTarget = false;
+        RectTransform p = pill.rectTransform;
+        p.anchorMin = p.anchorMax = new Vector2(0.5f, 1f);
+        p.pivot = new Vector2(0.5f, 1f);
+        p.sizeDelta = new Vector2(Px(48f), Px(20f));
+        p.anchoredPosition = new Vector2(0f, -Px(44f));
+        Text cd = AddText(p, "Time", "", 14f, Color.white, TextAnchor.MiddleCenter, 1f);
+        Stretch(cd.rectTransform);
+        hud.FindProperty("turboTimePill").objectReferenceValue = pill.gameObject;
+        hud.FindProperty("turboText").objectReferenceValue = cd;
+        pill.gameObject.SetActive(false);
     }
 
     // Bouton carré orange : la face vient du web (dégradé + épaisseur), 58 + 7 px de haut, 12 px entre deux boutons.

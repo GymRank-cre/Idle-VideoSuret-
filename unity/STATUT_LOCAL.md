@@ -1,5 +1,5 @@
 # Statut local (Claude Code, PC de Sébastien)
-- Date et heure : 30/10/2026 12:13
+- Date et heure : 30/10/2026 12:18
 - Étape en cours : U3b TERMINÉ et poussé, avec les icônes générées ; prochaine : U3c (fenêtres, portraits, 8 clients)
 - État : en cours (chantiers U1 à U4 décidés par Sébastien ; un seul build, à la fin)
 - Compilation 0/0, tests 165/165, test de fumée (300 s simulées) OK ; l'ancien jeu est au commit 25ac2e4

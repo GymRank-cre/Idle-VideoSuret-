@@ -152,6 +152,7 @@ public static class IdleDrawerBuilder
             bg.rectTransform.sizeDelta = new Vector2(Px(widths[i]), Px(28f));
             var button = bg.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
+            bg.raycastPadding = new Vector4(0f, -Px(8.5f), 0f, -Px(8.5f));   // zone tactile de 122 unités de haut, plus grande que le dessin
             bg.gameObject.AddComponent<PressScale>();
             Text t = AddText(bg.transform, "Text", names[i], 15f, Color.white, TextAnchor.MiddleCenter);
             Stretch(t.rectTransform);
