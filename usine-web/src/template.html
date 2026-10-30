@@ -152,6 +152,10 @@ svg.ico{width:1em;height:1em;display:inline-block;vertical-align:-0.14em;flex:no
 .tog.on{background:var(--green)} .tog.on::after{transform:translateX(26px)}
 .ver{text-align:center;color:#fff;font-size:13px;opacity:.9}
 
+#title{position:absolute;inset:0;z-index:50;background:#2b9cff url(/*__TITLE__*/) center top/cover no-repeat;display:flex;align-items:flex-end;justify-content:center;padding:0 var(--gutter-r) calc(9% + env(safe-area-inset-bottom,0px)) var(--gutter-l);transition:opacity .45s,transform .45s}
+#title.gone{opacity:0;transform:scale(1.06);pointer-events:none}
+#play{width:min(78%,300px);height:76px;border-radius:24px;font-size:42px;letter-spacing:1px;background:linear-gradient(#6BF083,var(--green));box-shadow:0 7px 0 var(--green2),0 10px 0 rgba(14,22,32,.35),0 0 40px rgba(61,220,90,.55);animation:pulse 1.1s ease-in-out infinite}
+#play:active{transform:translateY(5px) scale(.96);animation:none}
 #hand{position:absolute;z-index:20;width:54px;height:54px;pointer-events:none;display:none;filter:drop-shadow(0 3px 0 rgba(14,22,32,.45));animation:tap .8s ease-in-out infinite;transform-origin:20% 10%}
 @keyframes tap{0%,100%{transform:translate(0,0) rotate(-12deg)}50%{transform:translate(-4px,-8px) rotate(-12deg) scale(.92)}}
 #hand.on{display:block}
@@ -212,6 +216,7 @@ svg.ico{width:1em;height:1em;display:inline-block;vertical-align:-0.14em;flex:no
     <div id="list"></div>
   </section>
   <div id="modal"></div>
+  <div id="title"><button id="play" class="out">JOUER</button></div>
   <div id="welcome"></div>
   <svg id="hand" viewBox="0 0 64 64"><use href="#i-hand"/></svg>
 </div>
@@ -356,7 +361,9 @@ var CLIENTS = [
   { n: 'Nadia', skin: '#C98A5F', hair: '#3b2418', style: 3, suit: '#D1453B', tie: '#FFC400', bg: '#C9F2E6' }
 ];
 var portraitCache = {};
+var AI_PORTRAITS = /*__PORTRAITS__*/[];
 function portrait(ci) {
+  if (AI_PORTRAITS[ci]) return AI_PORTRAITS[ci];
   if (portraitCache[ci]) return portraitCache[ci];
   var c = CLIENTS[ci], cv = document.createElement('canvas'); cv.width = cv.height = 140; var g = cv.getContext('2d');
   g.fillStyle = c.bg; g.fillRect(0, 0, 140, 140);
@@ -1100,6 +1107,9 @@ document.addEventListener('visibilitychange', function () {
 });
 window.addEventListener('pagehide', save);
 document.addEventListener('pointerdown', function () { audio(); }, { once: true, passive: true });
+
+/* ——— écran titre ——— */
+$('#play').addEventListener('click', function () { audio(); sfx.unlock(); var t = $('#title'); t.classList.add('gone'); setTimeout(function () { t.hidden = true; }, 500); });
 
 /* ——— démarrage ——— */
 function init() {
