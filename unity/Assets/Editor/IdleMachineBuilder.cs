@@ -134,9 +134,10 @@ public static class IdleMachineBuilder
             {
                 case 0: SerreBody(root, a); break;
                 case 1: AssemblyBody(root, a); break;
-                case 2: ScannerBody(root, a); break;
-                case 3: PackerBody(root, a); break;
-                case 4: ShippingBody(root, a); break;
+                case 2: ProgBody(root, a); break;
+                case 3: ScannerBody(root, a); break;
+                case 4: PackerBody(root, a); break;
+                case 5: ShippingBody(root, a); break;
             }
             meshes[a] = merged[root].ToMesh("Machine" + i + "_Aspect" + a);
             merged.Remove(root);
@@ -145,9 +146,10 @@ public static class IdleMachineBuilder
         switch (i)
         {
             case 1: AssemblyParts(root); break;
-            case 2: ScannerParts(root); break;
-            case 3: PackerParts(root); break;
-            case 4: ShippingParts(root); break;
+            case 2: ProgParts(root); break;
+            case 3: ScannerParts(root); break;
+            case 4: PackerParts(root); break;
+            case 5: ShippingParts(root); break;
         }
         Flush();
 
@@ -182,7 +184,7 @@ public static class IdleMachineBuilder
     }
 
     // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
-    public static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.15f, 2.1f, 1.6f };   // Test : posée sur le portique, pour ne pas couvrir les prix de l'Assemblage juste derrière
+    public static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.6f, 1.75f, 2.1f, 1.6f };
 
     static void Label(Transform root, int i)
     {
@@ -331,6 +333,47 @@ public static class IdleMachineBuilder
         GameObject go = Single(kit, name, parent, hex);
         go.transform.localPosition = positionXZ;
         return go.transform;
+    }
+
+    // ------------------------------------------------------------------ Programmation : baie de serveurs, table, caméra qui reçoit son programme
+
+    static void ProgBody(Transform root, int a)
+    {
+        string body = Paint[a];
+        Box(root, body, 0.08f, 0.1f, 0.12f, 1.44f, 0.5f, 1.15f);                  // baie
+        Part(RoofKit(1.27f), root, Shade(body, -0.25f), Matrix4x4.identity);
+        Flat(root, "#1E2A38", 0.16f, 0.6f, 0.2f, 1.28f, 0.012f, 0.98f);           // façade sombre
+        for (int r = 0; r < 4; r++)
+            for (int c = 0; c < 6; c++)
+                Flat(root, (r + c) % 3 == 0 ? "#3DDC5A" : Screen, 0.24f + c * 0.2f, 0.615f, 0.3f + r * 0.2f, 0.09f, 0.008f, 0.05f, 1f);
+        Box(root, Metal, 0.2f, 0.75f, 0.12f, 1.2f, 0.65f, 0.4f, 0.9f);            // table
+        Box(root, "#2B3C50", 0.2f, 1.42f, 0.12f, 1.2f, 0.08f, 0.32f);
+        Hazard(root, 0.22f, 1.5f, 0.3f, 1.16f, true, 0.012f, 0.08f);
+        if (a >= 2) Flat(root, "#8DF1FF", 0.1f, 0.62f, 1.22f, 1.4f, 0.02f, 0.04f, 1f);   // module : rampe lumineuse
+        if (a >= 3) Antenna(root, 1.3f, 0.2f, 1.35f);
+    }
+
+    static void ProgParts(Transform root)
+    {
+        var screenKit = new MeshKit();
+        B(screenKit, 0.5f, 0.74f, 0.54f, 0.6f, 0.012f, 0.34f);
+        Material screenA = M("#27D3E6"), screenB = M("#3DDC5A");
+        GameObject screen = screenKit.ToObject("Screen", root, screenA);
+
+        var camera = new GameObject("Camera").transform;
+        camera.SetParent(root, false);
+        Box(camera, "#F2F5F8", 0.62f, 1.0f, 0.52f, 0.38f, 0.3f, 0.2f);
+        var lens = new MeshKit();
+        lens.Cylinder(new Vector3(1.32f, 0.55f, 0.8f), 0.08f, 0.06f, 8);
+        Part(lens, camera, "#1FA0FF");
+
+        var machine = root.gameObject.AddComponent<ProgMachine>();
+        var so = new SerializedObject(machine);
+        so.FindProperty("screen").objectReferenceValue = screen.GetComponent<Renderer>();
+        so.FindProperty("screenA").objectReferenceValue = screenA;
+        so.FindProperty("screenB").objectReferenceValue = screenB;
+        so.FindProperty("product").objectReferenceValue = camera.gameObject;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ 3. Test : portique bleu, faisceau qui balaie, écran de résultat

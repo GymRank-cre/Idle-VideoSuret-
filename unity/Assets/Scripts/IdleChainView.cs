@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// Ce qu'on voit du début de la chaîne : les cristaux coupés qui repoussent, les robots au travail, les tas, le drone et le stock. Visuel seulement : tout se lit
+// Ce qu'on voit du début de la chaîne et de ses liaisons : les cristaux coupés qui repoussent, les robots au travail, les tas, le drone, les chariots et les stocks. Visuel seulement : tout se lit
 // dans IdleGame et IdleChain. Cristaux et tas tiennent chacun dans un maillage, donc un seul appel de dessin : on en écrit les sommets ou on en coupe la liste de triangles.
 public class IdleChainView : MonoBehaviour
 {
@@ -18,11 +18,16 @@ public class IdleChainView : MonoBehaviour
     [SerializeField] float droneBob = 0.03f;
     [SerializeField] MeshFilter cutPile;
     [SerializeField] MeshFilter rawPile;
-    [SerializeField] MeshFilter stockPile;
     [SerializeField, Min(1)] int cubeIndices = 36;     // indices d'un cube de tas
-    [SerializeField, Min(0)] int stockBaseIndices;     // la palette, toujours visible, en tête du maillage du stock
-    [SerializeField] TextMesh stockText;
+    [SerializeField, Min(0)] int stockBaseIndices;     // la palette, toujours visible, en tête du maillage d'un stock
+    [SerializeField] GameObject[] stocks;              // un par poste à partir de l'Assemblage : palette, tas et étiquette
+    [SerializeField] MeshFilter[] stockPiles;
+    [SerializeField] TextMesh[] stockTexts;
     [SerializeField, Min(0.02f)] float labelEvery = 0.2f;   // le chiffre change sans arrêt : on ne réécrit le texte que de temps en temps
+    [SerializeField] Transform[] carts;                // un par poste qui en a un après lui, à partir de l'Assemblage
+    [SerializeField] GameObject[] cartLoads;
+    [SerializeField] Vector3[] cartFrom;
+    [SerializeField] Vector3[] cartTo;
     [SerializeField] FeedbackSpawner feedback;
     [SerializeField] IdleCameraRig rig;
     [SerializeField] float workLean = 16f;
@@ -33,10 +38,11 @@ public class IdleChainView : MonoBehaviour
     float[] growth;
     int perCrystal, nextCrystal;
     float cutPhase, labelTimer;
-    Mesh crystalMesh, cutMesh, rawMesh, stockMesh;
-    int cutShown = -1, rawShown = -1, stockShown = -1, stockNumber = -1, stockSize = -1;
+    Mesh crystalMesh, cutMesh, rawMesh;
+    Mesh[] stockMeshes;
+    int cutFull, rawFull, cutShown = -1, rawShown = -1;
+    int[] stockFull, stockShown, stockNumber, stockTotal;
     readonly float[] appear = { 1f, 1f, 1f };
-    readonly int[] fullCount = new int[3];      // indices de chaque tas plein
     Quaternion cutterRest, etcherRest;
     IdleGame subscribed;
 
@@ -45,10 +51,21 @@ public class IdleChainView : MonoBehaviour
         crystalMesh = crystals.mesh;
         cutMesh = cutPile.mesh;
         rawMesh = rawPile.mesh;
-        stockMesh = stockPile.mesh;
-        fullCount[0] = (int)cutMesh.GetIndexCount(0);
-        fullCount[1] = (int)rawMesh.GetIndexCount(0);
-        fullCount[2] = (int)stockMesh.GetIndexCount(0);
+        cutFull = (int)cutMesh.GetIndexCount(0);
+        rawFull = (int)rawMesh.GetIndexCount(0);
+        int n = stocks.Length;
+        stockMeshes = new Mesh[n];
+        stockFull = new int[n];
+        stockShown = new int[n];
+        stockNumber = new int[n];
+        stockTotal = new int[n];
+        for (int i = 0; i < n; i++)
+        {
+            stockMeshes[i] = stockPiles[i].mesh;
+            stockFull[i] = (int)stockMeshes[i].GetIndexCount(0);
+            stockShown[i] = stockNumber[i] = stockTotal[i] = -1;
+        }
+
         baseVertices = crystalMesh.vertices;
         vertices = (Vector3[])baseVertices.Clone();
         perCrystal = crystalMesh.vertexCount / crystalCount;
@@ -74,7 +91,7 @@ public class IdleChainView : MonoBehaviour
 
     void Hired(int role)
     {
-        if (rig != null && subscribed.CrewReady) rig.FrameDefault(MotionSettings.ReduceMotion);   // la chaîne démarre : la caméra recule et montre l'Assemblage
+        if (rig != null && subscribed.CrewReady) rig.FrameDefault(MotionSettings.ReduceMotion);   // la chaîne démarre : la caméra montre la rangée de machines
         if (MotionSettings.ReduceMotion) return;
         appear[role] = 0.001f;
         Transform robot = role == 0 ? cutter : role == 1 ? etcher : drone;
@@ -90,25 +107,49 @@ public class IdleChainView : MonoBehaviour
 
         IdleChain chain = game.Chain;
         float dt = Time.deltaTime, time = Time.time;
-        UpdateCrystals(dt, chain.Cutting, game.VisualFrequency(IdleEconomy.SerreStation));
-        UpdateRobot(cutter, cutterRest, game.Crew, 0, chain.Cutting, time, dt);
+        UpdateCrystals(dt, chain.Working[0], game.VisualFrequency(IdleEconomy.SerreStation));
+        UpdateRobot(cutter, cutterRest, game.Crew, 0, chain.Working[0], time, dt);
         UpdateRobot(etcher, etcherRest, game.Crew, 1, chain.Etching, time, dt);
         UpdateDrone(game.Crew, chain, time, dt);
 
-        double rateIn = game.Eco.ItemsPerSecond(IdleEconomy.SerreStation, game.Stations[IdleEconomy.SerreStation], game.Globals);
-        double rateOut = game.Eco.ItemsPerSecond(IdleEconomy.AssemblyStation, game.Stations[IdleEconomy.AssemblyStation], game.Globals);
-        double buffer = chain.BufferSize(rateIn), size = chain.StockSize(rateIn, rateOut);
-        ShowPile(cutMesh, 0, chain.Cut / buffer, ref cutShown);
-        ShowPile(rawMesh, 0, chain.Raw / buffer, ref rawShown);
-        ShowPile(stockMesh, stockBaseIndices, chain.Stock / size, ref stockShown);
+        double buffer = chain.BufferSize(game.Rate(IdleEconomy.SerreStation));
+        ShowPile(cutMesh, cutFull, 0, chain.Cut / buffer, ref cutShown);
+        ShowPile(rawMesh, rawFull, 0, chain.Raw / buffer, ref rawShown);
 
         labelTimer -= Time.unscaledDeltaTime;
-        if (labelTimer > 0f) return;
-        labelTimer = labelEvery;
-        int number = (int)chain.Stock, total = (int)size;
-        if (number == stockNumber && total == stockSize) return;
-        stockNumber = number; stockSize = total;
-        stockText.text = Loc.T("chain.stock", NumberFormat.Short(number), NumberFormat.Short(total));
+        bool labels = labelTimer <= 0f;
+        if (labels) labelTimer = labelEvery;
+        for (int i = 0; i < stocks.Length; i++) UpdateStock(game, i, labels);
+        for (int i = 0; i < carts.Length; i++) UpdateCart(game, i);
+    }
+
+    void UpdateStock(IdleGame game, int index, bool labels)
+    {
+        int station = index + 1;
+        bool open = game.Stations[station].unlocked;
+        if (stocks[index].activeSelf != open) stocks[index].SetActive(open);
+        if (!open) return;
+        double amount = game.Chain.Stock[station], size = game.Chain.StockSize(game.Rate(station));
+        ShowPile(stockMeshes[index], stockFull[index], stockBaseIndices, amount / size, ref stockShown[index]);
+        if (!labels) return;
+        int number = (int)amount, total = (int)size;
+        if (number == stockNumber[index] && total == stockTotal[index]) return;
+        stockNumber[index] = number; stockTotal[index] = total;
+        stockTexts[index].text = Loc.T("chain.stock", NumberFormat.Short(number), NumberFormat.Short(total));
+    }
+
+    void UpdateCart(IdleGame game, int index)
+    {
+        int station = index + 1;
+        bool on = station + 1 < game.Stations.Count && game.Stations[station + 1].unlocked;
+        if (carts[index].gameObject.activeSelf != on) carts[index].gameObject.SetActive(on);
+        if (!on) return;
+        IdleChain.Carrier carrier = game.Chain.Carriers[station];
+        float phase = (float)carrier.Phase;
+        float way = Mathf.SmoothStep(0f, 1f, phase <= 0.5f ? phase * 2f : (1f - phase) * 2f);
+        carts[index].position = Vector3.Lerp(cartFrom[index], cartTo[index], way);
+        bool loaded = carrier.Load > 0;
+        if (cartLoads[index].activeSelf != loaded) cartLoads[index].SetActive(loaded);
     }
 
     void UpdateCrystals(float dt, bool cutting, float frequency)
@@ -156,11 +197,12 @@ public class IdleChainView : MonoBehaviour
         if (drone.gameObject.activeSelf != hired) drone.gameObject.SetActive(hired);
         if (!hired) return;
         Grow(drone, 2, dt);
-        float phase = (float)chain.DronePhase;
+        IdleChain.Carrier carrier = chain.Carriers[0];
+        float phase = (float)carrier.Phase;
         float way = Mathf.SmoothStep(0f, 1f, phase <= 0.5f ? phase * 2f : (1f - phase) * 2f);
         float bob = MotionSettings.ReduceMotion ? 0f : droneBob * Mathf.Sin(time * 5f);
         drone.position = Vector3.Lerp(droneFrom, droneTo, way) + Vector3.up * (droneArc * Mathf.Sin(way * Mathf.PI) + bob);
-        bool loaded = chain.Load > 0;
+        bool loaded = carrier.Load > 0;
         if (droneLoad.activeSelf != loaded) droneLoad.SetActive(loaded);
     }
 
@@ -172,9 +214,9 @@ public class IdleChainView : MonoBehaviour
     }
 
     // Un tas montre une part de ses cubes selon son remplissage.
-    void ShowPile(Mesh mesh, int baseIndices, double fill, ref int shown)
+    void ShowPile(Mesh mesh, int fullIndices, int baseIndices, double fill, ref int shown)
     {
-        int cubes = (fullCount[mesh == cutMesh ? 0 : mesh == rawMesh ? 1 : 2] - baseIndices) / cubeIndices;
+        int cubes = (fullIndices - baseIndices) / cubeIndices;
         int count = Mathf.Clamp(Mathf.CeilToInt((float)fill * cubes), 0, cubes);
         if (count == shown) return;
         shown = count;

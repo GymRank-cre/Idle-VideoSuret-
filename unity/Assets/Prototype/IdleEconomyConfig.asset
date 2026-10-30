@@ -18,36 +18,53 @@ MonoBehaviour:
     cycle: 1.6
     value: 1
     unlockPayback: 0
+    slots: 1
   - id: assem
     nameKey: station.assem
     cycle: 3
     value: 12
     unlockPayback: 0
+    slots: 3
+  - id: prog
+    nameKey: station.prog
+    cycle: 3.75
+    value: 144
+    unlockPayback: 5000
+    slots: 3
   - id: test
     nameKey: station.test
     cycle: 4.5
-    value: 144
-    unlockPayback: 45000
+    value: 1728
+    unlockPayback: 10000
+    slots: 3
   - id: pack
     nameKey: station.pack
     cycle: 6
-    value: 1728
-    unlockPayback: 120000
+    value: 20736
+    unlockPayback: 30000
+    slots: 3
   - id: ship
     nameKey: station.ship
     cycle: 8
-    value: 20736
-    unlockPayback: 800000
+    value: 248832
+    unlockPayback: 100000
+    slots: 1
   hirePrices:
   - 25
   - 30
   - 45
   chainBufferSeconds: 8
   chainBufferMin: 6
+  chainOutputSeconds: 6
   chainStockSeconds: 30
   chainStockMin: 30
   droneTrip: 2
-  droneMinLoad: 1
+  cartTrip: 5
+  carrierMinLoad: 1
+  slotPayback:
+  - 400000
+  - 3000000
+  slotStep: 2
   speedStep: 0.12
   growthSpeed: 1.19
   growthAdd: 1.26

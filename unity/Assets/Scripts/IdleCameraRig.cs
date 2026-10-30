@@ -134,7 +134,7 @@ public class IdleCameraRig : MonoBehaviour
     // La loupe : vue d'ensemble, puis retour au cadrage par défaut.
     public void ToggleOverview()
     {
-        if (targetZoom > 1.2f) FrameAll(false);
+        if (targetZoom > IdleFraming.MinZoom * 1.2f) FrameAll(false);
         else FrameDefault(false);
     }
 

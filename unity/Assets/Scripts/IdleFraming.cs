@@ -4,9 +4,9 @@ using UnityEngine;
 // x et y étant le plan du web. Calculs purs, testés ; c'est IdleCameraRig qui les applique.
 public static class IdleFraming
 {
-    public const float MinZoom = 1f, MaxZoom = 3f, DefaultMaxZoom = 2.6f, StationZoom = 2f;
+    public const float MinZoom = 0.55f, MaxZoom = 3f, DefaultMaxZoom = 2.6f, StationZoom = 2f;   // 0,55 : toute l'usine ; 1 : une rangée de machines
     public const float EdgeShare = 12f / 390f;   // au cadrage par défaut, rien à moins de 12 px du bord d'un écran de 390
-    const float MinA = -6.2f, MaxA = 6.6f, MinB = 2.2f, MaxB = 13.4f;
+    const float MinA = -13.5f, MaxA = 10f, MinB = 2.2f, MaxB = 25f;
     const float Margin = 1.8f, DownShift = 0.5f, StationDownShift = 1.3f;
     const float WidthShare = 0.94f, HeightShare = 0.56f, MachineHeight = 1f;
     static readonly float Root2 = Mathf.Sqrt(2f);
@@ -41,9 +41,9 @@ public static class IdleFraming
         return new View { focus = new Vector2(cx - cy, cx + cy + StationDownShift), zoom = Mathf.Max(currentZoom, StationZoom), viewportX = 0.5f };
     }
 
-    // Les postes ouverts, le prochain à débloquer et leurs plaques, dans la zone libre : la colonne de boutons de droite (`rightColumn`, en part de la largeur)
-    // Pendant les recrutements, la serre et le stock seulement : la caméra recule quand la chaîne démarre.
-    // est exclue, et le cadre se décale vers la gauche tant qu'il y a la place. `visibleWidth` et `visibleHeight` : ce que voit la caméra au zoom 1, en mètres.
+    // Ce qu'on regarde : la dernière rangée ouverte, ses machines, son stock, ses plaques et la plaque de ce qui vient après ; au début, la serre et la première machine.
+    // Le cadre tient dans la zone libre : la colonne de boutons de droite (`rightColumn`, en part de la largeur) est exclue, et il se décale vers la gauche tant qu'il y a la place.
+    // `visibleWidth` et `visibleHeight` : ce que voit la caméra au zoom 1, en mètres.
     public static View Default(IdleGame game, float visibleWidth, float visibleHeight, float pitch, float rightColumn)
     {
         float minA = float.MaxValue, maxA = float.MinValue, minB = float.MaxValue, maxB = float.MinValue;
@@ -53,25 +53,30 @@ public static class IdleFraming
             minA = Mathf.Min(minA, a); maxA = Mathf.Max(maxA, a);
             minB = Mathf.Min(minB, b); maxB = Mathf.Max(maxB, b);
         }
-
-        for (int i = 0; i < game.Stations.Count; i++)
+        void AddMachine(int station, int slot)
         {
-            IdleGame.PlateState state = game.PlateStateOf(i);
-            if (state == IdleGame.PlateState.Hidden || (!game.CrewReady && i != IdleEconomy.SerreStation)) continue;
-            Vector2 corner = IdleLayout.Stations[i];
+            Vector2 corner = IdleLayout.Slots[station][slot];
             float size = IdleLayout.StationSize;
             Add(corner); Add(corner + new Vector2(size, size)); Add(corner + new Vector2(size, 0f)); Add(corner + new Vector2(0f, size));
-            if (!game.CrewReady)
-            {
-                foreach (Vector2 pad in IdleLayout.PadHire) Add(pad);
-                Add(IdleLayout.Stock);
-            }
-            else if (state == IdleGame.PlateState.Open)
-            {
-                Add(IdleLayout.PadPosition(i, IdleGame.PadKind.Speed));
-                Add(IdleLayout.PadPosition(i, IdleGame.PadKind.Add));
-            }
-            else Add(IdleLayout.PadPosition(i, IdleGame.PadKind.Unlock));
+        }
+
+        int last = IdleEconomy.SerreStation;
+        for (int i = 0; i < game.Stations.Count; i++) if (game.Stations[i].unlocked) last = i;
+
+        if (last <= 1)
+        {
+            AddMachine(IdleEconomy.SerreStation, 0);
+            if (game.CrewReady) { Add(IdleLayout.PadSpeed[0]); Add(IdleLayout.PadAdd[0]); }
+            else foreach (Vector2 pad in IdleLayout.PadHire) Add(pad);
+        }
+        for (int k = 0; k < game.Stations[last].slots; k++) AddMachine(last, k);
+        Add(IdleLayout.Stocks[last]);
+        if (game.CrewReady)
+        {
+            Add(IdleLayout.PadSpeed[last]);
+            Add(IdleLayout.PadAdd[last]);
+            int next = game.NextLockedStation();
+            if (next >= 0) Add(IdleLayout.PadPosition(next, IdleGame.PadKind.Unlock));
         }
 
         float needWidth = (maxA - minA + Margin) / Root2;

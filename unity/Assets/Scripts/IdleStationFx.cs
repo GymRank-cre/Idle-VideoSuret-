@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Particules des postes (UW-4) : un seul système, donc un seul matériau et un seul appel de dessin, 150 particules vivantes au plus, aucune allocation.
-// Chaque poste a son effet à un moment de son cycle : éclats de cristal (Serre), étincelles (Assemblage), anneau vert (Test), carton (Emballage), fumée (Expédition).
+// Chaque poste a son effet à un moment de son cycle : éclats de cristal (Serre), étincelles (Assemblage), points bleus (Programmation), anneau vert (Test), carton (Emballage), fumée (Expédition).
 public class IdleStationFx : MonoBehaviour
 {
     public const int MaxParticles = 150;
@@ -9,7 +9,7 @@ public class IdleStationFx : MonoBehaviour
     [SerializeField] ParticleSystem system;
 
     static readonly Color Crystal = new Color32(0x7F, 0xE3, 0xFF, 0xE6), Spark = new Color32(0xFF, 0xD2, 0x3C, 0xFF), SparkHot = new Color32(0xFF, 0x8A, 0x2E, 0xFF);
-    static readonly Color Scan = new Color32(0x3D, 0xDC, 0x5A, 0xE6), Card = new Color32(0xD9, 0xA2, 0x5B, 0xFF), CardLight = new Color32(0xF2, 0xD6, 0xA8, 0xFF);
+    static readonly Color Code = new Color32(0x27, 0xD3, 0xE6, 0xE6), Scan = new Color32(0x3D, 0xDC, 0x5A, 0xE6), Card = new Color32(0xD9, 0xA2, 0x5B, 0xFF), CardLight = new Color32(0xF2, 0xD6, 0xA8, 0xFF);
     static readonly Color Smoke = new Color32(0x8A, 0x93, 0x9E, 0xB3), PadGlow = new Color32(0x8C, 0xFF, 0x9E, 0xE6);
 
     void Awake()
@@ -48,8 +48,9 @@ public class IdleStationFx : MonoBehaviour
         {
             case 0: Puffs(center + new Vector3(-0.3f, 0.45f, 0f), Crystal, 4, 0.9f, 0.2f, 0.5f); break;
             case 1: Sparks(center + new Vector3(0.1f, 0.85f, 0.25f)); break;
-            case 2: Ring(center + new Vector3(0f, 0.25f, 0f), 0.75f, 1.1f, Scan, 12); break;
-            case 3: Cardboard(center + new Vector3(0.65f, 0.75f, 0f)); break;
+            case 2: Ring(center + new Vector3(0f, 0.7f, 0f), 0.35f, 0.8f, Code, 8); break;
+            case 3: Ring(center + new Vector3(0f, 0.25f, 0f), 0.75f, 1.1f, Scan, 12); break;
+            case 4: Cardboard(center + new Vector3(0.65f, 0.75f, 0f)); break;
             default: Puffs(center + new Vector3(-0.45f, 0.2f, 0.35f), Smoke, 5, 0.6f, 0.58f, 0.9f); break;
         }
     }

@@ -1,76 +1,112 @@
 using System;
 
-// La matière qui circule au début de la chaîne : le robot découpeur coupe les cristaux, le robot graveur les change en puces, le drone les porte au stock
-// et l'Assemblage vide ce stock. Chaque étape attend la précédente et s'arrête quand la suivante est pleine : c'est ce qui rend un goulot visible.
+// La matière qui circule dans toute la chaîne : le robot découpeur coupe les cristaux, le robot graveur les change en puces, le drone les porte au premier stock ;
+// chaque poste vide son stock, et un chariot porte ce qui en sort au stock du poste suivant. Chaque étape attend la précédente. Ce qui ne trouve plus de place devant
+// le poste suivant est vendu au prix du poste : un goulot ne bloque pas l'usine, il coûte de l'argent, et ça se voit. Le dernier poste ouvert vend tout.
 // Sans Unity (testable en simulation). Les quantités sont décimales : les débits dépassent vite 100 pièces par seconde.
 public class IdleChain
 {
-    const double MaxStep = 0.25;   // un long pas de temps est découpé : le drone ne saute jamais un aller-retour
+    const double MaxStep = 0.25;   // un long pas de temps est découpé : un porteur ne saute jamais un aller-retour
+
+    // Le drone (indice 0) ou un chariot : il prend ce qu'il peut, fait l'aller, dépose, revient.
+    public class Carrier
+    {
+        public double Load, Phase;   // Phase : 0 = à l'arrêt au départ ; de 0 à 0,5 : aller ; de 0,5 à 1 : retour
+    }
 
     readonly IdleEconomyConfig cfg;
+    readonly int count;
 
-    public double Cut, Raw, Stock, Load;        // cristaux coupés, puces gravées, puces en stock, puces sur le drone
-    public double DronePhase;                   // 0 = posé ; de 0 à 0,5 : aller ; de 0,5 à 1 : retour
-    public bool Cutting, Etching, Assembling;   // ce qui a tourné au dernier pas de temps
+    public double Cut, Raw;              // cristaux coupés, puces gravées
+    public readonly double[] Stock;      // pièces qui attendent devant chaque poste
+    public readonly double[] Output;     // pièces sorties de chaque poste, que le chariot n'a pas encore prises
+    public readonly double[] Sold;       // pièces vendues à chaque poste pendant le dernier Step
+    public readonly Carrier[] Carriers;  // [i] porte ce qui sort du poste i
+    public readonly bool[] Working;      // ce qui a tourné au dernier pas de temps
+    public bool Etching;
 
     public IdleChain(IdleEconomyConfig config)
     {
         cfg = config;
+        count = config.stations.Length;
+        Stock = new double[count];
+        Output = new double[count];
+        Sold = new double[count];
+        Working = new bool[count];
+        Carriers = new Carrier[count];
+        for (int i = 0; i < count; i++) Carriers[i] = new Carrier();
     }
 
     public void Reset()
     {
-        Cut = Raw = Stock = Load = DronePhase = 0;
-        Cutting = Etching = Assembling = false;
+        Cut = Raw = 0;
+        Etching = false;
+        for (int i = 0; i < count; i++)
+        {
+            Stock[i] = Output[i] = Sold[i] = 0;
+            Carriers[i].Load = Carriers[i].Phase = 0;
+            Working[i] = false;
+        }
     }
 
     // Tas entre deux robots : quelques secondes de production.
     public double BufferSize(double rateIn) { return Math.Max(cfg.chainBufferMin, rateIn * cfg.chainBufferSeconds); }
 
-    public double StockSize(double rateIn, double rateOut) { return Math.Max(cfg.chainStockMin, Math.Max(rateIn, rateOut) * cfg.chainStockSeconds); }
+    // Sortie d'un poste : peu de place, pour que le surplus se vende tout de suite.
+    public double OutputSize(double rate) { return Math.Max(cfg.chainBufferMin, rate * cfg.chainOutputSeconds); }
 
-    // Avance de `dt` secondes avec `crew` robots recrutés, dans l'ordre ; renvoie le nombre de pièces sorties de l'Assemblage.
-    public double Step(double dt, int crew, double rateIn, double rateOut)
+    // Stock devant un poste : il garde quelques secondes de ce que ce poste consomme.
+    public double StockSize(double rate) { return Math.Max(cfg.chainStockMin, rate * cfg.chainStockSeconds); }
+
+    // Avance de `dt` secondes : `crew` robots recrutés, `rates` le débit de chaque poste, `open` le nombre de postes ouverts depuis le début de la chaîne. `Sold` dit ce qui a été vendu.
+    public void Step(double dt, int crew, double[] rates, int open)
     {
-        double made = 0;
+        for (int i = 0; i < count; i++) Sold[i] = 0;
         int steps = Math.Max(1, (int)Math.Ceiling(dt / MaxStep));
-        for (int i = 0; i < steps; i++) made += Advance(dt / steps, crew, rateIn, rateOut);
-        return made;
+        for (int i = 0; i < steps; i++) Advance(dt / steps, crew, rates, open);
     }
 
-    double Advance(double dt, int crew, double rateIn, double rateOut)
+    void Advance(double dt, int crew, double[] rates, int open)
     {
-        double buffer = BufferSize(rateIn);
+        double buffer = BufferSize(rates[0]);
 
-        double cut = crew >= 1 ? Math.Min(rateIn * dt, Math.Max(0, buffer - Cut)) : 0;
+        double cut = crew >= 1 ? Math.Min(rates[0] * dt, Math.Max(0, buffer - Cut)) : 0;
         Cut += cut;
-        Cutting = cut > 0;
+        Working[0] = cut > 0;
 
-        double etched = crew >= 2 ? Math.Min(Math.Min(rateIn * dt, Cut), Math.Max(0, buffer - Raw)) : 0;
+        double etched = crew >= 2 ? Math.Min(Math.Min(rates[0] * dt, Cut), Math.Max(0, buffer - Raw)) : 0;
         Cut -= etched;
         Raw += etched;
         Etching = etched > 0;
 
-        if (crew >= 3) Fly(dt, StockSize(rateIn, rateOut));
+        if (crew >= 3 && open > 1) Carry(Carriers[0], ref Raw, ref Stock[1], StockSize(rates[1]), dt, cfg.droneTrip);
 
-        double made = Math.Min(rateOut * dt, Stock);
-        Stock -= made;
-        Assembling = made > 0;
-        return made;
+        for (int i = 1; i < open; i++)
+        {
+            double made = Math.Min(rates[i] * dt, Stock[i]);
+            Stock[i] -= made;
+            Working[i] = made > 0;
+            if (i + 1 >= open) { Sold[i] += made; continue; }
+
+            Output[i] += made;
+            double size = OutputSize(rates[i]);
+            if (Output[i] > size) { Sold[i] += Output[i] - size; Output[i] = size; }
+            Carry(Carriers[i], ref Output[i], ref Stock[i + 1], StockSize(rates[i + 1]), dt, cfg.cartTrip);
+        }
     }
 
-    void Fly(double dt, double stockSize)
+    void Carry(Carrier c, ref double from, ref double to, double size, double dt, double trip)
     {
-        if (DronePhase <= 0)
+        if (c.Phase <= 0)
         {
-            double take = Math.Min(Raw, stockSize - Stock);
-            if (take < cfg.droneMinLoad) return;
-            Raw -= take;
-            Load = take;
+            double take = Math.Min(from, size - to);
+            if (take < cfg.carrierMinLoad) return;
+            from -= take;
+            c.Load = take;
         }
-        double before = DronePhase;
-        DronePhase += dt / cfg.droneTrip;
-        if (before < 0.5 && DronePhase >= 0.5) { Stock += Load; Load = 0; }
-        if (DronePhase >= 1) DronePhase = 0;
+        double before = c.Phase;
+        c.Phase += dt / trip;
+        if (before < 0.5 && c.Phase >= 0.5) { to += c.Load; c.Load = 0; }
+        if (c.Phase >= 1) c.Phase = 0;
     }
 }

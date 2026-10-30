@@ -18,19 +18,31 @@ public class IdleUnlockShow : MonoBehaviour
     {
         subscribed = IdleHost.Instance.Game;
         subscribed.OnUnlocked += Unlocked;
+        subscribed.OnSlotBought += SlotBought;
         beam.gameObject.SetActive(false);
     }
 
     void OnDestroy()
     {
-        if (subscribed != null) subscribed.OnUnlocked -= Unlocked;
+        if (subscribed == null) return;
+        subscribed.OnUnlocked -= Unlocked;
+        subscribed.OnSlotBought -= SlotBought;
     }
 
     void Unlocked(int station)
     {
+        Show(stations[station].transform.position);
+    }
+
+    void SlotBought(int station)
+    {
+        Show(IdleLayout.SlotCenter(station, subscribed.Stations[station].slots - 1));
+    }
+
+    void Show(Vector3 position)
+    {
         cameraRig.FrameDefault(MotionSettings.ReduceMotion);
         if (MotionSettings.ReduceMotion) return;
-        Vector3 position = stations[station].transform.position;
         feedback.DustRing(position);
         beam.position = position;
         beam.gameObject.SetActive(true);

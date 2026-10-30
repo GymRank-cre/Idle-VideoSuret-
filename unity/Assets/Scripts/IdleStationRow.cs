@@ -84,7 +84,8 @@ public class IdleStationRow : MonoBehaviour
     void RefreshOpen(IdleGame game, IdleEconomy.Option best, bool hasBest)
     {
         IdleEconomy.StationLevels st = game.Stations[station];
-        incomeText.text = station == IdleEconomy.SerreStation ? Loc.T("drawer.chips", NumberFormat.Gain(game.Eco.ItemsPerSecond(station, st, game.Globals))) : NumberFormat.Rate(game.StationIncome(station) * game.BoostMultiplier);
+        string rate = NumberFormat.Gain(game.Flow(station));
+        incomeText.text = station == game.Bottleneck ? Loc.T("drawer.bottleneck", rate) : Loc.T(station == IdleEconomy.SerreStation ? "drawer.chips" : "drawer.pieces", rate);
         int level = st.speed + st.add;
         if (level != shownLevel)
         {

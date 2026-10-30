@@ -1,11 +1,13 @@
 using UnityEngine;
 
-// Ombres de contact (UW-1) : toutes dans UN maillage, donc un seul appel de dessin. Chaque groupe (0 = toujours visible, décor ; 1 à 5 = poste i-1 ouvert)
-// occupe une plage de triangles ; on ne redessine la liste qu'à l'ouverture d'un poste, jamais à chaque image.
+// Ombres de contact (UW-1) : toutes dans UN maillage, donc un seul appel de dessin. Le groupe 0 est toujours visible (décor) ; chaque autre groupe suit une machine
+// (poste et emplacement) et occupe une plage de triangles ; on ne redessine la liste que lorsqu'une machine arrive, jamais à chaque image.
 public class IdleContactShadows : MonoBehaviour
 {
     [SerializeField] MeshFilter target;
     [SerializeField] int[] groupStart;    // premier indice de triangle de chaque groupe ; la dernière valeur = nombre total d'indices
+    [SerializeField] int[] groupStation;  // poste de chaque groupe (le groupe 0 n'en a pas : -1)
+    [SerializeField] int[] groupSlot;     // emplacement de chaque groupe
 
     int[] allTriangles;
     bool[] shown;
@@ -17,32 +19,30 @@ public class IdleContactShadows : MonoBehaviour
         target.mesh = Instantiate(target.sharedMesh);   // copie propre à cette partie : la scène garde le maillage complet
         shown = new bool[groupStart.Length - 1];
         subscribed = IdleHost.Instance.Game;
-        subscribed.OnUnlocked += Unlocked;
         Rebuild();
     }
 
-    void OnDestroy()
+    bool Wanted(int group)
     {
-        if (subscribed != null) subscribed.OnUnlocked -= Unlocked;
+        int station = groupStation[group];
+        if (station < 0) return true;
+        IdleEconomy.StationLevels st = subscribed.Stations[station];
+        return st.unlocked && st.slots > groupSlot[group];
     }
-
-    void Unlocked(int station) { Rebuild(); }
 
     void Update()
     {
         // une partie neuve ou rechargée change les postes sans événement : on vérifie sans rien allouer
-        IdleGame game = subscribed;
         for (int i = 1; i < shown.Length; i++)
-            if (shown[i] != game.Stations[i - 1].unlocked) { Rebuild(); return; }
+            if (shown[i] != Wanted(i)) { Rebuild(); return; }
     }
 
     void Rebuild()
     {
-        IdleGame game = subscribed;
         int count = 0;
         for (int i = 0; i < shown.Length; i++)
         {
-            shown[i] = i == 0 || game.Stations[i - 1].unlocked;
+            shown[i] = Wanted(i);
             if (shown[i]) count += groupStart[i + 1] - groupStart[i];
         }
         var visible = new int[count];

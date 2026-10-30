@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Les 4 tapis de la scène idle (U2b) : un tapis apparaît quand le poste qu'il alimente est ouvert ; ses chevrons défilent et ses caisses
+// Les tapis de la scène idle (U2b), un par rangée de machines : un tapis apparaît quand le poste qu'il alimente est ouvert ; ses chevrons défilent et ses caisses
 // avancent le long de son tracé (`IdleLayout.Belts`). Visuel seulement : aucune logique de production ici.
 public class IdleBeltView : MonoBehaviour
 {
@@ -43,6 +43,7 @@ public class IdleBeltView : MonoBehaviour
             var list = new System.Collections.Generic.List<Transform>();
             foreach (Transform c in belts[i]) if (c.name.StartsWith("Item")) list.Add(c);
             items[i] = list.ToArray();
+            visibleItems[i] = -1;
             belts[i].gameObject.SetActive(false);
         }
     }
@@ -71,7 +72,7 @@ public class IdleBeltView : MonoBehaviour
             }
 
             // caisses : régulièrement espacées, elles avancent en boucle
-            int n = i == 0 && game.Chain.Stock < 1 ? 0 : game.BeltItemCount(i, items[i].Length);   // stock vide : plus rien sur le premier tapis
+            int n = game.Chain.Stock[i + 1] < 1 ? 0 : game.BeltItemCount(i, items[i].Length);   // stock vide : plus rien sur le tapis
             if (n != visibleItems[i])
             {
                 visibleItems[i] = n;

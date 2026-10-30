@@ -67,9 +67,7 @@ public static class IdleWindowsBuilder
         so.FindProperty("chips").objectReferenceValue = chips;
         so.FindProperty("chipOrigin").objectReferenceValue = strip;
         so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
-        var views = new IdleStationView[5];
-        foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
-            views[new SerializedObject(v).FindProperty("station").intValue] = v;
+        IdleStationView[] views = IdleSceneBuilder.FirstSlots();
         SerializedProperty stations = so.FindProperty("stations");
         stations.arraySize = views.Length;
         for (int i = 0; i < views.Length; i++) stations.GetArrayElementAtIndex(i).objectReferenceValue = views[i];

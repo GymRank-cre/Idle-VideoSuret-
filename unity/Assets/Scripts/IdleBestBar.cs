@@ -29,7 +29,8 @@ public class IdleBestBar : MonoBehaviour
         IdleEconomy.Option o = game.Advice(out found, out hasGoal, out goal);
         if (!found) return;
         int where = o.kind == IdleEconomy.Kind.Hire ? IdleEconomy.SerreStation : o.station;
-        if (!rig.IsOnScreen(IdleLayout.StationCenter(where))) rig.FrameStation(where);   // on montre ce qu'on vient d'acheter
+        Vector3 at = o.kind == IdleEconomy.Kind.Slot ? IdleLayout.SlotCenter(o.station, game.Stations[o.station].slots) : IdleLayout.StationCenter(where);
+        if (!rig.IsOnScreen(at)) rig.FrameStation(where);   // on montre ce qu'on vient d'acheter
         IdleGame.PurchaseResult result = game.BuyAdvised();
         IdlePurchaseSound.Play(result, o.kind != IdleEconomy.Kind.Upgrade);
         if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(buyButton.transform.position, IdleEconomy.Ceil(o.cost));
@@ -54,6 +55,7 @@ public class IdleBestBar : MonoBehaviour
         {
             string name = Loc.T(cfg.stations[o.station].nameKey);
             if (o.kind == IdleEconomy.Kind.Unlock) SetTitle(Loc.T("drawer.best.unlock", name), null);
+            else if (o.kind == IdleEconomy.Kind.Slot) SetTitle(Loc.T("drawer.best.slot", name, game.Stations[o.station].slots + 1), null);
             else
             {
                 IdleEconomy.StationLevels st = game.Stations[o.station];
@@ -91,7 +93,7 @@ public class IdleBestBar : MonoBehaviour
     static string GoalName(IdleEconomyConfig cfg, IdleEconomy.Option goal)
     {
         string name = Loc.T(cfg.stations[goal.station].nameKey);
-        if (goal.kind == IdleEconomy.Kind.Unlock) return name;
+        if (goal.kind != IdleEconomy.Kind.Upgrade) return name;
         return Loc.T(goal.speedAxis ? "drawer.goal.speed" : "drawer.goal.add", name);
     }
 }

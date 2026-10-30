@@ -16,8 +16,8 @@ public static class IdleDockBuilder
     static readonly Color LockTile = new Color32(0x9A, 0xA6, 0xB3, 0xFF), FarTile = new Color32(0xB8, 0xBF, 0xC8, 0xFF);
 
     // couleur et icône de la tuile de chaque poste
-    static readonly Color[] Tiles = { new Color32(0xC9, 0x8B, 0x4A, 0xFF), new Color32(0xFF, 0x9A, 0x45, 0xFF), new Color32(0x1F, 0xA0, 0xFF, 0xFF), new Color32(0xE5, 0xB9, 0x6B, 0xFF), new Color32(0x7E, 0xC8, 0xFF, 0xFF) };
-    static readonly string[] TileIcons = { "caisse", "camera", "bouclier", "caisse", "camionnette" };
+    static readonly Color[] Tiles = { new Color32(0xC9, 0x8B, 0x4A, 0xFF), new Color32(0xFF, 0x9A, 0x45, 0xFF), new Color32(0x16, 0xA5, 0xB8, 0xFF), new Color32(0x1F, 0xA0, 0xFF, 0xFF), new Color32(0xE5, 0xB9, 0x6B, 0xFF), new Color32(0x7E, 0xC8, 0xFF, 0xFF) };
+    static readonly string[] TileIcons = { "caisse", "camera", "eclair", "bouclier", "caisse", "camionnette" };
 
     public static IdleDock Build(Transform canvas)
     {
@@ -199,16 +199,14 @@ public static class IdleDockBuilder
 
     // ------------------------------------------------------------------ liste des postes
 
-    public const float RowsHeight = FirstRow + 5 * RowPitch + 6f;
+    public const float RowsHeight = FirstRow + 6 * RowPitch + 6f;
 
     // Une ligne par poste, dans la feuille « Postes ».
     public static IdleStationRow[] BuildRows(RectTransform content)
     {
         var cfg = AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>(ConfigPath);
         int count = cfg.stations.Length;
-        var views = new IdleStationView[count];
-        foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
-            views[new SerializedObject(v).FindProperty("station").intValue] = v;
+        IdleStationView[] views = IdleSceneBuilder.FirstSlots();
         var rows = new IdleStationRow[count];
         for (int i = 0; i < count; i++) rows[i] = BuildRow(content, cfg, i, views[i]);
         return rows;

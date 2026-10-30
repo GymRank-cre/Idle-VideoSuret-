@@ -22,6 +22,7 @@ public interface IMachineAnim
 public class IdleStationView : MonoBehaviour
 {
     [SerializeField] int station;
+    [SerializeField] int slot;                      // les emplacements suivants n'ont ni fantôme, ni texte, ni particules : seul le premier parle pour le poste
     [SerializeField] GameObject ghost;
     [SerializeField] Renderer ghostBody;
     [SerializeField] Material ghostNext;
@@ -49,6 +50,7 @@ public class IdleStationView : MonoBehaviour
     IdleGame subscribed;
 
     public int Station => station;
+    public int Slot => slot;
     public float Phase => phase;
     public float Appear => appear;
 
@@ -81,7 +83,7 @@ public class IdleStationView : MonoBehaviour
 
     void BigGain()
     {
-        if (MotionSettings.ReduceMotion) return;
+        if (MotionSettings.ReduceMotion || slot > 0) return;
         if (feedback != null) feedback.Confetti(transform.position);
         if (IdleBills.Instance != null) IdleBills.Instance.Send(transform.position + Vector3.up * 0.8f, bigLot);
     }
@@ -92,8 +94,8 @@ public class IdleStationView : MonoBehaviour
         if (host == null || host.Game == null) return;
         IdleGame game = host.Game;
         Subscribe(game);
-        bool open = game.Stations[station].unlocked;
-        bool next = !open && game.PlateStateOf(station) == IdleGame.PlateState.Unlock;
+        bool open = game.Stations[station].unlocked && game.Stations[station].slots > slot;
+        bool next = !open && slot == 0 && game.PlateStateOf(station) == IdleGame.PlateState.Unlock;
 
         if (!known || open != wasOpen)
         {
@@ -117,7 +119,7 @@ public class IdleStationView : MonoBehaviour
         float dt = Time.deltaTime;
         float before = phase;
         if (game.StationWorking(station)) phase += dt * game.VisualFrequency(station);
-        bool earns = station != IdleEconomy.SerreStation;   // la serre ne vend rien : l'argent arrive à la sortie de l'Assemblage
+        bool earns = slot == 0 && game.StationIncome(station) > 0;   // seul ce qui se vend à ce poste se montre ici
         if (earns && feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
             feedback.StationGain(station, transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
         sinceLot += dt;

@@ -78,52 +78,66 @@ public static class UnitTests
         void Ready(IdleGame g) { g.Crew = cfg.hirePrices.Length; g.Recalc(); }   // équipe complète, sans passer par les recrutements
         var eco = new IdleEconomy(cfg);
         var g0 = eco.GlobalsFor(new int[cfg.reputation.Length]);
-        Eq("5", cfg.stations.Length.ToString(), "5 postes");
-        Eq("1,12,144,1728,20736", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.value))), "valeurs des postes");
-        Eq("1.6,3,4.5,6,8", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.cycle))), "cycles des postes");
+        Eq("6", cfg.stations.Length.ToString(), "6 postes");
+        Eq("6 6", IdleLayout.Slots.Length + " " + IdleLayout.Stocks.Length, "le plan de l'usine a un emplacement et un stock pour chaque poste");
+        Eq("1 3 3 3 3 1", string.Join(" ", System.Array.ConvertAll(cfg.stations, s => s.slots.ToString())), "4 machines en 3 exemplaires, entre la serre et l'Expédition");
+        for (int st3 = 0; st3 < IdleLayout.Slots.Length; st3++) Eq(cfg.stations[st3].slots.ToString(), IdleLayout.Slots[st3].Length.ToString(), "emplacements sur le plan du poste " + st3);
+        Eq("1,12,144,1728,20736,248832", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.value))), "valeurs des postes");
+        Eq("1.6,3,3.75,4.5,6,8", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.cycle))), "cycles des postes");
         Eq("True", (cfg.stations[0].unlockPayback == 0 && cfg.stations[1].unlockPayback == 0 && cfg.stations[2].unlockPayback > 0).ToString(), "la serre et l'Assemblage sont ouverts d'emblée, le reste a un prix");
         Eq("1 1 1 4 1 60 240", F(g0.revenue) + " " + F(g0.speed) + " " + F(g0.cost) + " " + F(g0.offlineHours) + " " + g0.slots + " " + F(g0.turboLength) + " " + F(g0.turboCooldown), "bonus à zéro");
 
         var s0 = new IdleEconomy.StationLevels { unlocked = true };
         Eq("0.625", F(eco.ItemsPerSecond(0, s0, g0)), "débit du 1er poste au niveau 0 (1 / 1,6 s)");
-        Eq("0.625", F(eco.Income(0, s0, g0)), "revenu du 1er poste au niveau 0");
-        Eq("0", F(eco.Income(0, new IdleEconomy.StationLevels(), g0)), "poste verrouillé : aucun revenu");
         Eq("1", F(eco.ItemsPerSecond(0, new IdleEconomy.StationLevels { unlocked = true, speed = 5 }, g0)), "vitesse niv 5 : +60 %");
         Eq("1.25", F(eco.ItemsPerSecond(0, new IdleEconomy.StationLevels { unlocked = true, add = 1 }, g0)), "ajouter niv 1 : x2 pièces");
         Eq("0,0,1,1,2", F(eco.MilestoneCount(9), "0") + "," + F(eco.MilestoneCount(0), "0") + "," + F(eco.MilestoneCount(10), "0") + "," + F(eco.MilestoneCount(24), "0") + "," + F(eco.MilestoneCount(25), "0"), "paliers x2 (10, 25...)");
-        Eq("2", F(eco.MoneyPerItem(0, new IdleEconomy.StationLevels { unlocked = true, speed = 6, add = 4 }, g0)), "palier 10 : la pièce vaut x2");
+        Eq("10.75", F(eco.ItemsPerSecond(0, new IdleEconomy.StationLevels { unlocked = true, speed = 6, add = 4 }, g0)), "palier 10 : le débit double (5 x 1,72 x 2 / 1,6)");
         Eq("25", eco.NextMilestone(10).ToString(), "palier suivant");
         Eq("10", F(eco.BulkCost(true, 0, 0, 1, g0)), "vitesse 1er poste : base max(10, revenu0 x 12)");
         Eq("7", F(eco.BulkCost(false, 0, 0, 1, g0)), "ajout 1er poste : base max(7, revenu0 x 6)");
         Eq("22", IdleEconomy.Ceil(eco.BulkCost(true, 0, 0, 2, g0)).ToString(), "2 niveaux de vitesse : 10 + 11,9 -> 22");
         Eq("1 1 2", eco.MaxAffordable(true, 0, 0, 10.5, g0) + " " + eco.MaxAffordable(true, 0, 0, 21, g0) + " " + eco.MaxAffordable(true, 0, 0, 22, g0), "achat max");
         Eq("0", eco.MaxAffordable(true, 0, 0, 9, g0).ToString(), "achat max : trop cher");
-        Eq("True", (System.Math.Abs(eco.UnlockCost(2, g0) - 32 * cfg.stations[2].unlockPayback) < 1e-6).ToString(), "prix du Test : son revenu de départ (32 $/s) x le temps de remboursement visé");
-        var list = new List<IdleEconomy.StationLevels> { s0.Copy(), s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        Eq("True", (System.Math.Abs(eco.UnlockCost(2, g0) - 38.4 * cfg.stations[2].unlockPayback) < 1e-6).ToString(), "prix de la Programmation : son revenu de départ (38,4 $/s) x le temps de remboursement visé");
+        List<IdleEconomy.StationLevels> Line(params IdleEconomy.StationLevels[] open)
+        {
+            var line = new List<IdleEconomy.StationLevels>(open);
+            while (line.Count < cfg.stations.Length) line.Add(new IdleEconomy.StationLevels());
+            return line;
+        }
+        var list = Line(s0.Copy(), s0.Copy());
         var opts = eco.Options(list, g0, 1);
-        Eq("5", opts.Count.ToString(), "options : vitesse et ajout des 2 postes ouverts, déblocage du suivant");
-        Eq("32", F(opts[4].delta), "gain du déblocage du Test (144 / 4,5 s)");
+        Eq("6", opts.Count.ToString(), "options : vitesse et ajout des 2 postes ouverts, 2e machine de l'Assemblage, déblocage du suivant");
+        Eq("Slot 1", opts[4].kind + " " + opts[4].station, "option d'emplacement : sur le poste qui en a");
+        Eq("35.2", F(opts[5].delta), "gain du déblocage de la Programmation : 0,27 pièce/s à 144 $, le surplus de l'Assemblage vendu à 12 $");
         Eq("False", opts[0].milestone.ToString(), "pas de palier au niveau 1");
         bool found;
         IdleEconomy.Option best = eco.Best(opts, cfg.newStationFavor, out found);
         Eq("True", found.ToString(), "un meilleur achat existe");
 
-        // le début de la chaîne : le plus lent décide
-        Eq("0.3333 4", F(eco.ChainRate(list, g0)) + " " + F(eco.TotalIncome(list, g0)), "revenu de départ : le débit de l'Assemblage x 12 $");
+        // la chaîne : le plus lent décide, ce que le suivant n'absorbe pas se vend au prix du poste
+        Eq("4", F(eco.TotalIncome(list, g0)), "revenu de départ : le débit de l'Assemblage x 12 $");
         Eq("0 3.5", F(eco.UpgradeGain(list, g0, 0, false, 1)) + " " + F(eco.UpgradeGain(list, g0, 1, false, 1)), "Ajouter : rien sur la serre, qui n'est pas le goulot ; 3,5 $/s sur l'Assemblage, limité par la serre");
-        Eq("0.3333", F(eco.ChainRate(list, g0)), "le calcul du gain ne touche pas aux niveaux");
-        var pair = new List<IdleEconomy.StationLevels> { new IdleEconomy.StationLevels { unlocked = true, speed = 6, add = 4 }, s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
-        Eq("24", F(eco.ChainValue(pair, g0)), "palier de la serre : la pièce sortie vaut x2");
-        var tied = new List<IdleEconomy.StationLevels> { new IdleEconomy.StationLevels { unlocked = true, add = 7 }, new IdleEconomy.StationLevels { unlocked = true, add = 14 }, new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        Eq("4", F(eco.TotalIncome(list, g0)), "le calcul du gain ne touche pas aux niveaux");
+        var three = Line(new IdleEconomy.StationLevels { unlocked = true, add = 9 }, new IdleEconomy.StationLevels { unlocked = true, add = 2 }, new IdleEconomy.StationLevels { unlocked = true });
+        var flowOut = new double[6]; var soldOut = new double[6];
+        eco.Flows(three, g0, flowOut, soldOut);
+        Eq("1 0.2667 0.7333 0.2667", F(flowOut[1]) + " " + F(flowOut[2]) + " " + F(soldOut[1]) + " " + F(soldOut[2]), "surplus : l'Assemblage sort 1 pièce/s, la Programmation en prend 0,27, le reste se vend à l'Assemblage");
+        double threeIncome = 0.7333333 * 12 + 0.2666667 * 144;
+        Eq("True", (System.Math.Abs(eco.TotalIncome(three, g0) - threeIncome) < 1e-3).ToString(), "revenu : chaque pièce au prix du poste où elle se vend");
+        for (int st4 = 2; st4 < cfg.stations.Length; st4++) Eq("True", (eco.MoneyPerItem(st4, g0) > eco.MoneyPerItem(st4 - 1, g0)).ToString(), "une pièce vaut toujours plus au poste suivant");
+        var tied = Line(new IdleEconomy.StationLevels { unlocked = true, add = 7 }, new IdleEconomy.StationLevels { unlocked = true, add = 14 });
         bool tiedFound; eco.Best(eco.Options(tied, g0, 1), cfg.newStationFavor, out tiedFound);
-        Eq("True", tiedFound.ToString(), "serre et Assemblage à égalité parfaite : le conseil trouve quand même un achat");
+        Eq("True", tiedFound.ToString(), "postes à égalité parfaite : le conseil trouve quand même un achat");
+        Eq("True", (IdleEconomy.Ceil(1e30) == long.MaxValue).ToString(), "prix démesuré : jamais négatif, donc jamais gratuit");
 
         // contrat de rythme : un robot touche « Meilleur achat » toutes les 3 s, sans turbo ; un humain relâché sera 2 à 4 fois plus lent.
         // Chaque étape tient ces jalons ou change ce tableau en le disant. Tolérance 15 %.
         {
             var rb = new IdleGame(cfg, 7, 0); var openAt = new double[cfg.stations.Length];
-            double crewAt = 0, firstSale = 0, lastBuy = 0, longestWait = 0; long buys = 0;
-            for (double t = 0; t < 3 * 3600; t += 3)
+            double crewAt = 0, firstSale = 0, lastBuy = 0, longestWait = 0, secondAt = 0, thirdAt = 0; long buys = 0;
+            for (double t = 0; t < 3.8 * 3600; t += 3)
             {
                 rb.Tick(3);
                 rb.BuyAdvised();
@@ -132,6 +146,10 @@ public static class UnitTests
                 if (crewAt == 0 && rb.CrewReady) crewAt = t;
                 if (firstSale == 0 && rb.Earned > 0) firstSale = t;
                 for (int i = 0; i < openAt.Length; i++) if (openAt[i] == 0 && rb.Stations[i].unlocked) openAt[i] = t;
+                int fewest = 9;
+                for (int i = 1; i <= 4; i++) fewest = System.Math.Min(fewest, rb.Stations[i].slots);
+                if (secondAt == 0 && fewest >= 2) secondAt = t;
+                if (thirdAt == 0 && fewest >= 3) thirdAt = t;
                 if (rb.Buys != buys) { buys = rb.Buys; if (t <= 3600) longestWait = System.Math.Max(longestWait, t - lastBuy); lastBuy = t; }
             }
             Eq("True", (crewAt > 0 && crewAt <= 40).ToString(), "rythme : les 3 recrutements en moins de 40 s (mesuré " + crewAt + " s)");
@@ -140,27 +158,38 @@ public static class UnitTests
             {
                 Eq("True", (openAt[station] >= low * 0.85 && openAt[station] <= high * 1.15).ToString(), "rythme : " + name + " entre " + low + " et " + high + " s (mesuré " + openAt[station] + " s)");
             }
-            Window("1er Test", 2, 600, 840);
-            Window("1er Emballage", 3, 1500, 2100);
+            Window("1re Programmation", 2, 240, 360);
+            Window("1er Test", 3, 600, 840);
+            Window("1er Emballage", 4, 1500, 2100);
+            Eq("True", (secondAt >= 2400 * 0.85 && secondAt <= 5400 * 1.15).ToString(), "rythme : 2e machine de chaque poste entre 40 min et 1 h 30 (mesuré " + (secondAt / 60).ToString("0") + " min)");
+            Eq("True", (thirdAt >= 9000 * 0.85 && thirdAt <= 12600 * 1.15).ToString(), "rythme : usine complète entre 2 h 30 et 3 h 30 (mesuré " + (thirdAt / 60).ToString("0") + " min)");
             Eq("True", (longestWait <= 480).ToString(), "rythme : jamais plus de 8 min sans achat pendant la 1re heure (mesuré " + longestWait + " s)");
         }
 
         // la matière circule d'étape en étape, et chacune attend la précédente
         var ch = new IdleChain(cfg);
-        Eq("0 0 0", F(ch.Step(10, 0, 1, 1)) + " " + F(ch.Cut) + " " + F(ch.Stock), "sans robot : rien ne bouge");
-        ch.Step(100, 1, 1, 1);
-        Eq("8 0 False", F(ch.Cut) + " " + F(ch.Raw) + " " + ch.Cutting, "découpeur seul : le tas se remplit (8 s de production), puis il s'arrête");
-        ch.Step(100, 2, 1, 1);
-        Eq("8 8 0", F(ch.Cut) + " " + F(ch.Raw) + " " + F(ch.Stock), "avec le graveur : les deux tas sont pleins, rien n'arrive au stock");
-        ch.Step(200, 3, 1, 0);
-        Eq("30 True", F(ch.Stock) + " " + (ch.Load == 0 && ch.DronePhase == 0), "avec le drone : stock plein, il ne repart plus");
+        var two = new double[] { 1, 1, 0, 0, 0, 0 };
+        ch.Step(10, 0, two, 2);
+        Eq("0 0 0", F(ch.Sold[1]) + " " + F(ch.Cut) + " " + F(ch.Stock[1]), "sans robot : rien ne bouge");
+        ch.Step(100, 1, two, 2);
+        Eq("8 0 False", F(ch.Cut) + " " + F(ch.Raw) + " " + ch.Working[0], "découpeur seul : le tas se remplit (8 s de production), puis il s'arrête");
+        ch.Step(100, 2, two, 2);
+        Eq("8 8 0", F(ch.Cut) + " " + F(ch.Raw) + " " + F(ch.Stock[1]), "avec le graveur : les deux tas sont pleins, rien n'arrive au stock");
+        ch.Step(200, 3, new double[] { 1, 0, 0, 0, 0, 0 }, 2);
+        Eq("30 True", F(ch.Stock[1]) + " " + (ch.Carriers[0].Load == 0 && ch.Carriers[0].Phase == 0), "avec le drone : stock plein, il ne repart plus");
         var fl = new IdleChain(cfg);
-        fl.Step(30, 3, 1, 2);
-        double flowMade = fl.Step(300, 3, 1, 2);
-        Eq("True", (System.Math.Abs(flowMade - 300) < 5).ToString(), "serre plus lente : l'Assemblage sort le débit de la serre (" + F(flowMade) + " pièces en 300 s)");
+        var inOut = new double[] { 1, 2, 0, 0, 0, 0 };
+        fl.Step(30, 3, inOut, 2);
+        fl.Step(300, 3, inOut, 2);
+        Eq("True", (System.Math.Abs(fl.Sold[1] - 300) < 5).ToString(), "serre plus lente : l'Assemblage sort le débit de la serre (" + F(fl.Sold[1]) + " pièces en 300 s)");
         var sl = new IdleChain(cfg);
-        double slowMade = sl.Step(330, 3, 2, 1);
-        Eq("True", (slowMade > 290 && slowMade <= 330 && sl.Stock <= sl.StockSize(2, 1)).ToString(), "Assemblage plus lent : il sort son propre débit, le stock reste borné (" + F(slowMade) + " pièces, stock " + F(sl.Stock) + ")");
+        sl.Step(330, 3, new double[] { 2, 1, 0, 0, 0, 0 }, 2);
+        Eq("True", (sl.Sold[1] > 290 && sl.Sold[1] <= 330 && sl.Stock[1] <= sl.StockSize(1)).ToString(), "Assemblage plus lent : il sort son propre débit, le stock reste borné (" + F(sl.Sold[1]) + " pièces, stock " + F(sl.Stock[1]) + ")");
+        var sp = new IdleChain(cfg);
+        var spill = new double[] { 5, 4, 1, 0, 0, 0 };
+        sp.Step(60, 3, spill, 3);
+        sp.Step(100, 3, spill, 3);
+        Eq("True True", (System.Math.Abs(sp.Sold[1] - 300) < 15) + " " + (System.Math.Abs(sp.Sold[2] - 100) < 5), "goulot au 2e poste : le 1er vend son surplus (" + F(sp.Sold[1]) + " en 100 s), le dernier vend tout ce qu'il sort (" + F(sp.Sold[2]) + ")");
 
         // ---------------------------------------------------------------- partie (achats, commandes, Réputation, turbo, hors ligne)
         var game = new IdleGame(cfg, 7, 1000);
@@ -243,7 +272,7 @@ public static class UnitTests
         sg2.Load(JsonUtility.FromJson<SaveData>(json1));
         Eq(json1, JsonUtility.ToJson(sg2.ToSave(12345)), "sauvegarde -> chargement -> sauvegarde : identique");
         Eq("True", (System.Math.Abs(sg2.Income - sg.Income) < 1e-9 && sg2.Active.Count == 1).ToString(), "état rechargé : revenu et commande en cours");
-        Eq("3 True", sg2.Crew + " " + (System.Math.Abs(sg2.Chain.Stock - sg.Chain.Stock) < 1e-6 && System.Math.Abs(sg2.Chain.DronePhase - sg.Chain.DronePhase) < 1e-6), "état rechargé : équipe et matière en circulation");
+        Eq("3 True", sg2.Crew + " " + (System.Math.Abs(sg2.Chain.Stock[1] - sg.Chain.Stock[1]) < 1e-6 && System.Math.Abs(sg2.Chain.Carriers[0].Phase - sg.Chain.Carriers[0].Phase) < 1e-6), "état rechargé : équipe et matière en circulation");
         var half = new SaveData { cash = 0, crew = 2 };
         var hg = new IdleGame(cfg, 1, 0); hg.Load(half);
         Eq("2 45", hg.Crew + " " + F(hg.Cash), "sauvegarde sans argent avant l'équipe complète : de quoi finir de recruter");
@@ -263,7 +292,7 @@ public static class UnitTests
         string v7 = "{\"version\":7,\"money\":500,\"proPoints\":7,\"lastSaveUtc\":42,\"reputation\":[{\"id\":\"revenue\",\"level\":3},{\"id\":\"chain\",\"level\":2},{\"id\":\"discount\",\"level\":1},{\"id\":\"stack\",\"level\":4}],"
                   + "\"pads\":[{\"id\":\"TestPad\",\"remaining\":0}],\"employees\":[\"hauler\"],\"soundOn\":false,\"settingsSaved\":true}";
         SaveData mig = SaveSystem.TryParse(v7, cfg);
-        Eq("9 500 7 True", mig.version + " " + F(mig.cash) + " " + mig.proPoints + " " + (mig.stations.Count == 5 && mig.stations[0].unlocked && !mig.stations[1].unlocked), "migration v7 : argent, Points Pro, postes à zéro");
+        Eq("10 500 7 True", mig.version + " " + F(mig.cash) + " " + mig.proPoints + " " + (mig.stations.Count == 6 && mig.stations[0].unlocked && !mig.stations[1].unlocked), "migration v7 : argent, Points Pro, postes à zéro");
         var mg = new IdleGame(cfg, 1, 0); mg.Load(mig);
         Eq("3 2 1", mg.Rep[mg.Eco.RepIndex("rev")] + " " + mg.Rep[mg.Eco.RepIndex("spd")] + " " + mg.Rep[mg.Eco.RepIndex("cost")], "migration v7 : Réputation (revenus, cadence, remises)");
         Eq("False", mig.soundOn.ToString(), "migration v7 : réglages conservés");
@@ -271,6 +300,9 @@ public static class UnitTests
         string v8 = "{\"version\":8,\"cash\":5000.0,\"stations\":[{\"unlocked\":true,\"speed\":3,\"add\":2},{\"unlocked\":false,\"speed\":0,\"add\":0}]}";
         var m8 = new IdleGame(cfg, 1, 0); m8.Load(SaveSystem.TryParse(v8, cfg));
         Eq("3 5000 3 True", m8.Crew + " " + F(m8.Cash) + " " + m8.Stations[0].speed + " " + m8.Stations[1].unlocked, "migration v8 : la partie continue, la chaîne tourne");
+        string v9 = "{\"version\":9,\"cash\":5000.0,\"crew\":3,\"stations\":[{\"unlocked\":true,\"speed\":3,\"add\":2},{\"unlocked\":true,\"speed\":1,\"add\":1},{\"unlocked\":true,\"speed\":7,\"add\":8},{\"unlocked\":false,\"speed\":0,\"add\":0},{\"unlocked\":false,\"speed\":0,\"add\":0}],\"active\":[{\"id\":4,\"client\":1,\"station\":2,\"qty\":9,\"pro\":1,\"say\":0,\"reward\":10.0,\"progress\":1.0}]}";
+        var m9 = new IdleGame(cfg, 1, 0); m9.Load(SaveSystem.TryParse(v9, cfg));
+        Eq("True 0 True 7 False 1 3", m9.Stations[2].unlocked + " " + m9.Stations[2].speed + " " + m9.Stations[3].unlocked + " " + m9.Stations[3].speed + " " + m9.Stations[4].unlocked + " " + m9.Stations[3].slots + " " + m9.Active[0].station, "migration v9 : la Programmation s'insère, le Test garde ses niveaux, sa commande le suit");
         Eq("True", (SaveSystem.TryParse("{\"version\":99}", cfg) == null).ToString(), "version future refusée");
 
         // ---------------------------------------------------------------- plaques d'achat au sol (U2b)
@@ -280,7 +312,7 @@ public static class UnitTests
         Eq("25 0 0", pg.PadPrice(0, H) + " " + pg.PadPrice(1, H) + " " + pg.PadPrice(0, S), "prix de la plaque de recrutement");
         Eq("Ok False True", pg.BuyPad(0, H) + " " + pg.PadVisible(0, H) + " " + pg.PadVisible(1, H), "recrutement par la plaque : la suivante apparaît");
         pg = new IdleGame(cfg, 2, 0); Ready(pg);
-        Eq("Open Open Unlock Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4), "plaques : ouverts, prochain à débloquer, le reste caché");
+        Eq("Open Open Unlock Hidden Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4) + " " + pg.PlateStateOf(5), "plaques : ouverts, prochain à débloquer, le reste caché");
         Eq("True True False", pg.PadVisible(0, S) + " " + pg.PadVisible(0, A) + " " + pg.PadVisible(0, U), "poste ouvert : plaques Vitesse et Ajouter");
         Eq("False False True", pg.PadVisible(2, S) + " " + pg.PadVisible(2, A) + " " + pg.PadVisible(2, U), "prochain poste : plaque Débloquer");
         Eq("False False False", pg.PadVisible(3, S) + " " + pg.PadVisible(3, A) + " " + pg.PadVisible(3, U), "postes suivants : aucune plaque");
@@ -298,6 +330,28 @@ public static class UnitTests
         pg.Cash = pg.UnlockPrice(2) + 1000;
         Eq("Ok", pg.BuyPad(2, U).ToString(), "plaque de déblocage : poste débloqué");
         Eq("True Open Unlock", pg.Stations[2].unlocked + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3), "après le déblocage : poste ouvert, le suivant à débloquer");
+        var P = IdleGame.PadKind.Slot;
+        Eq("False True False", pg.PadVisible(0, P) + " " + pg.PadVisible(1, P) + " " + pg.PadVisible(3, P), "plaque Machine : seulement sur un poste ouvert qui a de la place");
+        double rate1 = pg.Rate(1);
+        pg.Cash = pg.SlotPrice(1) - 1;
+        Eq("TooExpensive", pg.BuyPad(1, P).ToString(), "machine trop chère");
+        pg.Cash = 1e14;
+        Eq("Ok 2 True", pg.BuyPad(1, P) + " " + pg.Stations[1].slots + " " + (System.Math.Abs(pg.Rate(1) - 2 * rate1) < 1e-9), "2e machine : le débit du poste double");
+        Eq("(6.3, 1.4) (8.6, 1.4)", Inv(IdleLayout.PadPosition(1, P, 1)) + " " + Inv(IdleLayout.PadPosition(1, P, 2)), "la plaque Machine se pose sur la place suivante");
+        Eq("Ok 3 False Invalid", pg.BuySlot(1) + " " + pg.Stations[1].slots + " " + pg.PadVisible(1, P) + " " + pg.BuySlot(1), "3 machines au plus");
+        Eq("Invalid", pg.BuySlot(0).ToString(), "une seule serre");
+        var whole = new IdleGame(cfg, 3, 0); Ready(whole);
+        whole.Cash = 1e15;
+        for (int st5 = 2; st5 < cfg.stations.Length; st5++) Eq("Ok", whole.BuyUnlock(st5).ToString(), "ouverture du poste " + st5);
+        for (int st5 = 0; st5 < cfg.stations.Length; st5++) { whole.Stations[st5].speed = 20; whole.Stations[st5].add = 20; }
+        whole.Recalc();
+        whole.Tick(120);
+        double wholeBefore = whole.Earned;
+        whole.Tick(300);
+        double wholeGain = (whole.Earned - wholeBefore) / 300;
+        Eq("True", (System.Math.Abs(wholeGain - whole.Income) < whole.Income * 0.03).ToString(), "toute la chaîne : gain réel = revenu affiché (" + F(wholeGain, "0") + " pour " + F(whole.Income, "0") + " $/s), le chariot suit");
+        var kept = new IdleGame(cfg, 2, 0); kept.Load(JsonUtility.FromJson<SaveData>(JsonUtility.ToJson(pg.ToSave(1))));
+        Eq("3", kept.Stations[1].slots.ToString(), "emplacements sauvegardés");
         pg.BuyMode = 10; pg.Cash = 1e9;
         int before10 = pg.Stations[0].add;
         Eq("True", (pg.PadPrice(0, A) > 0).ToString(), "mode x10 : prix sur la plaque");
@@ -321,29 +375,30 @@ public static class UnitTests
         Eq("False True", IdleWorldInput.Moved(9f, 1f) + " " + IdleWorldInput.Moved(9.5f, 1f), "seuil du glissement : 9 px");
         Eq("False True", IdleWorldInput.Moved(27f, 3f) + " " + IdleWorldInput.Moved(28f, 3f), "seuil du glissement : suit la densité de l'écran");
         Eq("True False False", IdleWorldInput.IsTap(false, 0.5f) + " " + IdleWorldInput.IsTap(true, 0.1f) + " " + IdleWorldInput.IsTap(false, 0.7f), "toucher : court et sans mouvement");
-        Eq("(-6.2, 2.2) (6.6, 13.4) (1.0, 5.0)", Inv(IdleFraming.Clamp(new Vector2(-50f, -50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(50f, 50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(1f, 5f))), "limites de la caméra");
-        Eq("1 3 2", IdleFraming.ClampZoom(0.2f) + " " + IdleFraming.ClampZoom(9f) + " " + IdleFraming.ClampZoom(2f), "limites du zoom");
+        Eq("(-13.5, 2.2) (10.0, 25.0) (1.0, 5.0)", Inv(IdleFraming.Clamp(new Vector2(-50f, -50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(50f, 50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(1f, 5f))), "limites de la caméra");
+        Eq("0,55 3,00 2,00", Fr(IdleFraming.ClampZoom(0.2f)) + " " + Fr(IdleFraming.ClampZoom(9f)) + " " + Fr(IdleFraming.ClampZoom(2f)), "limites du zoom");
         Vector3 planPoint = IdleLayout.ToWorld(3f, 5f);
         Eq("(-2.0, 8.0)", Inv(IdleFraming.ToPlan(planPoint)), "plan a, b : a = x - y, b = x + y");
         Eq("True", (Vector3.Distance(IdleFraming.ToWorld(IdleFraming.ToPlan(planPoint)), planPoint) < 0.001f).ToString(), "plan a, b : aller-retour");
         Eq("0,41 0,41", Fr(IdleFramingViewX(cfg, 0)) + " " + Fr(IdleFramingViewX(cfg, 1)), "cadrage : la colonne de droite est exclue");
-        var fg = new IdleGame(cfg, 2, 0);
-        Ready(fg); fg.Stations[1].unlocked = false;
         float fh = 24.5f, fw = fh * 390f / 844f;   // ce que voit la caméra au zoom 1 sur un écran 390 x 844
-        IdleFraming.View v1 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
-        fg.Stations[1].unlocked = true;
-        IdleFraming.View v2 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        var fg = new IdleGame(cfg, 2, 0);
+        Vector2 Screen(IdleFraming.View view, Vector2 plan)   // où tombe un point du plan, en part de la largeur de l'écran
+        {
+            return new Vector2(view.viewportX + (plan.x - plan.y - view.focus.x) / Mathf.Sqrt(2f) * view.zoom / fw, 0f);
+        }
+        IdleFraming.View vStart = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        float startRight = Screen(vStart, IdleLayout.Slots[1][0] + new Vector2(IdleLayout.StationSize, 0f)).x;
+        float startLeft = Screen(vStart, IdleLayout.PadHire[0]).x;
+        Eq("True True", (startRight < 1f) + " " + (startLeft - 0.9f / Mathf.Sqrt(2f) * vStart.zoom / fw > 0f), "au départ : l'Assemblage entier et la plaque de recrutement à l'écran");
+        Ready(fg);
+        IdleFraming.View vRun = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
         for (int si = 2; si < 5; si++) fg.Stations[si].unlocked = true;
-        IdleFraming.View v5 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
-        Eq("True True", (v1.zoom >= v2.zoom) + " " + (v2.zoom > v5.zoom), "cadrage : plus il y a de postes, moins on zoome");
-        Eq("True True", (v1.zoom <= IdleFraming.DefaultMaxZoom) + " " + (v5.zoom >= IdleFraming.MinZoom), "cadrage : zoom entre 1 et 2,6");
-        Eq("(1.2, 4.5)", Inv(v1.focus), "cadrage d'un poste ouvert : milieu de ses plaques et du poste suivant (a -1,95 à 4,25 ; b 1,1 à 6,95, + 0,5)");
-        var fs = new IdleGame(cfg, 2, 0);
-        IdleFraming.View vStart = IdleFraming.Default(fs, fw, fh, 55f, 0.18f);
-        Ready(fs);
-        IdleFraming.View vRun = IdleFraming.Default(fs, fw, fh, 55f, 0.18f);
-        Eq("True (-0.2, 3.5)", (vStart.zoom > vRun.zoom * 1.3f) + " " + Inv(vStart.focus), "pendant les recrutements : la caméra est sur la serre et le stock, elle recule quand la chaîne démarre");
-        Eq("True", (v5.focus.y > v1.focus.y).ToString(), "cadrage de 5 postes : centré plus bas sur la dalle");
+        fg.Stations[4].slots = 3;
+        IdleFraming.View vFar = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        Eq("True True", (vRun.zoom >= IdleFraming.MinZoom) + " " + (vRun.zoom <= IdleFraming.DefaultMaxZoom), "cadrage : zoom dans ses limites");
+        Eq("True True", (vFar.focus.y > vRun.focus.y) + " " + (vFar.zoom >= 0.8f), "cadrage : la caméra suit la dernière rangée ouverte, sans jamais perdre les machines de vue (zoom " + Fr(vFar.zoom) + ")");
+        Eq("True", (Screen(vFar, IdleLayout.PadAdd[4] + new Vector2(0.45f, -0.45f)).x < 1f).ToString(), "cadrage : la rangée tient dans l'écran");
         Eq("3,10", Fr(IdleFraming.Station(2, 3.1f).zoom), "sélection : on ne dézoome pas");
         Eq("2,00", Fr(IdleFraming.Station(2, 1f).zoom), "sélection : zoom d'au moins 2");
         Eq("0 1 -1", IdleFramingPick(0.1f) + " " + IdleFramingPick(0.8f) + " " + IdleFramingPick(5f), "la plaque la plus proche du doigt gagne ; loin de tout : aucune");
@@ -358,10 +413,10 @@ public static class UnitTests
         Eq("0.625", F(vg.VisualFrequency(0)), "fréquence visuelle de la serre au départ : 1 / 1,6 s");
         vg.Stations[0].speed = 50; vg.Recalc();
         Eq("1.6", F(vg.VisualFrequency(0)), "fréquence visuelle plafonnée à 1,6 cycles/s");
-        vg.Stations[4].unlocked = true; vg.Recalc();
-        Eq("0.125", F(vg.VisualFrequency(4)), "Expédition au départ : 1 / 8 s");
-        vg.Stations[4].speed = 1000; vg.Recalc();
-        Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
+        vg.Stations[5].unlocked = true; vg.Recalc();
+        Eq("0.125", F(vg.VisualFrequency(5)), "Expédition au départ : 1 / 8 s");
+        vg.Stations[5].speed = 1000; vg.Recalc();
+        Eq("0.45", F(vg.VisualFrequency(5)), "Expédition plafonnée à 0,45");
 
         // textes des fenêtres : rien ne manque dans Loc
         var missing = new System.Collections.Generic.List<string>();
@@ -397,7 +452,7 @@ public static class UnitTests
 
         // le jus (UW-4)
         float padGap = float.MaxValue;
-        for (int st2 = 0; st2 < 5; st2++) padGap = Mathf.Min(padGap, Vector2.Distance(IdleLayout.PadSpeed[st2], IdleLayout.PadAdd[st2]) - IdleLayout.PadSize);
+        for (int st2 = 0; st2 < 6; st2++) padGap = Mathf.Min(padGap, Vector2.Distance(IdleLayout.PadSpeed[st2], IdleLayout.PadAdd[st2]) - IdleLayout.PadSize);
         Eq("True", (padGap >= 0.06f).ToString(), "plaques d'une paire : au moins 0,06 case de vide");
         Eq("1 2 8 8 0", IdlePurchaseSound.NextSteps(0, 0.5f) + " " + IdlePurchaseSound.NextSteps(1, 1.1f) + " " + IdlePurchaseSound.NextSteps(7, 0.1f) + " " + IdlePurchaseSound.NextSteps(8, 0.1f) + " " + IdlePurchaseSound.NextSteps(5, 1.3f), "son d'achat : +1 demi-ton, plafond 8, retour à 0 après 1,2 s");
         Eq("1,00 2,00", Fr(IdlePurchaseSound.Pitch(0)) + " " + Fr(IdlePurchaseSound.Pitch(12)), "hauteur du son : 12 demi-tons = une octave");
@@ -419,12 +474,12 @@ public static class UnitTests
 
         // gain affiché à chaque cycle visuel
         var cg = new IdleGame(cfg, 6, 0);
-        Eq("1", F(cg.CycleGain(0)), "1er poste au départ : 1 par cycle (0,625 /s / 0,625 cycles/s)");
+        Eq("0", F(cg.CycleGain(0)), "la serre ne vend rien");
         Eq("12", F(cg.CycleGain(1)), "Assemblage au départ : 12 $ par cycle");
-        cg.Stations[0].speed = 100; cg.Recalc();
-        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.StationIncome(0) * cg.BoostMultiplier) < 1e-9).ToString(), "gain par cycle x fréquence = revenu (même plafonné)");
+        cg.Stations[1].speed = 100; cg.Recalc();
+        Eq("True", (System.Math.Abs(cg.CycleGain(1) * cg.VisualFrequency(1) - cg.StationIncome(1) * cg.BoostMultiplier) < 1e-9).ToString(), "gain par cycle x fréquence = revenu (même plafonné)");
         cg.TryTurbo();
-        Eq("True", (System.Math.Abs(cg.CycleGain(0) * cg.VisualFrequency(0) - cg.StationIncome(0) * cg.BoostMultiplier) < 1e-9).ToString(), "turbo compris");
+        Eq("True", (System.Math.Abs(cg.CycleGain(1) * cg.VisualFrequency(1) - cg.StationIncome(1) * cg.BoostMultiplier) < 1e-9).ToString(), "turbo compris");
 
         // camionnette de l'Expédition
         Eq("0.00 0.00 0.65 -2.20 0.00 0.00", F(ShipMachine.VanOffset(0.5f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.72f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.8f, 2.6f, 2.2f), "0.00")
@@ -453,7 +508,7 @@ public static class UnitTests
             Eq("True", (Mathf.Abs(vyOut - vy) < 0.04f).ToString(), "caméra : centre de la dalle à la hauteur " + vy + " (obtenu " + F(vyOut, "0.00") + ")");
         }
         Eq("(2.40, 0.00, 1.55)", new Vector3(IdleLayout.ToWorld(1.55f, 2.4f).x, 0f, IdleLayout.ToWorld(1.55f, 2.4f).z).ToString("F2", inv), "repère : x du web -> Z, y du web -> X");
-        Eq("5", IdleLayout.Stations.Length + "", "5 emplacements de postes");
+        Eq("6", IdleLayout.Stations.Length + "", "6 postes sur le plan");
 
         // ---------------------------------------------------------------- utilitaires conservés
         Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");

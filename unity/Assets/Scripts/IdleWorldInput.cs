@@ -116,7 +116,7 @@ public class IdleWorldInput : MonoBehaviour
         IdlePadView pad = rig.GroundPoint(screen, out ground) ? pads.Pick(ground) : null;
         if (pad != null) { Buy(pad, screen, game); return; }
 
-        int station = StationAt(screen);
+        int station = StationAt(screen, game);
         if (station >= 0 && game.CrewReady) selection.Tap(station);
         else selection.Deselect();
     }
@@ -126,22 +126,23 @@ public class IdleWorldInput : MonoBehaviour
         long price = game.PadPrice(pad.Station, pad.Kind);
         IdleGame.PurchaseResult result = game.BuyPad(pad.Station, pad.Kind);
         pad.Touched();
-        IdlePurchaseSound.Play(result, pad.Kind == IdleGame.PadKind.Unlock || pad.Kind == IdleGame.PadKind.Hire);
+        IdlePurchaseSound.Play(result, pad.Kind != IdleGame.PadKind.Speed && pad.Kind != IdleGame.PadKind.Add);
         if (!IdlePurchaseSound.Bought(result)) return;
         IdleChips.Spent(new Vector3(screen.x, screen.y, 0f), price);   // part du doigt (Canvas en superposition : position = pixels de l'écran)
         if (!MotionSettings.ReduceMotion) fx.PadRing(pad.Position);
     }
 
     // Le poste sous le doigt : rectangle d'écran englobant sa machine ; si plusieurs conviennent, le centre le plus proche.
-    static int StationAt(Vector2 screen)
+    static int StationAt(Vector2 screen, IdleGame game)
     {
         Camera cam = Camera.main;
         int found = -1;
         float bestDistance = float.MaxValue;
         float half = IdleLayout.StationSize * 0.5f;
-        for (int i = 0; i < IdleLayout.Stations.Length; i++)
+        for (int i = 0; i < IdleLayout.Slots.Length; i++)
+        for (int k = 0; k < game.Stations[i].slots; k++)
         {
-            Vector3 center = IdleLayout.StationCenter(i);
+            Vector3 center = IdleLayout.SlotCenter(i, k);
             Vector2 min = new Vector2(float.MaxValue, float.MaxValue), max = new Vector2(float.MinValue, float.MinValue);
             for (int c = 0; c < 8; c++)
             {

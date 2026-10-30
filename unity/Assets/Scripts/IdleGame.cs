@@ -12,7 +12,7 @@ public class IdleGame
     }
 
     public enum PurchaseResult { Ok, Milestone, TooExpensive, Invalid }
-    public enum PadKind { Speed, Add, Unlock, Hire }   // Hire : `station` désigne le robot à recruter (0 à 2)
+    public enum PadKind { Speed, Add, Unlock, Hire, Slot }   // Hire : `station` désigne le robot à recruter (0 à 2)
 
     public struct OfflineResult
     {
@@ -39,13 +39,16 @@ public class IdleGame
     public double BoostUntil, BoostReadyAt;             // horloge de jeu
 
     IdleEconomy.Globals g;
-    double incomeCache, otherIncome, chainValue;
+    double incomeCache;
+    int openStations;
+    readonly double[] rates, values, flow, sold;        // par poste : débit, valeur d'une pièce, débit réel et pièces vendues en régime établi
 
     public event Action OnChanged;
     public event Action<int> OnPurchased;               // poste acheté ou amélioré
     public event Action<int> OnMilestone;               // palier x2 franchi sur ce poste
     public event Action<int> OnUnlocked;                // poste débloqué
     public event Action<int> OnHired;                   // robot recruté
+    public event Action<int> OnSlotBought;              // machine de plus sur ce poste
     public event Action<Offer> OnOrderCompleted;
 
     public IdleEconomy.Globals Globals => g;
@@ -63,6 +66,11 @@ public class IdleGame
         cfg = config;
         Eco = new IdleEconomy(config);
         Chain = new IdleChain(config);
+        int n = config.stations.Length;
+        rates = new double[n];
+        values = new double[n];
+        flow = new double[n];
+        sold = new double[n];
         rng = seed == 0 ? new Random() : new Random(seed);
         Now = now;
         NewGame();
@@ -84,9 +92,16 @@ public class IdleGame
     public void Recalc()
     {
         g = Eco.GlobalsFor(Rep);
-        chainValue = Eco.ChainValue(Stations, g);
+        Eco.Flows(Stations, g, flow, sold);
+        openStations = 0;
+        for (int i = 0; i < Stations.Count; i++)
+        {
+            bool open = Stations[i].unlocked;
+            rates[i] = open ? Eco.ItemsPerSecond(i, Stations[i], g) : 0;
+            values[i] = Eco.MoneyPerItem(i, g);
+            if (open) openStations = i + 1;
+        }
         incomeCache = CrewReady ? Eco.TotalIncome(Stations, g) : 0;
-        otherIncome = CrewReady ? incomeCache - Eco.ChainRate(Stations, g) * chainValue : 0;
     }
 
     void Changed() { OnChanged?.Invoke(); }
@@ -96,21 +111,33 @@ public class IdleGame
     public void Tick(double dt)
     {
         Now += dt;
-        int serre = IdleEconomy.SerreStation, assembly = IdleEconomy.AssemblyStation;
-        double rateOut = Stations[assembly].unlocked ? Eco.ItemsPerSecond(assembly, Stations[assembly], g) : 0;
-        double made = Chain.Step(dt, Crew, Eco.ItemsPerSecond(serre, Stations[serre], g), rateOut);
-        double gain = (made * chainValue + otherIncome * dt) * BoostMultiplier;   // l'argent de la chaîne vient de ce qui sort vraiment de l'Assemblage
+        Chain.Step(dt, Crew, rates, openStations);
+        double gain = 0;
+        for (int i = 1; i < openStations; i++) gain += Chain.Sold[i] * values[i];   // l'argent vient de ce qui est vraiment vendu
+        gain *= BoostMultiplier;
         Cash += gain; Earned += gain;
         if (!CrewReady) return;
         OrderProgress(dt, 1);
         RefreshOffers();
     }
 
-    // Le poste tourne-t-il en ce moment ? Le début de la chaîne s'arrête quand la matière manque ou que la suite est pleine.
-    public bool StationWorking(int station)
+    // Le poste tourne-t-il en ce moment ? Il s'arrête quand la matière manque (la serre : quand la suite est pleine).
+    public bool StationWorking(int station) { return Chain.Working[station]; }
+
+    public double Rate(int station) { return rates[station]; }
+
+    // Pièces par seconde qui sortent vraiment du poste, en régime établi.
+    public double Flow(int station) { return flow[station]; }
+
+    // Le goulot : le poste ouvert le plus lent.
+    public int Bottleneck
     {
-        if (station == IdleEconomy.SerreStation) return Chain.Cutting;
-        return station != IdleEconomy.AssemblyStation || Chain.Assembling;
+        get
+        {
+            int slowest = IdleEconomy.SerreStation;
+            for (int i = 1; i < openStations; i++) if (rates[i] < rates[slowest]) slowest = i;
+            return slowest;
+        }
     }
 
     // ------------------------------------------------------------------ recrutements
@@ -128,6 +155,29 @@ public class IdleGame
         Buys++;
         Recalc();
         OnHired?.Invoke(role);
+        RefreshOffers();
+        Changed();
+        return PurchaseResult.Ok;
+    }
+
+    // ------------------------------------------------------------------ emplacements
+
+    public bool CanAddSlot(int station) { return CrewReady && Stations[station].unlocked && Stations[station].slots < cfg.stations[station].slots; }
+
+    public long SlotPrice(int station) { return IdleEconomy.Ceil(Eco.SlotCost(station, Stations[station].slots, g)); }
+
+    // Une machine de plus sur le poste : son débit augmente d'autant.
+    public PurchaseResult BuySlot(int station)
+    {
+        if (station < 0 || station >= Stations.Count || !CanAddSlot(station)) return PurchaseResult.Invalid;
+        long cost = SlotPrice(station);
+        if (Cash < cost) return PurchaseResult.TooExpensive;
+        Cash -= cost;
+        Stations[station].slots++;
+        Buys++;
+        Recalc();
+        OnSlotBought?.Invoke(station);
+        OnPurchased?.Invoke(station);
         RefreshOffers();
         Changed();
         return PurchaseResult.Ok;
@@ -213,12 +263,8 @@ public class IdleGame
         return (float)Math.Min(1.0 / cycle, cap);
     }
 
-    // Ce que rapporte un poste quand il tourne, sans turbo.
-    public double StationIncome(int station)
-    {
-        if (station == IdleEconomy.AssemblyStation) return Eco.ItemsPerSecond(station, Stations[station], g) * chainValue;
-        return Eco.Income(station, Stations[station], g);
-    }
+    // Ce qui se vend à ce poste en régime établi, sans turbo.
+    public double StationIncome(int station) { return sold[station] * values[station]; }
 
     public double UpgradeGain(int station, bool speedAxis, int k) { return Eco.UpgradeGain(Stations, g, station, speedAxis, k); }
 
@@ -257,6 +303,7 @@ public class IdleGame
     {
         if (kind == PadKind.Hire) return station == Crew;
         if (!CrewReady) return false;
+        if (kind == PadKind.Slot) return CanAddSlot(station);
         PlateState state = PlateStateOf(station);
         return kind == PadKind.Unlock ? state == PlateState.Unlock : state == PlateState.Open;
     }
@@ -266,6 +313,7 @@ public class IdleGame
     {
         if (!PadVisible(station, kind)) return 0;
         if (kind == PadKind.Hire) return HirePrice(station);
+        if (kind == PadKind.Slot) return SlotPrice(station);
         return kind == PadKind.Unlock ? UnlockPrice(station) : UpgradePrice(station, kind == PadKind.Speed, BuyMode);
     }
 
@@ -274,6 +322,7 @@ public class IdleGame
     {
         if (!PadVisible(station, kind)) return PurchaseResult.Invalid;
         if (kind == PadKind.Hire) return BuyHire(station);
+        if (kind == PadKind.Slot) return BuySlot(station);
         return kind == PadKind.Unlock ? BuyUnlock(station) : BuyUpgrade(station, kind == PadKind.Speed, BuyMode);
     }
 
@@ -282,6 +331,7 @@ public class IdleGame
     {
         if (best.station != station) return false;
         if (best.kind == IdleEconomy.Kind.Hire) return kind == PadKind.Hire;
+        if (best.kind == IdleEconomy.Kind.Slot) return kind == PadKind.Slot;
         if (best.kind == IdleEconomy.Kind.Unlock) return kind == PadKind.Unlock;
         return kind == (best.speedAxis ? PadKind.Speed : PadKind.Add);
     }
@@ -304,6 +354,7 @@ public class IdleGame
         IdleEconomy.Option o = Advice(out found, out hasGoal, out goal);
         if (!found) return PurchaseResult.Invalid;
         if (o.kind == IdleEconomy.Kind.Hire) return BuyHire(o.station);
+        if (o.kind == IdleEconomy.Kind.Slot) return BuySlot(o.station);
         return o.kind == IdleEconomy.Kind.Unlock ? BuyUnlock(o.station) : BuyUpgrade(o.station, o.speedAxis, 1);
     }
 
@@ -318,13 +369,13 @@ public class IdleGame
     public Offer GenerateOffer()
     {
         var unlocked = new List<int>();
-        for (int i = 0; i < Stations.Count; i++) if (Stations[i].unlocked) unlocked.Add(i);
+        for (int i = 1; i < Stations.Count; i++) if (Stations[i].unlocked) unlocked.Add(i);   // la serre ne vend rien
         int station = rng.NextDouble() < cfg.lastStationChance ? unlocked[unlocked.Count - 1] : unlocked[rng.Next(unlocked.Count)];
         IdleEconomy.StationLevels st = Stations[station];
         double rate = Eco.ItemsPerSecond(station, st, g);
         int qty = Math.Max(cfg.minQuantity, (int)Math.Round(rate * Range(cfg.fillSecondsMin, cfg.fillSecondsMax)));
         if (qty > 40) qty = (int)Math.Round(qty / 10.0) * 10; else if (qty > 12) qty = (int)Math.Round(qty / 5.0) * 5;
-        double reward = qty * Eco.MoneyPerItem(station, st, g) * cfg.rewardFactor * g.order;
+        double reward = qty * values[station] * cfg.rewardFactor * g.order;
         int pro = cfg.proBase + (station >= cfg.proFromStation ? 1 : 0) + (qty >= cfg.proBigQuantity ? 1 : 0);
         return new Offer { id = OrderSeq++, client = rng.Next(cfg.clientCount), station = station, qty = qty, reward = reward, pro = pro, say = rng.Next(cfg.sayCount) };
     }
@@ -435,7 +486,7 @@ public class IdleGame
         return r;
     }
 
-    // ------------------------------------------------------------------ sauvegarde (v9)
+    // ------------------------------------------------------------------ sauvegarde (v10)
 
     public SaveData ToSave(long utcSeconds)
     {
@@ -444,9 +495,11 @@ public class IdleGame
             version = SaveData.CurrentVersion, cash = Cash, earned = Earned, buys = Buys, proPoints = Pro, proTotal = ProTotal,
             lastSaveUtc = utcSeconds, orderSeq = OrderSeq, ordersDone = OrdersDone,
             buyMode = BuyMode, nextOfferIn = Math.Max(0, NextOfferAt - Now), boostRemaining = BoostRemaining, boostCooldown = BoostCooldownRemaining,
-            crew = Crew, chainCut = Chain.Cut, chainRaw = Chain.Raw, chainStock = Chain.Stock, chainLoad = Chain.Load, dronePhase = Chain.DronePhase,
+            crew = Crew, chainCut = Chain.Cut, chainRaw = Chain.Raw,
+            chainStock = (double[])Chain.Stock.Clone(), chainOutput = (double[])Chain.Output.Clone(),
         };
-        foreach (var s in Stations) d.stations.Add(new SaveData.StationSave { unlocked = s.unlocked, speed = s.speed, add = s.add });
+        foreach (var s in Stations) d.stations.Add(new SaveData.StationSave { unlocked = s.unlocked, speed = s.speed, add = s.add, slots = s.slots });
+        foreach (IdleChain.Carrier c in Chain.Carriers) { d.carrierLoad.Add(c.Load); d.carrierPhase.Add(c.Phase); }
         for (int i = 0; i < Rep.Length; i++) d.reputation.Add(new SaveData.ReputationLevel { id = cfg.reputation[i].id, level = Rep[i] });
         foreach (Offer o in Offers) d.offers.Add(ToSave(o));
         foreach (Offer o in Active) d.active.Add(ToSave(o));
@@ -463,7 +516,7 @@ public class IdleGame
         return new Offer { id = s.id, client = s.client, station = s.station, qty = s.qty, pro = s.pro, say = s.say, reward = s.reward, progress = s.progress };
     }
 
-    // Charge une sauvegarde déjà migrée en v9 ; tolère les valeurs absurdes (négatives, trop grandes, NaN).
+    // Charge une sauvegarde déjà migrée en v10 ; tolère les valeurs absurdes (négatives, trop grandes, NaN).
     public void Load(SaveData d)
     {
         NewGame();
@@ -474,6 +527,7 @@ public class IdleGame
             Stations[i].unlocked = cfg.stations[i].unlockPayback <= 0 || d.stations[i].unlocked;
             Stations[i].speed = Math.Max(0, Math.Min(d.stations[i].speed, 100000));
             Stations[i].add = Math.Max(0, Math.Min(d.stations[i].add, 100000));
+            Stations[i].slots = Math.Max(1, Math.Min(d.stations[i].slots, cfg.stations[i].slots));
         }
         foreach (SaveData.ReputationLevel r in d.reputation)
         {
@@ -482,8 +536,14 @@ public class IdleGame
         }
         Crew = Math.Max(0, Math.Min(d.crew, cfg.hirePrices.Length));
         Cash = Math.Max(Cash, RemainingHireCost());      // une sauvegarde abîmée ne bloque jamais le démarrage
-        Chain.Cut = Sane(d.chainCut, 0); Chain.Raw = Sane(d.chainRaw, 0); Chain.Stock = Sane(d.chainStock, 0); Chain.Load = Sane(d.chainLoad, 0);
-        Chain.DronePhase = Math.Min(Sane(d.dronePhase, 0), 0.999);
+        Chain.Cut = Sane(d.chainCut, 0); Chain.Raw = Sane(d.chainRaw, 0);
+        for (int i = 0; i < Stations.Count; i++)
+        {
+            if (d.chainStock != null && i < d.chainStock.Length) Chain.Stock[i] = Sane(d.chainStock[i], 0);
+            if (d.chainOutput != null && i < d.chainOutput.Length) Chain.Output[i] = Sane(d.chainOutput[i], 0);
+            if (i < d.carrierLoad.Count) Chain.Carriers[i].Load = Sane(d.carrierLoad[i], 0);
+            if (i < d.carrierPhase.Count) Chain.Carriers[i].Phase = Math.Min(Sane(d.carrierPhase[i], 0), 0.999);
+        }
         BuyMode = d.buyMode == 10 || d.buyMode == 0 ? d.buyMode : 1;
         OrderSeq = Math.Max(1, d.orderSeq); OrdersDone = Math.Max(0, d.ordersDone);
         NextOfferAt = Now + Math.Max(0, d.nextOfferIn);

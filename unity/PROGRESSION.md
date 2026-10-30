@@ -16,16 +16,15 @@ Mesure du 30/10 avec un robot qui suit le « Meilleur achat » : 5e poste à 24-
 **La fiche App Store d'Idle Lumber est mensongère** (Sébastien) : tas de bois géants, camions fâchés et « -$ » rouges sont de la publicité. Ne pas s'en servir comme preuve de gameplay. Sources plus fiables : captures de Sébastien (promises), aide officielle Lumber Inc, guide LevelWinner. Vu sur 2 miniatures de vidéos, peut-être d'une ancienne version : usine vue de haut avec murs, sol quadrillé, emplacements marqués au sol, chariots élévateurs, HUD avec portraits à gauche et boutons à droite.
 On reprend les mécaniques et le style jouet, on ne copie ni les images ni l'interface.
 
-## Plan
-1. **Étape 1, en cubes (faite)** : la serre remplace la Réception ; 3 recrutements obligatoires ; matière réelle du cristal au stock ; l'Assemblage vide le stock ; l'argent vient de ce qui sort.
-2. **Usine géante et flux** : 4 machines (Assemblage, Programmation, Test, Emballage) de 3 emplacements chacune, en cubes, avec des chariots entre les stocks. Test, Emballage et Expédition rejoignent la chaîne.
-3. **HUD complet** : à préciser avec les captures de Sébastien.
-4. **Livraison** : quai, véhicules, commandes.
-5. **Les 4 vraies machines**, bien faites.
-6. **Contrats à enjeu et changement d'usine** : un contrat raté perd la prime, jamais de progression (`QUALITE.md`).
-7. **Rythme** : réglage final, le flux change tous les chiffres.
-
-UW-2 et U4 viennent après. Un build n'a lieu qu'avec U4 ou à la demande de Sébastien.
+## Plan (ordre révisé avec le cloud le 30/10)
+0. **Retouches et contrat de rythme (faits)** : jalons cibles dans le test unitaire, prix en temps de remboursement. Le tableau reste à valider par Sébastien.
+1. **Étape 1 (faite)** : la serre remplace la Réception, 3 recrutements obligatoires, matière réelle.
+2. **Usine géante et flux (fait)** : serre, 4 machines (Assemblage, Programmation, Test, Emballage) de 3 emplacements, Expédition ; stocks, tapis, chariots ; ce qui ne passe pas se vend au prix du poste ; un palier x2 double le débit.
+3. **Build de contrôle** : seulement si Sébastien dit oui.
+4. **Livraison, puis HUD** : quai, véhicules, commandes au flux réel, 2 objectifs toujours visibles. Le HUD s'ajustera avec les captures de Sébastien.
+5. **Contrats à enjeu et changement d'usine** : un contrat raté perd la prime, jamais de progression (`QUALITE.md`).
+6. **Nouvelles machines** : Programmation, robots, drone, caméras, en vrais modèles.
+7. UW-2 (budget et décor fusionné), puis U4.
 
 ## Proposé à Sébastien, pas encore validé
 - 5 usines, une génération de caméra par usine : dôme, motorisée 4K, thermique, intelligence artificielle, sentinelle. Elles remplaceraient les 4 sites proposés avant (Atelier, Entrepôt, Banque, Aéroport).

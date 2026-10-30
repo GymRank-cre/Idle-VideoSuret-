@@ -14,9 +14,10 @@ public class IdleEconomyConfig : ScriptableObject
         public float cycle = 1.6f;             // secondes par cycle au niveau 0
         public double value = 1;               // valeur d'une pièce au niveau 0
         public double unlockPayback = 0;       // prix de déblocage, en secondes de revenu du poste au niveau 0 (0 = ouvert d'emblée) : si la valeur change, le prix suit
-        public Station(string id, string nameKey, float cycle, double value, double unlockPayback)
+        public int slots = 1;                  // emplacements : autant de machines au plus
+        public Station(string id, string nameKey, float cycle, double value, double unlockPayback, int slots)
         {
-            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlockPayback = unlockPayback;
+            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlockPayback = unlockPayback; this.slots = slots;
         }
     }
 
@@ -36,21 +37,28 @@ public class IdleEconomyConfig : ScriptableObject
     [Header("Postes (dans l'ordre de la chaîne)")]
     public Station[] stations =
     {
-        new Station("recep", "station.recep", 1.6f, 1, 0),      // la serre : elle ne vend rien, elle alimente l'Assemblage
-        new Station("assem", "station.assem", 3.0f, 12, 0),     // ouvert d'emblée : c'est la sortie de la chaîne
-        new Station("test", "station.test", 4.5f, 144, 45000),
-        new Station("pack", "station.pack", 6.0f, 1728, 120000),
-        new Station("ship", "station.ship", 8.0f, 20736, 800000),
+        new Station("recep", "station.recep", 1.6f, 1, 0, 1),         // la serre : elle ne vend rien, elle alimente l'Assemblage
+        new Station("assem", "station.assem", 3.0f, 12, 0, 3),        // ouvert d'emblée : il faut bien une sortie à la chaîne
+        new Station("prog", "station.prog", 3.75f, 144, 5000, 3),
+        new Station("test", "station.test", 4.5f, 1728, 10000, 3),
+        new Station("pack", "station.pack", 6.0f, 20736, 30000, 3),
+        new Station("ship", "station.ship", 8.0f, 248832, 100000, 1),
     };
 
     [Header("Chaîne de départ : recrutements, tas, stock, drone")]
     public double[] hirePrices = { 25, 30, 45 };       // robot découpeur, robot graveur, drone récolteur ; leur somme ne dépasse jamais `startCash`
     [Min(0f)] public double chainBufferSeconds = 8;    // un tas entre deux robots garde tant de secondes de production
     [Min(1f)] public double chainBufferMin = 6;
-    [Min(0f)] public double chainStockSeconds = 30;    // le stock garde tant de secondes du plus rapide des deux postes
+    [Min(0f)] public double chainOutputSeconds = 6;    // la sortie d'un poste garde de quoi attendre le chariot, pas plus : le surplus se vend tout de suite
+    [Min(0f)] public double chainStockSeconds = 30;    // un stock garde tant de secondes de ce que son poste consomme
     [Min(1f)] public double chainStockMin = 30;
     [Min(0.1f)] public double droneTrip = 2f;          // secondes pour un aller-retour
-    [Min(0f)] public double droneMinLoad = 1;          // le drone attend d'avoir au moins ça à porter
+    [Min(0.1f)] public double cartTrip = 5f;
+    [Min(0f)] public double carrierMinLoad = 1;        // un porteur attend d'avoir au moins ça à porter
+
+    [Header("Emplacements")]
+    public double[] slotPayback = { 400000, 3000000 };  // prix de la 2e puis de la 3e machine, en secondes du revenu de départ du dernier poste : elles se paient à la fin de la chaîne
+    [Min(1f)] public double slotStep = 2;              // chaque poste de la chaîne les paie ce facteur plus cher que le précédent
 
     [Header("Améliorations")]
     [Min(0f)] public double speedStep = 0.12;          // vitesse = 1 + speedStep x niveau
@@ -113,7 +121,7 @@ public class IdleEconomyConfig : ScriptableObject
     [Min(1)] public int sayCount = 6;                  // répliques différentes (clés Loc order.say.N)
 
     [Header("Animation des machines")]
-    public float[] visualCap = { 1.6f, 1.2f, 1.2f, 1.0f, 0.45f };   // cycles visuels par seconde au plus (même si la production va plus vite)
+    public float[] visualCap = { 1.6f, 1.2f, 1.2f, 1.2f, 1.0f, 0.45f };   // cycles visuels par seconde au plus (même si la production va plus vite)
 
     [Header("Départ et achat conseillé")]
     public double startCash = 100;

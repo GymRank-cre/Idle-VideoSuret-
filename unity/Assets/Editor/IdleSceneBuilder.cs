@@ -14,6 +14,7 @@ public static class IdleSceneBuilder
     public const string ScenePath = "Assets/Scenes/Idle.unity";
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
     const float GroundY = -IdleLayout.SlabThickness;
+    const float RoadShift = IdleLayout.FloorWidth - 7.8f;   // la route longe la dalle
 
     [MenuItem("Tools/Idle Prototype/Build scene")]
     public static void Build()
@@ -29,6 +30,7 @@ public static class IdleSceneBuilder
         BuildGround(decor);
         BuildGrassDetails(decor);
         BuildSlab(decor, shadows);
+        IdleChainBuilder.PaintFloor(decor);
         BuildRoad(decor);
         BuildTrees(decor, shadows);
         decor.ToObject("Decor", world, IdleMaterials.Palette("PaletteGround", GroundY));   // tout le décor fixe : un seul appel de dessin
@@ -116,7 +118,7 @@ public static class IdleSceneBuilder
     static bool OnSlabOrRoad(float x, float z, float margin)
     {
         bool slab = x > -margin && x < IdleLayout.FloorDepth + margin && z > -margin && z < IdleLayout.FloorWidth + margin;
-        bool road = z > 8.3f - margin && z < 10.4f + margin;
+        bool road = z > 8.3f + RoadShift - margin && z < 10.4f + RoadShift + margin;
         return slab || road;
     }
 
@@ -127,18 +129,18 @@ public static class IdleSceneBuilder
         System.Func<float> r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647f; };
         string[] blades = { "#4FA535", "#5DB53D", "#3F9430" };
         float y = GroundY;
-        for (int n = 0; n < 260; n++)
+        for (int n = 0; n < 400; n++)
         {
-            float x = -11f + r() * 29f, z = -11f + r() * 33f, size = 1.05f + r() * 0.8f;
+            float x = -11f + r() * 37f, z = -11f + r() * 37f, size = 1.05f + r() * 0.8f;
             string color = blades[n % blades.Length];
             if (OnSlabOrRoad(x, z, 0.25f)) continue;
             decor.SetPaint(color);
             for (int k = 0; k < 3; k++)
                 decor.Cone(new Vector3(x + (k - 1) * 0.055f * size, y, z + ((k * 7) % 3 - 1) * 0.04f * size), 0.036f * size, (0.14f + (k % 2) * 0.09f) * size, 3);
         }
-        for (int n = 0; n < 150; n++)
+        for (int n = 0; n < 230; n++)
         {
-            float x = -11f + r() * 29f, z = -11f + r() * 33f;
+            float x = -11f + r() * 37f, z = -11f + r() * 37f;
             bool yellow = r() < 0.3f;
             if (OnSlabOrRoad(x, z, 0.2f)) continue;
             int count = 1 + (int)(r() * 3f);
@@ -220,12 +222,12 @@ public static class IdleSceneBuilder
         // route derrière la dalle : web x 8,6 -> 10,2 (Z), sur toute la longueur (X)
         float y = GroundY + 0.01f;
         decor.SetPaint("#4E5864", 0.1f);
-        decor.Box(new Vector3(-22f, y, 8.6f), new Vector3(50f, 0.01f, 1.6f));
+        decor.Box(new Vector3(-22f, y, 8.6f + RoadShift), new Vector3(50f, 0.01f, 1.6f));
         decor.SetPaint("#D9D2BE");
-        decor.Box(new Vector3(-22f, y + 0.011f, 8.48f), new Vector3(50f, 0.004f, 0.12f));
-        decor.Box(new Vector3(-22f, y + 0.011f, 10.2f), new Vector3(50f, 0.004f, 0.12f));
+        decor.Box(new Vector3(-22f, y + 0.011f, 8.48f + RoadShift), new Vector3(50f, 0.004f, 0.12f));
+        decor.Box(new Vector3(-22f, y + 0.011f, 10.2f + RoadShift), new Vector3(50f, 0.004f, 0.12f));
         decor.SetPaint("#FFD23C");
-        for (float x = -22f; x < 28f; x += 1.6f) decor.Box(new Vector3(x, y + 0.011f, 9.38f), new Vector3(0.8f, 0.004f, 0.06f));
+        for (float x = -22f; x < 28f; x += 1.6f) decor.Box(new Vector3(x, y + 0.011f, 9.38f + RoadShift), new Vector3(0.8f, 0.004f, 0.06f));
     }
 
     // ------------------------------------------------------------------ arbres (même tirage que le web : graine 7)
@@ -235,11 +237,11 @@ public static class IdleSceneBuilder
         long seed = 7;
         System.Func<float> r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647f; };
         string[] pineDark = { "#2FA55B", "#1E8A4C", "#27994F" }, pineLight = { "#6BD65A", "#3FB84A" };
-        for (int n = 0; n < 420; n++)
+        for (int n = 0; n < 650; n++)
         {
-            float x = -7f + r() * 22f, yy = -7f + r() * 22f;
+            float x = -7f + r() * 26f, yy = -7f + r() * 30f;
             bool inFloor = x > -0.9f && x < IdleLayout.FloorWidth + 0.9f && yy > -0.9f && yy < IdleLayout.FloorDepth + 1.1f;
-            bool onRoad = x > 8.3f && x < 10.6f;
+            bool onRoad = x > 8.3f + RoadShift && x < 10.6f + RoadShift;
             if (inFloor || onRoad) continue;
             float s = (0.5f + r() * 0.3f) * 1.5f;
             bool light = r() < 0.25f;
@@ -275,38 +277,53 @@ public static class IdleSceneBuilder
         var slowSo = new SerializedObject(slow.GetComponent<IdleSlowMo>());
         slowSo.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
         slowSo.ApplyModifiedPropertiesWithoutUndo();
-        var views = new IdleStationView[IdleLayout.Stations.Length];
-        foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
-            views[new SerializedObject(v).FindProperty("station").intValue] = v;
+        IdleStationView[] views = FirstSlots();
         SerializedProperty list = so.FindProperty("stations");
         list.arraySize = views.Length;
         for (int i = 0; i < views.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = views[i];
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    // ------------------------------------------------------------------ ombres de contact : un seul maillage, un groupe par poste
+    // La vue du premier emplacement de chaque poste : c'est elle qui parle pour le poste.
+    internal static IdleStationView[] FirstSlots()
+    {
+        var views = new IdleStationView[IdleLayout.Stations.Length];
+        foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
+        {
+            var so = new SerializedObject(v);
+            if (so.FindProperty("slot").intValue == 0) views[so.FindProperty("station").intValue] = v;
+        }
+        return views;
+    }
+
+    // ------------------------------------------------------------------ ombres de contact : un seul maillage, un groupe par machine
 
     static void BuildContactShadows(Transform parent, MeshKit kit)
     {
         var starts = new List<int> { 0, kit.IndexCount };   // groupe 0 : dalle et arbres, déjà dans le maillage
+        var stations = new List<int> { -1 };
+        var slots = new List<int> { 0 };
         const float Y = 0.012f, Offset = 0.1f;
-        for (int i = 0; i < IdleLayout.Stations.Length; i++)
-        {
-            Vector3 c = IdleLayout.StationCenter(i);
-            SoftShadow(kit, new Vector3(c.x + Offset, Y, c.z + Offset), 0.85f, 0.85f, 0.28f, 0.46f);
-            if (i > 0)   // le tapis i-1 apparaît avec le poste i
+        for (int i = 0; i < IdleLayout.Slots.Length; i++)
+            for (int k = 0; k < IdleLayout.Slots[i].Length; k++)
             {
-                Vector2[] web = IdleLayout.Belts[i - 1];
-                for (int k = 0; k + 1 < web.Length; k++)
+                Vector3 c = IdleLayout.SlotCenter(i, k);
+                SoftShadow(kit, new Vector3(c.x + Offset, Y, c.z + Offset), 0.85f, 0.85f, 0.28f, 0.46f);
+                if (k == 0 && i > 0 && i - 1 < IdleLayout.Belts.Length)   // le tapis de la rangée apparaît avec sa première machine
                 {
-                    Vector3 p = IdleLayout.ToWorld(web[k], Y), q = IdleLayout.ToWorld(web[k + 1], Y);
-                    Vector3 mid = (p + q) * 0.5f + new Vector3(Offset * 0.6f, 0f, Offset * 0.6f);
-                    float halfX = Mathf.Abs(p.x - q.x) * 0.5f + BeltWidth * 0.5f, halfZ = Mathf.Abs(p.z - q.z) * 0.5f + BeltWidth * 0.5f;
-                    SoftShadow(kit, mid, halfX, halfZ, 0.15f, 0.36f);
+                    Vector2[] web = IdleLayout.Belts[i - 1];
+                    for (int s = 0; s + 1 < web.Length; s++)
+                    {
+                        Vector3 p = IdleLayout.ToWorld(web[s], Y), q = IdleLayout.ToWorld(web[s + 1], Y);
+                        Vector3 mid = (p + q) * 0.5f + new Vector3(Offset * 0.6f, 0f, Offset * 0.6f);
+                        float halfX = Mathf.Abs(p.x - q.x) * 0.5f + BeltWidth * 0.5f, halfZ = Mathf.Abs(p.z - q.z) * 0.5f + BeltWidth * 0.5f;
+                        SoftShadow(kit, mid, halfX, halfZ, 0.15f, 0.36f);
+                    }
                 }
+                starts.Add(kit.IndexCount);
+                stations.Add(i);
+                slots.Add(k);
             }
-            starts.Add(kit.IndexCount);
-        }
         GameObject go = kit.ToObject("ContactShadows", parent, IdleMaterials.ContactShadow());
         var script = go.AddComponent<IdleContactShadows>();
         var so = new SerializedObject(script);
@@ -314,6 +331,13 @@ public static class IdleSceneBuilder
         SerializedProperty list = so.FindProperty("groupStart");
         list.arraySize = starts.Count;
         for (int i = 0; i < starts.Count; i++) list.GetArrayElementAtIndex(i).intValue = starts[i];
+        SerializedProperty groupStation = so.FindProperty("groupStation"), groupSlot = so.FindProperty("groupSlot");
+        groupStation.arraySize = groupSlot.arraySize = stations.Count;
+        for (int i = 0; i < stations.Count; i++)
+        {
+            groupStation.GetArrayElementAtIndex(i).intValue = stations[i];
+            groupSlot.GetArrayElementAtIndex(i).intValue = slots[i];
+        }
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
@@ -325,45 +349,52 @@ public static class IdleSceneBuilder
         slots.SetParent(parent, false);
         Material ghostNext = IdleMaterials.Get("GhostNext", "#CFE3F6", 0f, true, 0.42f);
         Material ghostFar = IdleMaterials.Get("GhostFar", "#CFE3F6", 0f, true, 0.24f);
-        Material ghostEdge = IdleMaterials.Get("GhostEdge", "#FFFFFF", 0f, true, 0.7f);
         Sprite lockSprite = UiSprites.Picto("lock");
-        for (int i = 0; i < IdleLayout.Stations.Length; i++)
+        for (int i = 0; i < IdleLayout.Slots.Length; i++)
         {
-            var slot = new GameObject("Slot_" + i, typeof(IdleStationView)).transform;
-            slot.SetParent(slots, false);
-            slot.position = IdleLayout.StationCenter(i);
-            float s = IdleLayout.StationSize;
-            var ghost = new GameObject("Ghost").transform;
-            ghost.SetParent(slot, false);
-            var body = new MeshKit();
-            body.Box(new Vector3(-s * 0.5f, 0.01f, -s * 0.5f), new Vector3(s, 0.9f, s));
-            GameObject bodyGo = body.ToObject("Body", ghost, ghostFar);
-            var edge = new MeshKit();   // cadre blanc au sol
-            float e = 0.05f;
-            edge.Box(new Vector3(-s * 0.5f, 0.012f, -s * 0.5f), new Vector3(s, 0.004f, e));
-            edge.Box(new Vector3(-s * 0.5f, 0.012f, s * 0.5f - e), new Vector3(s, 0.004f, e));
-            edge.Box(new Vector3(-s * 0.5f, 0.012f, -s * 0.5f), new Vector3(e, 0.004f, s));
-            edge.Box(new Vector3(s * 0.5f - e, 0.012f, -s * 0.5f), new Vector3(e, 0.004f, s));
-            edge.ToObject("Frame", ghost, ghostEdge);
-            var lockGo = new GameObject("Lock", typeof(SpriteRenderer), typeof(FaceCamera));
-            lockGo.transform.SetParent(ghost, false);
-            lockGo.transform.localPosition = new Vector3(0f, 1.25f, 0f);
-            lockGo.transform.localScale = Vector3.one * 0.5f;
-            var sr = lockGo.GetComponent<SpriteRenderer>();
-            sr.sprite = lockSprite;
-            sr.color = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
-
-            Transform machine = IdleMachineBuilder.Build(slot, i);
-            var so = new SerializedObject(slot.GetComponent<IdleStationView>());
-            so.FindProperty("station").intValue = i;
-            so.FindProperty("ghost").objectReferenceValue = ghost.gameObject;
-            so.FindProperty("ghostBody").objectReferenceValue = bodyGo.GetComponent<Renderer>();
-            so.FindProperty("ghostNext").objectReferenceValue = ghostNext;
-            so.FindProperty("ghostFar").objectReferenceValue = ghostFar;
-            so.FindProperty("lockIcon").objectReferenceValue = sr;
-            so.FindProperty("machine").objectReferenceValue = machine.gameObject;
-            so.FindProperty("floatHeight").floatValue = IdleMachineBuilder.LabelHeight[i] + 0.5f;   // le « +x » part au-dessus de l'étiquette
-            so.ApplyModifiedPropertiesWithoutUndo();
+            Transform first = null;
+            for (int k = 0; k < IdleLayout.Slots[i].Length; k++)
+            {
+                var slot = new GameObject("Slot_" + i + "_" + k, typeof(IdleStationView)).transform;
+                slot.SetParent(slots, false);
+                slot.position = IdleLayout.SlotCenter(i, k);
+                var so = new SerializedObject(slot.GetComponent<IdleStationView>());
+                so.FindProperty("station").intValue = i;
+                so.FindProperty("slot").intValue = k;
+                if (k == 0)
+                {
+                    float s = IdleLayout.StationSize;
+                    var ghost = new GameObject("Ghost").transform;
+                    ghost.SetParent(slot, false);
+                    var body = new MeshKit();
+                    body.Box(new Vector3(-s * 0.5f, 0.01f, -s * 0.5f), new Vector3(s, 0.9f, s));
+                    GameObject bodyGo = body.ToObject("Body", ghost, ghostFar);
+                    var lockGo = new GameObject("Lock", typeof(SpriteRenderer), typeof(FaceCamera));
+                    lockGo.transform.SetParent(ghost, false);
+                    lockGo.transform.localPosition = new Vector3(0f, 1.9f, 0f);   // au-dessus du mot « NOUVEAU » de la plaque
+                    lockGo.transform.localScale = Vector3.one * 0.5f;
+                    var sr = lockGo.GetComponent<SpriteRenderer>();
+                    sr.sprite = lockSprite;
+                    sr.color = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
+                    first = IdleMachineBuilder.Build(slot, i);
+                    so.FindProperty("ghost").objectReferenceValue = ghost.gameObject;
+                    so.FindProperty("ghostBody").objectReferenceValue = bodyGo.GetComponent<Renderer>();
+                    so.FindProperty("ghostNext").objectReferenceValue = ghostNext;
+                    so.FindProperty("ghostFar").objectReferenceValue = ghostFar;
+                    so.FindProperty("lockIcon").objectReferenceValue = sr;
+                    so.FindProperty("machine").objectReferenceValue = first.gameObject;
+                    so.FindProperty("floatHeight").floatValue = IdleMachineBuilder.LabelHeight[i] + 0.5f;   // le « +x » part au-dessus de l'étiquette
+                }
+                else
+                {
+                    // même maillages que la première machine : un seul appel de dessin par type là où le matériel sait les instancier
+                    GameObject copy = Object.Instantiate(first.gameObject, slot, false);
+                    copy.name = "Machine";
+                    Object.DestroyImmediate(copy.transform.Find("Label").gameObject);
+                    so.FindProperty("machine").objectReferenceValue = copy;
+                }
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
     }
 
@@ -394,14 +425,17 @@ public static class IdleSceneBuilder
         fxSo.FindProperty("system").objectReferenceValue = fxObject.GetComponent<ParticleSystem>();
         fxSo.ApplyModifiedPropertiesWithoutUndo();
 
-        float[] fxPhase = { 0.02f, 0.45f, 0.6f, 0.5f, 0.72f };   // cristal coupé, caméra montée, balayage, presse en bas, départ de la camionnette
+        float[] fxPhase = { 0.02f, 0.45f, 0.5f, 0.6f, 0.5f, 0.72f };   // cristal coupé, caméra montée, programme chargé, balayage, presse en bas, départ de la camionnette
         foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
         {
             var vso = new SerializedObject(view);
-            vso.FindProperty("feedback").objectReferenceValue = go.GetComponent<FeedbackSpawner>();
-            vso.FindProperty("fx").objectReferenceValue = fxObject.GetComponent<IdleStationFx>();
             vso.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
-            vso.FindProperty("fxPhase").floatValue = fxPhase[vso.FindProperty("station").intValue];
+            if (vso.FindProperty("slot").intValue == 0)
+            {
+                vso.FindProperty("feedback").objectReferenceValue = go.GetComponent<FeedbackSpawner>();
+                vso.FindProperty("fx").objectReferenceValue = fxObject.GetComponent<IdleStationFx>();
+                vso.FindProperty("fxPhase").floatValue = fxPhase[vso.FindProperty("station").intValue];
+            }
             vso.ApplyModifiedPropertiesWithoutUndo();
         }
     }
@@ -484,7 +518,7 @@ public static class IdleSceneBuilder
             tops[bi] = top.ToObject("Top", belt, topMat).GetComponent<Renderer>();
 
             // caisses qui avancent (leur nombre dépend de la longueur ; IdleBeltView les déplace)
-            int count = Mathf.Max(3, Mathf.RoundToInt(acc / 0.5f));   // réserve : « Ajouter » en montre de plus en plus
+            int count = Mathf.Clamp(Mathf.RoundToInt(acc / 0.5f), 3, 6);   // réserve : « Ajouter » en montre de plus en plus
             float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
             var itemKit = new MeshKit();   // boîte + détail dans un maillage, le même pour toutes les caisses du tapis
             itemKit.SetPaint(itemHex[bi], 0.3f);
@@ -549,7 +583,7 @@ public static class IdleSceneBuilder
         var k = new MeshKit();
         k.SetPaint("#141C26");
         k.RoundedPlate(half + 0.02f, Corner + 0.02f, 0f);
-        k.SetPaint(kind == IdleGame.PadKind.Unlock ? "#26323F" : "#2A3644");
+        k.SetPaint(kind == IdleGame.PadKind.Unlock || kind == IdleGame.PadKind.Slot ? "#26323F" : "#2A3644");
         k.RoundedPlate(half, Corner, 0.002f);
         k.SetPaint(affordable ? "#3DDC5A" : "#FFC400");
         if (affordable) k.RoundedRing(half, Corner, width, 0.004f);
@@ -583,7 +617,7 @@ public static class IdleSceneBuilder
         root.SetParent(parent, false);
         Material face = IdleMaterials.Overlay("PadFace", "#FFFFFF", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
         Font font = UiTheme.Font;
-        var kinds = new[] { IdleGame.PadKind.Speed, IdleGame.PadKind.Add, IdleGame.PadKind.Unlock, IdleGame.PadKind.Hire };
+        var kinds = new[] { IdleGame.PadKind.Speed, IdleGame.PadKind.Add, IdleGame.PadKind.Unlock, IdleGame.PadKind.Hire, IdleGame.PadKind.Slot };
         var on = new Mesh[kinds.Length];
         var wait = new Mesh[kinds.Length];
         for (int k = 0; k < kinds.Length; k++) { on[k] = PadMesh(kinds[k], true); wait[k] = PadMesh(kinds[k], false); }
@@ -594,9 +628,10 @@ public static class IdleSceneBuilder
             {
                 IdleGame.PadKind kind = kinds[k];
                 if (kind == IdleGame.PadKind.Hire && i >= IdleLayout.PadHire.Length) continue;   // une plaque par robot à recruter
+                if (kind == IdleGame.PadKind.Slot && IdleLayout.Slots[i].Length < 2) continue;   // une plaque qui va d'emplacement en emplacement
                 var pad = new GameObject("Pad_" + i + "_" + kind, typeof(IdlePadView)).transform;
                 pad.SetParent(root, false);
-                pad.position = IdleLayout.ToWorld(IdleLayout.PadPosition(i, kind), 0.03f);
+                pad.position = IdleLayout.ToWorld(IdleLayout.PadPosition(i, kind, 1), 0.03f);
                 var visual = new GameObject("Visual").transform;
                 visual.SetParent(pad, false);
 
@@ -608,13 +643,13 @@ public static class IdleSceneBuilder
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = false;
 
-                if (kind == IdleGame.PadKind.Unlock || kind == IdleGame.PadKind.Hire)
+                if (kind == IdleGame.PadKind.Unlock || kind == IdleGame.PadKind.Hire || kind == IdleGame.PadKind.Slot)
                 {
                     var tag = new GameObject("NewTag").transform;
                     tag.SetParent(visual, false);
                     tag.localPosition = PadPoint(9f, -9f, 0.56f);
                     tag.gameObject.AddComponent<FaceCamera>();
-                    MakeFlatText(tag, Loc.T(kind == IdleGame.PadKind.Hire ? "pad.hire" : "pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
+                    MakeFlatText(tag, Loc.T(kind == IdleGame.PadKind.Hire ? "pad.hire" : kind == IdleGame.PadKind.Slot ? "pad.slot" : "pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
                 }
                 var priceRoot = new GameObject("Price").transform;
                 priceRoot.SetParent(visual, false);
@@ -785,8 +820,8 @@ public static class IdleSceneBuilder
     {
         var cars = new GameObject("Cars").transform;
         cars.SetParent(parent, false);
-        MakeCar(cars, "CarRed", "#F2453D", new Vector3(-9f, 0f, 8.78f), new Vector3(17f, 0f, 8.78f), 15f, 8f, 3f);
-        MakeCar(cars, "CarBlue", "#1FA0FF", new Vector3(17f, 0f, 9.52f), new Vector3(-9f, 0f, 9.52f), 21f, 9f, 11f);
+        MakeCar(cars, "CarRed", "#F2453D", new Vector3(-9f, 0f, 8.78f + RoadShift), new Vector3(25f, 0f, 8.78f + RoadShift), 15f, 8f, 3f);
+        MakeCar(cars, "CarBlue", "#1FA0FF", new Vector3(25f, 0f, 9.52f + RoadShift), new Vector3(-9f, 0f, 9.52f + RoadShift), 21f, 9f, 11f);
     }
 
     static void MakeCar(Transform parent, string name, string hex, Vector3 from, Vector3 to, float interval, float travel, float first)

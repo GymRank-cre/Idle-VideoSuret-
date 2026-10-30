@@ -53,6 +53,8 @@ public class IdlePadView : MonoBehaviour
         if (visual.gameObject.activeSelf != visible) visual.gameObject.SetActive(visible);
         if (!visible) return;
 
+        if (kind == IdleGame.PadKind.Slot)   // la plaque se pose sur la place de la machine à venir
+            transform.position = IdleLayout.ToWorld(IdleLayout.SlotPlan(station, game.Stations[station].slots), transform.position.y);
         long price = game.PadPrice(station, kind);
         if (price != shownPrice)
         {

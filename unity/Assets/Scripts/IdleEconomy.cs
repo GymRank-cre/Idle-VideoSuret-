@@ -10,7 +10,8 @@ public class IdleEconomy
         public bool unlocked;
         public int speed;
         public int add;
-        public StationLevels Copy() { return new StationLevels { unlocked = unlocked, speed = speed, add = add }; }
+        public int slots = 1;      // machines posées
+        public StationLevels Copy() { return new StationLevels { unlocked = unlocked, speed = speed, add = add, slots = slots }; }
     }
 
     public struct Globals
@@ -19,7 +20,7 @@ public class IdleEconomy
         public int slots;
     }
 
-    public enum Kind { Upgrade, Unlock, Hire }
+    public enum Kind { Upgrade, Unlock, Hire, Slot }
 
     public struct Option
     {
@@ -33,10 +34,10 @@ public class IdleEconomy
         public bool milestone;     // l'achat franchit un palier x2
     }
 
-    public const int SerreStation = 0, AssemblyStation = 1;   // le début de la chaîne : la serre alimente l'Assemblage
+    public const int SerreStation = 0;   // le début de la chaîne
 
     readonly IdleEconomyConfig config;
-    readonly double[] baseSpeedCost, baseAddCost;
+    readonly double[] baseSpeedCost, baseAddCost, flowScratch, soldScratch;
 
     public IdleEconomyConfig Config => config;
     public int StationCount => config.stations.Length;
@@ -47,6 +48,8 @@ public class IdleEconomy
         int n = config.stations.Length;
         baseSpeedCost = new double[n];
         baseAddCost = new double[n];
+        flowScratch = new double[n];
+        soldScratch = new double[n];
         for (int i = 0; i < n; i++)
         {
             double i0 = config.stations[i].value / config.stations[i].cycle;                       // revenu par seconde au niveau 0
@@ -111,50 +114,64 @@ public class IdleEconomy
 
     // ------------------------------------------------------------------ revenus
 
+    // Un palier double le débit de la machine, pas la valeur de la pièce : une pièce vaut ainsi toujours plus au poste suivant, et ouvrir un poste ne fait jamais perdre d'argent.
     public double ItemsPerSecond(int i, StationLevels st, Globals g)
     {
-        return (1 + st.add) * (1 + config.speedStep * st.speed) * g.speed / config.stations[i].cycle;
+        return (1 + st.add) * (1 + config.speedStep * st.speed) * Math.Pow(2, MilestoneCount(st.speed + st.add)) * st.slots * g.speed / config.stations[i].cycle;
     }
 
-    public double MoneyPerItem(int i, StationLevels st, Globals g)
-    {
-        return config.stations[i].value * Math.Pow(2, MilestoneCount(st.speed + st.add)) * g.revenue;
-    }
+    public double MoneyPerItem(int i, Globals g) { return config.stations[i].value * g.revenue; }
 
-    public double Income(int i, StationLevels st, Globals g)
+    // Ce qui traverse la chaîne en régime établi : chaque poste prend ce que le précédent lui donne, dans la limite de son débit ; ce que le suivant n'absorbe pas est vendu au prix du poste.
+    // `flow[i]` : pièces par seconde à la sortie du poste i ; `sold[i]` : pièces vendues par seconde à ce poste.
+    public void Flows(IList<StationLevels> st, Globals g, double[] flow, double[] sold)
     {
-        return st.unlocked ? ItemsPerSecond(i, st, g) * MoneyPerItem(i, st, g) : 0;
-    }
-
-    // Débit du début de la chaîne : le plus lent de la serre et de l'Assemblage décide.
-    public double ChainRate(IList<StationLevels> st, Globals g)
-    {
-        if (!st[SerreStation].unlocked || !st[AssemblyStation].unlocked) return 0;
-        return Math.Min(ItemsPerSecond(SerreStation, st[SerreStation], g), ItemsPerSecond(AssemblyStation, st[AssemblyStation], g));
-    }
-
-    // Ce que rapporte une pièce à la sortie de l'Assemblage : les paliers de la serre comptent aussi.
-    public double ChainValue(IList<StationLevels> st, Globals g)
-    {
-        return MoneyPerItem(AssemblyStation, st[AssemblyStation], g) * Math.Pow(2, MilestoneCount(st[SerreStation].speed + st[SerreStation].add));
+        int n = st.Count;
+        double through = ItemsPerSecond(SerreStation, st[SerreStation], g);
+        flow[SerreStation] = through;
+        for (int i = 1; i < n; i++)
+        {
+            through = st[i].unlocked ? Math.Min(through, ItemsPerSecond(i, st[i], g)) : 0;
+            flow[i] = through;
+        }
+        sold[SerreStation] = 0;
+        for (int i = 1; i < n; i++) sold[i] = flow[i] - (i + 1 < n ? flow[i + 1] : 0);
     }
 
     public double TotalIncome(IList<StationLevels> st, Globals g)
     {
-        double t = ChainRate(st, g) * ChainValue(st, g);
-        for (int i = AssemblyStation + 1; i < st.Count; i++) t += Income(i, st[i], g);
+        Flows(st, g, flowScratch, soldScratch);
+        double t = 0;
+        for (int i = 1; i < st.Count; i++) t += soldScratch[i] * MoneyPerItem(i, g);
         return t;
     }
 
-    // Gain de revenu de k niveaux de plus : nul sur le poste du début de la chaîne qui n'est pas le goulot.
-    public double UpgradeGain(IList<StationLevels> st, Globals g, int i, bool speedAxis, int k)
+    // Gain de revenu si le poste i passe à `changed`.
+    double GainWith(IList<StationLevels> st, Globals g, int i, StationLevels changed)
     {
         StationLevels before = st[i];
         double now = TotalIncome(st, g);
-        st[i] = With(before, speedAxis, k);
+        st[i] = changed;
         double after = TotalIncome(st, g);
         st[i] = before;
         return after - now;
+    }
+
+    // Gain de revenu de k niveaux de plus : nul sur un poste qui n'est pas le goulot, sauf s'il franchit un palier.
+    public double UpgradeGain(IList<StationLevels> st, Globals g, int i, bool speedAxis, int k) { return GainWith(st, g, i, With(st[i], speedAxis, k)); }
+
+    public double SlotGain(IList<StationLevels> st, Globals g, int i)
+    {
+        StationLevels more = st[i].Copy();
+        more.slots++;
+        return GainWith(st, g, i, more);
+    }
+
+    public double UnlockGain(IList<StationLevels> st, Globals g, int i)
+    {
+        StationLevels open = st[i].Copy();
+        open.unlocked = true;
+        return GainWith(st, g, i, open);
     }
 
     // ------------------------------------------------------------------ coûts
@@ -179,14 +196,21 @@ public class IdleEconomy
         return Math.Max(0, k);
     }
 
-    // Prix affiché et payé : entier, arrondi au plafond.
-    public static long Ceil(double cost) { return (long)Math.Ceiling(cost - 1e-9); }
+    // Prix affiché et payé : entier, arrondi au plafond ; au-delà de ce qu'un entier contient, il reste au maximum (jamais négatif, donc jamais gratuit).
+    public static long Ceil(double cost) { return cost >= 9.2e18 ? long.MaxValue : (long)Math.Ceiling(cost - 1e-9); }
 
     public double UnlockCost(int i, Globals g) { return config.stations[i].value / config.stations[i].cycle * config.stations[i].unlockPayback * g.cost; }
 
+    // Prix de la machine suivante d'un poste qui en a déjà `owned`.
+    public double SlotCost(int i, int owned, Globals g)
+    {
+        IdleEconomyConfig.Station last = config.stations[config.stations.Length - 1];
+        return last.value / last.cycle * config.slotPayback[owned - 1] * Math.Pow(config.slotStep, i - 1) * g.cost;
+    }
+
     public StationLevels With(StationLevels st, bool speedAxis, int k)
     {
-        return new StationLevels { unlocked = st.unlocked, speed = st.speed + (speedAxis ? k : 0), add = st.add + (speedAxis ? 0 : k) };
+        return new StationLevels { unlocked = st.unlocked, slots = st.slots, speed = st.speed + (speedAxis ? k : 0), add = st.add + (speedAxis ? 0 : k) };
     }
 
     // ------------------------------------------------------------------ options d'achat et meilleur achat
@@ -211,18 +235,24 @@ public class IdleEconomy
                     milestone = MilestoneCount(s.speed + s.add + k) > MilestoneCount(s.speed + s.add),
                 });
             }
+            if (s.slots < config.stations[i].slots)
+            {
+                double cost = SlotCost(i, s.slots, g);
+                double delta = SlotGain(st, g, i);
+                result.Add(new Option { kind = Kind.Slot, station = i, count = 1, cost = cost, delta = delta, payback = delta > 0 ? cost / delta : double.PositiveInfinity });
+            }
         }
         if (nextLocked >= 0)
         {
             double cost = UnlockCost(nextLocked, g);
-            double delta = Income(nextLocked, new StationLevels { unlocked = true }, g);
-            result.Add(new Option { kind = Kind.Unlock, station = nextLocked, count = 1, cost = cost, delta = delta, payback = cost / delta });
+            double delta = UnlockGain(st, g, nextLocked);
+            result.Add(new Option { kind = Kind.Unlock, station = nextLocked, count = 1, cost = cost, delta = delta, payback = delta > 0 ? cost / delta : double.PositiveInfinity });
         }
         return result;
     }
 
     double Score(Option o) { return Score(o, config.newStationFavor); }
-    static double Score(Option o, double favorUnlock) { return o.kind == Kind.Unlock ? o.payback * favorUnlock : o.payback; }
+    static double Score(Option o, double favorUnlock) { return o.kind == Kind.Upgrade ? o.payback : o.payback * favorUnlock; }
 
     // Meilleur délai de remboursement (le nouveau poste est favorisé si `favorUnlock` < 1) ; `found` faux si rien n'est achetable.
     public Option Best(List<Option> options, double favorUnlock, out bool found)
@@ -237,7 +267,7 @@ public class IdleEconomy
             if (!found || score < bestScore) { best = o; bestScore = score; found = true; }
         }
         if (found) return best;
-        // serre et Assemblage à égalité parfaite : aucun achat seul ne rapporte, le moins cher débloque la situation
+        // plusieurs postes à égalité parfaite : aucun achat seul ne rapporte, le moins cher débloque la situation
         foreach (Option o in options) if (!found || o.cost < best.cost) { best = o; found = true; }
         return best;
     }
