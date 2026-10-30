@@ -1142,6 +1142,8 @@ Vu sur `S3-1-debut`, `S3-2-rangee`, `S3-3-usine`, `S3-4-postes`, `S3-5-cinq-post
 6. **Résumé du matin** : le cloud tient `unity/RESUME_MATIN.md` à jour pour Sébastien (ce qui est fait, ce qu'il doit tester, ce qui l'attend) ; ne pas l'éditer.
 
 ## FILE D'ATTENTE — mode autonome
+**>>> ARRÊT DEMANDÉ PAR SÉBASTIEN (30/10, ~19 h 10 UTC) : « On oublie ce jeu, supprime le projet ». NE REPRENDS RIEN : ne lance aucune étape, ne publie aucun build, ne pousse rien d'autre que ton statut `bloqué : arrêt demandé par Sébastien` dans `STATUT_LOCAL.md`, et attends ses consignes (il précisera ce qu'il faut supprimer). Les relais du cloud sont suspendus. <<<**
+*(Ancienne consigne, suspendue :)*
 **>>> REPRENDRE (cloud, 30/10 19 h UTC) : le BUILD DE CONTRÔLE v14 est vérifié par le cloud (chargement, toucher, pincement, glissement : tout fonctionne ; voir « Relecture cloud du build de contrôle v14 »). Les décisions de Sébastien (rythme plus rapide, 5 usines, intrus) sont prises en compte, et **le cahier des charges du changement d'usine, des contrats et des intrus est écrit** (même section). **Ordre : (a) 5 retouches de la relecture de l'étape 2 + 4 réductions de dessin + 4 consignes du build v14 (diagnostic d'images/s dans ⚙, captures en JPEG, main de tutoriel, garde de caméra) -> (b) (3) livraison + HUD -> build de contrôle sur l'artefact privé -> (c) (4) changement d'usine, contrats, intrus -> build de contrôle -> (d) (5) nouvelles machines -> (e) (6) UW-2 (budget, murs en coupe) puis U4.** Pas de branche « builds », pas de `publier-build.ps1`. <<<**
 
  (Sébastien est absent jusqu'à demain matin ; **ne pas attendre de réponse, avancer**)
