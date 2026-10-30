@@ -248,7 +248,7 @@ public class ObjectiveGuide : MonoBehaviour
             string id = advisor.Bottleneck;
             int cost = machineUpgrades.IsMax(id, MachineUpgradeState.Speed) ? int.MaxValue : machineUpgrades.NextCost(id, MachineUpgradeState.Speed);
             int i = machineUpgrades.Config.IndexOf(id);
-            if (i >= 0 && wallet.Money >= cost) text = Loc.T("guide.upgrade", machineUpgrades.Config.Machines[i].displayName);
+            if (i >= 0 && wallet.Money >= cost) text = Loc.T("guide.upgrade", Loc.Or("machine." + id, machineUpgrades.Config.Machines[i].displayName));
         }
         if (text == null) { if (labelRoot.activeSelf) labelRoot.SetActive(false); return; }
         label.text = text;

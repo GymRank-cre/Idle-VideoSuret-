@@ -9,7 +9,7 @@ public class ProductType : ScriptableObject
     [SerializeField, Min(0)] int value = 25;  // valeur de vente (utilisée à l'étape 5b)
     [SerializeField] Color accentColor = Color.white;
 
-    public string DisplayName => displayName;
+    public string DisplayName => Loc.Or("product." + name, displayName);
     public GameObject Prefab => prefab;
     public int Value => value;
     public Color AccentColor => accentColor;

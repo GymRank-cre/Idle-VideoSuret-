@@ -157,7 +157,7 @@ public class OrdersUi : MonoBehaviour
         {
             bar.SetActive(true);
             OrderConfig.Client c = board.Config.Clients[board.Active.clientIndex];
-            barText.text = Loc.T("orders.bar", c.displayName, board.ActiveDelivered, board.ActiveTotal);
+            barText.text = Loc.T("orders.bar", OrderConfig.ClientName(c, board.Active.clientIndex), board.ActiveDelivered, board.ActiveTotal);
         }
         else
         {

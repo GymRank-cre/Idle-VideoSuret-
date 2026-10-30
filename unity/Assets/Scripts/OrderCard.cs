@@ -34,7 +34,7 @@ public class OrderCard : MonoBehaviour
         skin.color = c.skin; hair.color = c.hair; cloth.color = c.cloth;
         earLeft.color = earRight.color = c.skin;
         nose.color = Color.Lerp(c.skin, Color.black, 0.18f);
-        nameText.text = c.displayName + " - " + c.job;
+        nameText.text = OrderConfig.ClientName(c, o.clientIndex) + " - " + Loc.Or("client." + o.clientIndex + ".job", c.job);
         contentText.text = Describe(board, o);
         rewardText.text = "$ " + NumberFormat.Short(o.reward) + "   " + Loc.T("orders.reward", "", o.pro).Trim();
         accept.interactable = !board.HasActive;

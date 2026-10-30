@@ -313,7 +313,7 @@ public static class WorkshopBuilder
         Prim(PrimitiveType.Cube, "NeonBottom", neon, new Vector3(0f, 2.63f, -0.11f), new Vector3(4.2f, 0.04f, 0.04f), mNeon);
         Prim(PrimitiveType.Cube, "NeonLeft", neon, new Vector3(-2.1f, 3.05f, -0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
         Prim(PrimitiveType.Cube, "NeonRight", neon, new Vector3(2.1f, 3.05f, -0.11f), new Vector3(0.04f, 0.84f, 0.04f), mNeon);
-        TextMesh sign = MakeText(neon, "NeonText", "SÉCURITÉ", new Vector3(0f, 3.05f, -0.13f), 0.09f, 100,
+        TextMesh sign = MakeText(neon, "NeonText", Loc.T("sign.neon"), new Vector3(0f, 3.05f, -0.13f), 0.09f, 100,
             new Color(0.45f, 1f, 0.85f));
         sign.fontStyle = FontStyle.Bold;
 

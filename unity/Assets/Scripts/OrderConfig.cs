@@ -38,6 +38,9 @@ public class OrderConfig : ScriptableObject
     [SerializeField, Min(0f)] float firstOfferDelay = 2f;
 
     public Client[] Clients => clients;
+
+    // Nom affiché d'un client : la table Loc l'emporte sur la donnée (traduction).
+    public static string ClientName(Client c, int index) { return Loc.Or("client." + index + ".name", c.displayName); }
     public Tier[] Tiers => tiers;
     public float RewardFactor => rewardFactor;
     public int ProDivisor => proDivisor;

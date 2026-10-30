@@ -35,7 +35,7 @@ public class ReputationRow : MonoBehaviour
         ReputationConfig.Node n = s.Config.Nodes[i];
         iconBack.color = n.iconColor;
         if (iconText != null) iconText.text = "";
-        nameText.text = n.displayName;
+        nameText.text = Loc.Or("rep.node." + n.id + ".name", n.displayName);
         Refresh();
     }
 
@@ -48,9 +48,10 @@ public class ReputationRow : MonoBehaviour
         levelText.text = Loc.T("rep.level", level, n.maxLevel);
 
         float now = state.Config.Total(n, level), next = state.Config.Total(n, Mathf.Min(level + 1, n.maxLevel));
+        string description = Loc.Or("rep.node." + n.id + ".desc", n.description);
         effectText.text = state.IsMax(index)
-            ? string.Format(n.description, now.ToString("0"))
-            : string.Format(n.description, now.ToString("0")) + "  >  " + next.ToString("0");
+            ? string.Format(description, now.ToString("0"))
+            : string.Format(description, now.ToString("0")) + "  >  " + next.ToString("0");
 
         string missing = state.MissingPrerequisite(index);
         bool locked = missing != null || !n.implemented;

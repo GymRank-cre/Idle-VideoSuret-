@@ -23,8 +23,8 @@ public static class ChainBuilder
         GameObject test = BuildMachine("TestMachine", TestPosition, testConfig, 0, new Color(0.12f, 0.5f, 0.85f), 2.2f);
         GameObject pack = BuildMachine("PackMachine", PackPosition, packConfig, 1, new Color(0.95f, 0.5f, 0.1f), -2.2f);
 
-        UnlockPad testPad = PrototypeSetup.BuildUnlockPad(test, test, Flat(TestPosition), "TestPad", "TestPadConfig", "TEST", 400, true);
-        UnlockPad packPad = PrototypeSetup.BuildUnlockPad(pack, pack, Flat(PackPosition), "PackPad", "PackPadConfig", "EMBALLAGE", 500, true);
+        UnlockPad testPad = PrototypeSetup.BuildUnlockPad(test, test, Flat(TestPosition), "TestPad", "TestPadConfig", Loc.T("pad.test"), 400, true);
+        UnlockPad packPad = PrototypeSetup.BuildUnlockPad(pack, pack, Flat(PackPosition), "PackPad", "PackPadConfig", Loc.T("pad.pack"), 500, true);
         test.SetActive(false);
         pack.SetActive(false);
 
@@ -40,8 +40,8 @@ public static class ChainBuilder
         {
             new Vector3(-0.7f, 0f, 7.2f), new Vector3(5.3f, 0f, 7.2f)
         });
-        UnlockPad beltPad1 = PrototypeSetup.BuildUnlockPad(belt1, belt1.transform.Find("Pop").gameObject, new Vector3(-1.5f, 0.01f, 9.3f), "BeltPad1", "BeltPad1Config", "TAPIS", 700, true);
-        UnlockPad beltPad2 = PrototypeSetup.BuildUnlockPad(belt2, belt2.transform.Find("Pop").gameObject, new Vector3(2.5f, 0.01f, 9.5f), "BeltPad2", "BeltPad2Config", "TAPIS", 1500, true);
+        UnlockPad beltPad1 = PrototypeSetup.BuildUnlockPad(belt1, belt1.transform.Find("Pop").gameObject, new Vector3(-1.5f, 0.01f, 9.3f), "BeltPad1", "BeltPad1Config", Loc.T("pad.belt"), 700, true);
+        UnlockPad beltPad2 = PrototypeSetup.BuildUnlockPad(belt2, belt2.transform.Find("Pop").gameObject, new Vector3(2.5f, 0.01f, 9.5f), "BeltPad2", "BeltPad2Config", Loc.T("pad.belt"), 1500, true);
         belt1.SetActive(false);
         belt2.SetActive(false);
 

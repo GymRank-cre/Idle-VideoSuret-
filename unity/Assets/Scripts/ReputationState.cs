@@ -36,7 +36,7 @@ public class ReputationState : MonoBehaviour
         if (string.IsNullOrEmpty(n.prerequisiteId)) return null;
         int p = config.IndexOf(n.prerequisiteId);
         if (p < 0 || Level(p) >= n.prerequisiteLevel) return null;
-        return config.Nodes[p].displayName + " niv " + n.prerequisiteLevel;
+        return Loc.T("rep.nodelevel", Loc.Or("rep.node." + config.Nodes[p].id + ".name", config.Nodes[p].displayName), n.prerequisiteLevel);
     }
 
     public bool CanBuy(int index)

@@ -56,6 +56,79 @@ public static class Loc
         { "diag.session", "Session : {0} s" },
         { "diag.events", "Événements :" },
         { "diag.none", "aucun" },
+        { "guide.step.0", "Ramasse des caisses sur la palette" },
+        { "guide.step.1", "Dépose-les au poste bleu" },
+        { "guide.step.2", "Prends le produit sur le plateau" },
+        { "guide.step.3", "Livre-le au client du comptoir" },
+        { "guide.step.4", "Ramasse tes billets" },
+        { "guide.step.5", "Paye la dalle jaune pour ouvrir un 2e poste" },
+        { "guide.step.6", "Embauche un employé sur la dalle EMBAUCHE" },
+        { "guide.step.7", "Embauche un livreur sur la dalle LIVREUR" },
+        { "guide.step.8", "Achète la machine TEST sur la dalle jaune" },
+        { "guide.step.9", "Achète la machine EMBALLAGE" },
+        { "guide.step.10", "Achète un TAPIS pour relier les machines" },
+        { "guide.step.11", "Ouvre le menu Améliorations" },
+        { "pad.test", "TEST" },
+        { "pad.pack", "EMBALLAGE" },
+        { "pad.belt", "TAPIS" },
+        { "pad.hire", "EMBAUCHE" },
+        { "pad.courier", "LIVREUR" },
+        { "dock.title", "QUAI" },
+        { "sign.neon", "SÉCURITÉ" },
+        { "settings.sound", "Sons" },
+        { "settings.music", "Musique" },
+        { "settings.vibration", "Vibrations" },
+        { "machine.assembly", "Assemblage" },
+        { "machine.test", "Test" },
+        { "machine.pack", "Emballage" },
+        { "upgrade.stack", "Capacité de la pile" },
+        { "upgrade.player_speed", "Vitesse du joueur" },
+        { "upgrade.job_speed", "Vitesse de fabrication" },
+        { "upgrade.customer_pay", "Paiement des clients" },
+        { "upgrade.employee_speed", "Vitesse des employés" },
+        { "upgrade.employee_capacity", "Capacité des employés" },
+        { "upgrade.fx.StackCapacity", "+{0} caisse" },
+        { "upgrade.fx.EmployeeCapacity", "+{0} charge employés" },
+        { "upgrade.fx.PlayerSpeed", "+{0} % vitesse" },
+        { "upgrade.fx.JobSpeed", "-{0} % durée" },
+        { "upgrade.fx.CustomerPay", "+{0} % paiement" },
+        { "upgrade.fx.EmployeeSpeed", "+{0} % employés" },
+        { "client.0.name", "Karim" },
+        { "client.0.job", "Gérant" },
+        { "client.1.name", "Léa" },
+        { "client.1.job", "Boulangère" },
+        { "client.2.name", "Marc" },
+        { "client.2.job", "Garagiste" },
+        { "client.3.name", "Inès" },
+        { "client.3.job", "Pharmacienne" },
+        { "client.4.name", "Paul" },
+        { "client.4.job", "Hôtelier" },
+        { "client.5.name", "Sofia" },
+        { "client.5.job", "Directrice" },
+        { "product.Dome", "Caméra dôme" },
+        { "product.Badgeuse", "Badgeuse" },
+        { "product.Alarme", "Alarme" },
+        { "rep.nodelevel", "{0} niv {1}" },
+        { "rep.node.revenue.name", "Revenus" },
+        { "rep.node.revenue.desc", "+{0} % de paiements" },
+        { "rep.node.chain.name", "Vitesse de la chaîne" },
+        { "rep.node.chain.desc", "+{0} % de vitesse" },
+        { "rep.node.offline.name", "Gains hors ligne" },
+        { "rep.node.offline.desc", "+{0} % hors ligne" },
+        { "rep.node.offlinecap.name", "Plafond hors ligne" },
+        { "rep.node.offlinecap.desc", "+{0} h de plafond" },
+        { "rep.node.stack.name", "Capacité de la pile" },
+        { "rep.node.stack.desc", "+{0} caisse(s)" },
+        { "rep.node.speed.name", "Vitesse du technicien" },
+        { "rep.node.speed.desc", "+{0} % de vitesse" },
+        { "rep.node.patience.name", "Patience des clients" },
+        { "rep.node.patience.desc", "+{0} % de patience" },
+        { "rep.node.offers.name", "Offres de commandes" },
+        { "rep.node.offers.desc", "+{0} offre affichée" },
+        { "rep.node.active.name", "Commandes en cours" },
+        { "rep.node.active.desc", "+{0} en parallèle" },
+        { "rep.node.discount.name", "Remise sur les dalles" },
+        { "rep.node.discount.desc", "-{0} % de prix" },
     };
 
     public static string T(string key, params object[] args)
@@ -63,6 +136,13 @@ public static class Loc
         string s;
         if (!fr.TryGetValue(key, out s)) return key;
         return args == null || args.Length == 0 ? s : string.Format(s, args);
+    }
+
+    // Texte venant d'une donnée (ScriptableObject) : la table l'emporte si elle a la clé, sinon on garde le texte de la donnée.
+    public static string Or(string key, string fallback)
+    {
+        string s;
+        return fr.TryGetValue(key, out s) ? s : fallback;
     }
 
     public static bool Has(string key) { return fr.ContainsKey(key); }

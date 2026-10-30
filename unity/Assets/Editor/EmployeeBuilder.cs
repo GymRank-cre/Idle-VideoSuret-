@@ -128,7 +128,7 @@ public static class EmployeeBuilder
         AddHumanAnimator(model, agent);
         root.SetActive(false); // la dalle d'embauche l'active
 
-        return PrototypeSetup.BuildUnlockPad(root, model, HaulerPadPosition, "HirePad", "HireConfig", "EMBAUCHE", config.HirePrice, true);
+        return PrototypeSetup.BuildUnlockPad(root, model, HaulerPadPosition, "HirePad", "HireConfig", Loc.T("pad.hire"), config.HirePrice, true);
     }
 
     // ------------------------------------------------------------------ livreur (6b)
@@ -180,7 +180,7 @@ public static class EmployeeBuilder
         AddHumanAnimator(model, agent);
         root.SetActive(false);
 
-        return PrototypeSetup.BuildUnlockPad(root, model, CourierPadPosition, "HirePadCourier", "HireCourierConfig", "LIVREUR", config.HirePrice, true);
+        return PrototypeSetup.BuildUnlockPad(root, model, CourierPadPosition, "HirePadCourier", "HireCourierConfig", Loc.T("pad.courier"), config.HirePrice, true);
     }
 
     // ------------------------------------------------------------------ éléments communs

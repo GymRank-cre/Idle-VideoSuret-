@@ -335,6 +335,24 @@ public static class UnitTests
                 Eq("False", MotionSettings.AllowCameraGlide.ToString(), "glissement coupé");
                 MotionSettings.ReduceMotion = before;
             }
+            {   // P5 : la table Loc couvre tous les textes venant des données (aucune clé oubliée)
+                var missing = new List<string>();
+                void Need(string key) { if (!Loc.Has(key)) missing.Add(key); }
+                for (int i = 0; i < ObjectiveGuide.PhraseCount; i++) Need("guide.step." + i);
+                foreach (string kind in System.Enum.GetNames(typeof(UpgradeKind))) Need("upgrade.fx." + kind);
+                var upgrades = AssetDatabase.LoadAssetAtPath<UpgradeConfig>("Assets/Prototype/UpgradeConfig.asset");
+                if (upgrades != null) foreach (var u in upgrades.Upgrades) Need("upgrade." + u.id);
+                var machines = AssetDatabase.LoadAssetAtPath<MachineUpgradeConfig>("Assets/Prototype/MachineUpgradeConfig.asset");
+                if (machines != null) foreach (var mc in machines.Machines) Need("machine." + mc.id);
+                var orders = AssetDatabase.LoadAssetAtPath<OrderConfig>("Assets/Prototype/OrderConfig.asset");
+                if (orders != null) for (int i = 0; i < orders.Clients.Length; i++) { Need("client." + i + ".name"); Need("client." + i + ".job"); }
+                var rep = AssetDatabase.LoadAssetAtPath<ReputationConfig>("Assets/Prototype/ReputationConfig.asset");
+                if (rep != null) foreach (var n in rep.Nodes) { Need("rep.node." + n.id + ".name"); Need("rep.node." + n.id + ".desc"); }
+                foreach (string guid in AssetDatabase.FindAssets("t:ProductType")) Need("product." + System.IO.Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)));
+                Eq("", string.Join(", ", missing.ToArray()), "table Loc : clés manquantes");
+                Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");
+                Eq("Karim", Loc.Or("client.0.name", "autre"), "Loc.Or : la table l'emporte");
+            }
             Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
             Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
             Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");

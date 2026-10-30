@@ -33,7 +33,16 @@ public class GuideConfig : ScriptableObject
     [SerializeField, Min(1)] int cratesToCollect = 3;   // caisses portées pour valider la 1re étape
     [SerializeField] string doneKey = "guide_done";     // mémorisé avec PlayerPrefs (la vraie sauvegarde viendra à l'étape 7)
 
-    public string[] Phrases => new[] { collectCrates, depositCrates, takeProduct, deliverProduct, collectBills, payPad, hireEmployee, hireCourier, buyTest, buyPack, buyBelt, openUpgrades };
+    public string[] Phrases
+    {
+        get
+        {
+            string[] own = { collectCrates, depositCrates, takeProduct, deliverProduct, collectBills, payPad, hireEmployee, hireCourier, buyTest, buyPack, buyBelt, openUpgrades };
+            var result = new string[own.Length];
+            for (int i = 0; i < own.Length; i++) result[i] = Loc.Or("guide.step." + i, own[i]);   // la table Loc l'emporte (traduction)
+            return result;
+        }
+    }
     public float ArrowHeight => arrowHeight;
     public float ArrowBob => arrowBob;
     public float ArrowBobSpeed => arrowBobSpeed;

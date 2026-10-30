@@ -31,12 +31,9 @@ public class UpgradeRow : MonoBehaviour
     {
         switch (u.kind)
         {
-            case UpgradeKind.StackCapacity: return "+" + Mathf.RoundToInt(u.effectPerLevel) + " caisse";
-            case UpgradeKind.EmployeeCapacity: return "+" + Mathf.RoundToInt(u.effectPerLevel) + " charge employés";
-            case UpgradeKind.PlayerSpeed: return "+" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % vitesse";
-            case UpgradeKind.JobSpeed: return "-" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % durée";
-            case UpgradeKind.CustomerPay: return "+" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % paiement";
-            default: return "+" + Mathf.RoundToInt(u.effectPerLevel * 100f) + " % employés";
+            case UpgradeKind.StackCapacity:
+            case UpgradeKind.EmployeeCapacity: return Loc.T("upgrade.fx." + u.kind, Mathf.RoundToInt(u.effectPerLevel));
+            default: return Loc.T("upgrade.fx." + u.kind, Mathf.RoundToInt(u.effectPerLevel * 100f));
         }
     }
 
@@ -44,7 +41,7 @@ public class UpgradeRow : MonoBehaviour
     {
         UpgradeConfig.Upgrade u = state.Config.Upgrades[index];
         int level = state.Level(index);
-        nameText.text = u.displayName;
+        nameText.text = Loc.Or("upgrade." + u.id, u.displayName);
         levelText.text = Loc.T("upgrades.level", level, u.maxLevel);
 
         if (state.IsMax(index))

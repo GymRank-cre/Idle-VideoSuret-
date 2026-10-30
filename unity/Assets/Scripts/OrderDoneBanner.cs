@@ -55,7 +55,7 @@ public class OrderDoneBanner : MonoBehaviour
     {
         OrderConfig.Client c = board.Config.Clients[Mathf.Clamp(offer.clientIndex, 0, board.Config.Clients.Length - 1)];
         titleText.text = Loc.T("order.done");
-        clientText.text = c.displayName;
+        clientText.text = OrderConfig.ClientName(c, offer.clientIndex);
         moneyText.text = "+" + NumberFormat.Short(offer.reward);
         proText.text = "+" + NumberFormat.Short(offer.pro);
         proChip.gameObject.SetActive(offer.pro > 0);

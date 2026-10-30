@@ -136,7 +136,7 @@ public static class OrderBuilder
         var label = new GameObject("Label", typeof(FaceCamera));
         label.transform.SetParent(dock.transform, false);
         label.transform.localPosition = new Vector3(0f, 0.7f, 0f);
-        MachineBuilder.MakeText("Outline", label.transform, new Vector3(0.03f, -0.03f, 0.01f), UiTheme.Ink, 12, 0.055f, TextAnchor.MiddleCenter).text = "QUAI";
+        MachineBuilder.MakeText("Outline", label.transform, new Vector3(0.03f, -0.03f, 0.01f), UiTheme.Ink, 12, 0.055f, TextAnchor.MiddleCenter).text = Loc.T("dock.title");
         MachineBuilder.MakeText("Text", label.transform, Vector3.zero, Color.white, 13, 0.055f, TextAnchor.MiddleCenter).text = "QUAI";
 
         // petite camionnette posée sur la plaque : on comprend que c'est là que partent les colis
