@@ -515,6 +515,9 @@ Bonne méthode (robot à vitesse réelle, 4 passages, tableau jalon / cible / me
 - **Guide : ajouter les étapes TEST, EMBALLAGE puis TAPIS** (dans cet ordre) avec les consignes « Achète la machine TEST », « Achète EMBALLAGE », « Achète un TAPIS » ; à glisser dans **P1** (main de tutoriel qui pointe la dalle correspondante).
 **Ordre inchangé** : tests tactiles de 11e -> **blocage éventuel** -> UN build -> P1 à P6.
 
+## Relecture cloud du build de production (11e + K2 + Q2) : OK, publié dans l'Artifact. **Budget : STOP aux builds (dépôt ~960 Mo)**
+Le build charge et affiche l'écran titre « Idle Sécurité / Jouer » sur le décor meublé, 1re dalle à « 60 » visible, 0 erreur de chargement (test navigateur sans interface). **Règle pour la fin de nuit : plus aucun build** (le dernier budget n'est à utiliser que pour un **correctif important** d'un bug bloquant) ; **P1 à P6 se font en code + tests uniquement**, regroupés dans un build **après l'accord de Sébastien** (branche « builds » ou autre solution décidée par lui). Continue P1 -> P6 dans l'ordre.
+
 ## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
 1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
 2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.
