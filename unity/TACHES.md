@@ -116,6 +116,20 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**Q2 — Test de rythme (outil `Tools > Idle Prototype > Test de rythme (7 min)`, fichier `Editor/FtueTest.cs`) : fait, partiellement concluant.** Un robot joue une partie neuve à vitesse réelle (ramasse, dépose, apporte, encaisse, paie une dalle dès qu'il en a les moyens). Il ne livre PAS de commande : Points Pro et réputation ne sont pas évalués. Le robot n'est pas déterministe (1re dalle à 0:41, 0:49, 1:06, 0:50 selon les passages).
+Meilleur passage (prix Emballage 500, tapis 700 / 1500), cible tolérée +50 % :
+| jalon | cible | mesuré | écart |
+|---|---|---|---|
+| 1re caisse | 0:10 | 0:00 | -90 % |
+| 1er billet | 0:20 | 0:12 | -35 % |
+| 1re dalle payée | 0:30 | 0:49 | +65 % (trop tard) |
+| 1er employé | 2:00 | 1:30 | -24 % |
+| livreur | 3:00 | 2:12 | -27 % |
+| machine Test | 4:00 | 2:48 | -30 % |
+| Emballage | 4:30 | 4:29 | 0 % |
+| 1re offre de commande | 5:00 | 4:31 | -9 % |
+| 1er tapis | 5:30 | non atteint en 7:00 | trop tard (700 $ après l'Emballage) |
+Réglages de prix faits : **Emballage 900 -> 500**, **tapis 1 : 600 -> 700**, **tapis 2 : 1200 -> 1500** (dans `ChainBuilder`). Essai tapis à 450 / 1200 : **pire** (2 passages : livreur, Test et Emballage jamais atteints, argent final 0) car le robot achète la dalle la moins chère dès qu'il peut, donc le tapis avant le livreur ; je suis revenu à 700 / 1500. **À décider** : 1re dalle ~0:50 pour une cible de 0:30 (prix de la dalle de l'employé ou du premier gain à baisser ?), et cible du tapis à 5:30 irréaliste sans acheter le tapis avant l'Emballage. Je n'y touche pas sans ton avis.
 **11e (vue libre) + K2 : code fait et testé, PAS de build (budget : 1 build prévu après Q2). Compilation 0 erreur, tests 117/117 (9 nouveaux), test de fumée OK.**
 **11e — Vue libre** : bouton carré orange **« Vue » (loupe)** sous « Réputation », apparaît quand la machine Test existe. Mode vue : **joystick coupé**, **un doigt déplace la caméra** (le sol suit le doigt, inertie douce, limites de l'atelier x -8..14, z -13..11), **deux doigts zooment (0,6x à 2x)**, molette et glisser à la souris dans l'éditeur ; le bouton ramène la caméra sur le technicien (ressort 0,25 s) ; le recul automatique de 11a-3 attend la fin de la vue libre. **Toucher une machine** : fiche en bas (nom, niveau, état Marche/Attend/Bloquée, débit par minute) ; **toucher une dalle** : flèche jaune qui rebondit au-dessus (6 s) + prix restant ; **rien ne se paie à distance**. Vérifié en Play : activation, joystick coupé puis rétabli à la sortie. **Non vérifié** : les gestes tactiles réels (pincement, glisser au doigt) : l'éditeur ne les simule pas, seuls les calculs sont testés (limites, NaN/infini rejetés, zoom proportionnel et plafonné : 9 tests).
 **K2** : (a) damier adouci `#D5DCE4` / `#CCD4DE` (joints plus doux) ; (b) côté sud : chemin de gravier, 2 haies et 2 arbres ; (c) appels de dessin : voir ci-dessous ; (d) réputation : **prérequis écrit sous le nom** (« Prérequis : Gains hors ligne niv 2 »), plus jamais dans le bouton ; **le noeud « Commandes en cours » n'a plus de ligne** (9 lignes, le panneau est plus court) ; **vrais pictogrammes** générés (pièce, flèches rapides, lune, horloge, pile de caisses, coureur, smiley, plus, pourcentage) à la place des lettres. **Non fait** : fête d'achat vérifiée dans le navigateur (pas de build de démonstration : budget).
