@@ -9,3 +9,6 @@ Direction artistique : Idle Lumber (diorama isométrique, plaques d'achat au sol
 
 Rythme visé (robot qui achète le meilleur à chaque instant) : 2e poste ~1 min, 3e ~3 min, 4e ~11 min, 5e ~55 min.
 Sauvegarde : `localStorage` du navigateur (par appareil), gains hors ligne plafonnés à 4 h (+2 h par niveau de « Veille automatique »).
+
+## Disposition « Idle Lumber » (30/10)
+Le monde occupe tout l'écran, la caméra est zoomée sur la zone active (glisser = déplacer, pincer = zoom, loupe = vue d'ensemble). On achète en touchant les **plaques au sol** (deux par poste : éclair = Vitesse, plus = Ajouter ; une étoile dorée marque la plus rentable) ; toucher une machine fait monter sa **fiche** en bas ; toucher la pastille de revenu ouvre la feuille **POSTES** (la liste complète).
