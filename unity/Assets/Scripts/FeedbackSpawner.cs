@@ -18,6 +18,7 @@ public class FeedbackSpawner : MonoBehaviour
     [SerializeField] Material confettiMaterial;   // rectangles pleins (les éclats, eux, sont des points ronds doux)
 
     const float MergeWindow = 0.25f;
+    const int MaxMessages = 22;
     static readonly Color[] ConfettiColors =
     {
         new Color(1f, 0.85f, 0.2f), new Color(1f, 0.55f, 0.2f), new Color(0.35f, 0.9f, 0.4f),
@@ -29,11 +30,14 @@ public class FeedbackSpawner : MonoBehaviour
     ObjectPool confettiPool;   // même prefab, réglé en confettis à chaque tir (taille constante, fondu à la fin)
     FloatingText currentText;
     float lastTextTime;
+    int liveMessages;
+    System.Action<GameObject> releaseMessage;
     readonly List<ActiveBurst> bursts = new List<ActiveBurst>();
 
     void Awake()
     {
         textPool = new ObjectPool(floatingTextPrefab, new GameObject("FloatingTexts").transform);
+        releaseMessage = go => { liveMessages--; textPool.Release(go); };
         burstPool = new ObjectPool(burstPrefab, new GameObject("Bursts").transform);
         confettiPool = new ObjectPool(burstPrefab, new GameObject("Confetti").transform);
     }
@@ -72,8 +76,10 @@ public class FeedbackSpawner : MonoBehaviour
     // Message libre qui monte (« +5 % vitesse »).
     public void Message(Vector3 position, string text)
     {
+        if (liveMessages >= MaxMessages) return;   // jamais plus de 22 « +x » à l'écran
+        liveMessages++;
         GameObject go = textPool.Get(position, Quaternion.identity);
-        go.GetComponent<FloatingText>().PlayText(text, position, config.MessageColor, config.MessageDuration, config.MessageRise, textPool.Release);
+        go.GetComponent<FloatingText>().PlayText(text, position, config.MessageColor, config.MessageDuration, config.MessageRise, releaseMessage);
     }
 
     // Étincelles à une position (achat, apparition).

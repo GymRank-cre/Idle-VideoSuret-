@@ -42,9 +42,7 @@ public class IdlePlateInput : MonoBehaviour
         bool wasUnlock = host.Game.PlateStateOf(best.Station) == IdleGame.PlateState.Unlock;
         IdleGame.PurchaseResult result = host.Game.BuyPlate(best.Station);
         OnPlateTouched?.Invoke(best.Station, result);
-        if (result == IdleGame.PurchaseResult.TooExpensive) AudioManager.Play(SfxId.Refuse);
-        else if (result == IdleGame.PurchaseResult.Milestone || (result == IdleGame.PurchaseResult.Ok && wasUnlock)) AudioManager.Play(SfxId.Unlock);
-        else if (result == IdleGame.PurchaseResult.Ok) AudioManager.Play(SfxId.Upgrade);
+        IdlePurchaseSound.Play(result, wasUnlock);
     }
 
     static bool PressedThisFrame(out Vector2 position)

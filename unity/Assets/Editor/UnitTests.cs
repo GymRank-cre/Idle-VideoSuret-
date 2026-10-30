@@ -20,12 +20,17 @@ public static class UnitTests
         }
 
         // NumberFormat.Short
+        Eq("0,7", NumberFormat.RateValue(0.7), "gain d'un bouton, sans /s");
+        Eq("45 s", NumberFormat.Time(45), "durée en secondes");
+        Eq("3 min", NumberFormat.Time(180), "durée en minutes rondes");
+        Eq("3 min 20 s", NumberFormat.Time(200), "durée minutes + secondes");
+        Eq("2 h 5 min", NumberFormat.Time(7500), "durée en heures");
         Eq("0/s", NumberFormat.Rate(0), "revenu nul");
         Eq("0,6/s", NumberFormat.Rate(0.625), "revenu de départ");
         Eq("6,1/s", NumberFormat.Rate(6.12), "revenu sous 10 : une décimale");
         Eq("10/s", NumberFormat.Rate(9.96), "arrondi qui passe à 10");
         Eq("100/s", NumberFormat.Rate(99.6), "entier arrondi");
-        Eq("1,2K/s", NumberFormat.Rate(1234), "revenu abrégé");
+        Eq("1,23K/s", NumberFormat.Rate(1234), "revenu abrégé");
         Eq("12 s", NumberFormat.Seconds(11.2), "turbo : secondes arrondies au-dessus");
         Eq("60 s", NumberFormat.Wait(60), "recharge : secondes jusqu'à 60");
         Eq("3 min", NumberFormat.Wait(121), "recharge : minutes au-delà");
@@ -35,14 +40,17 @@ public static class UnitTests
         Eq("1,7", NumberFormat.Gain(1.74), "gain 1,7");
         Eq("9,9", NumberFormat.Gain(9.99), "gain sous 10 tronqué");
         Eq("12", NumberFormat.Gain(12.8), "gain >= 10 : entier");
-        Eq("1,7K", NumberFormat.Gain(1750), "gain en K");
+        Eq("1,75K", NumberFormat.Gain(1750), "gain en K");
         Eq("0", NumberFormat.Short(0), "0");
         Eq("7", NumberFormat.Short(7), "7");
         Eq("999", NumberFormat.Short(999), "999");
         Eq("1K", NumberFormat.Short(1000), "1000");
-        Eq("1,2K", NumberFormat.Short(1234), "1234");
-        Eq("1,2K", NumberFormat.Short(1299), "1299 (tronqué, pas arrondi)");
-        Eq("9,9K", NumberFormat.Short(9999), "9999");
+        Eq("1,23K", NumberFormat.Short(1234), "1234");
+        Eq("1,29K", NumberFormat.Short(1299), "1299 (tronqué, pas arrondi)");
+        Eq("9,99K", NumberFormat.Short(9999), "9999");
+        Eq("8,92M", NumberFormat.Short(8922805), "prix du mode MAX de la cible");
+        Eq("1,05K", NumberFormat.Short(1050), "zéro gardé au milieu");
+        Eq("4,06K", NumberFormat.RateValue(4060), "gains comparables sur les boutons");
         Eq("12K", NumberFormat.Short(12000), "12000");
         Eq("12,3K", NumberFormat.Short(12345), "12345");
         Eq("123K", NumberFormat.Short(123456), "123456");
@@ -52,7 +60,7 @@ public static class UnitTests
         Eq("3,4B", NumberFormat.Short(3400000000L), "3,4 milliards");
         Eq("2T", NumberFormat.Short(2000000000000L), "2 billions");
         Eq("1,5aa", NumberFormat.Short(1500000000000000L), "1,5aa");
-        Eq("-1,2K", NumberFormat.Short(-1234), "négatif");
+        Eq("-1,23K", NumberFormat.Short(-1234), "négatif");
         Eq("9,2ab", NumberFormat.Short(9200000000000000000L), "9,2ab (1e18 = groupe 6)");
 
         // Loc
@@ -269,6 +277,12 @@ public static class UnitTests
         Eq("0.125", F(vg.VisualFrequency(4)), "Expédition au départ : 1 / 8 s");
         vg.Stations[4].speed = 1000; vg.Recalc();
         Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
+
+        // états des lignes du tiroir
+        var rg = new IdleGame(cfg, 6, 0);
+        Eq("Open Next Far Far Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3) + " " + IdleStationRow.StateOf(rg, 4), "lignes au départ");
+        rg.Cash = 1e9; rg.BuyUnlock(1);
+        Eq("Open Open Next Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3), "lignes après un déblocage");
 
         // gain affiché à chaque cycle visuel
         var cg = new IdleGame(cfg, 6, 0);

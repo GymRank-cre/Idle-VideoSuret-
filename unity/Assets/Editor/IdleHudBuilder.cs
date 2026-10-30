@@ -9,13 +9,13 @@ using UnityEngine.UI;
 public static class IdleHudBuilder
 {
     const float ReferenceWidth = 1080f;
-    const float ReferenceHeight = 2337f;   // 390 x 844, la grille de référence
+    internal const float ReferenceHeight = 2337f;   // 390 x 844, la grille de référence
     const string UiFolder = "Assets/Prototype/Textures/Ui/";
     const int RoundedRadius = 40;          // rayon en pixels du sprite RoundedRect
 
     static readonly Color ProTeal = new Color32(0x0F, 0x6E, 0x7A, 0xFF);
 
-    static float Px(float css) { return css * ReferenceWidth / 390f; }
+    internal static float Px(float css) { return css * ReferenceWidth / 390f; }
 
     public static void Build()
     {
@@ -38,6 +38,8 @@ public static class IdleHudBuilder
         BuildTopBar(safe, so);
         BuildSideColumn(safe, so);
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        IdleDrawerBuilder.Build(canvasGo.transform);
     }
 
     // ------------------------------------------------------------------ barre du haut
@@ -61,7 +63,7 @@ public static class IdleHudBuilder
         Image cash = Pill("CashPill", bar, UiTheme.Slate);
         Row(cash.gameObject, 8f, 14f, 7f, TextAnchor.MiddleLeft);
         Size(cash.gameObject, Px(120f), Px(176f), -1f);
-        AddIcon(cash.transform, "Icon", "bill", 28f, true);
+        AddIcon(cash.transform, "Icon", "billet", 30f, true);
         Text cashText = AddText(cash.transform, "Cash", "0", 23f, Color.white, TextAnchor.MiddleLeft);
         Size(cashText.gameObject, -1f, -1f, 1f);
         hud.FindProperty("cashText").objectReferenceValue = cashText;
@@ -73,7 +75,7 @@ public static class IdleHudBuilder
         // Points Pro : cachés tant qu'aucune commande n'a été livrée
         Image pro = Pill("ProPill", bar, ProTeal);
         Row(pro.gameObject, 8f, 12f, 7f, TextAnchor.MiddleLeft);
-        AddIcon(pro.transform, "Icon", "star", 28f, true);
+        AddIcon(pro.transform, "Icon", "etoile", 30f, true);
         hud.FindProperty("proText").objectReferenceValue = AddText(pro.transform, "Pro", "0", 23f, Color.white, TextAnchor.MiddleLeft);
         hud.FindProperty("proPill").objectReferenceValue = pro.gameObject;
         pro.gameObject.SetActive(false);
@@ -85,7 +87,7 @@ public static class IdleHudBuilder
         Size(gear.gameObject, Px(42f), Px(42f), -1f);
         gear.gameObject.AddComponent<Button>().transition = Selectable.Transition.None;
         gear.gameObject.AddComponent<PressScale>();
-        Image gearIcon = AddIcon(gear.transform, "Icon", "gear", 26f, false);
+        Image gearIcon = AddIcon(gear.transform, "Icon", "engrenage", 32f, false);
         Center(gearIcon.rectTransform, Vector2.zero);
     }
 
@@ -96,15 +98,15 @@ public static class IdleHudBuilder
         Sprite orange = Ui("Face_orange");
         Sprite yellow = Ui("Face_yellow");
 
-        Image orders = SquareButton(parent, "OrdersButton", "clip", orange, 0);
+        Image orders = SquareButton(parent, "OrdersButton", "commandes", orange, 0);
         Text ordersCount;
         hud.FindProperty("ordersBadge").objectReferenceValue = Badge(orders.transform, "0", out ordersCount);
         hud.FindProperty("ordersBadgeText").objectReferenceValue = ordersCount;
 
-        Image reputation = SquareButton(parent, "ReputationButton", "star", orange, 1);
+        Image reputation = SquareButton(parent, "ReputationButton", "etoile", orange, 1);
         hud.FindProperty("reputationBadge").objectReferenceValue = Badge(reputation.transform, "!", out _);
 
-        Image turbo = SquareButton(parent, "TurboButton", "flame", orange, 2);
+        Image turbo = SquareButton(parent, "TurboButton", "flamme", orange, 2);
         hud.FindProperty("turboButton").objectReferenceValue = turbo.GetComponent<Button>();
         hud.FindProperty("turboFace").objectReferenceValue = turbo;
         hud.FindProperty("turboIdleFace").objectReferenceValue = orange;
@@ -137,7 +139,7 @@ public static class IdleHudBuilder
         img.sprite = face;
         rt.gameObject.AddComponent<Button>().transition = Selectable.Transition.None;
         rt.gameObject.AddComponent<PressScale>();
-        Image ico = AddIcon(rt, "Icon", icon, 34f, false);
+        Image ico = AddIcon(rt, "Icon", icon, 44f, false);
         ico.rectTransform.anchorMin = ico.rectTransform.anchorMax = new Vector2(0.5f, 1f);
         ico.rectTransform.anchoredPosition = new Vector2(0f, -Px(29f));
         return img;
@@ -167,28 +169,28 @@ public static class IdleHudBuilder
 
     // ------------------------------------------------------------------ briques
 
-    static RectTransform NewRect(string name, Transform parent)
+    internal static RectTransform NewRect(string name, Transform parent)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
         return (RectTransform)go.transform;
     }
 
-    static void Stretch(RectTransform rt)
+    internal static void Stretch(RectTransform rt)
     {
         rt.anchorMin = Vector2.zero;
         rt.anchorMax = Vector2.one;
         rt.offsetMin = rt.offsetMax = Vector2.zero;
     }
 
-    static void Center(RectTransform rt, Vector2 position)
+    internal static void Center(RectTransform rt, Vector2 position)
     {
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = position;
     }
 
-    static Image Rounded(string name, Transform parent, Color color, float radius)
+    internal static Image Rounded(string name, Transform parent, Color color, float radius)
     {
         RectTransform rt = NewRect(name, parent);
         var img = rt.gameObject.AddComponent<Image>();
@@ -207,7 +209,7 @@ public static class IdleHudBuilder
         return img;
     }
 
-    static void AddShadow(Image img, float alpha, float depth)
+    internal static void AddShadow(Image img, float alpha, float depth)
     {
         var shadow = img.gameObject.AddComponent<Shadow>();
         shadow.effectColor = new Color(UiTheme.Ink.r, UiTheme.Ink.g, UiTheme.Ink.b, alpha);
@@ -235,12 +237,12 @@ public static class IdleHudBuilder
         e.flexibleWidth = flexible;
     }
 
-    static Image AddIcon(Transform parent, string name, string icon, float css, bool inRow)
+    internal static Image AddIcon(Transform parent, string name, string icon, float css, bool inRow)
     {
         RectTransform rt = NewRect(name, parent);
         rt.sizeDelta = new Vector2(Px(css), Px(css));
         var img = rt.gameObject.AddComponent<Image>();
-        img.sprite = Ui("Ico_" + icon);
+        img.sprite = Ui(icon);
         img.preserveAspect = true;
         img.raycastTarget = false;
         if (inRow)
@@ -252,7 +254,25 @@ public static class IdleHudBuilder
         return img;
     }
 
-    static Text AddText(Transform parent, string name, string text, float css, Color color, TextAnchor anchor)
+    // Texte de jeu : blanc contouré.
+    internal static Text AddText(Transform parent, string name, string text, float css, Color color, TextAnchor anchor, float outlineCss = 1.5f)
+    {
+        Text t = NewText(parent, name, text, anchor);
+        UiTheme.Style(t, Mathf.RoundToInt(Px(css)), color, Px(outlineCss));
+        return t;
+    }
+
+    // Texte posé sur un fond clair : sans contour.
+    internal static Text AddPlainText(Transform parent, string name, string text, float css, Color color, TextAnchor anchor)
+    {
+        Text t = NewText(parent, name, text, anchor);
+        t.font = UiTheme.Font;
+        t.fontSize = Mathf.RoundToInt(Px(css));
+        t.color = color;
+        return t;
+    }
+
+    static Text NewText(Transform parent, string name, string text, TextAnchor anchor)
     {
         RectTransform rt = NewRect(name, parent);
         var t = rt.gameObject.AddComponent<Text>();
@@ -261,22 +281,21 @@ public static class IdleHudBuilder
         t.raycastTarget = false;
         t.horizontalOverflow = HorizontalWrapMode.Overflow;
         t.verticalOverflow = VerticalWrapMode.Overflow;
-        UiTheme.Style(t, Mathf.RoundToInt(Px(css)), color, Px(1.5f));
         return t;
     }
 
-    // Icône ou face rendue depuis le web : réglée en sprite à la première utilisation.
-    static Sprite Ui(string file)
+    // Icône ou face de bouton : réglée en sprite à la première utilisation, sans mipmaps ni compression.
+    internal static Sprite Ui(string file)
     {
         string path = UiFolder + file + ".png";
         var importer = AssetImporter.GetAtPath(path) as TextureImporter;
         if (importer == null) { Debug.LogError("Image d'interface manquante : " + path); return null; }
-        if (importer.textureType != TextureImporterType.Sprite || !importer.mipmapEnabled)
+        if (importer.textureType != TextureImporterType.Sprite || importer.mipmapEnabled)
         {
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
             importer.alphaIsTransparency = true;
-            importer.mipmapEnabled = true;     // affichées bien plus petites que leur taille réelle
+            importer.mipmapEnabled = false;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
             importer.SaveAndReimport();
         }

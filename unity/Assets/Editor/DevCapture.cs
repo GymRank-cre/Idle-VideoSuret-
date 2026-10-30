@@ -28,6 +28,8 @@ public static class DevCapture
                 canvas.worldCamera = cam;
                 canvas.planeDistance = 1f;
                 Canvas.ForceUpdateCanvases();
+                foreach (IdleDrawer drawer in Object.FindObjectsByType<IdleDrawer>(FindObjectsSortMode.None)) drawer.Fit();   // sa hauteur suit le format de la capture
+                Canvas.ForceUpdateCanvases();
             }
             cam.Render();
             RenderTexture.active = rt;

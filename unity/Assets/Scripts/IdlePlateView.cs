@@ -19,12 +19,15 @@ public class IdlePlateView : MonoBehaviour
     [SerializeField] Color waitingColor = new Color32(0xC3, 0xCC, 0xD7, 0xFF);
     [SerializeField, Min(0f)] float pulseAmount = 0.05f;
     [SerializeField, Min(0f)] float pulseSpeed = 6f;
+    [SerializeField, Range(0f, 1f)] float touchDip = 0.18f;   // la plaque se « vide » : elle rétrécit d'un coup puis revient
+    [SerializeField, Min(0.1f)] float touchRecover = 3.5f;
     [SerializeField] float halfHitSize = 0.8f;       // moitié du côté de la zone de toucher : 1,6 m pour une plaque de 1 m (1,5 fois le visuel)
 
     long shownPrice = -1;
     int shownState = -1;
     bool shownAffordable;
     float pulseStart;
+    float dip;
 
     public int Station => station;
     public bool IsVisible => visual != null && visual.gameObject.activeSelf;
@@ -41,6 +44,14 @@ public class IdlePlateView : MonoBehaviour
         Vector3 d = point - transform.position;
         d.y = 0f;
         return d.sqrMagnitude;
+    }
+
+    void OnEnable() { IdlePlateInput.OnPlateTouched += OnTouched; }
+    void OnDisable() { IdlePlateInput.OnPlateTouched -= OnTouched; }
+
+    void OnTouched(int touched, IdleGame.PurchaseResult result)
+    {
+        if (touched == station && result != IdleGame.PurchaseResult.Invalid && !MotionSettings.ReduceMotion) dip = 1f;
     }
 
     void Update()
@@ -79,6 +90,8 @@ public class IdlePlateView : MonoBehaviour
             priceTexts[0].color = affordable ? affordableColor : waitingColor;
         }
         float pulse = affordable && !MotionSettings.ReduceMotion ? 1f + pulseAmount * Mathf.Sin(Time.time * pulseSpeed) : 1f;
+        if (dip > 0f) dip = Mathf.Max(0f, dip - Time.deltaTime * touchRecover);
+        pulse *= 1f - touchDip * dip;
         visual.localScale = new Vector3(pulse, 1f, pulse);
     }
 }
