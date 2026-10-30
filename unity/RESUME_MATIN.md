@@ -1,6 +1,6 @@
 # RÉSUMÉ DU MATIN (mis à jour par le cloud, pour Sébastien)
 
-**Dernière mise à jour : 29/10, 23 h 40 (heure du PC) ; 10b-1 partie 1 relue.** Ce fichier est réécrit à chaque relecture.
+**Dernière mise à jour : 29/10, 23 h 40 (heure du PC) ; 10b décor et 11d relus.** Ce fichier est réécrit à chaque relecture.
 
 ## Où tu en es
 - **Fait et relu** : 9a (joystick plein écran), 9b (balancement corrigé), 9c (écran gris : version visible dans ⚙, diagnostic), 10a (sensation de jeu), **K1 (police Lilita One, HUD en pastilles ardoise, écran titre « Jouer », dalles lisibles, nombres abrégés)**.
@@ -10,7 +10,8 @@
 - **11b faite et relue** (dalles d'amélioration par machine : Vitesse et Ajouter, niveaux, paliers ×2 aux niveaux 10/25/50, flèche verte « meilleur achat » sur le goulot, pastille « Niv N », sauvegarde v5). **Le jeu de l'app Claude est au build 11b.**
 - **11c faite (logique validée)** : panneau « Commandes » avec 3 clients (portraits, contenu, $ et Points Pro, Refuser/Accepter/x2 bientôt), quai d'expédition, camionnette avec bulle d'humeur, Points Pro (pastille cyan). **11c-bis faite et relue** (croix de fermeture, fond cliquable, portraits pastel, texte à la ligne, boutons alignés, guide qui suit l'objectif réel) ; **le jeu de l'app Claude est au build 11c-bis**. Reste à retoucher : icône du bouton Commandes illisible, pastille de stock qui se chevauche, plaque du quai trop grande, **la camionnette n'est pas encore visible** (à rapprocher du quai).
 - **10b-1 partie 1 faite** (ciel clair à la place du noir, extérieur avec parking/arbres/lampadaire, planchette « Commandes » lisible) ; **le jeu de l'app Claude est au build 10b-1 partie 1** ; **le sol reste très vide** (ce que tu as critiqué) : j'ai demandé de reprendre le décor tout de suite (outil qui meuble l'atelier : marquages, étagères, établis, affiches, tuyaux, accessoires, avec une règle « chaque case de 3×3 m contient quelque chose »).
-- **En cours côté PC maintenant : le décor (10b-1 suite + 10b-2)**, puis 11d (Réputation) et 11e (vue libre) (la beauté : extérieur de l'atelier, ciel, sol varié, éclairage doux, décor vivant, machines moins « glacières »).
+- **Décor (10b) fait et relu** : sol à deux tons avec couloir bleu et marquages, étagères/établis/armoires/fûts, affiches, fenêtres, ventilateur, caméra qui pivote, route avec voiture qui passe, camionnette garée ; **86 % du sol meublé**. **Bug corrigé** : le joueur ne pouvait pas atteindre le quai (commandes impossibles pour lui). **11d faite et relue** : bouton « Réputation » (étoile) et panneau de 10 bonus permanents payés en Points Pro. **Le jeu de l'app Claude est au build 10b + 11d.**
+- **En cours côté PC maintenant : 11e (vue libre)**, puis K2 (retouches : damier plus doux, icônes de la réputation, texte qui déborde), Q2 (test du rythme des 5 premières minutes) (la beauté : extérieur de l'atelier, ciel, sol varié, éclairage doux, décor vivant, machines moins « glacières »).
 - **File d'attente** : 11b (chaîne de production à tapis) -> 11b (améliorations par machine) -> 11c (commandes de clients) -> 10b (décor) -> 11d (Points Pro) -> 11e (caméra d'ensemble) -> 11f (deuxième usine).
 
 ## À tester demain matin (2 minutes)
@@ -21,7 +22,8 @@
 
 ## Ce qui t'attend
 - **Grok** : le compte xAI n'a plus de crédits (erreur de facturation). Ajoute des crédits ou génère dans l'app Grok avec `unity/art/PROMPTS_GROK_ATELIER.md` (P1 puis P2 sur ton image) ; **change ta clé xAI**, elle a été collée dans la conversation.
-- **Dépôt** : ~800 Mo en local ; chaque build ajoute ~17 Mo ; seuil d'alerte 1 Go (décision à prendre alors).
+- **Dépôt : ~940 Mo en local** ; chaque build ajoute ~17 Mo. **Décision pour toi** : accepter une branche séparée « builds » (un seul commit, remplacé à chaque build) pour ne plus grossir l'historique ? Oui/non. Cette nuit : 2 builds de plus maximum, puis arrêt.
+- **Décision pour toi** : le nœud « Commandes en cours +1 » de la Réputation n'est pas encore faisable (une seule commande à la fois) ; je le fais masquer.
 
 ## Si rien n'a bougé cette nuit
 Sur le PC : réveille-le, rouvre Claude Code, tape `/mcp` puis « Reconnect », puis `continue`. Tout le contexte est dans `TACHES.md`.
