@@ -7,11 +7,13 @@ public class IdleCameraRig : MonoBehaviour
 {
     enum Frame { Default, All, Free }
 
+    public const float Pitch = 55f, Yaw = 225f;   // la caméra ne tourne jamais : ce qui doit lui faire face peut être dessiné ainsi une fois pour toutes
+
     [SerializeField] Vector3 slabMin = new Vector3(0f, -0.3f, 0f);      // le dessus de la dalle est à y = 0
     [SerializeField] Vector3 slabSize = new Vector3(7.6f, 0.3f, 7.8f);   // X = web y (7,6), Y = épaisseur, Z = web x (7,8)
     [SerializeField, Range(10f, 60f)] float fieldOfView = 30f;
-    [SerializeField, Range(30f, 80f)] float pitch = 55f;
-    [SerializeField] float yaw = 225f;                                   // regarde vers -X, -Z : le coin (0,0) est au fond
+    [SerializeField, Range(30f, 80f)] float pitch = Pitch;
+    [SerializeField] float yaw = Yaw;                                   // regarde vers -X, -Z : le coin (0,0) est au fond
     [SerializeField, Range(0.5f, 1f)] float fill = 0.96f;                // au zoom 1, part de la largeur occupée par la dalle
     [SerializeField, Range(0.3f, 0.9f)] float centerHeight = 0.56f;      // hauteur (viewport) du point visé : 44 % depuis le haut, comme le web
     [SerializeField, Range(0f, 0.4f)] float rightColumn = 0.18f;         // part de la largeur occupée par les boutons de droite

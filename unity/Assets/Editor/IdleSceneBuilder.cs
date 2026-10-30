@@ -362,6 +362,7 @@ public static class IdleSceneBuilder
             so.FindProperty("ghostFar").objectReferenceValue = ghostFar;
             so.FindProperty("lockIcon").objectReferenceValue = sr;
             so.FindProperty("machine").objectReferenceValue = machine.gameObject;
+            so.FindProperty("floatHeight").floatValue = IdleMachineBuilder.LabelHeight[i] + 0.5f;   // le « +x » part au-dessus de l'étiquette
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }
@@ -399,6 +400,7 @@ public static class IdleSceneBuilder
             var vso = new SerializedObject(view);
             vso.FindProperty("feedback").objectReferenceValue = go.GetComponent<FeedbackSpawner>();
             vso.FindProperty("fx").objectReferenceValue = fxObject.GetComponent<IdleStationFx>();
+            vso.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
             vso.FindProperty("fxPhase").floatValue = fxPhase[vso.FindProperty("station").intValue];
             vso.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -523,8 +525,21 @@ public static class IdleSceneBuilder
     // Point du dessin du web (u vers la droite, v vers le bas de la plaque) dans le repère de la plaque.
     static Vector3 PadPoint(float u, float v, float y) { return new Vector3(-u * PadUnit, y, v * PadUnit); }
 
-    // Point de l'icône : dessin réduit et remonté vers la pointe haute de la pastille à l'écran.
-    static Vector3 PadIcon(float u, float v) { return PadPoint(u * 0.72f + 8f, v * 0.72f - 6f, 0.006f); }
+    const float IconLift = 0.31f, IconScale = 0.62f;
+
+    // Point de l'icône : debout face à la caméra, qui ne tourne jamais, juste au-dessus du prix. Elle reste dans le maillage de la plaque : aucun appel de dessin de plus.
+    // `u` va vers la droite de l'écran, `v` vers le bas ; (0, 0) est le centre de l'icône.
+    static Vector3 PadIcon(float u, float v)
+    {
+        Quaternion view = Quaternion.Euler(IdleCameraRig.Pitch, IdleCameraRig.Yaw, 0f);
+        return PadPoint(-5f, 5f, 0.01f) + view * new Vector3(u * PadUnit * IconScale, IconLift - v * PadUnit * IconScale, 0f);
+    }
+
+    static void IconBar(MeshKit k, float u, float v, float width, float height)
+    {
+        float w = width * 0.5f, h = height * 0.5f;
+        k.Polygon(PadIcon(u - w, v - h), PadIcon(u + w, v - h), PadIcon(u + w, v + h), PadIcon(u - w, v + h));
+    }
 
     // Un maillage par sorte de plaque et par état : tout tient dans un seul appel de dessin, dans l'ordre d'écriture (pas de test de profondeur).
     static Mesh PadMesh(IdleGame.PadKind kind, bool affordable)
@@ -542,23 +557,22 @@ public static class IdleSceneBuilder
         if (kind == IdleGame.PadKind.Speed)
         {
             k.SetPaint(affordable ? "#FFD84A" : "#9AA6B3");
-            // l'icône occupe la pointe haute de la pastille, le prix reste en bas
-            k.Polygon(PadIcon(-1f, -3f), PadIcon(-5f, 8f), PadIcon(10f, -10f), PadIcon(2f, -10f), PadIcon(5f, -21f), PadIcon(-9f, -3f));
+            k.Polygon(PadIcon(-1.5f, 3.5f), PadIcon(-5.5f, 14.5f), PadIcon(9.5f, -3.5f), PadIcon(1.5f, -3.5f), PadIcon(4.5f, -14.5f), PadIcon(-9.5f, 3.5f));
         }
         else if (kind == IdleGame.PadKind.Add)
         {
             k.SetPaint(affordable ? "#FFFFFF" : "#9AA6B3");
-            k.FlatQuad(PadIcon(0f, -6f), 6f * PadUnit, 16f * PadUnit);
-            k.FlatQuad(PadIcon(0f, -6f), 16f * PadUnit, 6f * PadUnit);
+            IconBar(k, 0f, 0f, 7f, 22f);
+            IconBar(k, 0f, 0f, 22f, 7f);
         }
         else if (kind == IdleGame.PadKind.Hire)
         {
             k.SetPaint(affordable ? "#7FE3FF" : "#9AA6B3");     // tête de robot
-            k.FlatQuad(PadIcon(0f, -6f), 18f * PadUnit, 15f * PadUnit);
-            k.FlatQuad(PadIcon(0f, -16f), 3f * PadUnit, 6f * PadUnit);
+            IconBar(k, 0f, 2f, 24f, 18f);
+            IconBar(k, 0f, -10f, 3f, 7f);
             k.SetPaint("#141C26");
-            k.FlatQuad(PadIcon(-4f, -7f), 4f * PadUnit, 4f * PadUnit);
-            k.FlatQuad(PadIcon(4f, -7f), 4f * PadUnit, 4f * PadUnit);
+            IconBar(k, -5.5f, 1f, 5f, 6f);
+            IconBar(k, 5.5f, 1f, 5f, 6f);
         }
         return k.ToMesh("Pad_" + kind + (affordable ? "_On" : "_Wait"));
     }
@@ -598,7 +612,7 @@ public static class IdleSceneBuilder
                 {
                     var tag = new GameObject("NewTag").transform;
                     tag.SetParent(visual, false);
-                    tag.localPosition = PadPoint(9f, -9f, 0.3f);
+                    tag.localPosition = PadPoint(9f, -9f, 0.56f);
                     tag.gameObject.AddComponent<FaceCamera>();
                     MakeFlatText(tag, Loc.T(kind == IdleGame.PadKind.Hire ? "pad.hire" : "pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
                 }

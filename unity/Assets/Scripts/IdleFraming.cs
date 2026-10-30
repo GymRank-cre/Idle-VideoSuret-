@@ -5,6 +5,7 @@ using UnityEngine;
 public static class IdleFraming
 {
     public const float MinZoom = 1f, MaxZoom = 3f, DefaultMaxZoom = 2.6f, StationZoom = 2f;
+    public const float EdgeShare = 12f / 390f;   // au cadrage par défaut, rien à moins de 12 px du bord d'un écran de 390
     const float MinA = -6.2f, MaxA = 6.6f, MinB = 2.2f, MaxB = 13.4f;
     const float Margin = 1.8f, DownShift = 0.5f, StationDownShift = 1.3f;
     const float WidthShare = 0.94f, HeightShare = 0.56f, MachineHeight = 1f;
@@ -78,7 +79,7 @@ public static class IdleFraming
         float zoom = Mathf.Min(visibleWidth * WidthShare * (1f - rightColumn) / needWidth, visibleHeight * HeightShare / needHeight);
         zoom = Mathf.Clamp(zoom, MinZoom, DefaultMaxZoom);
 
-        float shift = Mathf.Clamp((1f - needWidth * zoom / visibleWidth) * 0.5f, 0f, rightColumn * 0.5f);
+        float shift = Mathf.Clamp((1f - needWidth * zoom / visibleWidth) * 0.5f - EdgeShare, 0f, rightColumn * 0.5f);
         return new View { focus = new Vector2((minA + maxA) * 0.5f, (minB + maxB) * 0.5f + DownShift), zoom = zoom, viewportX = 0.5f - shift };
     }
 }

@@ -13,10 +13,10 @@ public class IdleEconomyConfig : ScriptableObject
         public string nameKey;                 // clé Loc du nom
         public float cycle = 1.6f;             // secondes par cycle au niveau 0
         public double value = 1;               // valeur d'une pièce au niveau 0
-        public double unlock = 0;              // prix de déblocage (0 = déjà ouvert)
-        public Station(string id, string nameKey, float cycle, double value, double unlock)
+        public double unlockPayback = 0;       // prix de déblocage, en secondes de revenu du poste au niveau 0 (0 = ouvert d'emblée) : si la valeur change, le prix suit
+        public Station(string id, string nameKey, float cycle, double value, double unlockPayback)
         {
-            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlock = unlock;
+            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlockPayback = unlockPayback;
         }
     }
 
@@ -38,9 +38,9 @@ public class IdleEconomyConfig : ScriptableObject
     {
         new Station("recep", "station.recep", 1.6f, 1, 0),      // la serre : elle ne vend rien, elle alimente l'Assemblage
         new Station("assem", "station.assem", 3.0f, 12, 0),     // ouvert d'emblée : c'est la sortie de la chaîne
-        new Station("test", "station.test", 4.5f, 144, 150000),
-        new Station("pack", "station.pack", 6.0f, 1728, 10000000),
-        new Station("ship", "station.ship", 8.0f, 20736, 600000000),
+        new Station("test", "station.test", 4.5f, 144, 45000),
+        new Station("pack", "station.pack", 6.0f, 1728, 120000),
+        new Station("ship", "station.ship", 8.0f, 20736, 800000),
     };
 
     [Header("Chaîne de départ : recrutements, tas, stock, drone")]

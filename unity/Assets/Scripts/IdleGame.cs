@@ -71,7 +71,7 @@ public class IdleGame
     public void NewGame()
     {
         Stations.Clear();
-        for (int i = 0; i < cfg.stations.Length; i++) Stations.Add(new IdleEconomy.StationLevels { unlocked = cfg.stations[i].unlock <= 0 });
+        for (int i = 0; i < cfg.stations.Length; i++) Stations.Add(new IdleEconomy.StationLevels { unlocked = cfg.stations[i].unlockPayback <= 0 });
         Rep = new int[cfg.reputation.Length];
         Cash = cfg.startCash; Earned = 0; Buys = 0; Pro = 0; ProTotal = 0;
         Offers.Clear(); Active.Clear(); OrderSeq = 1; OrdersDone = 0; NextOfferAt = 0;
@@ -471,7 +471,7 @@ public class IdleGame
         Pro = Math.Max(0, d.proPoints); ProTotal = Math.Max(Pro, d.proTotal);
         for (int i = 0; i < Stations.Count && i < d.stations.Count; i++)
         {
-            Stations[i].unlocked = cfg.stations[i].unlock <= 0 || d.stations[i].unlocked;
+            Stations[i].unlocked = cfg.stations[i].unlockPayback <= 0 || d.stations[i].unlocked;
             Stations[i].speed = Math.Max(0, Math.Min(d.stations[i].speed, 100000));
             Stations[i].add = Math.Max(0, Math.Min(d.stations[i].add, 100000));
         }

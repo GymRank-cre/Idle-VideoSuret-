@@ -11,7 +11,7 @@ public static class IdleWindowsBuilder
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
     const float BottomOverlap = 30f, CardHeight = 166f, CardPitch = 176f;
     const float MinTouch = 124f;    // unités du Canvas
-    const int BillCount = 24;       // jamais plus en vol
+    const int BillCount = 14;       // jamais plus en vol
     const int OrderCards = 6;       // 3 commandes en cours au plus (Réputation) + 3 offres
 
     static readonly Color Orange = new Color32(0xFF, 0x7A, 0x1A, 0xFF), OrangeTop = new Color32(0xF2, 0x8A, 0x2E, 0xFF), OrangeEdge = new Color32(0xD9, 0x5E, 0x00, 0xFF);
@@ -738,7 +738,7 @@ public static class IdleWindowsBuilder
         list.arraySize = BillCount;
         for (int i = 0; i < BillCount; i++)
         {
-            Image bill = AddIcon(host, "Bill" + i, "billet", 24f, false);
+            Image bill = AddIcon(host, "Bill" + i, "billet", 18f, false);
             bill.rectTransform.anchorMin = bill.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             list.GetArrayElementAtIndex(i).objectReferenceValue = bill.rectTransform;
             bill.gameObject.SetActive(false);

@@ -71,7 +71,7 @@ public class IdleBeltView : MonoBehaviour
             }
 
             // caisses : régulièrement espacées, elles avancent en boucle
-            int n = game.BeltItemCount(i, items[i].Length);
+            int n = i == 0 && game.Chain.Stock < 1 ? 0 : game.BeltItemCount(i, items[i].Length);   // stock vide : plus rien sur le premier tapis
             if (n != visibleItems[i])
             {
                 visibleItems[i] = n;

@@ -32,7 +32,7 @@ public static class IdleChainBuilder
         GameObject stockPile = stock.ToObject("StockPile", root, IdleMaterials.Palette());
         TextMesh stockText = StockLabel(root);
 
-        Vector3 from = IdleLayout.ToWorld(IdleLayout.RawPile, 0.75f), to = IdleLayout.ToWorld(IdleLayout.Stock, 0.85f);
+        Vector3 from = IdleLayout.ToWorld(IdleLayout.RawPile, 0.75f), to = IdleLayout.ToWorld(IdleLayout.Stock, 1.05f);
         drone.position = from;
 
         var so = new SerializedObject(root.GetComponent<IdleChainView>());
@@ -160,11 +160,11 @@ public static class IdleChainBuilder
     {
         var holder = new GameObject("StockLabel", typeof(FaceCamera)).transform;
         holder.SetParent(parent, false);
-        holder.position = IdleLayout.ToWorld(IdleLayout.Stock + new Vector2(0.42f, 0.42f), 0.08f);   // devant la palette : la pile ne le cache jamais
+        holder.position = IdleLayout.ToWorld(IdleLayout.Stock, 0.82f);
         var pill = new MeshKit();
-        pill.Pill(1.2f, 0.28f, 0.01f);
+        pill.Pill(1.44f, 0.34f, 0.01f);
         pill.ToObject("Pill", holder, IdleMaterials.Overlay("LabelPill", "#1E2A38", 3541));
-        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", "", UiTheme.Font, 80, 0.029f, Vector3.zero, Color.white, true);
+        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", "", UiTheme.Font, 80, 0.035f, Vector3.zero, Color.white, true);
         text.GetComponent<MeshRenderer>().sharedMaterial = IdleSceneBuilder.LabelFontMaterial(UiTheme.Font);
         return text;
     }

@@ -182,7 +182,7 @@ public class IdleEconomy
     // Prix affiché et payé : entier, arrondi au plafond.
     public static long Ceil(double cost) { return (long)Math.Ceiling(cost - 1e-9); }
 
-    public double UnlockCost(int i, Globals g) { return config.stations[i].unlock * g.cost; }
+    public double UnlockCost(int i, Globals g) { return config.stations[i].value / config.stations[i].cycle * config.stations[i].unlockPayback * g.cost; }
 
     public StationLevels With(StationLevels st, bool speedAxis, int k)
     {

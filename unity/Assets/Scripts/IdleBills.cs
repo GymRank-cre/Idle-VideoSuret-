@@ -1,6 +1,6 @@
 using UnityEngine;
 
-// Billets qui s'envolent d'un poste vers la pastille d'argent (UW-4), en courbe, par petits lots : 24 au plus en vol, tirés d'un stock fixe.
+// Billets qui s'envolent d'un poste vers la pastille d'argent (UW-4), en courbe, par petits lots : 14 au plus en vol, tirés d'un stock fixe.
 // Les positions sont en fraction d'écran : elles valent quelle que soit la façon dont le Canvas est rendu. Coupés par « moins d'effets ».
 public class IdleBills : MonoBehaviour
 {
@@ -8,9 +8,10 @@ public class IdleBills : MonoBehaviour
 
     [SerializeField] RectTransform[] bills;
     [SerializeField] RectTransform cashPill;
-    [SerializeField, Min(0.1f)] float flightSeconds = 0.8f;
+    [SerializeField, Min(0.1f)] float flightSeconds = 0.7f;
     [SerializeField, Min(0f)] float stagger = 0.06f;     // écart entre deux billets d'un lot
     [SerializeField, Range(0f, 1f)] float bend = 0.22f;  // la courbe s'écarte de la ligne droite
+    [SerializeField, Range(0f, 1f)] float shrinkFrom = 0.8f;   // à la fin du vol, le billet est absorbé par la pastille
     [SerializeField, Min(1f)] float popScale = 1.08f;
     [SerializeField, Min(0.1f)] float popRecover = 9f;
 
@@ -91,8 +92,10 @@ public class IdleBills : MonoBehaviour
                 continue;
             }
             if (!bill.gameObject.activeSelf) bill.gameObject.SetActive(true);
-            bill.anchorMin = bill.anchorMax = Curve(from[i], control[i], target, t * t * (3f - 2f * t));
+            bill.anchorMin = bill.anchorMax = Curve(from[i], control[i], target, t * t);   // il accélère vers la pastille, il ne s'y attarde pas
             bill.anchoredPosition = Vector2.zero;
+            float size = t > shrinkFrom ? Mathf.Lerp(1f, 0.2f, (t - shrinkFrom) / (1f - shrinkFrom)) : 1f;
+            bill.localScale = new Vector3(size, size, 1f);
             bill.localRotation = Quaternion.Euler(0f, 0f, spin[i] * t);
         }
         if (pop <= 0f) return;

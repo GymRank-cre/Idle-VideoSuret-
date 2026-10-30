@@ -182,7 +182,7 @@ public static class IdleMachineBuilder
     }
 
     // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
-    static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.15f, 2.1f, 1.6f };   // Test : posée sur le portique, pour ne pas couvrir les prix de l'Assemblage juste derrière
+    public static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.15f, 2.1f, 1.6f };   // Test : posée sur le portique, pour ne pas couvrir les prix de l'Assemblage juste derrière
 
     static void Label(Transform root, int i)
     {

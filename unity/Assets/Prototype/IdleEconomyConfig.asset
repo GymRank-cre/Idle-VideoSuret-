@@ -17,27 +17,27 @@ MonoBehaviour:
     nameKey: station.recep
     cycle: 1.6
     value: 1
-    unlock: 0
+    unlockPayback: 0
   - id: assem
     nameKey: station.assem
     cycle: 3
     value: 12
-    unlock: 0
+    unlockPayback: 0
   - id: test
     nameKey: station.test
     cycle: 4.5
     value: 144
-    unlock: 150000
+    unlockPayback: 45000
   - id: pack
     nameKey: station.pack
     cycle: 6
     value: 1728
-    unlock: 10000000
+    unlockPayback: 120000
   - id: ship
     nameKey: station.ship
     cycle: 8
     value: 20736
-    unlock: 600000000
+    unlockPayback: 800000
   hirePrices:
   - 25
   - 30

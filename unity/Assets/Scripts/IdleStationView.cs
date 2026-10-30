@@ -34,8 +34,10 @@ public class IdleStationView : MonoBehaviour
     [SerializeField] FeedbackSpawner feedback;      // textes « +x » et confettis (pools)
     [SerializeField] IdleStationFx fx;              // particules propres au poste
     [SerializeField, Range(0f, 1f)] float fxPhase;  // moment du cycle où elles partent
-    [SerializeField, Min(0.5f)] float lotEvery = 4f;   // un lot de billets s'envole au plus toutes ces secondes
-    [SerializeField, Min(1)] int lotSize = 6;
+    [SerializeField, Min(0.5f)] float lotEvery = 5f;   // fin de cycle ordinaire : un petit lot de billets au plus toutes ces secondes, si le poste est à l'écran
+    [SerializeField, Min(1)] int lotSize = 4;
+    [SerializeField, Min(1)] int bigLot = 10;          // palier x2 et déblocage
+    [SerializeField] IdleCameraRig rig;
     [SerializeField] float floatHeight = 2.7f;      // hauteur de départ du « +x » au-dessus du poste
     [SerializeField, Min(0.1f)] float squashDecay = 2.4f;   // le « squash » d'un achat s'éteint en ~0,4 s
     [SerializeField] float squashAmount = 0.12f;
@@ -74,8 +76,15 @@ public class IdleStationView : MonoBehaviour
     }
 
     void OnBought(int s) { if (s == station && !MotionSettings.ReduceMotion) bump = 1f; }                 // petit « squash » du poste acheté
-    void OnMilestone(int s) { if (s == station && feedback != null && !MotionSettings.ReduceMotion) feedback.Confetti(transform.position); }   // palier x2
-    void OnUnlocked(int s) { if (s == station && feedback != null && !MotionSettings.ReduceMotion) feedback.Confetti(transform.position); }    // poste ouvert
+    void OnMilestone(int s) { if (s == station) BigGain(); }   // palier x2
+    void OnUnlocked(int s) { if (s == station) BigGain(); }    // poste ouvert
+
+    void BigGain()
+    {
+        if (MotionSettings.ReduceMotion) return;
+        if (feedback != null) feedback.Confetti(transform.position);
+        if (IdleBills.Instance != null) IdleBills.Instance.Send(transform.position + Vector3.up * 0.8f, bigLot);
+    }
 
     void Update()
     {
@@ -115,7 +124,7 @@ public class IdleStationView : MonoBehaviour
         if (appear >= 1f && !MotionSettings.ReduceMotion)
         {
             if (fx != null && Mathf.FloorToInt(phase - fxPhase) != Mathf.FloorToInt(before - fxPhase)) fx.Cycle(station, transform.position);
-            if (earns && sinceLot >= lotEvery && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && IdleBills.Instance != null)
+            if (earns && sinceLot >= lotEvery && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && IdleBills.Instance != null && rig.IsOnScreen(transform.position))
             {
                 sinceLot = 0f;
                 IdleBills.Instance.Send(transform.position + Vector3.up * 0.8f, lotSize);

@@ -14,9 +14,9 @@ public class IdlePadView : MonoBehaviour
     [SerializeField] Transform priceRoot;            // le prix se tient face à la caméra : couché au sol, la perspective l'écraserait
     [SerializeField] Color affordableColor = Color.white;
     [SerializeField] Color waitingColor = new Color32(0xC3, 0xCC, 0xD7, 0xFF);
-    [SerializeField, Min(1)] int longLabel = 5;      // au-delà, le prix passe en petit
     [SerializeField, Min(1)] int bigSize = 130;
-    [SerializeField, Min(1)] int smallSize = 104;
+    [SerializeField, Min(0.1f)] float maxWidth = 0.9f;        // largeur que le prix ne dépasse pas, en cases
+    [SerializeField, Range(0.5f, 1f)] float minFit = 0.8f;    // il rétrécit jusque-là, pas au-delà
     [SerializeField, Min(0f)] float pulseAmount = 0.05f;
     [SerializeField, Min(0f)] float pulseSpeed = 6f;
     [SerializeField, Range(0f, 1f)] float touchDip = 0.14f;   // à l'achat, la plaque se « vide » puis rebondit
@@ -26,14 +26,26 @@ public class IdlePadView : MonoBehaviour
     long shownPrice = -1;
     bool affordable, known;
     float dip;
+    Renderer priceRenderer;
 
     // Taille du prix selon le zoom : pleine vue d'ensemble, plus discrète de près, où la plaque suffit à le porter.
     public static float PriceScale(float zoom) { return Mathf.Lerp(1f, 0.62f, Mathf.InverseLerp(1f, 2.6f, zoom)); }
+
+    // Taille de police pour que le prix tienne dans la pastille. `width` : sa largeur à la taille `size`.
+    public static int FitSize(int size, float width, float maxWidth, float minFit)
+    {
+        return Mathf.RoundToInt(size * Mathf.Clamp(maxWidth / Mathf.Max(0.01f, width), minFit, 1f));
+    }
 
     public int Station => station;
     public IdleGame.PadKind Kind => kind;
     public bool IsVisible => visual.gameObject.activeSelf;
     public Vector3 Position => transform.position;
+
+    void Awake()
+    {
+        priceRenderer = priceText.GetComponent<Renderer>();
+    }
 
     public void Refresh(IdleGame game)
     {
@@ -45,9 +57,9 @@ public class IdlePadView : MonoBehaviour
         if (price != shownPrice)
         {
             shownPrice = price;
-            string label = NumberFormat.Short(price);
-            priceText.text = label;
-            priceText.fontSize = label.Length > longLabel ? smallSize : bigSize;
+            priceText.fontSize = bigSize;
+            priceText.text = NumberFormat.Short(price);
+            priceText.fontSize = FitSize(bigSize, priceRenderer.localBounds.size.x, maxWidth, minFit);
         }
         bool canPay = game.Cash >= price;
         if (canPay == affordable && known) return;

@@ -81,7 +81,7 @@ public static class UnitTests
         Eq("5", cfg.stations.Length.ToString(), "5 postes");
         Eq("1,12,144,1728,20736", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.value))), "valeurs des postes");
         Eq("1.6,3,4.5,6,8", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.cycle))), "cycles des postes");
-        Eq("0,0,150000,10000000,600000000", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.unlock, "0"))), "prix de déblocage");
+        Eq("True", (cfg.stations[0].unlockPayback == 0 && cfg.stations[1].unlockPayback == 0 && cfg.stations[2].unlockPayback > 0).ToString(), "la serre et l'Assemblage sont ouverts d'emblée, le reste a un prix");
         Eq("1 1 1 4 1 60 240", F(g0.revenue) + " " + F(g0.speed) + " " + F(g0.cost) + " " + F(g0.offlineHours) + " " + g0.slots + " " + F(g0.turboLength) + " " + F(g0.turboCooldown), "bonus à zéro");
 
         var s0 = new IdleEconomy.StationLevels { unlocked = true };
@@ -98,7 +98,7 @@ public static class UnitTests
         Eq("22", IdleEconomy.Ceil(eco.BulkCost(true, 0, 0, 2, g0)).ToString(), "2 niveaux de vitesse : 10 + 11,9 -> 22");
         Eq("1 1 2", eco.MaxAffordable(true, 0, 0, 10.5, g0) + " " + eco.MaxAffordable(true, 0, 0, 21, g0) + " " + eco.MaxAffordable(true, 0, 0, 22, g0), "achat max");
         Eq("0", eco.MaxAffordable(true, 0, 0, 9, g0).ToString(), "achat max : trop cher");
-        Eq("150000", F(eco.UnlockCost(2, g0)), "déblocage du Test");
+        Eq("True", (System.Math.Abs(eco.UnlockCost(2, g0) - 32 * cfg.stations[2].unlockPayback) < 1e-6).ToString(), "prix du Test : son revenu de départ (32 $/s) x le temps de remboursement visé");
         var list = new List<IdleEconomy.StationLevels> { s0.Copy(), s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
         var opts = eco.Options(list, g0, 1);
         Eq("5", opts.Count.ToString(), "options : vitesse et ajout des 2 postes ouverts, déblocage du suivant");
@@ -118,20 +118,31 @@ public static class UnitTests
         bool tiedFound; eco.Best(eco.Options(tied, g0, 1), cfg.newStationFavor, out tiedFound);
         Eq("True", tiedFound.ToString(), "serre et Assemblage à égalité parfaite : le conseil trouve quand même un achat");
 
-        // robot qui touche « Meilleur achat » toutes les 3 s : le rythme ne dérive pas sans qu'on le décide (tolérance 15 %)
+        // contrat de rythme : un robot touche « Meilleur achat » toutes les 3 s, sans turbo ; un humain relâché sera 2 à 4 fois plus lent.
+        // Chaque étape tient ces jalons ou change ce tableau en le disant. Tolérance 15 %.
         {
-            var rb = new IdleGame(cfg, 7, 0); var openAt = new double[5];
-            for (double t = 0; t < 3600; t += 3)
+            var rb = new IdleGame(cfg, 7, 0); var openAt = new double[cfg.stations.Length];
+            double crewAt = 0, firstSale = 0, lastBuy = 0, longestWait = 0; long buys = 0;
+            for (double t = 0; t < 3 * 3600; t += 3)
             {
                 rb.Tick(3);
                 rb.BuyAdvised();
                 while (rb.Offers.Count > 0 && rb.Active.Count < rb.ActiveSlots && rb.Accept(rb.Offers[0].id)) { }
                 for (int r = 0; r < rb.Rep.Length; r++) rb.BuyRep(r);
-                for (int i = 2; i < 5; i++) if (openAt[i] == 0 && rb.Stations[i].unlocked) openAt[i] = t;
+                if (crewAt == 0 && rb.CrewReady) crewAt = t;
+                if (firstSale == 0 && rb.Earned > 0) firstSale = t;
+                for (int i = 0; i < openAt.Length; i++) if (openAt[i] == 0 && rb.Stations[i].unlocked) openAt[i] = t;
+                if (rb.Buys != buys) { buys = rb.Buys; if (t <= 3600) longestWait = System.Math.Max(longestWait, t - lastBuy); lastBuy = t; }
             }
-            double[] target = { 0, 0, 354, 1110, 3354 };
-            for (int i = 2; i < 5; i++)
-                Eq("True", (openAt[i] > 0 && System.Math.Abs(openAt[i] - target[i]) <= target[i] * 0.15).ToString(), "rythme : poste " + (i + 1) + " vers " + target[i] + " s (mesuré " + openAt[i] + " s)");
+            Eq("True", (crewAt > 0 && crewAt <= 40).ToString(), "rythme : les 3 recrutements en moins de 40 s (mesuré " + crewAt + " s)");
+            Eq("True", (firstSale > 0 && firstSale <= 70).ToString(), "rythme : 1re pièce vendue en moins de 70 s (mesuré " + firstSale + " s)");
+            void Window(string name, int station, double low, double high)
+            {
+                Eq("True", (openAt[station] >= low * 0.85 && openAt[station] <= high * 1.15).ToString(), "rythme : " + name + " entre " + low + " et " + high + " s (mesuré " + openAt[station] + " s)");
+            }
+            Window("1er Test", 2, 600, 840);
+            Window("1er Emballage", 3, 1500, 2100);
+            Eq("True", (longestWait <= 480).ToString(), "rythme : jamais plus de 8 min sans achat pendant la 1re heure (mesuré " + longestWait + " s)");
         }
 
         // la matière circule d'étape en étape, et chacune attend la précédente
@@ -170,7 +181,7 @@ public static class UnitTests
         Eq("True", (System.Math.Abs(game.Earned - beforeRun - game.Income * 600) < game.Income * 3).ToString(), "gain réel = revenu affiché, en régime établi");
         Eq("Ok", game.BuyUpgrade(0, true, 1).ToString(), "1re vitesse achetée");
         Eq("1", game.Stations[0].speed.ToString(), "niveau de vitesse");
-        game.Cash = 1e6; game.Recalc();
+        game.Cash = 1e9; game.Recalc();
         Eq("Ok", game.BuyUnlock(2).ToString(), "déblocage du Test");
         Eq("True", game.Stations[2].unlocked.ToString(), "poste débloqué");
         long maxPrice = game.UpgradePrice(0, true, 0);
@@ -273,7 +284,7 @@ public static class UnitTests
         Eq("True True False", pg.PadVisible(0, S) + " " + pg.PadVisible(0, A) + " " + pg.PadVisible(0, U), "poste ouvert : plaques Vitesse et Ajouter");
         Eq("False False True", pg.PadVisible(2, S) + " " + pg.PadVisible(2, A) + " " + pg.PadVisible(2, U), "prochain poste : plaque Débloquer");
         Eq("False False False", pg.PadVisible(3, S) + " " + pg.PadVisible(3, A) + " " + pg.PadVisible(3, U), "postes suivants : aucune plaque");
-        Eq("10 7 150000 0", pg.PadPrice(0, S) + " " + pg.PadPrice(0, A) + " " + pg.PadPrice(2, U) + " " + pg.PadPrice(3, U), "prix des plaques ; plaque cachée : pas de prix");
+        Eq("10 7 True 0", pg.PadPrice(0, S) + " " + pg.PadPrice(0, A) + " " + (pg.PadPrice(2, U) == pg.UnlockPrice(2)) + " " + pg.PadPrice(3, U), "prix des plaques ; plaque cachée : pas de prix");
         pg.Cash = 5;
         Eq("TooExpensive", pg.BuyPad(0, A).ToString(), "toucher la plaque sans argent : refusé");
         Eq("Invalid", pg.BuyPad(3, U).ToString(), "plaque cachée : achat impossible");
@@ -284,7 +295,7 @@ public static class UnitTests
         Eq("True 0 1", (pg.Cash < cash0) + " " + pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Ajouter : un niveau d'Ajouter, argent dépensé");
         Eq("Ok", pg.BuyPad(0, S).ToString(), "plaque Vitesse : achat");
         Eq("1 1", pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Vitesse : un niveau de Vitesse");
-        pg.Cash = 1e6;
+        pg.Cash = pg.UnlockPrice(2) + 1000;
         Eq("Ok", pg.BuyPad(2, U).ToString(), "plaque de déblocage : poste débloqué");
         Eq("True Open Unlock", pg.Stations[2].unlocked + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3), "après le déblocage : poste ouvert, le suivant à débloquer");
         pg.BuyMode = 10; pg.Cash = 1e9;
@@ -380,6 +391,9 @@ public static class UnitTests
         Eq("4 6", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plus de caisses sur le tapis et dans la pile");
         ug.Stations[0].add = 600;
         Eq("6 8", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plafonné");
+
+        // prix des plaques : il tient dans la pastille, sans jamais devenir illisible
+        Eq("130 117 104 104", IdlePadView.FitSize(130, 0.8f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1.125f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 3f, 0.9f, 0.8f), "prix : réduit seulement s'il dépasse, jamais sous 80 %");
 
         // le jus (UW-4)
         float padGap = float.MaxValue;
