@@ -381,7 +381,7 @@ public static class UnitTests
         Vector3 planPoint = IdleLayout.ToWorld(3f, 5f);
         Eq("(-2.0, 8.0)", Inv(IdleFraming.ToPlan(planPoint)), "plan a, b : a = x - y, b = x + y");
         Eq("True", (Vector3.Distance(IdleFraming.ToWorld(IdleFraming.ToPlan(planPoint)), planPoint) < 0.001f).ToString(), "plan a, b : aller-retour");
-        Eq("0,41 0,41", Fr(IdleFramingViewX(cfg, 0)) + " " + Fr(IdleFramingViewX(cfg, 1)), "cadrage : la colonne de droite est exclue");
+        Eq("0,42 0,42", Fr(IdleFramingViewX(cfg, 0)) + " " + Fr(IdleFramingViewX(cfg, 1)), "cadrage : la colonne de droite est exclue");
         float fh = 24.5f, fw = fh * 390f / 844f;   // ce que voit la caméra au zoom 1 sur un écran 390 x 844
         var fg = new IdleGame(cfg, 2, 0);
         Vector2 Screen(IdleFraming.View view, Vector2 plan)   // où tombe un point du plan, en part de la largeur de l'écran
@@ -474,6 +474,22 @@ public static class UnitTests
         float[] moved = IdleLabelPlacement.Resolve(new[] { boxA, boxB }, new IdleLabelPlacement.Box[0]);
         Eq("True 0", (moved[1] > moved[0]) + " " + F(moved[0]), "étiquettes : la seconde monte, la première ne bouge pas");
         Eq("0", F((moved[1] / IdleLabelPlacement.Step) % 1), "étiquettes : par pas de 0,3 case");
+
+        // images par seconde : moyenne et pire 1 %
+        var frames = new float[200]; var frameSort = new float[200];
+        for (int fi = 0; fi < 100; fi++) frames[fi] = 0.02f;
+        frames[50] = 0.1f;
+        float fpsAverage, fpsWorst;
+        IdleFpsMeter.Stats(frames, 100, 100, frameSort, out fpsAverage, out fpsWorst);
+        Eq("48 50", Mathf.RoundToInt(fpsAverage) + " " + Mathf.RoundToInt(fpsWorst), "images/s : 100 images à 20 ms dont une à 100 ms : le pire 1 % ne compte pas la seule pire image");
+        IdleFpsMeter.Stats(frames, 0, 0, frameSort, out fpsAverage, out fpsWorst);
+        Eq("0 0", fpsAverage + " " + fpsWorst, "images/s : rien à mesurer");
+
+        // la main de tutoriel, la plaque et l'usine restent ensemble
+        Eq("0,80 1,03 1,25", Fr(IdleTutorialHand.PadScale(0.55f)) + " " + Fr(IdleTutorialHand.PadScale(1.03f)) + " " + Fr(IdleTutorialHand.PadScale(3f)), "main : son décalage suit la taille de la plaque");
+        Vector2 keptFar = IdleFraming.KeepFloor(new Vector2(100f, 100f), 5f, 5f), keptIn = IdleFraming.KeepFloor(new Vector2(1f, 12f), 5f, 5f);
+        float keepBack = IdleLayout.FloorWidth - (IdleLayout.FloorWidth + IdleLayout.FloorDepth) * IdleFraming.KeepShare + 5f;
+        Eq("True (1.0, 12.0)", (Mathf.Abs(keptFar.x - keepBack) < 0.01f) + " " + Inv(keptIn), "caméra : au moins 30 % de la dalle reste à l'écran ; au milieu, elle ne bouge pas");
 
         // prix des plaques : il tient dans la pastille, sans jamais devenir illisible
         Eq("130 117 104 104", IdlePadView.FitSize(130, 0.8f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1.125f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 3f, 0.9f, 0.8f), "prix : réduit seulement s'il dépasse, jamais sous 80 %");

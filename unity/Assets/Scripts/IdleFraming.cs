@@ -8,6 +8,8 @@ public static class IdleFraming
     public const float EdgeShare = 12f / 390f;   // au cadrage par défaut, rien à moins de 12 px du bord d'un écran de 390
     public const float OverviewZoom = 0.8f;      // en dessous, les prix ne se lisent plus
     public const float FreeRight = 0.82f;        // au-delà, les boutons de droite recouvrent le monde
+    public const float KeepShare = 0.3f;         // part de la dalle qui reste à l'écran, quoi qu'on fasse
+    const float LabelHalf = 1.06f;               // demi-largeur d'une étiquette de poste, sur le plan x, y
     const float MinA = -13.5f, MaxA = 10f, MinB = 2.2f, MaxB = 25f;
     const float Margin = 1.8f, DownShift = 0.5f, StationDownShift = 1.3f;
     const float WidthShare = 0.94f, HeightShare = 0.56f, MachineHeight = 1f;
@@ -27,6 +29,14 @@ public static class IdleFraming
     public static Vector2 Clamp(Vector2 focus) { return new Vector2(Mathf.Clamp(focus.x, MinA, MaxA), Mathf.Clamp(focus.y, MinB, MaxB)); }
 
     public static float ClampZoom(float zoom) { return Mathf.Clamp(zoom, MinZoom, MaxZoom); }
+
+    // Au moins 30 % de la dalle reste à l'écran. `halfA` et `halfB` : demi-largeur et demi-hauteur de ce que voit la caméra, dans le plan a, b.
+    public static Vector2 KeepFloor(Vector2 focus, float halfA, float halfB)
+    {
+        float minA = -IdleLayout.FloorDepth, maxA = IdleLayout.FloorWidth, maxB = IdleLayout.FloorWidth + IdleLayout.FloorDepth;
+        float keepA = (maxA - minA) * KeepShare, keepB = maxB * KeepShare;
+        return new Vector2(Mathf.Clamp(focus.x, minA + keepA - halfA, maxA - keepA + halfA), Mathf.Clamp(focus.y, keepB - halfB, maxB - keepB + halfB));
+    }
 
     // Toute la dalle.
     public static View All()
@@ -74,6 +84,10 @@ public static class IdleFraming
             Vector2 corner = IdleLayout.Slots[station][slot];
             float size = IdleLayout.StationSize;
             Add(corner); Add(corner + new Vector2(size, size)); Add(corner + new Vector2(size, 0f)); Add(corner + new Vector2(0f, size));
+            if (slot > 0) return;
+            Vector2 center = IdleLayout.SlotPlan(station, 0);   // l'étiquette du poste dépasse de la machine
+            Add(center + new Vector2(LabelHalf, -LabelHalf));
+            Add(center - new Vector2(LabelHalf, -LabelHalf));
         }
 
         Vector2 advised;

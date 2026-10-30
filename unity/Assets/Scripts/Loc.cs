@@ -38,6 +38,7 @@ public static class Loc
         { "settings.erase.game", "Effacer la partie" },
         { "settings.erase.arm", "Sûr ? Touche encore" },
         { "settings.footer", "{0} · {1} gagnés au total" },
+        { "settings.fps", "Images/s : {0} en moyenne, {1} au pire 1 %" },
         { "welcome.worked", "Ton usine a travaillé {0}" },
         { "welcome.worked.capped", "Ton usine a travaillé {0} (plafond atteint)" },
         { "welcome.collect", "Collecter" },

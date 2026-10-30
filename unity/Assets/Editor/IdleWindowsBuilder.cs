@@ -596,9 +596,12 @@ public static class IdleWindowsBuilder
         Text version = AddText(s.content, "Version", "", 13f, Color.white, TextAnchor.MiddleCenter, 1f);
         TopStretch(version.rectTransform, 0f, 0f, Px(274f), Px(20f));
         so.FindProperty("versionText").objectReferenceValue = version;
+        Text fps = AddText(s.content, "Fps", "", 13f, Color.white, TextAnchor.MiddleCenter, 1f);
+        TopStretch(fps.rectTransform, 0f, 0f, Px(296f), Px(20f));
+        so.FindProperty("fpsText").objectReferenceValue = fps;
 
-        s.content.sizeDelta = new Vector2(0f, Px(298f));
-        so.FindProperty("contentHeight").floatValue = Px(298f);
+        s.content.sizeDelta = new Vector2(0f, Px(320f));
+        so.FindProperty("contentHeight").floatValue = Px(320f);
         so.FindProperty("knobTravel").floatValue = Px(13f);
         so.ApplyModifiedPropertiesWithoutUndo();
         return s.script;

@@ -92,8 +92,15 @@ public class IdleCameraRig : MonoBehaviour
             zoom += (targetZoom - zoom) * k;
             viewportX += (targetViewportX - viewportX) * k;
         }
-        targetFocus = IdleFraming.Clamp(targetFocus);
+        targetFocus = KeepFloor(IdleFraming.Clamp(targetFocus));
         if (dragging) focus = targetFocus;
+    }
+
+    Vector2 KeepFloor(Vector2 target)
+    {
+        float height = 2f * Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad) * fitDistance / Mathf.Max(0.1f, zoom);
+        const float Root2 = 1.41421f;
+        return IdleFraming.KeepFloor(target, height * lastAspect * 0.5f * Root2, height * 0.5f * Root2 / Mathf.Sin(pitch * Mathf.Deg2Rad));
     }
 
     void Place()

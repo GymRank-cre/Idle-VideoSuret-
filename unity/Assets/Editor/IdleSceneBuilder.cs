@@ -82,7 +82,7 @@ public static class IdleSceneBuilder
 
     static void BuildHost()
     {
-        var go = new GameObject("Idle", typeof(IdleHost));
+        var go = new GameObject("Idle", typeof(IdleHost), typeof(IdleFpsMeter));
         var so = new SerializedObject(go.GetComponent<IdleHost>());
         so.FindProperty("config").objectReferenceValue = AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>(ConfigPath);
         so.ApplyModifiedPropertiesWithoutUndo();

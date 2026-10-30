@@ -130,6 +130,7 @@ public static class WebGLBuilder
         SetBool(rso, "m_RequireOpaqueTexture", false);
         SetBool(rso, "m_SupportsLightCookies", false);
         SetBool(rso, "m_SupportsLightLayers", false);
+        SetBool(rso, "m_UseSRPBatcher", false);   // il empêche l'instanciation : 148 appels de dessin au lieu de 76 à 12 machines, mesuré dans le build
         SerializedProperty add = rso.FindProperty("m_AdditionalLightsRenderingMode");
         if (add != null) add.intValue = 0; // désactivé
         SerializedProperty msaa = rso.FindProperty("m_MSAA");

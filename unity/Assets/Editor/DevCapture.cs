@@ -69,7 +69,7 @@ public static class DevCapture
                 tex.SetPixels32(scene);
                 Object.DestroyImmediate(ui);
             }
-            File.WriteAllBytes(path, tex.EncodeToPNG());
+            File.WriteAllBytes(path, path.EndsWith(".jpg") ? tex.EncodeToJPG(80) : tex.EncodeToPNG());
             Object.DestroyImmediate(tex);
             return "ok " + path;
         }

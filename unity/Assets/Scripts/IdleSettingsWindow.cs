@@ -12,13 +12,15 @@ public class IdleSettingsWindow : MonoBehaviour
     [SerializeField] Button eraseButton;
     [SerializeField] Text eraseLabel;
     [SerializeField] Text versionText;
+    [SerializeField] Text fpsText;
+    [SerializeField, Min(0.1f)] float fpsRefresh = 1f;
     [SerializeField] Color onColor = new Color32(0x3D, 0xDC, 0x5A, 0xFF);
     [SerializeField] Color offColor = new Color32(0xB9, 0xC3, 0xCF, 0xFF);
     [SerializeField] float knobTravel = 36f;
     [SerializeField, Min(0.5f)] float eraseArmSeconds = 3.5f;
     [SerializeField] float contentHeight;
 
-    float armedUntil = -1f;
+    float armedUntil = -1f, fpsTimer;
     bool wired;
 
     void OnEnable()
@@ -77,6 +79,10 @@ public class IdleSettingsWindow : MonoBehaviour
     void Update()
     {
         if (armedUntil >= 0f && Time.unscaledTime > armedUntil) Disarm();
+        fpsTimer -= Time.unscaledDeltaTime;
+        if (fpsTimer > 0f) return;
+        fpsTimer = fpsRefresh;
+        fpsText.text = Loc.T("settings.fps", Mathf.RoundToInt(IdleFpsMeter.Average), Mathf.RoundToInt(IdleFpsMeter.Worst));
     }
 
     void Refresh()

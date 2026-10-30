@@ -28,6 +28,8 @@ public class IdleTutorialHand : MonoBehaviour
     // La plaque est-elle visible entre le haut de l'interface et le bas ? (viewport, 0 en bas)
     public static bool PadOnScreen(float x, float y) { return x > 0.08f && x < 0.9f && y > 0.27f && y < 0.88f; }
 
+    public static float PadScale(float zoom) { return Mathf.Clamp(zoom, 0.8f, 1.25f); }
+
     // Appelé par le bas de l'écran à chaque rafraîchissement, avec le conseil du moment.
     public void Refresh(IdleGame game, IdleEconomy.Option best, bool found)
     {
@@ -54,11 +56,11 @@ public class IdleTutorialHand : MonoBehaviour
         if (!wanted || pads.Advised == null) return;
 
         Vector3 v = Camera.main.WorldToViewportPoint(pads.Advised.Position);
-        bool onPad = PadOnScreen(v.x, v.y);
+        bool onPad = PadOnScreen(v.x, v.y) && !IdleCameraRig.Overview;
         if (onPad)
         {
             hand.anchorMin = hand.anchorMax = new Vector2(v.x, v.y);
-            hand.anchoredPosition = padOffset;
+            hand.anchoredPosition = padOffset * PadScale(1f / IdleCameraRig.ScreenScale);   // la plaque grandit avec le zoom : le doigt reste sur son bord
         }
         else
         {
