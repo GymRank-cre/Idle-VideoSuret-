@@ -478,6 +478,11 @@ Après 11e. Dalle/écran « ACHETER UNE USINE » (prix en $ **et** en Points Pro
 - **P6 — Test de fumée étendu** : 5 minutes simulées avec **achats d'améliorations, une commande livrée et un achat de réputation**, 0 erreur, sauvegarde -> rechargement identique ; résultat dans Résultats.
 **Ne pas commencer 11f** (deuxième usine) ni de nouveau monde : décisions de Sébastien d'abord.
 
+## Relecture cloud de Q2 (test de rythme) : VALIDÉE, honnête ; **décisions du cloud** (tu m'as demandé mon avis, voici)
+Bonne méthode (robot à vitesse réelle, 4 passages, tableau jalon / cible / mesuré, retour arrière quand l'essai à 450/1200 était pire) et bonne prudence (le robot achète la dalle la moins chère, un joueur suit le guide).
+**Décisions** : (1) **1re dalle trop tardive (0:49 pour 0:30)** : **baisser le prix de la 1re dalle de 100 à 60 $** (le revenu de départ ~2 $/s donne ~0:30) ; ne pas toucher au prix des suivantes. (2) **Cible du 1er tapis** : **6:30 au lieu de 5:30** (le tapis suit l'Emballage et le livreur) : j'ai corrigé `QUALITE.md` §2 ; tolérance +50 % (≤ 9:45). (3) **Prix Emballage 500, tapis 700 / 1500 : gardés.** (4) **Le guide doit dire dans quel ordre acheter** (livreur -> Test -> Emballage -> tapis) : vérifier que la consigne le fait, car un joueur qui achète le tapis avant le livreur perd du temps (c'est ce que fait le robot).
+**À faire** : appliquer (1), relancer `Test de rythme` **une fois** et coller le tableau final ; puis **tests tactiles de 11e** -> **UN build** -> P1 à P6.
+
 ## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
 1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
 2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.
