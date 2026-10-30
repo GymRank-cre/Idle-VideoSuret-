@@ -790,11 +790,11 @@ function updateTurbo() {
 /* ——— scène isométrique ——— */
 var cv = $('#scene'), ctx = cv.getContext('2d');
 var W = 0, H = 0, DPR = 1, SC = 1, OX = 0, OY = 0, HW = 32, HH = 21, ZU = 30, hudH = 62;
-var FLOOR = { w: 7.8, d: 6.6 };
+var FLOOR = { w: 7.8, d: 7.6 };
 var LAY = [{ x: .55, y: .55 }, { x: 3.2, y: .55 }, { x: 4.9, y: 2.7 }, { x: 3.2, y: 4.4 }, { x: .55, y: 4.4 }];
 var SZ = 1.6;
-var PLATE = [{ x: 1.35, y: 3.3 }, { x: 4.0, y: 3.2 }, { x: 7.05, y: 3.5 }, { x: 4.0, y: 6.9 }, { x: 1.35, y: 6.9 }];
-PLATE[3] = { x: 5.95, y: 5.7 }; PLATE[4] = { x: 1.35, y: 6.95 };
+// plaques de 1 x 1 : chacune à côté de son poste, jamais sur un tapis ni hors de la dalle
+var PLATE = [{ x: 1.35, y: 2.8 }, { x: 4.0, y: 2.8 }, { x: 7.1, y: 3.5 }, { x: 4.0, y: 6.85 }, { x: 1.35, y: 6.85 }];
 var BELTS = [
   [[2.15, 1.35], [3.2, 1.35]],
   [[4.8, 1.35], [5.7, 1.35], [5.7, 2.7]],
@@ -1044,7 +1044,7 @@ function drawPlate(i, t) {
   else { var cost = C(ST[i].unlock * G.cost); label = fmt(cost); afford = S.cash >= cost; o = { kind: 'unlock', i: i }; }
   var p = P(Pl.x, Pl.y, 0), k = SC / 40, pulse = afford ? 1 + .05 * Math.sin(t * 6) : 1;
   var isBest = bestOpt && bestOpt.i === i;
-  ctx.save(); ctx.translate(p[0], p[1]); ctx.transform(HW * k * pulse, -HH * k * pulse, HW * k * pulse, HH * k * pulse, 0, 0);
+  ctx.save(); ctx.translate(p[0], p[1]); ctx.transform(HW * k * pulse, -HH * k * pulse, HW * k * pulse, HH * k * pulse, 0, 0); ctx.scale(.8, .8);
   rr(-27, -27, 54, 54, 9); ctx.fillStyle = 'rgba(14,22,32,.28)'; ctx.fill();
   ctx.save(); ctx.translate(2, 3); rr(-25, -25, 50, 50, 8); ctx.fillStyle = 'rgba(14,22,32,.3)'; ctx.fill(); ctx.restore();
   rr(-25, -25, 50, 50, 8); ctx.fillStyle = state === 'open' ? '#2A3644' : '#26323F'; ctx.fill();
@@ -1060,15 +1060,16 @@ function drawPlate(i, t) {
   ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = '#0E1620'; ctx.strokeText(label, 0, 11); ctx.fillStyle = afford ? '#fff' : '#C3CCD7'; ctx.fillText(label, 0, 11);
   ctx.restore();
   var half = 27 * 1.5 * k;
-  plateHit.push({ i: i, kind: o.kind, axis: o.axis, p: p, k: k, hit: 27 * 1.55 });
+  plateHit.push({ i: i, kind: o.kind, axis: o.axis, p: p, k: k, hit: 27 * .8 * 1.5 });
 }
-function plateAt(px, py) {
-  for (var n = plateHit.length - 1; n >= 0; n--) {
-    var h = plateHit[n], dx = px - h.p[0], dy = py - h.p[1], a = HW * h.k, b = -HH * h.k, c = HW * h.k, d = HH * h.k, det = a * d - b * c;
-    var u = (d * dx - c * dy) / det, v = (-b * dx + a * dy) / det;
-    if (Math.abs(u) <= h.hit && Math.abs(v) <= h.hit) return h;
-  }
-  return null;
+function plateAt(px, py) {   // la plaque la plus proche du doigt, dans sa zone élargie
+  var best = null, bd = 1e9;
+  plateHit.forEach(function (h) {
+    var dx = px - h.p[0], dy = py - h.p[1], a = HW * h.k, b = -HH * h.k, c = HW * h.k, d = HH * h.k, det = a * d - b * c;
+    var u = (d * dx - c * dy) / det, v = (-b * dx + a * dy) / det, m = Math.max(Math.abs(u), Math.abs(v));
+    if (m <= h.hit && m < bd) { bd = m; best = h; }
+  });
+  return best;
 }
 cv.addEventListener('click', function (e) {
   var r = cv.getBoundingClientRect(), h = plateAt(e.clientX - r.left, e.clientY - r.top);
@@ -1145,7 +1146,7 @@ function draw(dt) {
       var tp = P(L.x + SZ / 2, L.y + SZ / 2, 2.15); tag(ST[i].name, tp[0], tp[1] - 4 * SC);
     } });
     else if (state !== 'far' || true) items.push({ d: L.x + L.y + SZ, f: function () { ghostDraw(i, state === 'next', tAnim); } });
-    items.push({ d: PLATE[i].x + PLATE[i].y + .9, f: function () { drawPlate(i, tAnim); } });
+    items.push({ d: 500 + PLATE[i].x + PLATE[i].y, f: function () { drawPlate(i, tAnim); } });   // toujours dessinées par-dessus : jamais cachées par une machine
   })(i);
   items.sort(function (a, b) { return a.d - b.d; }); items.forEach(function (it) { it.f(); });
   // textes flottants
