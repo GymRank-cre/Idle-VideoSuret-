@@ -55,6 +55,8 @@ public static class IdleWindowsBuilder
         WireHand(hand, drawerPanel, result, welcomeHost.Find("Root").gameObject);
         result.toasts = toasts;
 
+        BuildTitle(canvas);
+
         var feedback = toastsHost.gameObject.AddComponent<IdleOrderFeedback>();
         var so = new SerializedObject(feedback);
         so.FindProperty("toasts").objectReferenceValue = toasts;
@@ -69,6 +71,56 @@ public static class IdleWindowsBuilder
         for (int i = 0; i < views.Length; i++) stations.GetArrayElementAtIndex(i).objectReferenceValue = views[i];
         so.ApplyModifiedPropertiesWithoutUndo();
         return result;
+    }
+
+    // ------------------------------------------------------------------ écran titre
+
+    static void BuildTitle(Transform canvas)
+    {
+        RectTransform root = NewRect("Title", canvas);
+        Stretch(root);
+        var group = root.gameObject.AddComponent<CanvasGroup>();
+
+        Image sky = Rounded("Sky", root, new Color32(0x2B, 0x9C, 0xFF, 0xFF), 1f);   // bleu du ciel de l'image : ne se voit que sur un écran très large
+        sky.type = Image.Type.Simple;
+        sky.sprite = null;
+        Stretch(sky.rectTransform);
+
+        RectTransform picture = NewRect("Picture", root);
+        picture.anchorMin = picture.anchorMax = new Vector2(0.5f, 1f);
+        picture.pivot = new Vector2(0.5f, 1f);
+        picture.sizeDelta = new Vector2(ReferenceWidth, ReferenceHeight);
+        var image = picture.gameObject.AddComponent<Image>();
+        image.sprite = UiPicture("ecran-titre.jpg");
+        image.raycastTarget = false;
+
+        RectTransform safe = NewRect("Safe", root);
+        Stretch(safe);
+        safe.gameObject.AddComponent<SafeAreaFitter>();
+
+        IdleBuyButton play = BuyButton(safe, "Play", Px(300f), Px(76f));
+        RectTransform rt = (RectTransform)play.transform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+        rt.pivot = new Vector2(0.5f, 0f);
+        rt.anchoredPosition = new Vector2(0f, Px(35f));
+        Transform visual = rt.Find("Visual");
+        Image face = visual.Find("Face").GetComponent<Image>();
+        face.pixelsPerUnitMultiplier = RoundedSpriteRadius / Px(24f);
+        face.GetComponent<VerticalGradient>().Set(new Color32(0x6B, 0xF0, 0x83, 0xFF), UiTheme.Green);
+        foreach (Shadow s in face.GetComponents<Shadow>())
+            s.effectDistance = s.effectDistance.y < -Px(3f) ? new Vector2(0f, -Px(7f)) : new Vector2(0f, -Px(3f));
+        face.GetComponents<Shadow>()[0].effectColor = Green2;
+        Text label = AddText(visual, "Label", Loc.T("title.play.big"), 42f, Color.white, TextAnchor.MiddleCenter, 2.5f);
+        Stretch(label.rectTransform);
+        rt.GetComponent<PressScale>().Silent = true;
+
+        var title = root.gameObject.AddComponent<IdleTitleScreen>();
+        var so = new SerializedObject(title);
+        so.FindProperty("background").objectReferenceValue = picture;
+        so.FindProperty("group").objectReferenceValue = group;
+        so.FindProperty("playButton").objectReferenceValue = rt.GetComponent<Button>();
+        so.FindProperty("buttonVisual").objectReferenceValue = visual;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ main de tutoriel
@@ -105,7 +157,7 @@ public static class IdleWindowsBuilder
         so.FindProperty("bestBar").objectReferenceValue = drawerSo.FindProperty("bestBar").objectReferenceValue;
         so.FindProperty("list").objectReferenceValue = drawerSo.FindProperty("list").objectReferenceValue;
         so.FindProperty("welcomeRoot").objectReferenceValue = welcomeRoot;
-        so.FindProperty("offsetX").floatValue = Px(6f);
+        so.FindProperty("offsetX").floatValue = Px(14f);
         so.FindProperty("tapMove").vector2Value = new Vector2(-Px(4f), Px(8f));
 
         SerializedProperty sourceRows = drawerSo.FindProperty("rows");

@@ -42,6 +42,7 @@ public static class DevCapture
                 foreach (IdleDrawer drawer in Object.FindObjectsByType<IdleDrawer>(FindObjectsSortMode.None)) drawer.Fit();   // sa hauteur suit le format de la capture
                 foreach (IdleSheet sheet in Object.FindObjectsByType<IdleSheet>(FindObjectsSortMode.None)) sheet.Fit();
                 foreach (IdleToasts toasts in Object.FindObjectsByType<IdleToasts>(FindObjectsSortMode.None)) toasts.Reposition();
+                foreach (IdleTitleScreen title in Object.FindObjectsByType<IdleTitleScreen>(FindObjectsSortMode.None)) title.Fit();
                 Canvas.ForceUpdateCanvases();
                 foreach (IdleTutorialHand hand in Object.FindObjectsByType<IdleTutorialHand>(FindObjectsSortMode.None)) hand.Place();
                 Canvas.ForceUpdateCanvases();

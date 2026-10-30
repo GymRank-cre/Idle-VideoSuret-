@@ -3,68 +3,15 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
-using UnityEngine.UI;
 
-// Étape 8b : version WebGL de test pour iPhone (Safari). Écran « Touche pour jouer », gabarit de page plein écran,
+// Étape 8b : version WebGL de test pour iPhone (Safari). Gabarit de page plein écran avec l'image titre au chargement,
 // réglages de build et menu `Tools > Idle Prototype > Build WebGL de test`. Ne publie rien.
 public static class WebGLBuilder
 {
     const string ScenePath = "Assets/Scenes/Idle.unity";
     const string OutputDir = "E:/PROJET 1/Builds/WebGL";
     const string TemplateDir = "Assets/WebGLTemplates/IdleMobile";
-
-    // ------------------------------------------------------------------ scène
-
-    public static void Build()
-    {
-        GameObject canvas = GameObject.Find("Canvas");
-        if (canvas == null) return;
-        Transform old = canvas.transform.Find("TapToPlay");
-        if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
-
-        if (Camera.main != null && Camera.main.GetComponent<WebGlPostFxGate>() == null)
-            Camera.main.gameObject.AddComponent<WebGlPostFxGate>(); // post-traitement coupé sur WebGL seulement
-
-        Sprite rounded = UiSprites.Rounded();
-
-        GameObject host = new GameObject("TapToPlay", typeof(RectTransform), typeof(TapToPlayScreen));
-        host.transform.SetParent(canvas.transform, false); // dernier enfant : au-dessus de tout
-        Stretch(host.GetComponent<RectTransform>());
-
-        // fond sombre plein écran = grand bouton (le premier toucher n'importe où)
-        GameObject root = new GameObject("Root", typeof(RectTransform), typeof(Image), typeof(Button));
-        root.transform.SetParent(host.transform, false);
-        Stretch(root.GetComponent<RectTransform>());
-        Image dim = root.GetComponent<Image>();
-        dim.color = new Color(0.04f, 0.05f, 0.08f, 0.88f);
-        root.GetComponent<Button>().targetGraphic = dim;
-        root.GetComponent<Button>().transition = Selectable.Transition.None;
-
-        RectTransform panel = UpgradeBuilder.Box("Panel", root.transform, rounded, new Color(0.10f, 0.13f, 0.18f, 0.92f), new Vector2(0f, 40f), new Vector2(860f, 560f), false);
-        panel.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        Text logo = UpgradeBuilder.Label("Logo", panel, Loc.T("title.logo"), 130, Color.white, new Vector2(0f, 200f), new Vector2(820f, 170f));
-        UiTheme.Style(logo, 130, Color.white, 7f);
-        UpgradeBuilder.Label("Sub", panel, Loc.T("title.sub"), 38, new Color(0.8f, 0.85f, 0.9f), new Vector2(0f, 56f), new Vector2(780f, 70f));
-        RectTransform tapBase = UpgradeBuilder.Box("TapBase", panel, rounded, new Color32(0x1F, 0x8F, 0x3A, 0xFF), new Vector2(0f, -124f), new Vector2(560f, 150f), false);
-        tapBase.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        RectTransform tap = UpgradeBuilder.Box("TapPill", panel, rounded, UiTheme.Green, new Vector2(0f, -110f), new Vector2(560f, 150f), false);
-        tap.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        UpgradeBuilder.Label("Text", tap, Loc.T("title.play"), 90, Color.white, Vector2.zero, new Vector2(560f, 150f));
-
-        var so = new SerializedObject(host.GetComponent<TapToPlayScreen>());
-        so.FindProperty("root").objectReferenceValue = root;
-        so.FindProperty("tapButton").objectReferenceValue = root.GetComponent<Button>();
-        so.FindProperty("pulse").objectReferenceValue = tap;
-        so.FindProperty("logo").objectReferenceValue = logo.rectTransform;
-        so.ApplyModifiedPropertiesWithoutUndo();
-    }
-
-    static void Stretch(RectTransform rt)
-    {
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = rt.offsetMax = Vector2.zero;
-    }
+    const string TitleImage = "Assets/Prototype/Textures/Ui/ecran-titre.jpg";
 
     // La scène du prototype doit être dans les « Build Settings » (aussi pour Android plus tard).
     public static void EnsureSceneInBuildSettings()
@@ -256,6 +203,7 @@ public static class WebGLBuilder
     {
         string dir = Path.Combine(Directory.GetCurrentDirectory(), TemplateDir);
         Directory.CreateDirectory(dir);
+        File.Copy(Path.Combine(Directory.GetCurrentDirectory(), TitleImage), Path.Combine(dir, "ecran-titre.jpg"), true);   // même image que l'écran titre du jeu
         string html = @"<!DOCTYPE html>
 <html lang=""fr"">
   <head>
@@ -268,8 +216,7 @@ public static class WebGLBuilder
       html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d12; overscroll-behavior: none; }
       #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; background: #0b0d12; }
       @font-face { font-family: ""Lilita""; src: url(""LilitaOne-Regular.ttf"") format(""truetype""); font-display: swap; }
-      #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; color: #fff; font-family: ""Lilita"", sans-serif; }
-      #logo { font-size: 64px; color: #fff; -webkit-text-stroke: 8px #0e1620; paint-order: stroke fill; text-shadow: 0 8px 0 #0e1620; letter-spacing: 1px; }
+      #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: calc(9vw + 12px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; color: #fff; font-family: ""Lilita"", sans-serif; background: #2b9cff url(""ecran-titre.jpg"") center top / cover no-repeat; }
       #bar { width: min(70vw, 420px); height: 34px; background: #1e2a38; border-radius: 17px; box-shadow: 0 8px 0 #121a24; overflow: hidden; }
       #fill { width: 0%; height: 100%; background: #ffc400; border-radius: 17px; transition: width .15s; }
       #pct { font-size: 26px; -webkit-text-stroke: 5px #0e1620; paint-order: stroke fill; }
@@ -277,7 +224,7 @@ public static class WebGLBuilder
   </head>
   <body>
     <canvas id=""unity-canvas""></canvas>
-    <div id=""loading""><div id=""logo"">Idle Sécurité</div><div id=""bar""><div id=""fill""></div></div><div id=""pct"">Chargement 0 %</div></div>
+    <div id=""loading""><div id=""bar""><div id=""fill""></div></div><div id=""pct"">Chargement 0 %</div></div>
     <script src=""Build/{{{ LOADER_FILENAME }}}""></script>
     <script>
       // Contexte WebGL perdu (iPhone verrouillé, changement d'application) : Unity ne le récupère pas, on recharge la page

@@ -287,6 +287,10 @@ public static class UnitTests
         Eq("", string.Join(", ", missing), "textes des fenêtres");
         Eq("8", cfg.clientCount.ToString(), "8 clients, 8 portraits");
 
+        // écran titre : l'image couvre toujours tout l'écran, sans déformation
+        Eq("1000,1769", IdleTitleScreen.CoverSize(new Vector2(1000, 1000), 0.5654f).x.ToString("0") + "," + IdleTitleScreen.CoverSize(new Vector2(1000, 1000), 0.5654f).y.ToString("0"), "écran large : largeur d'abord, le bas est coupé");
+        Eq("477,844", IdleTitleScreen.CoverSize(new Vector2(390, 844), 0.5654f).x.ToString("0") + "," + IdleTitleScreen.CoverSize(new Vector2(390, 844), 0.5654f).y.ToString("0"), "téléphone étroit : hauteur d'abord, les côtés sont coupés");
+
         // main de tutoriel
         Eq("True False False False", IdleTutorialHand.Wanted(0, false, true) + " " + IdleTutorialHand.Wanted(0, true, true) + " " + IdleTutorialHand.Wanted(0, false, false) + " " + IdleTutorialHand.Wanted(12, false, true), "main : abordable, sans fenêtre, 12 premiers achats");
         Eq("True True False False", IdleTutorialHand.Wanted(11, false, true) + " " + IdleTutorialHand.UseBar(2) + " " + IdleTutorialHand.UseBar(3) + " " + IdleTutorialHand.Wanted(13, false, true), "main : bandeau pour les 3 premiers achats, puis les lignes");

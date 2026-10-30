@@ -36,6 +36,7 @@ public static class IdleSceneBuilder
         IdleHudBuilder.Build();
         EditorSceneManager.SaveScene(scene, ScenePath);
         WebGLBuilder.EnsureSceneInBuildSettings();
+        IdleAppIcon.Apply();
         AssetDatabase.SaveAssets();
         Debug.Log("Scène idle créée : " + ScenePath);
     }

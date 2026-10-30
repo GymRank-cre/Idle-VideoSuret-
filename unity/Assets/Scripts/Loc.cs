@@ -44,6 +44,7 @@ public static class Loc
         { "toast.unlocked", "{0} débloqué !" },
         { "toast.milestone", "{0} ×2 !" },
         { "toast.turbo", "Turbo ×2 pendant {0} s !" },
+        { "title.play.big", "JOUER" },
         { "drawer.mode", "Acheter" },
         { "drawer.buy", "ACHETER" },
         { "drawer.in", "Dans {0}" },

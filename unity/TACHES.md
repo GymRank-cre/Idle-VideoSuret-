@@ -116,6 +116,21 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**UW-5 — Écran titre, chargement, icône d'app, plus les 2 points de ta relecture : FAIT (sans build). Compilation 0/0, tests 171/171 (2 nouveaux), test de fumée OK. Captures : `captures/UW5-titre-390x844.png`, `UW5-chargement-390x844.png`, `UW5-main-bandeau-390x844.png`.**
+- **Écran titre** (`IdleTitleScreen`) : `ecran-titre-9x16.jpg` en plein écran (cover, ancré en haut), bouton **JOUER** vert qui bat, à chaque lancement. Le toucher libère le son, puis fondu de 0,45 s avec zoom de 6 %. **Vrai clic sur JOUER : l'écran se ferme.** Je n'ai pas regardé le fondu lui-même image par image. Sans le halo vert du web autour du bouton. L'ancien `TapToPlayScreen` et son code dans `WebGLBuilder` sont supprimés.
+- **Écran de chargement WebGL** : même image, la barre et « Chargement N % » à l'emplacement du bouton JOUER, pour un enchaînement sans saut ; le titre texte est retiré (le logo est dans l'image). **Vérifié sans build** : page générée et ouverte dans Chrome en 390x844, barre forcée à 62 %. Le vrai chargement se verra en U4.
+- **Icône d'app** : `icone-app-A-1024.png` enregistrée comme icône par défaut (relu : AppIcon 1024x1024). Réappliquée à chaque « Build scene ». **Limites** : pas d'icône d'onglet pour WebGL, et les formats adaptatifs Android ne sont pas réglés : à voir au build Android.
+- **Retouche 1 (main)** : le bout du doigt se pose sur le **bord bas** du bouton, décalé vers la droite : prix et libellé restent lisibles (`UW5-main-bandeau`).
+- **Retouche 2 (« Test débloqué ! »)** : **pas un bug**. Dans mon test le déblocage était réel (`BuyUnlock`) ; la capture a été prise dans la même image, avant le rafraîchissement du tiroir (5 fois par seconde), d'où la ligne encore verrouillée. Le message n'est émis que par `OnUnlocked`, donc à un vrai déblocage.
+- **Limite vue** : en 390x844 le logo touche presque les bords de l'image, car le « cover » coupe les côtés. Sur un écran plus étroit (20:9), son contour sera légèrement coupé. Même comportement que le web ; si tu préfères, je peux caler la largeur sur le logo et laisser dépasser l'herbe en bas.
+- **Rappel** : la main n'a toujours pas été suivie sur 12 achats joués d'affilée, et le son n'a pas été écouté.
+
+**Questions**
+1. Logo sur écrans très allongés : on garde le « cover » du web ?
+2. Toujours ouvertes : musique par défaut, arrondi des prix, son du Turbo, sens du dégradé du tiroir, « +0,7 » sans « /s ».
+
+**Prochaine étape : UW-1** (lumière, matière, ombres de contact).
+
 **U3d — Main de tutoriel, messages, puces, plus la retouche de la croix : FAIT, U3 TERMINÉ (sans build). Compilation 0/0, tests 169/169 (2 nouveaux), test de fumée OK. Captures : `captures/U3d-main-bandeau-390x844.png`, `U3d-main-ligne-390x844.png`, `U3d-messages-390x844.png`, `U3d-message-turbo-390x844.png`, `U3d-croix-390x844.png`.**
 - **Main de tutoriel** (`IdleTutorialHand`, règles du web) : pendant les **12 premiers achats**, dès que le conseil est abordable. Sur le bouton du bandeau pour les **3 premiers achats**, puis sur le bouton de la ligne s'il est entièrement visible dans la liste ; elle tapote comme le web (0,8 s). **Vérifié** : elle vise « ACHETER », puis « Ajouter » de la bonne ligne au 4e achat, se cache quand une fenêtre est ouverte et revient à la fermeture. Avec « moins d'effets », elle reste mais ne tapote plus (code écrit, pas regardé).
 - **Messages** : « Test débloqué ! » avec cadenas, « Réception ×2 ! », « Turbo ×2 pendant 60 s ! » avec flamme, en plus de « Commande livrée ! ». Ils restent lisibles au-dessus d'une fenêtre ouverte.

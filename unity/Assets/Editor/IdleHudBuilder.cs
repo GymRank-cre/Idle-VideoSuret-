@@ -8,10 +8,10 @@ using UnityEngine.UI;
 // boutons orange (Commandes, Réputation, Turbo). Mêmes mesures que le web : `Px` convertit les pixels CSS (écran 390 de large) en unités du Canvas.
 public static class IdleHudBuilder
 {
-    const float ReferenceWidth = 1080f;
+    internal const float ReferenceWidth = 1080f;
     internal const float ReferenceHeight = 2337f;   // 390 x 844, la grille de référence
     const string UiFolder = "Assets/Prototype/Textures/Ui/";
-    const int RoundedRadius = 40;          // rayon en pixels du sprite RoundedRect
+    internal const int RoundedSpriteRadius = 40;   // rayon en pixels du sprite RoundedRect
 
     static readonly Color ProTeal = new Color32(0x0F, 0x6E, 0x7A, 0xFF);
 
@@ -220,7 +220,7 @@ public static class IdleHudBuilder
         var img = rt.gameObject.AddComponent<Image>();
         img.sprite = UiSprites.Rounded();
         img.type = Image.Type.Sliced;
-        img.pixelsPerUnitMultiplier = RoundedRadius / radius;
+        img.pixelsPerUnitMultiplier = RoundedSpriteRadius / radius;
         img.color = color;
         return img;
     }
@@ -306,6 +306,24 @@ public static class IdleHudBuilder
         t.horizontalOverflow = HorizontalWrapMode.Overflow;
         t.verticalOverflow = VerticalWrapMode.Overflow;
         return t;
+    }
+
+    // Grande image plein écran : compressée (contrairement aux icônes), pas de bords à garder nets.
+    internal static Sprite UiPicture(string file)
+    {
+        string path = UiFolder + file;
+        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (importer == null) { Debug.LogError("Image d'interface manquante : " + path); return null; }
+        if (importer.textureType != TextureImporterType.Sprite)
+        {
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.mipmapEnabled = false;
+            importer.maxTextureSize = 2048;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.SaveAndReimport();
+        }
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
     // Icône ou face de bouton : réglée en sprite à la première utilisation, sans mipmaps ni compression.

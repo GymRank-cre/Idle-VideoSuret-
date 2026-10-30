@@ -14,8 +14,8 @@ public class IdleTutorialHand : MonoBehaviour
     [SerializeField] RectTransform list;
     [SerializeField] IdleSheet[] sheets;
     [SerializeField] GameObject welcomeRoot;
-    [SerializeField] float offsetX = 17f;             // décalage du doigt depuis le milieu du bouton
-    [SerializeField, Range(0f, 1f)] float offsetDown = 0.8f;   // à 80 % de la hauteur du bouton, comme le web
+    [SerializeField] float offsetX = 39f;             // vers la droite du milieu du bouton : prix et libellé restent lisibles
+    [SerializeField, Range(0f, 1f)] float offsetDown = 1f;     // le bout du doigt se pose sur le bord bas du bouton
     [SerializeField] Vector2 tapMove = new Vector2(-11f, 22f);
     [SerializeField, Range(0.5f, 1f)] float tapScale = 0.92f;
     [SerializeField, Min(0.1f)] float tapPeriod = 0.8f;
@@ -69,7 +69,7 @@ public class IdleTutorialHand : MonoBehaviour
         if (!show) return;
 
         Rect r = target.rect;
-        hand.position = target.TransformPoint(new Vector3(r.center.x - offsetX, r.yMax - r.height * offsetDown, 0f));
+        hand.position = target.TransformPoint(new Vector3(r.center.x + offsetX, r.yMax - r.height * offsetDown, 0f));
 
         bool calm = MotionSettings.ReduceMotion;
         float k = calm ? 0f : 0.5f - 0.5f * Mathf.Cos(Time.unscaledTime * Mathf.PI * 2f / tapPeriod);
