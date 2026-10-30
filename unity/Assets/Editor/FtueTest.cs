@@ -48,6 +48,7 @@ public static class FtueTest
 
     static FtueTest()
     {
+        EditorApplication.update += Watch;
         if (SessionState.GetBool(KeyActive, false))
         {
             foreach (string kv in SessionState.GetString(KeyMarks, "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
@@ -57,6 +58,24 @@ public static class FtueTest
             }
             EditorApplication.update += Tick;
         }
+    }
+
+    [MenuItem("Tools/Idle Prototype/Test de rythme x5 (35 min)")]
+    public static void RunFive()
+    {
+        SessionState.SetInt("Ftue.Remaining", 4);
+        Run();
+    }
+
+    // enchaîne les passages restants quand le Play précédent est terminé
+    static void Watch()
+    {
+        if (EditorApplication.isPlaying || EditorApplication.isCompiling || EditorApplication.isPlayingOrWillChangePlaymode) return;
+        int left = SessionState.GetInt("Ftue.Remaining", 0);
+        if (left <= 0 || !SessionState.GetBool("Ftue.Again", false)) return;
+        SessionState.SetBool("Ftue.Again", false);
+        SessionState.SetInt("Ftue.Remaining", left - 1);
+        Run();
     }
 
     [MenuItem("Tools/Idle Prototype/Test de rythme (7 min)")]
@@ -108,7 +127,7 @@ public static class FtueTest
         if (t - lastLogged >= 30f)
         {
             lastLogged = t;
-            Debug.Log("Rythme t=" + Clock(t) + " argent=" + wallet.Money + " phase=" + phase + " dalle=" + (padTarget != null ? padTarget.name + "(" + padTarget.RemainingPrice + ")" : "-") + " pos=" + player.transform.position.ToString("F1") + " caisses=" + (carrier != null ? carrier.Count : -1));
+            Debug.Log("Rythme t=" + Clock(t) + " argent=" + wallet.Money + " phase=" + phase + " dalle=" + (padTarget != null ? padTarget.name + "(" + padTarget.RemainingPrice + ")" : "-") + " pos=" + player.transform.position.ToString("F1") + " caisses=" + (carrier != null ? carrier.Count : -1) + " | monde : billets=" + UnityEngine.Object.FindObjectsByType<Bill>(FindObjectsSortMode.None).Length + " produits=" + UnityEngine.Object.FindObjectsByType<Product>(FindObjectsSortMode.None).Length + " clients=" + UnityEngine.Object.FindObjectsByType<Customer>(FindObjectsSortMode.None).Length + " employes=" + UnityEngine.Object.FindObjectsByType<Employee>(FindObjectsSortMode.None).Length + " produitsPorte=" + (products != null ? products.Count : -1) + " | " + Diagnose());
         }
         if (t >= Duration) { Finish(); return; }
         Drive();
@@ -137,6 +156,32 @@ public static class FtueTest
         var rep = UnityEngine.Object.FindFirstObjectByType<ReputationState>();
         if (rep != null)
             for (int i = 0; i < rep.Config.Nodes.Length; i++) if (rep.Level(i) > 0) Mark("rep", t);
+    }
+
+    // état de la file et des produits : sert à comprendre un blocage (type demandé par le client en tête / types présents)
+    static string Diagnose()
+    {
+        var sb = new StringBuilder();
+        var queue = UnityEngine.Object.FindFirstObjectByType<CustomerQueue>();
+        Customer head = queue != null ? queue.Head : null;
+        sb.Append("tete=").Append(head != null && head.OrderType != null ? head.OrderType.name + " x" + head.Remaining : "-");
+        var count = new Dictionary<string, int>();
+        foreach (Product p in UnityEngine.Object.FindObjectsByType<Product>(FindObjectsSortMode.None))
+        {
+            if (!p.gameObject.activeInHierarchy || p.Type == null) continue;
+            count.TryGetValue(p.Type.name, out int n);
+            count[p.Type.name] = n + 1;
+        }
+        sb.Append(" produits{");
+        foreach (var kv in count) sb.Append(kv.Key).Append('=').Append(kv.Value).Append(' ');
+        sb.Append('}');
+        if (queue != null)
+        {
+            sb.Append(" file[");
+            foreach (Customer c in queue.Line) sb.Append(c.OrderType != null ? c.OrderType.name : "?").Append('x').Append(c.Remaining).Append(' ');
+            sb.Append(']');
+        }
+        return sb.ToString();
     }
 
     static bool Active(string typeName)
@@ -182,10 +227,26 @@ public static class FtueTest
         else if (phase == 1) { var st = FindStation(); if (st != null) target = st.position; if (carrier.Count == 0) Next(); }
         else if (phase == 2)
         {
-            var prod = UnityEngine.Object.FindFirstObjectByType<Product>();
+            // comme un joueur : on prend le produit que demande le client en tête (pas n'importe lequel)
+            var queue = UnityEngine.Object.FindFirstObjectByType<CustomerQueue>();
+            Customer head = queue != null ? queue.Head : null;
             var st = FindStation();
-            target = prod != null ? prod.transform.position : (st != null ? st.position : target);
-            if (products != null && products.Count > 0) Next();
+            target = st != null ? st.position : target;
+            if (head != null && head.OrderType != null && products != null)
+            {
+                if (products.Has(head.OrderType)) Next();
+                else
+                {
+                    float bd2 = float.MaxValue;
+                    foreach (Product p in UnityEngine.Object.FindObjectsByType<Product>(FindObjectsSortMode.None))
+                    {
+                        if (!p.gameObject.activeInHierarchy || p.Type != head.OrderType || st == null || (p.transform.position - st.position).sqrMagnitude > 25f) continue;
+                        float d = (p.transform.position - player.transform.position).sqrMagnitude;
+                        if (d < bd2) { bd2 = d; target = p.transform.position; }
+                    }
+                }
+            }
+            else if (products != null && products.Count > 0) Next();
         }
         else if (phase == 3)
         {
@@ -253,6 +314,7 @@ public static class FtueTest
         }
         sb.Append("Argent en fin de test : ").Append(wallet.Money).Append("  (Points Pro et réputation : non évalués, le robot ne livre pas de commande)");
         SessionState.SetBool(KeyActive, false);
+        SessionState.SetBool("Ftue.Again", SessionState.GetInt("Ftue.Remaining", 0) > 0);
         EditorApplication.update -= Tick;
         Debug.Log(sb.ToString());
         SaveSystem.Suspended = true;
