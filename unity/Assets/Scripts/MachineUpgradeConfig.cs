@@ -18,8 +18,8 @@ public class MachineUpgradeConfig : ScriptableObject
     }
 
     [SerializeField] Machine[] machines;
-    [SerializeField, Min(1f)] float costGrowth = 1.15f;           // coût x1,15 par niveau
-    [SerializeField, Min(0f)] float speedPerLevel = 0.10f;        // cycle = base / (1 + 0,10 x niveau)
+    [SerializeField, Min(1f)] float costGrowth = 1.19f;           // coût x1,19 par niveau (11b : recalé pour le mur doux du niveau 15, voir TACHES.md)
+    [SerializeField, Min(0f)] float speedPerLevel = 0.15f;        // cycle = base / (1 + 0,15 x niveau)
     [SerializeField] int[] milestones = { 10, 25, 50 };           // paliers : débit x2 et amélioration visible
     [SerializeField, Min(1f)] float milestoneFactor = 2f;
 

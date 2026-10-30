@@ -8,7 +8,7 @@ public class PriceFit : MonoBehaviour
     [SerializeField] Transform icon;     // enfant de la dalle, pas du texte
     [SerializeField] float maxWidth = 2.2f;
     [SerializeField] float iconWidth = 0.9f;
-    [SerializeField] float gap = 0.08f;
+    [SerializeField] float gap = 0.24f;   // espace entre l'icône de billet et le texte (K1d : l'icône recouvrait le 1er chiffre)
     [SerializeField] float baseScale = 1f;
 
     MeshRenderer meshRenderer;

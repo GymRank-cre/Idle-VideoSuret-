@@ -77,6 +77,7 @@ public static class SaveBuilder
         so.FindProperty("belt2").objectReferenceValue = FindRoot("Belt2");
         so.FindProperty("testConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MachineConfig>(Root + "/TestMachineConfig.asset");
         so.FindProperty("packConfig").objectReferenceValue = AssetDatabase.LoadAssetAtPath<MachineConfig>(Root + "/PackMachineConfig.asset");
+        so.FindProperty("proPoints").objectReferenceValue = Object.FindFirstObjectByType<ProPoints>();
         so.FindProperty("machineUpgrades").objectReferenceValue = Object.FindFirstObjectByType<MachineUpgradeState>();
         so.FindProperty("haulerObject").objectReferenceValue = hauler;
         so.FindProperty("courierObject").objectReferenceValue = courier;

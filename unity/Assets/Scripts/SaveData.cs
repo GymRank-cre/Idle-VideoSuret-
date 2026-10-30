@@ -5,7 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class SaveData
 {
-    public const int CurrentVersion = 5;
+    public const int CurrentVersion = 6;
 
     [Serializable]
     public class PadState
@@ -45,6 +45,7 @@ public class SaveData
     public List<UpgradeLevel> upgrades = new List<UpgradeLevel>(); // v2
     public List<MachineStock> machines = new List<MachineStock>(); // v4 : stocks des machines de la chaîne
     public List<MachineLevel> machineLevels = new List<MachineLevel>(); // v5 : améliorations par machine
+    public int proPoints;                    // v6 : Points Pro (commandes de clients)
     public bool settingsSaved;               // v3 : faux = anciennes sauvegardes, on garde les réglages par défaut
     public bool soundOn = true;
     public bool musicOn;

@@ -33,9 +33,9 @@ public static class MachineUpgradeBuilder
 
         var spots = new[]
         {
-            new Spot { id = "assembly", label = "Assemblage", speed = new Vector3(-5.4f, 0.01f, -3.4f), add = new Vector3(-3.4f, 0.01f, -3.4f) },
-            new Spot { id = "test", label = "Test", speed = new Vector3(-2.6f, 0.01f, 2.4f), add = new Vector3(-0.6f, 0.01f, 2.4f) },
-            new Spot { id = "pack", label = "Emballage", speed = new Vector3(9.6f, 0.01f, 6.2f), add = new Vector3(9.6f, 0.01f, 8.4f) },
+            new Spot { id = "assembly", label = "Assemblage", speed = new Vector3(-5.5f, 0.01f, -3.4f), add = new Vector3(-3.3f, 0.01f, -3.4f) },
+            new Spot { id = "test", label = "Test", speed = new Vector3(-2.7f, 0.01f, 2.4f), add = new Vector3(-0.5f, 0.01f, 2.4f) },
+            new Spot { id = "pack", label = "Emballage", speed = new Vector3(9.6f, 0.01f, 6.1f), add = new Vector3(9.6f, 0.01f, 8.5f) },
         };
 
         InstallStation assembly = null;
@@ -124,7 +124,7 @@ public static class MachineUpgradeBuilder
 
         // flèches : verte qui rebondit (meilleur achat), grise (inutile pour l'instant)
         Transform best = Arrow(pad.transform, "BestBuyArrow", new Vector3(0f, 2.3f, 0f), UiTheme.Green, 1.1f);
-        Transform useless = Arrow(pad.transform, "UselessArrow", new Vector3(0f, 2.1f, 0f), new Color(0.62f, 0.66f, 0.72f), 0.7f);
+        Transform useless = Arrow(pad.transform, "UselessArrow", new Vector3(0f, 1.9f, 0f), new Color(0.62f, 0.66f, 0.72f, 0.5f), 0.45f); // atténuée et petite
         Set(source, "bestBuyArrow", best);
         Set(source, "uselessArrow", useless);
 

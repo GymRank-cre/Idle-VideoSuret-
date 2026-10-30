@@ -122,6 +122,27 @@ public class ProductCarrier : MonoBehaviour
         return false;
     }
 
+    public bool HasTypeStage(ProductType type, int stage)
+    {
+        foreach (Product p in carried) if (p.Type == type && p.Stage == stage) return true;
+        return false;
+    }
+
+    // Retire un produit d'un type et d'un stade précis (quai d'expédition) ; null s'il n'y en a pas.
+    public Product TryTakeOfType(ProductType type, int stage)
+    {
+        for (int i = 0; i < carried.Count; i++)
+        {
+            if (carried[i].Type != type || carried[i].Stage != stage) continue;
+            Product p = carried[i];
+            carried.RemoveAt(i);
+            p.transform.SetParent(null, true);
+            OnCountChanged?.Invoke();
+            return p;
+        }
+        return null;
+    }
+
     // Retire un produit du stade demandé (dépôt dans une machine de la chaîne) ; null si le joueur n'en porte pas.
     public Product TryTakeStage(int stage)
     {

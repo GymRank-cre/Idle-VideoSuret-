@@ -54,7 +54,7 @@ public static class UnitTests
         Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
 
         SaveData v3 = SaveSystem.Migrate(new SaveData { version = 3, money = 7, machines = null });
-        Eq("5", v3.version.ToString(), "migration v3 -> version courante (5)");
+        Eq("6", v3.version.ToString(), "migration v3 -> version courante (6)");
         Eq("True", (v3.machines != null && v3.machines.Count == 0).ToString(), "migration v3 -> v4 : aucune machine");
         Eq("7", v3.money.ToString(), "migration v3 -> v4 : l'argent est conservé");
 
@@ -111,12 +111,12 @@ public static class UnitTests
             muo.ApplyModifiedPropertiesWithoutUndo();
             MachineUpgradeConfig.Machine mm = mu.Machines[0];
             Eq("120", mu.SpeedCost(mm, 0).ToString(), "coût vitesse niveau 0");
-            Eq("138", mu.SpeedCost(mm, 1).ToString(), "coût vitesse x1,15 par niveau");
+            Eq("143", mu.SpeedCost(mm, 1).ToString(), "coût vitesse x1,19 par niveau");
             Eq("True", (mu.SpeedCost(mm, 10) > mu.SpeedCost(mm, 9)).ToString(), "coût croissant");
             Eq("1,00", mu.SpeedFactor(0, 0).ToString("0.00"), "vitesse niveau 0");
-            Eq("1,50", mu.SpeedFactor(5, 0).ToString("0.00"), "vitesse niveau 5 : +10 % par niveau");
-            Eq("4,00", mu.SpeedFactor(10, 0).ToString("0.00"), "palier 10 : x2 de débit");
-            Eq("8,00", mu.SpeedFactor(10, 10).ToString("0.00"), "palier 10 des deux axes");
+            Eq("1,75", mu.SpeedFactor(5, 0).ToString("0.00"), "vitesse niveau 5 : +15 % par niveau");
+            Eq("5,00", mu.SpeedFactor(10, 0).ToString("0.00"), "palier 10 : x2 de débit");
+            Eq("10,00", mu.SpeedFactor(10, 10).ToString("0.00"), "palier 10 des deux axes");
             var go3 = new GameObject("MuState");
             var mst = go3.AddComponent<MachineUpgradeState>();
             var mso = new SerializedObject(mst);
@@ -148,8 +148,79 @@ public static class UnitTests
         }
 
         SaveData v4 = SaveSystem.Migrate(new SaveData { version = 4, money = 9, machineLevels = null });
-        Eq("5", v4.version.ToString(), "migration v4 -> v5 : version");
+        Eq("6", v4.version.ToString(), "migration v4 -> version courante (6)");
         Eq("True", (v4.machineLevels != null && v4.machineLevels.Count == 0).ToString(), "migration v4 -> v5 : tout à 0");
+
+        // 11c : commandes de clients
+        {
+            var oc = ScriptableObject.CreateInstance<OrderConfig>();
+            var oso = new SerializedObject(oc);
+            oso.FindProperty("clients").arraySize = 1;
+            SerializedProperty tl = oso.FindProperty("tiers");
+            tl.arraySize = 1;
+            SerializedProperty t0 = tl.GetArrayElementAtIndex(0);
+            t0.FindPropertyRelative("minItems").intValue = 2;
+            t0.FindPropertyRelative("maxItems").intValue = 2;
+            t0.FindPropertyRelative("patience").floatValue = 100f;
+            t0.FindPropertyRelative("weight").floatValue = 1f;
+            oso.FindProperty("offerDelayMin").floatValue = 1000f;
+            oso.FindProperty("offerDelayMax").floatValue = 1000f;
+            oso.FindProperty("maxOffers").intValue = 1;
+            oso.ApplyModifiedPropertiesWithoutUndo();
+            var ptA = ScriptableObject.CreateInstance<ProductType>();
+            var ptB = ScriptableObject.CreateInstance<ProductType>();
+            var pa = new SerializedObject(ptA); pa.FindProperty("value").intValue = 25; pa.ApplyModifiedPropertiesWithoutUndo();
+            var pb = new SerializedObject(ptB); pb.FindProperty("value").intValue = 40; pb.ApplyModifiedPropertiesWithoutUndo();
+            var bgo = new GameObject("BoardTest");
+            var board = bgo.AddComponent<OrderBoard>();
+            var bso = new SerializedObject(board);
+            bso.FindProperty("config").objectReferenceValue = oc;
+            SerializedProperty tp = bso.FindProperty("types");
+            tp.arraySize = 2;
+            tp.GetArrayElementAtIndex(0).objectReferenceValue = ptA;
+            tp.GetArrayElementAtIndex(1).objectReferenceValue = ptB;
+            bso.ApplyModifiedPropertiesWithoutUndo();
+
+            Eq("0", board.Offers.Count.ToString(), "aucune offre au départ");
+            board.Tick(0.1f);
+            Eq("1", board.Offers.Count.ToString(), "une offre est générée");
+            Eq("1", OrderBoard.TotalOf(board.Offers[0]).ToString(), "la première offre est facile : 1 colis");
+            Eq("45", board.Offers[0].reward.ToString(), "récompense = valeur 25 x 1,8");
+            Eq("1", board.Offers[0].pro.ToString(), "Points Pro : au moins 1");
+            Eq("5", oc.ProPoints(1000).ToString(), "1000 $ / 200 = 5 Points Pro");
+            for (int k = 0; k < 181; k++) board.Tick(1f);
+            Eq("0", board.Offers.Count.ToString(), "l'offre expire au bout de 180 s");
+
+            OrderBoard.Offer second = board.Generate(false);
+            Eq("2", OrderBoard.TotalOf(second).ToString(), "palier : 2 colis");
+            bool completed = false, failed = false;
+            board.OnCompleted += o => completed = true;
+            board.OnFailed += o => failed = true;
+            for (int k = 0; k < 900; k++) board.Tick(1f);   // une nouvelle offre arrive (minuteur écoulé)
+            Eq("True", board.Accept(0).ToString(), "accepter l'offre");
+            Eq("False", board.Accept(0).ToString(), "une seule commande à la fois");
+            int needed = board.Active.counts[0] > 0 ? 0 : 1;
+            ProductType neededType = board.Types[needed];
+            ProductType other = board.Active.counts[1 - needed] == 0 ? board.Types[1 - needed] : null; // un type non commandé, s'il y en a un
+            if (other != null) Eq("False", board.Deliver(other).ToString(), "un colis qui n'est pas attendu ne compte pas");
+            Eq("True", board.Deliver(neededType).ToString(), "un colis attendu compte");
+            foreach (ProductType pt in board.Types) while (board.Needs(pt)) board.Deliver(pt);
+            Eq("True", completed.ToString(), "commande finie");
+            Eq("False", board.HasActive.ToString(), "plus de commande en cours");
+
+            for (int k = 0; k < 1000; k++) board.Tick(1f);   // encore une offre
+            board.Accept(0);
+            for (int k = 0; k < 101; k++) board.Tick(1f);    // patience écoulée
+            Eq("True", failed.ToString(), "délai écoulé : la camionnette repart");
+            Eq("False", board.HasActive.ToString(), "commande abandonnée, sans pénalité");
+
+            Object.DestroyImmediate(bgo); Object.DestroyImmediate(oc);
+            Object.DestroyImmediate(ptA); Object.DestroyImmediate(ptB);
+        }
+
+        SaveData v5 = SaveSystem.Migrate(new SaveData { version = 5, money = 3 });
+        Eq("6", v5.version.ToString(), "migration v5 -> v6 : version");
+        Eq("0", v5.proPoints.ToString(), "migration v5 -> v6 : 0 Point Pro");
 
         // Économie : coût des améliorations strictement positif et croissant
         foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())

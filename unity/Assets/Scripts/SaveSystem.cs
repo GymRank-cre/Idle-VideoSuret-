@@ -11,6 +11,7 @@ public class SaveSystem : MonoBehaviour
 
     [SerializeField] Wallet wallet;
     [SerializeField] UnlockPad[] pads;            // toutes les dalles, même cachées
+    [SerializeField] ProPoints proPoints;         // Points Pro (11c)
     [SerializeField] MachineUpgradeState machineUpgrades; // améliorations par machine (11b)
     [SerializeField] ProcessStation[] stations;   // machines de la chaîne (Test, Emballage)
     [SerializeField] GameObject belt1;            // tapis (actif = acheté)
@@ -73,6 +74,7 @@ public class SaveSystem : MonoBehaviour
         if (audioManager != null && loaded.settingsSaved)
             audioManager.Apply(loaded.soundOn, loaded.musicOn, loaded.vibrationOn);
         wallet.Add(loaded.money);
+        if (proPoints != null && loaded.proPoints > 0) proPoints.Set(loaded.proPoints);
         if (upgradeState != null)
             foreach (SaveData.UpgradeLevel u in loaded.upgrades)
                 upgradeState.SetLevel(u.id, u.level);
@@ -180,6 +182,7 @@ public class SaveSystem : MonoBehaviour
         var data = new SaveData
         {
             money = wallet.Money,
+            proPoints = proPoints != null ? proPoints.Points : 0,
             lastSaveUtc = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             guideDone = guideConfig != null && PlayerPrefs.GetInt(guideConfig.DoneKey, 0) == 1,
             settingsSaved = audioManager != null,
@@ -327,6 +330,10 @@ public class SaveSystem : MonoBehaviour
         if (data.version < 5)
         {
             data.version = 5; // v4 : aucune amélioration par machine, tout à 0
+        }
+        if (data.version < 6)
+        {
+            data.version = 6; // v5 : pas de Points Pro (0)
         }
         return data;
     }
