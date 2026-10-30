@@ -174,42 +174,54 @@ public static class IdleSceneBuilder
         foreach (var kv in groups) kv.Value.ToObject("Trees_" + kv.Key.TrimStart('#'), trees, IdleMaterials.Get("Tree_" + kv.Key.TrimStart('#'), kv.Key));
     }
 
-    // ------------------------------------------------------------------ emplacements fantômes
+    // ------------------------------------------------------------------ postes : fantôme (verrouillé) et machine (ouvert)
 
     static void BuildSlots(Transform parent)
     {
         var slots = new GameObject("Slots").transform;
         slots.SetParent(parent, false);
-        Material ghost = IdleMaterials.Get("Ghost", "#CFE3F6", 0f, true, 0.42f);
+        Material ghostNext = IdleMaterials.Get("GhostNext", "#CFE3F6", 0f, true, 0.42f);
+        Material ghostFar = IdleMaterials.Get("GhostFar", "#CFE3F6", 0f, true, 0.24f);
         Material ghostEdge = IdleMaterials.Get("GhostEdge", "#FFFFFF", 0f, true, 0.7f);
         Sprite lockSprite = UiSprites.Picto("lock");
         for (int i = 0; i < IdleLayout.Stations.Length; i++)
         {
-            var slot = new GameObject("Slot_" + i).transform;
+            var slot = new GameObject("Slot_" + i, typeof(IdleStationView)).transform;
             slot.SetParent(slots, false);
             slot.position = IdleLayout.StationCenter(i);
             float s = IdleLayout.StationSize;
+            var ghost = new GameObject("Ghost").transform;
+            ghost.SetParent(slot, false);
             var body = new MeshKit();
             body.Box(new Vector3(-s * 0.5f, 0.01f, -s * 0.5f), new Vector3(s, 0.9f, s));
-            body.ToObject("Ghost", slot, ghost);
+            GameObject bodyGo = body.ToObject("Body", ghost, ghostFar);
             var edge = new MeshKit();   // cadre blanc au sol
             float e = 0.05f;
             edge.Box(new Vector3(-s * 0.5f, 0.012f, -s * 0.5f), new Vector3(s, 0.004f, e));
             edge.Box(new Vector3(-s * 0.5f, 0.012f, s * 0.5f - e), new Vector3(s, 0.004f, e));
             edge.Box(new Vector3(-s * 0.5f, 0.012f, -s * 0.5f), new Vector3(e, 0.004f, s));
             edge.Box(new Vector3(s * 0.5f - e, 0.012f, -s * 0.5f), new Vector3(e, 0.004f, s));
-            edge.ToObject("Frame", slot, ghostEdge);
-            if (i == 0) continue;   // la Réception est ouverte dès le départ : pas de cadenas
+            edge.ToObject("Frame", ghost, ghostEdge);
             var lockGo = new GameObject("Lock", typeof(SpriteRenderer), typeof(FaceCamera));
-            lockGo.transform.SetParent(slot, false);
+            lockGo.transform.SetParent(ghost, false);
             lockGo.transform.localPosition = new Vector3(0f, 1.25f, 0f);
-            lockGo.transform.localScale = Vector3.one * 0.55f;
+            lockGo.transform.localScale = Vector3.one * 0.5f;
             var sr = lockGo.GetComponent<SpriteRenderer>();
             sr.sprite = lockSprite;
             sr.color = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
+
+            Transform machine = IdleMachineBuilder.Build(slot, i);
+            var so = new SerializedObject(slot.GetComponent<IdleStationView>());
+            so.FindProperty("station").intValue = i;
+            so.FindProperty("ghost").objectReferenceValue = ghost.gameObject;
+            so.FindProperty("ghostBody").objectReferenceValue = bodyGo.GetComponent<Renderer>();
+            so.FindProperty("ghostNext").objectReferenceValue = ghostNext;
+            so.FindProperty("ghostFar").objectReferenceValue = ghostFar;
+            so.FindProperty("lockIcon").objectReferenceValue = sr;
+            so.FindProperty("machine").objectReferenceValue = machine.gameObject;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
     }
-
 
     // ------------------------------------------------------------------ tapis (U2b)
 

@@ -1,7 +1,7 @@
 # Statut local (Claude Code, PC de Sébastien)
-- Date et heure : 30/10/2026 10:09
-- Étape en cours : U2b (4 tapis animés + plaques d'achat au sol touchables) FAITE et poussée ; prochaine : U2c (machines animées, une par poussée : Réception d'abord)
+- Date et heure : 30/10/2026 10:18
+- Étape en cours : U2c machine 1/5 (Réception) faite et poussée ; prochaine : Assemblage
 - État : en cours (chantiers U1 à U4 décidés par Sébastien ; un seul build, à la fin)
-- Compilation 0/0, tests 130/130, test de fumée (300 s simulées, rewardFactor 1,5 : 3 postes) OK ; l'ancien jeu est au commit 25ac2e4
+- Compilation 0/0, tests 134/134, test de fumée (300 s simulées, rewardFactor 1,5 : 3 postes) OK ; l'ancien jeu est au commit 25ac2e4
 - Dernier build WebGL publié : P1 à P6 de l'ancien jeu (commit 26d129e) ; aucun nouveau build avant U4
 - Taille du dépôt : .git ~980 Mo ; publier-build.ps1 non lancé (accord de Sébastien requis)

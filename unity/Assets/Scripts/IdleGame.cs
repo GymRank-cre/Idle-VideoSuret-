@@ -155,6 +155,15 @@ public class IdleGame
 
     public enum PlateState { Hidden, Unlock, Open }
 
+    // Cycles visuels par seconde d'un poste : 1 / durée du cycle (vitesse et Réputation comprises, sans « Ajouter »), plafonné.
+    public float VisualFrequency(int station)
+    {
+        IdleEconomy.StationLevels st = Stations[station];
+        double cycle = cfg.stations[station].cycle / (1 + cfg.speedStep * st.speed) / g.speed;
+        float cap = station < cfg.visualCap.Length ? cfg.visualCap[station] : 1f;
+        return (float)Math.Min(1.0 / cycle, cap);
+    }
+
     // Une plaque au sol par poste : ouvert -> achète sa meilleure option ; prochain verrouillé -> déblocage ; les suivants sont cachés.
     public PlateState PlateStateOf(int station)
     {

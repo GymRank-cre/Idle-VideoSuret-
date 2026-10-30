@@ -244,6 +244,16 @@ public static class UnitTests
         var pg2 = new IdleGame(cfg, 2, 0); pg2.Load(JsonUtility.FromJson<SaveData>(pj));
         Eq("0", pg2.BuyMode.ToString(), "mode d'achat sauvegardé");
 
+        // ---------------------------------------------------------------- animation des machines (U2c)
+        var vg = new IdleGame(cfg, 4, 0);
+        Eq("0.625", F(vg.VisualFrequency(0)), "fréquence visuelle de la Réception au départ : 1 / 1,6 s");
+        vg.Stations[0].speed = 50; vg.Recalc();
+        Eq("1.6", F(vg.VisualFrequency(0)), "fréquence visuelle plafonnée à 1,6 cycles/s");
+        vg.Stations[4].unlocked = true; vg.Recalc();
+        Eq("0.125", F(vg.VisualFrequency(4)), "Expédition au départ : 1 / 8 s");
+        vg.Stations[4].speed = 1000; vg.Recalc();
+        Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
+
         // ---------------------------------------------------------------- caméra de la scène (U2a)
         foreach (float aspect in new[] { 390f / 844f, 0.56f, 1.5f })
         {

@@ -96,6 +96,9 @@ public class IdleEconomyConfig : ScriptableObject
     [Min(1)] public int clientCount = 6;               // clients différents (clés Loc client.N.name)
     [Min(1)] public int sayCount = 6;                  // répliques différentes (clés Loc order.say.N)
 
+    [Header("Animation des machines")]
+    public float[] visualCap = { 1.6f, 1.2f, 1.2f, 1.0f, 0.45f };   // cycles visuels par seconde au plus (même si la production va plus vite)
+
     [Header("Départ et achat conseillé")]
     public double startCash = 10;
     public double newStationFavor = 0.35;              // un nouveau poste est favorisé (délai de remboursement x0,35)
