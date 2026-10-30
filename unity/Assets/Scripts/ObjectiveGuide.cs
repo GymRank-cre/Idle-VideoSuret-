@@ -6,7 +6,9 @@ using UnityEngine.UI;
 // Quand la dernière étape est validée, le guide disparaît pour toujours (PlayerPrefs).
 public class ObjectiveGuide : MonoBehaviour
 {
-    enum Step { CollectCrates, DepositCrates, TakeProduct, DeliverProduct, CollectBills, PayPad, HireEmployee, HireCourier, OpenUpgrades, Done }
+    enum Step { CollectCrates, DepositCrates, TakeProduct, DeliverProduct, CollectBills, PayPad, HireEmployee, HireCourier, BuyTest, BuyPack, BuyBelt, OpenUpgrades, Done }
+
+    public static int PhraseCount => (int)Step.Done;   // une phrase par étape : vérifié par les tests
 
     [SerializeField] GuideConfig config;
     [SerializeField] Transform player;
@@ -20,6 +22,10 @@ public class ObjectiveGuide : MonoBehaviour
     [SerializeField] GameObject payPadObject;     // la dalle du 2e poste (se désactive quand elle est payée)
     [SerializeField] GameObject hirePadObject;    // la dalle d'embauche du porteur
     [SerializeField] GameObject courierPadObject; // la dalle d'embauche du livreur
+    [SerializeField] UnlockPad testPad;           // P1 : les achats de machines (dans l'ordre livreur -> Test -> Emballage -> tapis)
+    [SerializeField] UnlockPad packPad;
+    [SerializeField] UnlockPad beltPad;
+    [SerializeField] RectTransform hand;          // P1 : main qui pointe et tape (facultative)
     [SerializeField] UpgradePanel upgradePanel;   // bouton Améliorations (dernière étape)
     [SerializeField] Transform arrow;             // flèche 3D (enfant de rien : placée par ce script)
     [SerializeField] Text label;
@@ -33,6 +39,7 @@ public class ObjectiveGuide : MonoBehaviour
     string[] phrases;
     int moneyAtStart;   // argent au lancement : un billet encaissé = argent supérieur
     float checkTimer;
+    float playSeconds;  // temps de jeu écoulé pendant le guide (la main s'éteint après config.HandSeconds)
 
     void Start()
     {
@@ -61,7 +68,12 @@ public class ObjectiveGuide : MonoBehaviour
         }
 
         // le joueur est déjà en pleine chaîne (Emballage débloquée) : le tutoriel du début n'a plus lieu d'être
-        if (board != null && board.Unlocked && board.gameObject.activeInHierarchy) Finish(true);
+        if (board != null && board.Unlocked && board.gameObject.activeInHierarchy)
+        {
+            if (step < Step.BuyBelt && beltPad != null && !beltPad.IsUnlocked) { step = Step.BuyBelt; ShowPhrase(); }   // il ne reste que le tapis à montrer
+            else if (beltPad == null || beltPad.IsUnlocked) Finish(true);
+        }
+        playSeconds += Time.deltaTime;
 
         // Les états coûteux (recherche des produits et billets) ne sont lus que quelques fois par seconde.
         checkTimer += Time.deltaTime;
@@ -71,6 +83,41 @@ public class ObjectiveGuide : MonoBehaviour
             Advance();
         }
         UpdateArrow();
+        UpdateHand();
+    }
+
+    public void RefreshHand(float aspect) { UpdateHand(aspect); }   // utilisé par la capture d'écran (rendu hors fenêtre de jeu)
+
+    // P1 : la main tape sur l'objectif (écran) pendant les premières minutes, puis seulement pour les achats de machines.
+    void UpdateHand(float aspect = 0f)
+    {
+        if (hand == null) return;
+        Transform target = Target();
+        bool wanted = target != null && target.gameObject.activeInHierarchy && (playSeconds < config.HandSeconds || step >= Step.BuyTest);
+        Camera cam = Camera.main;
+        Canvas canvas = hand.GetComponentInParent<Canvas>();
+        if (!wanted || cam == null || canvas == null) { if (hand.gameObject.activeSelf) hand.gameObject.SetActive(false); return; }
+
+        // coordonnées de viewport (0..1) : indépendantes de la taille de l'écran, de la zone sûre et du mode du canvas
+        Vector3 point = target.position + Vector3.up * 0.4f;
+        Vector3 vp = cam.WorldToViewportPoint(point);
+        if (aspect > 0f)   // rendu dans une texture d'un autre format que la fenêtre : projection recalculée avec cet aspect
+        {
+            Matrix4x4 m = Matrix4x4.Perspective(cam.fieldOfView, aspect, cam.nearClipPlane, cam.farClipPlane) * cam.worldToCameraMatrix;
+            Vector4 clip = m * new Vector4(point.x, point.y, point.z, 1f);
+            vp = new Vector3(clip.x / clip.w * 0.5f + 0.5f, clip.y / clip.w * 0.5f + 0.5f, clip.w);
+        }
+        bool visible = vp.z > 0f && vp.x > 0f && vp.x < 1f && vp.y > 0f && vp.y < 1f;
+        if (visible)
+        {
+            var root = (RectTransform)canvas.rootCanvas.transform;
+            Vector3 world = root.TransformPoint(new Vector3(root.rect.xMin + vp.x * root.rect.width, root.rect.yMin + vp.y * root.rect.height, 0f));
+            Vector2 local = ((RectTransform)hand.parent).InverseTransformPoint(world);
+            float tap = Mathf.Abs(Mathf.Sin(Time.unscaledTime * config.HandTapSpeed));   // 0 = en l'air, 1 = au contact
+            hand.anchoredPosition = local + Vector2.down * (config.HandTapDistance * (1f - tap));
+            hand.localScale = Vector3.one * (1f - 0.1f * tap);
+        }
+        if (hand.gameObject.activeSelf != visible) hand.gameObject.SetActive(visible);
     }
 
     // Passe aux étapes suivantes tant que la condition de l'étape courante est remplie.
@@ -108,6 +155,12 @@ public class ObjectiveGuide : MonoBehaviour
                 return hirePadObject == null || (!hirePadObject.activeSelf && (payPadObject == null || !payPadObject.activeSelf));
             case Step.HireCourier:
                 return courierPadObject == null || (!courierPadObject.activeSelf && !hirePadObject.activeSelf);
+            case Step.BuyTest:
+                return testPad == null || testPad.IsUnlocked;
+            case Step.BuyPack:
+                return packPad == null || packPad.IsUnlocked;
+            case Step.BuyBelt:
+                return beltPad == null || beltPad.IsUnlocked;
             case Step.OpenUpgrades:
                 return upgradePanel == null || upgradePanel.HasBeenOpened;
         }
@@ -140,6 +193,9 @@ public class ObjectiveGuide : MonoBehaviour
             case Step.PayPad: return payPadObject != null ? payPadObject.transform : null;
             case Step.HireEmployee: return hirePadObject != null ? hirePadObject.transform : null;
             case Step.HireCourier: return courierPadObject != null ? courierPadObject.transform : null;
+            case Step.BuyTest: return testPad != null ? testPad.transform : null;
+            case Step.BuyPack: return packPad != null ? packPad.transform : null;
+            case Step.BuyBelt: return beltPad != null ? beltPad.transform : null;
         }
         return null;
     }
@@ -208,6 +264,7 @@ public class ObjectiveGuide : MonoBehaviour
             PlayerPrefs.Save();
         }
         if (arrow != null) arrow.gameObject.SetActive(false);
+        if (hand != null) hand.gameObject.SetActive(false);
         if (labelRoot != null) labelRoot.SetActive(false);
         if (upgradePanel != null) upgradePanel.SetHighlight(false);
     }

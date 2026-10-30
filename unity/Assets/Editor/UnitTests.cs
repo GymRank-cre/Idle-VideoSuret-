@@ -300,6 +300,7 @@ public static class UnitTests
         // 11e : vue libre (limites de la caméra, zoom, valeurs invalides)
         {
             Vector3 fb = new Vector3(1f, 0f, 2f);
+            Eq(ObjectiveGuide.PhraseCount.ToString(), ScriptableObject.CreateInstance<GuideConfig>().Phrases.Length.ToString(), "guide : une phrase par étape (TEST, EMBALLAGE, TAPIS inclus)");
             Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
             Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
             Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");

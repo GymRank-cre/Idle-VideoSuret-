@@ -43,6 +43,8 @@ public static class GuideBuilder
             GameObject g = GameObject.Find(old);
             if (g != null) Object.DestroyImmediate(g);
         }
+        Transform oldHand = safeArea.Find("GuideHand");
+        if (oldHand != null) Object.DestroyImmediate(oldHand.gameObject);
         Transform oldBar = safeArea.Find("GuideBar");
         if (oldBar != null) Object.DestroyImmediate(oldBar.gameObject);
 
@@ -65,6 +67,10 @@ public static class GuideBuilder
         so.FindProperty("payPadObject").objectReferenceValue = FindPad("UnlockPad");
         so.FindProperty("hirePadObject").objectReferenceValue = FindPad("HirePad");
         so.FindProperty("courierPadObject").objectReferenceValue = FindPad("HirePadCourier");
+        so.FindProperty("testPad").objectReferenceValue = PadComponent("TestPad");
+        so.FindProperty("packPad").objectReferenceValue = PadComponent("PackPad");
+        so.FindProperty("beltPad").objectReferenceValue = PadComponent("BeltPad1");
+        so.FindProperty("hand").objectReferenceValue = BuildHand(safeArea);
         so.FindProperty("upgradePanel").objectReferenceValue = Object.FindFirstObjectByType<UpgradePanel>();
         so.FindProperty("arrow").objectReferenceValue = arrow;
         so.FindProperty("board").objectReferenceValue = Object.FindFirstObjectByType<OrderBoard>();
@@ -73,6 +79,29 @@ public static class GuideBuilder
         so.FindProperty("label").objectReferenceValue = label;
         so.FindProperty("labelRoot").objectReferenceValue = bar;
         so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static UnlockPad PadComponent(string padName)
+    {
+        GameObject g = FindPad(padName);
+        return g != null ? g.GetComponent<UnlockPad>() : null;
+    }
+
+    // P1 : main qui pointe, bout du doigt en haut ; n'intercepte aucun toucher.
+    static RectTransform BuildHand(Transform parent)
+    {
+        GameObject go = new GameObject("GuideHand", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        var rt = (RectTransform)go.transform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.88f);   // le bout du doigt est posé sur l'objectif
+        rt.sizeDelta = new Vector2(130f, 130f);
+        var img = go.GetComponent<Image>();
+        img.sprite = UiSprites.Hand();
+        img.color = new Color(1f, 0.87f, 0.68f);
+        img.raycastTarget = false;
+        go.SetActive(false);
+        return rt;
     }
 
     // Les dalles d'embauche sont cachées au départ : GameObject.Find ne les voit pas.

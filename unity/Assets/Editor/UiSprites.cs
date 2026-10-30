@@ -101,6 +101,15 @@ public static class UiSprites
             (y >= 60 && y <= 120 && Mathf.Abs(x - 64f) <= (120f - y) * 0.88f));
     }
 
+    // P1 : main qui pointe (index levé, pouce sur le côté). Le bout du doigt est en haut, vers le milieu.
+    public static Sprite Hand()
+    {
+        return Glyph("Assets/Prototype/Textures/HandIcon.png", (x, y) =>
+            (x >= 52 && x <= 74 && y >= 58 && y <= 112) || Dist(x, y, 63, 112) <= 11 ||   // index
+            (x >= 34 && x <= 98 && y >= 14 && y <= 70) ||                                   // paume
+            Seg(x, y, 40, 40, 20, 64, 9));                                                  // pouce
+    }
+
     public static Sprite Plus()
     {
         return Glyph("Assets/Prototype/Textures/PlusIcon.png", (x, y) =>

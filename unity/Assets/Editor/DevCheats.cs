@@ -47,6 +47,8 @@ public static class DevCheats
                 canvas.worldCamera = cam;
                 canvas.planeDistance = 1f;
                 Canvas.ForceUpdateCanvases();
+                var guide = Object.FindFirstObjectByType<ObjectiveGuide>();
+                if (guide != null) { guide.RefreshHand(width / (float)height); Canvas.ForceUpdateCanvases(); }   // la main de tutoriel se place dans le cadre de la capture
             }
             cam.Render();
             RenderTexture.active = rt;
