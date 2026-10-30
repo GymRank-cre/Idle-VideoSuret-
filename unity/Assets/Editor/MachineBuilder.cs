@@ -74,16 +74,24 @@ public static class MachineBuilder
         SpriteRenderer pill = pillGo.GetComponent<SpriteRenderer>();
         pill.sprite = UiSprites.Rounded();
         pill.drawMode = SpriteDrawMode.Sliced;
-        pill.size = new Vector2(2.5f, 0.55f);
+        pill.size = new Vector2(3.2f, 0.6f);
         pill.color = UiTheme.Slate;
         pill.sortingOrder = 10;
 
-        // icônes : caisse (entrée) et produit (sortie) en petits carrés arrondis colorés
-        Icon(visual, "CrateIcon", new Vector3(-1.02f, 0f, 0f), new Color32(0xB9, 0x82, 0x4A, 0xFF));
-        Icon(visual, "ProductIcon", new Vector3(0.18f, 0f, 0f), new Color32(0xE8, 0xEE, 0xF5, 0xFF));
-        TextMesh[] inputs = Number(visual, "In", new Vector3(-0.8f, 0f, 0f));
-        TextMesh[] outputs = Number(visual, "Out", new Vector3(0.4f, 0f, 0f));
-        visual.localScale = Vector3.one * 0.6f; // pastille ~ 0,9 m à la distance de référence (< 9 % de la largeur d'écran)
+        // caisse + nombre  ->  produit + nombre : l'ordre se lit de gauche à droite
+        Icon(visual, "CrateIcon", new Vector3(-1.32f, 0f, 0f), new Color32(0xB9, 0x82, 0x4A, 0xFF));
+        TextMesh[] inputs = Number(visual, "In", new Vector3(-1.08f, 0f, 0f));
+        var arrowGo = new GameObject("Flow", typeof(SpriteRenderer));
+        arrowGo.transform.SetParent(visual, false);
+        arrowGo.transform.localPosition = new Vector3(-0.1f, 0f, 0f);
+        arrowGo.transform.localRotation = Quaternion.Euler(0f, 0f, -90f);
+        arrowGo.transform.localScale = Vector3.one * 0.22f;
+        var asr = arrowGo.GetComponent<SpriteRenderer>();
+        asr.sprite = UiSprites.Arrow();
+        asr.sortingOrder = 11;
+        Icon(visual, "ProductIcon", new Vector3(0.28f, 0f, 0f), new Color32(0xE8, 0xEE, 0xF5, 0xFF));
+        TextMesh[] outputs = Number(visual, "Out", new Vector3(0.52f, 0f, 0f));
+        visual.localScale = Vector3.one * 0.42f; // reste petite à l'écran (~1,3 m à la distance de référence)
 
         var label = root.AddComponent<StockLabel>();
         var so = new SerializedObject(label);

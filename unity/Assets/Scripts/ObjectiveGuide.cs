@@ -169,7 +169,8 @@ public class ObjectiveGuide : MonoBehaviour
         if (arrived) return;
 
         float bob = Mathf.Sin(Time.time * config.ArrowBobSpeed) * config.ArrowBob;
-        arrow.position = player.position + Vector3.up * (config.ArrowHeight + bob);
+        arrow.localScale = Vector3.one * 0.75f;   // plus petite : elle ne recouvre plus les textes au sol
+        arrow.position = player.position + Vector3.up * (config.ArrowHeight + 0.5f + bob);
         arrow.rotation = Quaternion.LookRotation(flat.normalized, Vector3.up);
     }
 

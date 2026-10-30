@@ -44,7 +44,7 @@ public class DeliveryVan : MonoBehaviour
     {
         state = State.Arriving;
         t = 0f;
-        if (cameraFollow != null) cameraFollow.Peek(peekPoint != null ? peekPoint : parkPoint, 2.6f);
+        if (cameraFollow != null) cameraFollow.Peek(peekPoint != null ? peekPoint : parkPoint, 3.2f);
     }
 
     void OnCompleted(OrderBoard.Offer o)

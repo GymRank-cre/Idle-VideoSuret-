@@ -158,12 +158,6 @@ public class OrdersUi : MonoBehaviour
             OrderConfig.Client c = board.Config.Clients[board.Active.clientIndex];
             barText.text = Loc.T("orders.bar", c.displayName, board.ActiveDelivered, board.ActiveTotal);
         }
-        else if (hintShown && board.Offers.Count > 0)
-        {
-            bar.SetActive(true);
-            barText.text = Loc.T("orders.hint");
-            barFill.fillAmount = 1f;
-        }
         else
         {
             bar.SetActive(false);

@@ -7,7 +7,7 @@ public static class OrderBuilder
 {
     const string Root = "Assets/Prototype";
     static readonly Vector3 DockPosition = new Vector3(11.5f, 0.01f, -8.2f);   // près de la porte roulante, hors des couloirs des clients
-    static readonly Vector3 VanPark = new Vector3(15.4f, 0f, -10.9f);           // juste dehors, devant la porte
+    static readonly Vector3 VanPark = new Vector3(15.0f, 0f, -10.9f);           // juste dehors, devant la porte
     static readonly Vector3 VanAway = new Vector3(32f, 0f, -10.9f);
 
     public static OrderConfig LoadOrCreateConfig()
@@ -135,9 +135,15 @@ public static class OrderBuilder
 
         var label = new GameObject("Label", typeof(FaceCamera));
         label.transform.SetParent(dock.transform, false);
-        label.transform.localPosition = new Vector3(0f, 0.8f, 0f);
-        MachineBuilder.MakeText("Outline", label.transform, new Vector3(0.03f, -0.03f, 0.01f), UiTheme.Ink, 12, 0.1f, TextAnchor.MiddleCenter).text = "QUAI";
-        MachineBuilder.MakeText("Text", label.transform, Vector3.zero, Color.white, 13, 0.1f, TextAnchor.MiddleCenter).text = "QUAI";
+        label.transform.localPosition = new Vector3(0f, 0.7f, 0f);
+        MachineBuilder.MakeText("Outline", label.transform, new Vector3(0.03f, -0.03f, 0.01f), UiTheme.Ink, 12, 0.055f, TextAnchor.MiddleCenter).text = "QUAI";
+        MachineBuilder.MakeText("Text", label.transform, Vector3.zero, Color.white, 13, 0.055f, TextAnchor.MiddleCenter).text = "QUAI";
+
+        // petite camionnette posée sur la plaque : on comprend que c'est là que partent les colis
+        Material vw = PrototypeSetup.MakeMaterial("VanWhite", new Color(0.94f, 0.95f, 0.97f));
+        Material vb = PrototypeSetup.MakeMaterial("VanBlue", new Color32(0x1F, 0xA0, 0xFF, 0xFF));
+        RoundedBox.Make(dock.transform, "MiniVanBox", new Vector3(-0.15f, 0.2f, -0.35f), new Vector3(0.75f, 0.4f, 0.4f), 0.06f, vw);
+        RoundedBox.Make(dock.transform, "MiniVanCab", new Vector3(0.4f, 0.17f, -0.35f), new Vector3(0.34f, 0.3f, 0.4f), 0.06f, vb);
 
         var sd = dock.AddComponent<ShippingDock>();
         var so = new SerializedObject(sd);
@@ -192,7 +198,7 @@ public static class OrderBuilder
         park.position = VanPark;
         park.SetParent(root.transform.parent, true);
         var peek = new GameObject("VanPeek").transform;
-        peek.position = new Vector3(13.2f, 0f, -10.2f);
+        peek.position = new Vector3(14.8f, 0f, -10.6f); // la vue portrait ne couvre que ~6 m de large : il faut viser la camionnette elle-même
         var away = new GameObject("VanAway").transform;
         away.position = VanAway;
 
@@ -258,12 +264,15 @@ public static class OrderBuilder
         face.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
         rootGo.GetComponent<Button>().targetGraphic = face.GetComponent<Image>();
         Object.DestroyImmediate(face.GetComponent<Button>());
-        // pictogramme : planchette à pince (rectangle blanc, pince sombre, deux lignes)
-        UpgradeBuilder.Box("Board", face, rounded, Color.white, new Vector2(0f, -4f), new Vector2(70f, 88f), false);
-        UpgradeBuilder.Box("Clip", face, rounded, UiTheme.Slate, new Vector2(0f, 38f), new Vector2(34f, 18f), false);
-        UpgradeBuilder.Box("L1", face, rounded, new Color(0.7f, 0.74f, 0.8f), new Vector2(0f, 8f), new Vector2(46f, 8f), false);
-        UpgradeBuilder.Box("L2", face, rounded, new Color(0.7f, 0.74f, 0.8f), new Vector2(0f, -12f), new Vector2(46f, 8f), false);
-        UpgradeBuilder.Box("L3", face, rounded, new Color(0.7f, 0.74f, 0.8f), new Vector2(0f, -32f), new Vector2(30f, 8f), false);
+        // pictogramme : planchette (rectangle blanc, pince orange, lignes orange, coche verte), coins nets
+        RectTransform clipboard = UpgradeBuilder.Box("Board", face, rounded, Color.white, new Vector2(0f, -6f), new Vector2(78f, 96f), false);
+        clipboard.GetComponent<Image>().pixelsPerUnitMultiplier = 3.2f;
+        Sharp(UpgradeBuilder.Box("Clip", face, rounded, new Color32(0xC2, 0x53, 0x0A, 0xFF), new Vector2(0f, 42f), new Vector2(38f, 20f), false), 3.2f);
+        Sharp(UpgradeBuilder.Box("L1", face, rounded, UiTheme.Orange, new Vector2(10f, 14f), new Vector2(40f, 8f), false), 3.2f);
+        Sharp(UpgradeBuilder.Box("L2", face, rounded, UiTheme.Orange, new Vector2(10f, -4f), new Vector2(40f, 8f), false), 3.2f);
+        Sharp(UpgradeBuilder.Box("L3", face, rounded, UiTheme.Orange, new Vector2(10f, -22f), new Vector2(28f, 8f), false), 3.2f);
+        UpgradeBuilder.Rot(Sharp(UpgradeBuilder.Box("Tick1", face, rounded, UiTheme.Green, new Vector2(-24f, -20f), new Vector2(7f, 14f), false), 3f), -35f);
+        UpgradeBuilder.Rot(Sharp(UpgradeBuilder.Box("Tick2", face, rounded, UiTheme.Green, new Vector2(-18f, -17f), new Vector2(7f, 22f), false), 3f), 35f);
         RectTransform dot = UpgradeBuilder.Box("Dot", button, circle, UiTheme.Red, new Vector2(62f, 62f), new Vector2(60f, 60f), false);
         UpgradeBuilder.Box("DotRim", dot, circle, new Color(1f, 1f, 1f, 0.95f), Vector2.zero, new Vector2(60f, 60f), false).SetAsFirstSibling();
         UpgradeBuilder.Box("DotIn", dot, circle, UiTheme.Red, Vector2.zero, new Vector2(50f, 50f), false);
@@ -410,6 +419,12 @@ public static class OrderBuilder
         so.ApplyModifiedPropertiesWithoutUndo();
         card.gameObject.SetActive(false);
         return c;
+    }
+
+    static RectTransform Sharp(RectTransform rt, float ppum)
+    {
+        rt.GetComponent<Image>().pixelsPerUnitMultiplier = ppum;
+        return rt;
     }
 
     // Socle plein derrière un élément, placé dedans (premier enfant) : il apparaît et disparaît avec lui.

@@ -133,6 +133,7 @@ public static class PrototypeSetup
         WebGLBuilder.Build(); // écran « Touche pour jouer » (étape 8b), au-dessus de tout le reste du Canvas
 
         WorkshopBuilder.Run(); // habillage visuel (ambiance, atelier, technicien)
+        ExteriorBuilder.Build(); // 10b-1 : extérieur, ciel clair, ambiance tri-couleur, accessoires
         EmployeeBuilder.BakeNavMesh(); // après le décor : le NavMesh voit tous les obstacles
 
         EditorSceneManager.SaveScene(scene, Root + "/Prototype.unity");
