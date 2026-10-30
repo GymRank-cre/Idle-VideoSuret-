@@ -51,7 +51,6 @@ public class FreeViewController : MonoBehaviour
 
     void Toggle()
     {
-        AudioManager.Play(SfxId.Click);
         SetActive(!active);
     }
 

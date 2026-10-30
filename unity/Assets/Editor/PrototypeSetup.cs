@@ -150,6 +150,23 @@ public static class PrototypeSetup
     {
         foreach (Button b in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             if (b.GetComponent<PressScale>() == null) b.gameObject.AddComponent<PressScale>();
+
+        // P3 : ces boutons jouent leur propre son (achat, embauche, refus, déverrouillage audio) : pas de clic commun
+        var own = new System.Collections.Generic.List<Button>();
+        foreach (OrderCard c in Object.FindObjectsByType<OrderCard>(FindObjectsInactive.Include, FindObjectsSortMode.None)) own.Add(c.Accept);
+        foreach (ReputationRow r in Object.FindObjectsByType<ReputationRow>(FindObjectsInactive.Include, FindObjectsSortMode.None)) own.Add(r.Buy);
+        foreach (UpgradeRow u in Object.FindObjectsByType<UpgradeRow>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            own.Add((Button)new SerializedObject(u).FindProperty("buyButton").objectReferenceValue);
+        TapToPlayScreen tap = Object.FindFirstObjectByType<TapToPlayScreen>(FindObjectsInactive.Include);
+        if (tap != null) own.Add((Button)new SerializedObject(tap).FindProperty("tapButton").objectReferenceValue);
+        OfflineWelcomeScreen welcome = Object.FindFirstObjectByType<OfflineWelcomeScreen>(FindObjectsInactive.Include);
+        if (welcome != null) own.Add((Button)new SerializedObject(welcome).FindProperty("claimButton").objectReferenceValue);
+        foreach (Button b in own)
+        {
+            if (b == null) continue;
+            var ps = b.GetComponent<PressScale>();
+            if (ps != null) { var so = new SerializedObject(ps); so.FindProperty("silent").boolValue = true; so.ApplyModifiedPropertiesWithoutUndo(); }
+        }
     }
 
     // Panneau « MAX » : pastille rouge arrondie avec le mot MAX en blanc à contour sombre, face caméra.

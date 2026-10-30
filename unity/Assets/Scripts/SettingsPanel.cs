@@ -30,13 +30,13 @@ public class SettingsPanel : MonoBehaviour
         confirmBox.SetActive(false);
         if (versionText != null) versionText.text = Loc.T("settings.version", BuildInfo.Version);
 
-        openButton.onClick.AddListener(() => { Click(); panel.SetActive(!panel.activeSelf); confirmBox.SetActive(false); Refresh(); });
-        closeButton.onClick.AddListener(() => { Click(); panel.SetActive(false); });
-        soundToggle.onClick.AddListener(() => { Click(); if (audioManager != null) audioManager.SetSound(!audioManager.SoundOn); });
-        musicToggle.onClick.AddListener(() => { Click(); if (audioManager != null) audioManager.SetMusic(!audioManager.MusicOn); });
-        vibrationToggle.onClick.AddListener(() => { Click(); if (audioManager != null) audioManager.SetVibration(!audioManager.VibrationOn); });
-        eraseButton.onClick.AddListener(() => { Click(); confirmBox.SetActive(true); });
-        confirmNo.onClick.AddListener(() => { Click(); confirmBox.SetActive(false); });
+        openButton.onClick.AddListener(() => { panel.SetActive(!panel.activeSelf); confirmBox.SetActive(false); Refresh(); });
+        closeButton.onClick.AddListener(() => { panel.SetActive(false); });
+        soundToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetSound(!audioManager.SoundOn); });
+        musicToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetMusic(!audioManager.MusicOn); });
+        vibrationToggle.onClick.AddListener(() => { if (audioManager != null) audioManager.SetVibration(!audioManager.VibrationOn); });
+        eraseButton.onClick.AddListener(() => { confirmBox.SetActive(true); });
+        confirmNo.onClick.AddListener(() => { confirmBox.SetActive(false); });
         confirmYes.onClick.AddListener(EraseAndRestart);
 
         if (audioManager != null) audioManager.OnSettingsChanged += Refresh;
@@ -48,10 +48,6 @@ public class SettingsPanel : MonoBehaviour
         if (audioManager != null) audioManager.OnSettingsChanged -= Refresh;
     }
 
-    static void Click()
-    {
-        AudioManager.Play(SfxId.Click);
-    }
 
     void Refresh()
     {

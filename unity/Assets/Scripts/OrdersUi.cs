@@ -44,7 +44,7 @@ public class OrdersUi : MonoBehaviour
         {
             int index = i;
             cards[i].Accept.onClick.AddListener(() => OnAccept(index));
-            cards[i].Refuse.onClick.AddListener(() => { AudioManager.Play(SfxId.Click); board.Refuse(index); });
+            cards[i].Refuse.onClick.AddListener(() => board.Refuse(index));
             cards[i].Later.onClick.AddListener(() => cards[index].ShowLater());
         }
     }
@@ -87,7 +87,6 @@ public class OrdersUi : MonoBehaviour
 
     void Toggle()
     {
-        AudioManager.Play(SfxId.Click);
         if (panel.activeSelf) Close(); else Open();
     }
 

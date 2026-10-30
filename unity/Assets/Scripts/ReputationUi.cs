@@ -57,7 +57,6 @@ public class ReputationUi : MonoBehaviour
 
     void Toggle()
     {
-        AudioManager.Play(SfxId.Click);
         if (panel.activeSelf) Close(); else Open();
     }
 

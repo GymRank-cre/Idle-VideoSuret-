@@ -66,7 +66,6 @@ public class UpgradePanel : MonoBehaviour
         }
         else
         {
-            AudioManager.Play(SfxId.Click);
             Open();
         }
     }
@@ -80,7 +79,6 @@ public class UpgradePanel : MonoBehaviour
 
     void Close()
     {
-        AudioManager.Play(SfxId.Click);
         panel.SetActive(false);
     }
 

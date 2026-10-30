@@ -30,8 +30,8 @@ public class DiagnosticPanel : MonoBehaviour
 
     void Start()
     {
-        openButton.onClick.AddListener(() => { AudioManager.Play(SfxId.Click); panel.SetActive(true); panel.transform.SetAsLastSibling(); Refresh(); });
-        closeButton.onClick.AddListener(() => { AudioManager.Play(SfxId.Click); panel.SetActive(false); });
+        openButton.onClick.AddListener(() => { panel.SetActive(true); panel.transform.SetAsLastSibling(); Refresh(); });
+        closeButton.onClick.AddListener(() => { panel.SetActive(false); });
     }
 
     void OnDestroy()
