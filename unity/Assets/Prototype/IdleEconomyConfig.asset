@@ -1,0 +1,107 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 227992a3791c16443ac2d40d5317610e, type: 3}
+  m_Name: IdleEconomyConfig
+  m_EditorClassIdentifier: 
+  stations:
+  - id: recep
+    nameKey: station.recep
+    cycle: 1.6
+    value: 1
+    unlock: 0
+  - id: assem
+    nameKey: station.assem
+    cycle: 3
+    value: 12
+    unlock: 180
+  - id: test
+    nameKey: station.test
+    cycle: 4.5
+    value: 144
+    unlock: 14400
+  - id: pack
+    nameKey: station.pack
+    cycle: 6
+    value: 1728
+    unlock: 1152000
+  - id: ship
+    nameKey: station.ship
+    cycle: 8
+    value: 20736
+    unlock: 92160000
+  speedStep: 0.12
+  growthSpeed: 1.19
+  growthAdd: 1.26
+  costSpeedFactor: 12
+  costAddFactor: 6
+  costSpeedFloor: 10
+  costAddFloor: 7
+  milestones: 0a000000190000003200000064000000c80000002c01000090010000f401000058020000bc0200002003000084030000e8030000
+  reputation:
+  - id: rev
+    maxLevel: 10
+    baseCost: 2
+    mul: 1.55
+  - id: spd
+    maxLevel: 10
+    baseCost: 2
+    mul: 1.55
+  - id: cost
+    maxLevel: 10
+    baseCost: 3
+    mul: 1.55
+  - id: ordr
+    maxLevel: 8
+    baseCost: 2
+    mul: 1.55
+  - id: slot
+    maxLevel: 2
+    baseCost: 12
+    mul: 3.3
+  - id: off
+    maxLevel: 5
+    baseCost: 4
+    mul: 1.55
+  - id: turbo
+    maxLevel: 4
+    baseCost: 6
+    mul: 1.55
+  repRevenuePerLevel: 0.1
+  repSpeedPerLevel: 0.05
+  repCostPerLevel: 0.03
+  repCostFloor: 0.4
+  repOrderPerLevel: 0.15
+  offlineBaseHours: 4
+  offlineHoursPerLevel: 2
+  turboBaseSeconds: 60
+  turboSecondsPerLevel: 15
+  turboBaseCooldown: 240
+  turboCooldownPerLevel: 30
+  turboCooldownFloor: 90
+  turboMultiplier: 2
+  offlineMinSeconds: 20
+  welcomeMinSeconds: 60
+  offerCount: 3
+  rewardFactor: 3.5
+  nextOfferDelay: 8
+  minQuantity: 3
+  fillSecondsMin: 70
+  fillSecondsMax: 130
+  lastStationChance: 0.55
+  proBase: 1
+  proFromStation: 2
+  proBigQuantity: 100
+  clientCount: 6
+  sayCount: 6
+  startCash: 10
+  newStationFavor: 0.35
+  goalFarSeconds: 12

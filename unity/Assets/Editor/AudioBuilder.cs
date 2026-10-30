@@ -110,29 +110,6 @@ public static class AudioBuilder
         Text version = UpgradeBuilder.Label("Version", panel, "Version : ?", 28, new Color(0.8f, 0.85f, 0.9f), new Vector2(-150f, -352f), new Vector2(520f, 60f));
         version.alignment = TextAnchor.MiddleLeft;
         version.horizontalOverflow = HorizontalWrapMode.Wrap;
-        RectTransform diagButton = UpgradeBuilder.Box("DiagnosticButton", panel, rounded, new Color(0.3f, 0.33f, 0.38f), new Vector2(300f, -352f), new Vector2(250f, 70f), true);
-        diagButton.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
-        UpgradeBuilder.Label("Text", diagButton, Loc.T("settings.diag"), 32, Color.white, Vector2.zero, new Vector2(250f, 70f));
-
-        // Panneau de diagnostic (au-dessus de tout, dans la zone sûre)
-        RectTransform diag = UpgradeBuilder.Box("DiagnosticPanel", safe, rounded, new Color(0.04f, 0.05f, 0.08f, 0.95f), new Vector2(0f, 0f), new Vector2(1000f, 1250f), false);
-        diag.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        diag.GetComponent<Image>().raycastTarget = true;
-        Text diagBody = UpgradeBuilder.Label("Body", diag, "", 30, Color.white, new Vector2(0f, -40f), new Vector2(940f, 1100f));
-        diagBody.alignment = TextAnchor.UpperLeft;
-        diagBody.horizontalOverflow = HorizontalWrapMode.Wrap;
-        diagBody.verticalOverflow = VerticalWrapMode.Truncate;
-        RectTransform diagClose = UpgradeBuilder.Box("CloseButton", diag, circle, new Color(0.75f, 0.25f, 0.25f), new Vector2(430f, 570f), new Vector2(90f, 90f), true);
-        UpgradeBuilder.Rot(UpgradeBuilder.Box("X1", diagClose, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), 45f);
-        UpgradeBuilder.Rot(UpgradeBuilder.Box("X2", diagClose, square, Color.white, Vector2.zero, new Vector2(14f, 52f), false), -45f);
-        GameObject diagHost = new GameObject("DiagnosticHost", typeof(RectTransform), typeof(DiagnosticPanel));
-        diagHost.transform.SetParent(safe, false);
-        var dso = new SerializedObject(diagHost.GetComponent<DiagnosticPanel>());
-        dso.FindProperty("panel").objectReferenceValue = diag.gameObject;
-        dso.FindProperty("body").objectReferenceValue = diagBody;
-        dso.FindProperty("openButton").objectReferenceValue = diagButton.GetComponent<Button>();
-        dso.FindProperty("closeButton").objectReferenceValue = diagClose.GetComponent<Button>();
-        dso.ApplyModifiedPropertiesWithoutUndo();
 
         // Le script vit sur un objet toujours actif (le panneau est désactivé quand il est fermé).
         GameObject host = new GameObject("SettingsHost", typeof(RectTransform), typeof(SettingsPanel));

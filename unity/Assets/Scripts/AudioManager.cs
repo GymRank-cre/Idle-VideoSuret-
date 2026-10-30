@@ -38,8 +38,7 @@ public class AudioManager : MonoBehaviour
         VibrationOn = config.VibrationOnByDefault;
 
         locked = Application.platform == RuntimePlatform.WebGLPlayer;
-        PlayerController player = FindFirstObjectByType<PlayerController>();
-        if (player != null) listener = player.transform;
+        // plus de joueur à suivre : `listener` reste vide tant qu'une scène ne le fixe pas (pas d'atténuation par la distance)
 
         clips = SfxLibrary.CreateAll(); // une fois pour toutes
         pool = new AudioSource[PoolSize];

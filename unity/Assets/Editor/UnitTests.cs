@@ -4,6 +4,7 @@ using UnityEngine;
 
 // Tests unitaires lancés par le menu `Tools > Idle Prototype > Tests unitaires` (le projet n'a pas d'assembly de test :
 // le code du jeu est dans l'assembly par défaut, que les assemblies de test ne peuvent pas référencer).
+// Jeu idle (U1) : économie, achats, commandes, Réputation, turbo, hors ligne, sauvegarde v8, migration depuis la v7.
 public static class UnitTests
 {
     [MenuItem("Tools/Idle Prototype/Tests unitaires")]
@@ -43,379 +44,205 @@ public static class UnitTests
         Eq("clé.inconnue", Loc.T("clé.inconnue"), "Loc clé inconnue renvoyée telle quelle");
         Eq("Niv 2/10", Loc.T("upgrades.level", 2, 10), "Loc niveau");
 
-        // Migration de sauvegarde
-        var old = new SaveData { version = 1, money = 50, upgrades = null, settingsSaved = true };
-        SaveData m = SaveSystem.Migrate(old);
-        Eq(SaveData.CurrentVersion.ToString(), m.version.ToString(), "migration v1 -> version courante");
-        Eq("True", (m.upgrades != null).ToString(), "migration : liste d'améliorations créée");
-        Eq("False", m.settingsSaved.ToString(), "migration : réglages remis par défaut");
-        Eq("50", m.money.ToString(), "migration : l'argent est conservé");
-        SaveData cur = SaveSystem.Migrate(new SaveData { money = 9 });
-        Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
 
-        SaveData v3 = SaveSystem.Migrate(new SaveData { version = 3, money = 7, machines = null });
-        Eq("7", v3.version.ToString(), "migration v3 -> version courante (7)");
-        Eq("True", (v3.machines != null && v3.machines.Count == 0).ToString(), "migration v3 -> v4 : aucune machine");
-        Eq("7", v3.money.ToString(), "migration v3 -> v4 : l'argent est conservé");
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string F(double v, string f = "0.####") { return v.ToString(f, inv); }
 
-        // Hors ligne avec la chaîne : le plus lent des maillons limite le débit, la valeur est multipliée
+        // ---------------------------------------------------------------- économie (port de econ.js)
+        var cfg = ScriptableObject.CreateInstance<IdleEconomyConfig>();
+        var eco = new IdleEconomy(cfg);
+        var g0 = eco.GlobalsFor(new int[cfg.reputation.Length]);
+        Eq("5", cfg.stations.Length.ToString(), "5 postes");
+        Eq("1,12,144,1728,20736", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.value))), "valeurs des postes");
+        Eq("1.6,3,4.5,6,8", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.cycle))), "cycles des postes");
+        Eq("0,180,14400,1152000,92160000", string.Join(",", System.Array.ConvertAll(cfg.stations, s => F(s.unlock, "0"))), "prix de déblocage");
+        Eq("1 1 1 4 1 60 240", F(g0.revenue) + " " + F(g0.speed) + " " + F(g0.cost) + " " + F(g0.offlineHours) + " " + g0.slots + " " + F(g0.turboLength) + " " + F(g0.turboCooldown), "bonus à zéro");
+
+        var s0 = new IdleEconomy.StationLevels { unlocked = true };
+        Eq("0.625", F(eco.ItemsPerSecond(0, s0, g0)), "débit du 1er poste au niveau 0 (1 / 1,6 s)");
+        Eq("0.625", F(eco.Income(0, s0, g0)), "revenu du 1er poste au niveau 0");
+        Eq("0", F(eco.Income(0, new IdleEconomy.StationLevels(), g0)), "poste verrouillé : aucun revenu");
+        Eq("1", F(eco.ItemsPerSecond(0, new IdleEconomy.StationLevels { unlocked = true, speed = 5 }, g0)), "vitesse niv 5 : +60 %");
+        Eq("1.25", F(eco.ItemsPerSecond(0, new IdleEconomy.StationLevels { unlocked = true, add = 1 }, g0)), "ajouter niv 1 : x2 pièces");
+        Eq("0,0,1,1,2", F(eco.MilestoneCount(9), "0") + "," + F(eco.MilestoneCount(0), "0") + "," + F(eco.MilestoneCount(10), "0") + "," + F(eco.MilestoneCount(24), "0") + "," + F(eco.MilestoneCount(25), "0"), "paliers x2 (10, 25...)");
+        Eq("2", F(eco.MoneyPerItem(0, new IdleEconomy.StationLevels { unlocked = true, speed = 6, add = 4 }, g0)), "palier 10 : la pièce vaut x2");
+        Eq("25", eco.NextMilestone(10).ToString(), "palier suivant");
+        Eq("10", F(eco.BulkCost(true, 0, 0, 1, g0)), "vitesse 1er poste : base max(10, revenu0 x 12)");
+        Eq("7", F(eco.BulkCost(false, 0, 0, 1, g0)), "ajout 1er poste : base max(7, revenu0 x 6)");
+        Eq("22", IdleEconomy.Ceil(eco.BulkCost(true, 0, 0, 2, g0)).ToString(), "2 niveaux de vitesse : 10 + 11,9 -> 22");
+        Eq("1 1 2", eco.MaxAffordable(true, 0, 0, 10.5, g0) + " " + eco.MaxAffordable(true, 0, 0, 21, g0) + " " + eco.MaxAffordable(true, 0, 0, 22, g0), "achat max");
+        Eq("0", eco.MaxAffordable(true, 0, 0, 9, g0).ToString(), "achat max : trop cher");
+        Eq("180", F(eco.UnlockCost(1, g0)), "déblocage de l'Assemblage");
+        var list = new List<IdleEconomy.StationLevels> { s0.Copy(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels(), new IdleEconomy.StationLevels() };
+        var opts = eco.Options(list, g0, 1);
+        Eq("3", opts.Count.ToString(), "options : vitesse, ajout, déblocage du poste suivant");
+        Eq("4", F(opts[2].delta), "gain du déblocage de l'Assemblage (12 / 3 s)");
+        Eq("False", opts[0].milestone.ToString(), "pas de palier au niveau 1");
+        bool found;
+        IdleEconomy.Option best = eco.Best(opts, cfg.newStationFavor, out found);
+        Eq("True", found.ToString(), "un meilleur achat existe");
+
+        // robot de simulation de sim.js (attention toutes les 5 s) : déblocages vers 60 / 190 / 645 / 3285 s (tolérance 15 %)
         {
-            var offCfg = ScriptableObject.CreateInstance<OfflineConfig>();
-            var stCfg = ScriptableObject.CreateInstance<StationConfig>();
-            var emp = ScriptableObject.CreateInstance<EmployeeConfig>();
-            var cust = ScriptableObject.CreateInstance<CustomerConfig>();
-            var pt = ScriptableObject.CreateInstance<ProductType>();
-            var sso = new SerializedObject(stCfg);
-            SerializedProperty prods = sso.FindProperty("products");
-            prods.arraySize = 1;
-            prods.GetArrayElementAtIndex(0).objectReferenceValue = pt;
-            sso.ApplyModifiedPropertiesWithoutUndo();
-            var pso = new SerializedObject(pt);
-            pso.FindProperty("value").intValue = 100;
-            pso.ApplyModifiedPropertiesWithoutUndo();
-            var oso = new SerializedObject(offCfg);
-            oso.FindProperty("efficiency").floatValue = 1f;
-            oso.FindProperty("minSeconds").floatValue = 0f;
-            oso.ApplyModifiedPropertiesWithoutUndo();
-            var cso = new SerializedObject(cust);
-            cso.FindProperty("spawnInterval").floatValue = 0.5f; // clients très fréquents : jamais le goulot
-            cso.ApplyModifiedPropertiesWithoutUndo();
-            var eso = new SerializedObject(emp);
-            eso.FindProperty("capacity").intValue = 100; // porteur et livreur très rapides : jamais le goulot
-            eso.ApplyModifiedPropertiesWithoutUndo();
-            int plain = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust);
-            var chain = new OfflineEarnings.Chain { automated = true, testThroughput = 0.4f, packThroughput = 0.2f, valueMultiplier = 2f };
-            int withChain = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust, 1f, 1f, 1f, 0, chain);
-            // goulot = Emballage (0,2/s) x 100 s x 100 x 2 = 4000 ; sans chaîne le débit du poste (0,5/s par défaut) donne 5000
-            Eq("4000", withChain.ToString(), "hors ligne : chaîne limitée par Emballage et valeur x2");
-            Eq("True", (plain > 0).ToString(), "hors ligne sans chaîne : inchangé et positif");
-            var fast = new OfflineEarnings.Chain { assemblySpeed = 2f };
-            int doubled = OfflineEarnings.Compute(100, true, true, offCfg, stCfg, emp, emp, cust, 1f, 1f, 1f, 0, fast);
-            Eq(plain.ToString("0"), (doubled / 2).ToString("0"), "hors ligne : assemblage 2x plus rapide = gain doublé");
-            Object.DestroyImmediate(offCfg); Object.DestroyImmediate(stCfg); Object.DestroyImmediate(emp);
-            Object.DestroyImmediate(cust); Object.DestroyImmediate(pt);
-        }
-
-        // 11b : améliorations par machine
-        {
-            var mu = ScriptableObject.CreateInstance<MachineUpgradeConfig>();
-            var muo = new SerializedObject(mu);
-            SerializedProperty ml = muo.FindProperty("machines");
-            ml.arraySize = 1;
-            SerializedProperty m0 = ml.GetArrayElementAtIndex(0);
-            m0.FindPropertyRelative("id").stringValue = "test";
-            m0.FindPropertyRelative("speedBaseCost").intValue = 120;
-            m0.FindPropertyRelative("addBaseCost").intValue = 200;
-            m0.FindPropertyRelative("speedMax").intValue = 12;
-            m0.FindPropertyRelative("addMax").intValue = 3;
-            muo.ApplyModifiedPropertiesWithoutUndo();
-            MachineUpgradeConfig.Machine mm = mu.Machines[0];
-            Eq("120", mu.SpeedCost(mm, 0).ToString(), "coût vitesse niveau 0");
-            Eq("143", mu.SpeedCost(mm, 1).ToString(), "coût vitesse x1,19 par niveau");
-            Eq("True", (mu.SpeedCost(mm, 10) > mu.SpeedCost(mm, 9)).ToString(), "coût croissant");
-            Eq("1,00", mu.SpeedFactor(0, 0).ToString("0.00"), "vitesse niveau 0");
-            Eq("1,75", mu.SpeedFactor(5, 0).ToString("0.00"), "vitesse niveau 5 : +15 % par niveau");
-            Eq("5,00", mu.SpeedFactor(10, 0).ToString("0.00"), "palier 10 : x2 de débit");
-            Eq("10,00", mu.SpeedFactor(10, 10).ToString("0.00"), "palier 10 des deux axes");
-            var go3 = new GameObject("MuState");
-            var mst = go3.AddComponent<MachineUpgradeState>();
-            var mso = new SerializedObject(mst);
-            mso.FindProperty("config").objectReferenceValue = mu;
-            mso.ApplyModifiedPropertiesWithoutUndo();
-            for (int n = 0; n < 9; n++) mst.Purchase("test", MachineUpgradeState.Speed);
-            Eq("True", mst.Purchase("test", MachineUpgradeState.Speed).ToString(), "le 10e achat atteint un palier");
-            Eq("10", mst.Level("test", MachineUpgradeState.Speed).ToString(), "niveau vitesse 10");
-            mst.Purchase("test", MachineUpgradeState.Speed); mst.Purchase("test", MachineUpgradeState.Speed);
-            Eq("True", mst.IsMax("test", MachineUpgradeState.Speed).ToString(), "plafond de vitesse (12)");
-            Eq("False", mst.Purchase("test", MachineUpgradeState.Speed).ToString(), "au plafond : plus d'achat");
-            Eq("12", mst.Level("test", MachineUpgradeState.Speed).ToString(), "le niveau ne dépasse pas le plafond");
-            mst.SetLevel("test", MachineUpgradeState.Add, 99);
-            Eq("3", mst.Level("test", MachineUpgradeState.Add).ToString(), "restauration plafonnée");
-
-            // machine : AJOUTER = plus d'objets par cycle ; VITESSE = cycle plus court
-            var mcfg = ScriptableObject.CreateInstance<MachineConfig>();
-            var mgo = new GameObject("UpMachine");
-            var pm = mgo.AddComponent<ProductionMachine>();
-            pm.Configure(mcfg);
-            var pso2 = new SerializedObject(pm);
-            pso2.FindProperty("upgrades").objectReferenceValue = mst;
-            pso2.FindProperty("machineId").stringValue = "test";
-            pso2.ApplyModifiedPropertiesWithoutUndo();
-            Eq("4", pm.OutputPerCycle.ToString(), "ajouter x3 : 1 + 3 objets par cycle");
-            Eq("True", (pm.CycleSeconds < 2f / 4f).ToString(), "vitesse niveau 12 : cycle plus de 4 fois plus court");
-            Object.DestroyImmediate(mgo); Object.DestroyImmediate(go3);
-            Object.DestroyImmediate(mcfg); Object.DestroyImmediate(mu);
-        }
-
-        SaveData v4 = SaveSystem.Migrate(new SaveData { version = 4, money = 9, machineLevels = null });
-        Eq("7", v4.version.ToString(), "migration v4 -> version courante (7)");
-        Eq("True", (v4.machineLevels != null && v4.machineLevels.Count == 0).ToString(), "migration v4 -> v5 : tout à 0");
-
-        // 11c : commandes de clients
-        {
-            var oc = ScriptableObject.CreateInstance<OrderConfig>();
-            var oso = new SerializedObject(oc);
-            oso.FindProperty("clients").arraySize = 1;
-            SerializedProperty tl = oso.FindProperty("tiers");
-            tl.arraySize = 1;
-            SerializedProperty t0 = tl.GetArrayElementAtIndex(0);
-            t0.FindPropertyRelative("minItems").intValue = 2;
-            t0.FindPropertyRelative("maxItems").intValue = 2;
-            t0.FindPropertyRelative("patience").floatValue = 100f;
-            t0.FindPropertyRelative("weight").floatValue = 1f;
-            oso.FindProperty("offerDelayMin").floatValue = 1000f;
-            oso.FindProperty("offerDelayMax").floatValue = 1000f;
-            oso.FindProperty("maxOffers").intValue = 1;
-            oso.ApplyModifiedPropertiesWithoutUndo();
-            var ptA = ScriptableObject.CreateInstance<ProductType>();
-            var ptB = ScriptableObject.CreateInstance<ProductType>();
-            var pa = new SerializedObject(ptA); pa.FindProperty("value").intValue = 25; pa.ApplyModifiedPropertiesWithoutUndo();
-            var pb = new SerializedObject(ptB); pb.FindProperty("value").intValue = 40; pb.ApplyModifiedPropertiesWithoutUndo();
-            var bgo = new GameObject("BoardTest");
-            var board = bgo.AddComponent<OrderBoard>();
-            var bso = new SerializedObject(board);
-            bso.FindProperty("config").objectReferenceValue = oc;
-            SerializedProperty tp = bso.FindProperty("types");
-            tp.arraySize = 2;
-            tp.GetArrayElementAtIndex(0).objectReferenceValue = ptA;
-            tp.GetArrayElementAtIndex(1).objectReferenceValue = ptB;
-            bso.ApplyModifiedPropertiesWithoutUndo();
-
-            Eq("0", board.Offers.Count.ToString(), "aucune offre au départ");
-            board.Tick(0.1f);
-            Eq("1", board.Offers.Count.ToString(), "une offre est générée");
-            Eq("1", OrderBoard.TotalOf(board.Offers[0]).ToString(), "la première offre est facile : 1 colis");
-            Eq("45", board.Offers[0].reward.ToString(), "récompense = valeur 25 x 1,8");
-            Eq("1", board.Offers[0].pro.ToString(), "Points Pro : au moins 1");
-            Eq("5", oc.ProPoints(1000).ToString(), "1000 $ / 200 = 5 Points Pro");
-            for (int k = 0; k < 181; k++) board.Tick(1f);
-            Eq("0", board.Offers.Count.ToString(), "l'offre expire au bout de 180 s");
-
-            OrderBoard.Offer second = board.Generate(false);
-            Eq("2", OrderBoard.TotalOf(second).ToString(), "palier : 2 colis");
-            bool completed = false, failed = false;
-            board.OnCompleted += o => completed = true;
-            board.OnFailed += o => failed = true;
-            for (int k = 0; k < 900; k++) board.Tick(1f);   // une nouvelle offre arrive (minuteur écoulé)
-            Eq("True", board.Accept(0).ToString(), "accepter l'offre");
-            Eq("False", board.Accept(0).ToString(), "une seule commande à la fois");
-            int needed = board.Active.counts[0] > 0 ? 0 : 1;
-            ProductType neededType = board.Types[needed];
-            ProductType other = board.Active.counts[1 - needed] == 0 ? board.Types[1 - needed] : null; // un type non commandé, s'il y en a un
-            if (other != null) Eq("False", board.Deliver(other).ToString(), "un colis qui n'est pas attendu ne compte pas");
-            Eq("True", board.Deliver(neededType).ToString(), "un colis attendu compte");
-            foreach (ProductType pt in board.Types) while (board.Needs(pt)) board.Deliver(pt);
-            Eq("True", completed.ToString(), "commande finie");
-            Eq("False", board.HasActive.ToString(), "plus de commande en cours");
-
-            for (int k = 0; k < 1000; k++) board.Tick(1f);   // encore une offre
-            board.Accept(0);
-            for (int k = 0; k < 101; k++) board.Tick(1f);    // patience écoulée
-            Eq("True", failed.ToString(), "délai écoulé : la camionnette repart");
-            Eq("False", board.HasActive.ToString(), "commande abandonnée, sans pénalité");
-
-            Object.DestroyImmediate(bgo); Object.DestroyImmediate(oc);
-            Object.DestroyImmediate(ptA); Object.DestroyImmediate(ptB);
-        }
-
-        SaveData v5 = SaveSystem.Migrate(new SaveData { version = 5, money = 3 });
-        Eq("7", v5.version.ToString(), "migration v5 -> version courante (7)");
-        Eq("0", v5.proPoints.ToString(), "migration v5 -> v6 : 0 Point Pro");
-
-        // 11d : Réputation (arbre de bonus permanents)
-        {
-            ReputationConfig rc = ReputationBuilder.LoadOrCreateConfig();
-            var rgo = new GameObject("RepTest");
-            var points = rgo.AddComponent<ProPoints>();
-            var rep = rgo.AddComponent<ReputationState>();
-            var rso = new SerializedObject(rep);
-            rso.FindProperty("config").objectReferenceValue = rc;
-            rso.FindProperty("pro").objectReferenceValue = points;
-            rso.ApplyModifiedPropertiesWithoutUndo();
-            Bonuses.Reset();
-            rep.Recompute();
-            Eq("10", rc.Nodes.Length.ToString(), "10 noeuds de départ");
-            Eq("1,00", Bonuses.Revenue.ToString("0.00"), "aucun bonus au départ");
-            Eq("False", rep.TryBuy(0).ToString(), "sans Points Pro : pas d'achat");
-            points.Add(100);
-            int rIdx = rc.IndexOf("revenue");
-            Eq("2", rep.NextCost(rIdx).ToString(), "revenus niveau 1 : 2 Points Pro");
-            Eq("True", rep.TryBuy(rIdx).ToString(), "achat de Revenus");
-            Eq("98", points.Points.ToString(), "2 Points Pro dépensés");
-            rep.TryBuy(rIdx); rep.TryBuy(rIdx);
-            Eq("1,30", Bonuses.Revenue.ToString("0.00"), "Revenus niveau 3 : +30 %");
-            Eq("3", rep.NextCost(rIdx) > rep.NextCost(0) - 1 ? "3" : "x", "coût croissant (x1,6)");
-            int oIdx = rc.IndexOf("offlinecap");
-            Eq("False", rep.CanBuy(oIdx).ToString(), "plafond hors ligne verrouillé sans Gains hors ligne niv 2");
-            Eq("True", (rep.MissingPrerequisite(oIdx) != null).ToString(), "prérequis nommé");
-            int gIdx = rc.IndexOf("offline");
-            rep.TryBuy(gIdx); rep.TryBuy(gIdx);
-            Eq("True", rep.CanBuy(oIdx).ToString(), "plafond hors ligne débloqué au niveau 2");
-            rep.TryBuy(oIdx);
-            Eq("4,00", Bonuses.OfflineCapHours.ToString("0.00"), "plafond hors ligne +4 h");
-            Eq("1,40", Bonuses.OfflineGain.ToString("0.00"), "gains hors ligne +40 % (niveau 2)");
-            Eq("False", rep.CanBuy(rc.IndexOf("active")).ToString(), "noeud pas encore géré : non achetable");
-            rep.SetLevel("stack", 99);
-            Eq("5", Bonuses.StackCapacity.ToString(), "pile : niveau plafonné à 5 -> +5 caisses");
-            rep.SetLevel("discount", 5);
-            Eq("0,80", Bonuses.PadPrice.ToString("0.00"), "remise sur les dalles -20 %");
-            rep.SetLevel("patience", 4);
-            Eq("1,60", Bonuses.OrderPatience.ToString("0.00"), "patience des clients +60 %");
-            rep.SetLevel("offers", 1);
-            Eq("1", Bonuses.OfferSlots.ToString(), "une offre de plus");
-
-            // hors ligne : plafond relevé et gains multipliés
-            Bonuses.Reset();
-            var offCfg2 = ScriptableObject.CreateInstance<OfflineConfig>();
-            var stCfg2 = ScriptableObject.CreateInstance<StationConfig>();
-            var emp2 = ScriptableObject.CreateInstance<EmployeeConfig>();
-            var cust2 = ScriptableObject.CreateInstance<CustomerConfig>();
-            var pt2 = ScriptableObject.CreateInstance<ProductType>();
-            var s2 = new SerializedObject(stCfg2);
-            SerializedProperty pr2 = s2.FindProperty("products");
-            pr2.arraySize = 1; pr2.GetArrayElementAtIndex(0).objectReferenceValue = pt2;
-            s2.ApplyModifiedPropertiesWithoutUndo();
-            var p2 = new SerializedObject(pt2); p2.FindProperty("value").intValue = 100; p2.ApplyModifiedPropertiesWithoutUndo();
-            var o2 = new SerializedObject(offCfg2); o2.FindProperty("efficiency").floatValue = 1f; o2.FindProperty("minSeconds").floatValue = 0f; o2.FindProperty("maxHours").floatValue = 1f; o2.ApplyModifiedPropertiesWithoutUndo();
-            var c2 = new SerializedObject(cust2); c2.FindProperty("spawnInterval").floatValue = 0.5f; c2.ApplyModifiedPropertiesWithoutUndo();
-            var e2 = new SerializedObject(emp2); e2.FindProperty("capacity").intValue = 100; e2.ApplyModifiedPropertiesWithoutUndo();
-            int baseGain = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
-            Bonuses.OfflineGain = 2f;
-            int boosted = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
-            Eq(baseGain.ToString(), (boosted / 2).ToString(), "hors ligne : Gains x2 = gain doublé");
-            Bonuses.OfflineGain = 1f;
-            Bonuses.OfflineCapHours = 1f;   // plafond 1 h + 1 h : 2 h au lieu de 1 h
-            int capped = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
-            Eq(baseGain.ToString(), (capped / 2).ToString(), "hors ligne : plafond relevé = 2x plus de temps pris en compte");
-            Bonuses.Reset();
-            Object.DestroyImmediate(rgo);
-            Object.DestroyImmediate(offCfg2); Object.DestroyImmediate(stCfg2); Object.DestroyImmediate(emp2);
-            Object.DestroyImmediate(cust2); Object.DestroyImmediate(pt2);
-        }
-
-        SaveData v6 = SaveSystem.Migrate(new SaveData { version = 6, money = 4, reputation = null });
-        Eq("7", v6.version.ToString(), "migration v6 -> v7 : version");
-        Eq("True", (v6.reputation != null && v6.reputation.Count == 0).ToString(), "migration v6 -> v7 : arbre vide");
-
-        // 11e : vue libre (limites de la caméra, zoom, valeurs invalides)
-        {
-            Vector3 fb = new Vector3(1f, 0f, 2f);
-            Eq(ObjectiveGuide.PhraseCount.ToString(), ScriptableObject.CreateInstance<GuideConfig>().Phrases.Length.ToString(), "guide : une phrase par étape (TEST, EMBALLAGE, TAPIS inclus)");
-            Eq("0.00", OrderDoneBanner.FlyEase(0f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : départ de la puce");
-            Eq("1.00", OrderDoneBanner.FlyEase(1f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : la puce arrive");
-            Eq("1.00", OrderDoneBanner.FlyEase(5f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : au-delà de la fin, bornée à 1");
-            Eq("0.00", OrderDoneBanner.SlideEase(-3f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : avant le début, borné à 0");
-            Eq("1.00", OrderDoneBanner.SlideEase(1f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : posé exactement à sa place");
-            Eq("True", (OrderDoneBanner.SlideEase(0.7f) > 1f).ToString(), "bandeau : léger dépassement avant de se poser");
-            {   // P3 : un bouton désactivé n'a ni animation d'appui ni son ; actif, il s'enfonce
-                var go = new GameObject("TestButton", typeof(RectTransform), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button), typeof(PressScale));
-                var btn = go.GetComponent<UnityEngine.UI.Button>();
-                var ps = go.GetComponent<PressScale>();
-                btn.interactable = false;
-                ps.OnPointerDown(null);
-                Eq("False", ps.IsPressed.ToString(), "bouton désactivé : pas d'appui");
-                btn.interactable = true;
-                ps.Silent = true;   // pas de son pendant le test
-                ps.OnPointerDown(null);
-                Eq("True", ps.IsPressed.ToString(), "bouton actif : appui pris en compte");
-                ps.OnPointerUp(null);
-                Eq("False", ps.IsPressed.ToString(), "relâché : plus d'appui");
-                Object.DestroyImmediate(go);
-            }
-            Eq("21.0", AccessibilityAudit.Contrast(Color.white, Color.black).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "contraste blanc / noir");
-            Eq("1.0", AccessibilityAudit.Contrast(Color.gray, Color.gray).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "contraste d'une couleur avec elle-même");
-            Eq(AccessibilityAudit.Contrast(Color.white, Color.black).ToString("0.00"), AccessibilityAudit.Contrast(Color.black, Color.white).ToString("0.00"), "contraste symétrique");
-            {   // P4 : l'option « Moins de secousses » coupe la secousse et le glissement de caméra
-                bool before = MotionSettings.ReduceMotion;
-                MotionSettings.ReduceMotion = false;
-                Eq("0.08", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "secousse normale");
-                Eq("True", MotionSettings.AllowCameraGlide.ToString(), "glissement permis");
-                MotionSettings.ReduceMotion = true;
-                Eq("0.00", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "secousse coupée");
-                Eq("False", MotionSettings.AllowCameraGlide.ToString(), "glissement coupé");
-                Eq("1", PlayerPrefs.GetInt("reduce_motion", 0).ToString(), "option : valeur enregistrée dans les préférences");
-                MotionSettings.ReduceMotion = false;
-                Eq("0", PlayerPrefs.GetInt("reduce_motion", 1).ToString(), "option : désactivation enregistrée");
-                Eq("False", MotionSettings.ReduceMotion.ToString(), "option : le cache suit le réglage");
-                MotionSettings.ReduceMotion = before;
-            }
-            {   // P5 : la table Loc couvre tous les textes venant des données (aucune clé oubliée)
-                var missing = new List<string>();
-                void Need(string key) { if (!Loc.Has(key)) missing.Add(key); }
-                for (int i = 0; i < ObjectiveGuide.PhraseCount; i++) Need("guide.step." + i);
-                foreach (string kind in System.Enum.GetNames(typeof(UpgradeKind))) Need("upgrade.fx." + kind);
-                var upgrades = AssetDatabase.LoadAssetAtPath<UpgradeConfig>("Assets/Prototype/UpgradeConfig.asset");
-                if (upgrades != null) foreach (var u in upgrades.Upgrades) Need("upgrade." + u.id);
-                var machines = AssetDatabase.LoadAssetAtPath<MachineUpgradeConfig>("Assets/Prototype/MachineUpgradeConfig.asset");
-                if (machines != null) foreach (var mc in machines.Machines) Need("machine." + mc.id);
-                var orders = AssetDatabase.LoadAssetAtPath<OrderConfig>("Assets/Prototype/OrderConfig.asset");
-                if (orders != null) for (int i = 0; i < orders.Clients.Length; i++) { Need("client." + i + ".name"); Need("client." + i + ".job"); }
-                var rep = AssetDatabase.LoadAssetAtPath<ReputationConfig>("Assets/Prototype/ReputationConfig.asset");
-                if (rep != null) foreach (var n in rep.Nodes) { Need("rep.node." + n.id + ".name"); Need("rep.node." + n.id + ".desc"); }
-                foreach (string guid in AssetDatabase.FindAssets("t:ProductType")) Need("product." + System.IO.Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)));
-                Eq("", string.Join(", ", missing.ToArray()), "table Loc : clés manquantes");
-                Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");
-                Eq("Karim", Loc.Or("client.0.name", "autre"), "Loc.Or : la table l'emporte");
-            }
-            {   // P1 : main de tutoriel, placement selon la cible
-                float a;
-                Vector2 inside = HandMath.Clamp(new Vector2(0.5f, 0.5f), out a);
-                Eq("(0.50, 0.50) True", inside.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a) < 0.01f).ToString(), "main : cible visible, main dessus, doigt vers le haut");
-                Vector2 right = HandMath.Clamp(new Vector2(1.4f, 0.5f), out a);
-                Eq("(0.88, 0.50) True", right.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a + 90f) < 0.01f).ToString(), "main : cible à droite hors écran, doigt tourné vers la droite");
-                Vector2 up = HandMath.Clamp(new Vector2(0.5f, 1.5f), out a);
-                Eq("(0.50, 0.80) True", up.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + " " + (Mathf.Abs(a) < 0.01f).ToString(), "main : cible au-dessus hors écran, doigt vers le haut");
-            }
-            Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
-            Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
-            Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");
-            Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(0f, float.PositiveInfinity, 0f), fb).ToString("F1"), "infini rejeté");
-            Eq("0,60", FreeViewMath.PinchZoom(1f, 100f, 400f).ToString("0.00"), "doigts qui s'écartent beaucoup : zoom plafonné à 0,6");
-            Eq("2,00", FreeViewMath.PinchZoom(1f, 400f, 100f).ToString("0.00"), "doigts qui se rapprochent : plafonné à 2");
-            Eq("0,75", FreeViewMath.PinchZoom(1f, 300f, 400f).ToString("0.00"), "zoom proportionnel à l'écartement");
-            Eq("1,00", FreeViewMath.PinchZoom(1f, 0f, 100f).ToString("0.00"), "distance nulle : zoom inchangé");
-            Eq("1,00", FreeViewMath.PinchZoom(float.NaN, 100f, 100f).ToString("0.00"), "zoom invalide : retour à 1");
-        }
-
-        // Économie : coût des améliorations strictement positif et croissant
-        foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())
-        {
-            foreach (UpgradeConfig.Upgrade u in cfg.Upgrades)
+            var sim = new List<IdleEconomy.StationLevels>(); for (int i = 0; i < 5; i++) sim.Add(new IdleEconomy.StationLevels { unlocked = i == 0 });
+            double cash = cfg.startCash, t = 0; var unlockAt = new double[5];
+            while (t < 4000)
             {
-                bool growing = true;
-                for (int l = 1; l < u.maxLevel; l++) if (cfg.Cost(u, l) < cfg.Cost(u, l - 1)) growing = false;
-                Eq("True", growing.ToString(), "coût croissant : " + u.id);
-                Eq("True", (cfg.Cost(u, 0) > 0).ToString(), "coût > 0 : " + u.id);
+                cash += eco.TotalIncome(sim, g0) * 5; t += 5;
+                for (int guard = 0; guard < 40; guard++)
+                {
+                    var all = eco.Options(sim, g0, 1);
+                    bool ok; var b = eco.Best(all, 0.35, out ok); if (!ok) break;
+                    bool havePick = false; var pick = default(IdleEconomy.Option);
+                    if (b.cost <= cash) { pick = b; havePick = true; }
+                    else
+                    {
+                        double wait = (b.cost - cash) / System.Math.Max(1e-9, eco.TotalIncome(sim, g0));
+                        if (wait > 15)
+                            foreach (var o in all)
+                            {
+                                double sc = o.kind == IdleEconomy.Kind.Unlock ? o.payback * 0.35 : o.payback;
+                                if (o.cost > cash) continue;
+                                double pc = pick.kind == IdleEconomy.Kind.Unlock ? pick.payback * 0.35 : pick.payback;
+                                if (!havePick || sc < pc) { pick = o; havePick = true; }
+                            }
+                    }
+                    if (!havePick) break;
+                    cash -= pick.cost;
+                    if (pick.kind == IdleEconomy.Kind.Unlock) { sim[pick.station].unlocked = true; unlockAt[pick.station] = t; }
+                    else if (pick.speedAxis) sim[pick.station].speed++; else sim[pick.station].add++;
+                }
             }
-            break;
+            double[] target = { 0, 60, 190, 645, 3285 };
+            for (int i = 1; i < 5; i++)
+                Eq("True", (unlockAt[i] > 0 && System.Math.Abs(unlockAt[i] - target[i]) <= target[i] * 0.15).ToString(), "robot : poste " + (i + 1) + " débloqué vers " + target[i] + " s (mesuré " + unlockAt[i] + " s)");
         }
 
-        // Machine de production : cycle, sortie pleine = bloquée, rien n'est perdu
-        var cfg2 = ScriptableObject.CreateInstance<MachineConfig>();
-        var so2 = new SerializedObject(cfg2);
-        so2.FindProperty("cycleSeconds").floatValue = 2f;
-        so2.FindProperty("inputCapacity").intValue = 3;
-        so2.FindProperty("outputCapacity").intValue = 1;
-        so2.ApplyModifiedPropertiesWithoutUndo();
-        var go2 = new GameObject("MachineTest");
-        var machine = go2.AddComponent<ProductionMachine>();
-        machine.Configure(cfg2);
-        Eq("WaitingInput", machine.State.ToString(), "machine vide : entrée vide");
-        machine.TryAddInput(2);
-        Eq("False", machine.TryAddInput(2).ToString(), "entrée pleine refusée (3 max)");
-        machine.Step(1f);
-        Eq("Running", machine.State.ToString(), "machine en cycle");
-        machine.Step(1.5f);
-        Eq("1", machine.OutputCount.ToString(), "un objet sorti après le cycle");
-        machine.Step(2.5f); // 2e cycle : la sortie (1 place) est pleine
-        Eq("Blocked", machine.State.ToString(), "sortie pleine : goulot");
-        Eq("1", machine.OutputCount.ToString(), "sortie plafonnée");
-        machine.TryTakeOutput(1);
-        machine.Step(0.1f);
-        Eq("1", machine.OutputCount.ToString(), "le cycle bloqué se termine dès qu'une place se libère");
-        Eq("1,2K > 3/10", StockLabel.Format(1234, 1250, 3, 10).Replace("/1,2K", "").Replace(" ", " "), "format du stock (entrée tronquée)");
-        Object.DestroyImmediate(go2);
-        Object.DestroyImmediate(cfg2);
+        // ---------------------------------------------------------------- partie (achats, commandes, Réputation, turbo, hors ligne)
+        var game = new IdleGame(cfg, 7, 1000);
+        Eq("10", F(game.Cash), "argent de départ");
+        Eq("0.625", F(game.Income), "revenu de départ");
+        Eq("TooExpensive", game.BuyUnlock(1).ToString(), "déblocage trop cher au départ");
+        Eq("Invalid", game.BuyUnlock(2).ToString(), "seul le prochain poste peut être débloqué");
+        Eq("Ok", game.BuyUpgrade(0, true, 1).ToString(), "1re vitesse achetée (10 $)");
+        Eq("0", F(game.Cash), "argent après l'achat");
+        Eq("1", game.Stations[0].speed.ToString(), "niveau de vitesse");
+        Eq("TooExpensive", game.BuyUpgrade(0, false, 1).ToString(), "ajout trop cher");
+        game.Tick(10);
+        Eq("True", (game.Cash > 6.9 && game.Cash < 7.1).ToString(), "10 s de production (revenu 0,7 $/s)");
+        game.Cash = 1e6; game.Recalc();
+        Eq("Ok", game.BuyUnlock(1).ToString(), "déblocage de l'Assemblage");
+        Eq("True", game.Stations[1].unlocked.ToString(), "poste débloqué");
+        long maxPrice = game.UpgradePrice(0, true, 0);
+        double cashBefore = game.Cash;
+        game.BuyUpgrade(0, true, 0);
+        Eq("True", (System.Math.Abs(cashBefore - game.Cash - maxPrice) < 0.5 && game.Stations[0].speed > 10).ToString(), "achat MAX : prix payé = prix annoncé, plusieurs niveaux");
+        Eq("True", (game.Eco.MilestoneCount(game.Stations[0].speed + game.Stations[0].add) >= 1).ToString(), "achat MAX : palier x2 franchi");
+
+        // commandes
+        var og = new IdleGame(cfg, 3, 0); og.Cash = 1e9; og.BuyUnlock(1); og.Recalc();
+        og.Tick(0.1);
+        Eq("3", og.Offers.Count.ToString(), "3 offres affichées");
+        int id0 = og.Offers[0].id;
+        Eq("True", og.Accept(id0).ToString(), "offre acceptée");
+        Eq("1 3", og.Active.Count + " " + og.Offers.Count, "1 commande en cours, offres reconstituées");
+        Eq("False", og.Accept(og.Offers[0].id).ToString(), "1 seule commande à la fois sans « Carnet »");
+        double cashOrder = og.Cash; int proOrder = og.Pro;
+        var act = og.Active[0];
+        og.OrderProgress(100000, 1);
+        Eq("0 1", og.Active.Count + " " + og.OrdersDone, "commande terminée");
+        Eq("True", (og.Cash >= cashOrder + act.reward - 0.001 && og.Pro == proOrder + act.pro && act.pro >= 1).ToString(), "récompense en $ et en Points Pro");
+        Eq("True", (act.reward > 0 && act.qty >= cfg.minQuantity).ToString(), "offre valide");
+        og.Pro = 100;
+        Eq("2 4", og.RepCost(0) + " " + new IdleEconomy(cfg).RepCost(0, 1), "coût de réputation : ceil(2 x 1,55^niveau)");
+        Eq("12 40", og.RepCost(4) + " " + new IdleEconomy(cfg).RepCost(4, 1), "coût du Carnet : x3,3");
+        Eq("True", og.BuyRep(4).ToString(), "achat du Carnet de commandes");
+        Eq("2", og.ActiveSlots.ToString(), "2 commandes en même temps");
+        og.BuyRep(0); og.Recalc();
+        Eq("1.1", F(og.Globals.revenue), "Contrats premium : +10 %");
+        Eq("True", (og.BuyRep(4) && !og.BuyRep(4)).ToString(), "Carnet : 2 niveaux maximum");
+
+        // turbo
+        var tg = new IdleGame(cfg, 1, 500);
+        double baseIncome = tg.Income;
+        Eq("True", tg.TryTurbo().ToString(), "turbo lancé");
+        Eq("True", (System.Math.Abs(tg.Income - 2 * baseIncome) < 1e-9).ToString(), "turbo : revenu x2");
+        Eq("False", tg.TryTurbo().ToString(), "turbo en recharge");
+        tg.Tick(61);
+        Eq("False", tg.BoostActive.ToString(), "turbo fini après 60 s");
+        Eq("False", tg.TurboReady.ToString(), "recharge de 240 s en cours");
+        tg.Tick(250);
+        Eq("True", tg.TurboReady.ToString(), "turbo prêt de nouveau");
+
+        // hors ligne
+        var og2 = new IdleGame(cfg, 1, 0); double inc2 = og2.Income;
+        Eq("0", F(og2.Offline(10).gain), "absence de 10 s : rien");
+        var off = og2.Offline(100);
+        Eq("True", (System.Math.Abs(off.gain - inc2 * 100) < 1e-6 && !off.capped && off.showWelcome).ToString(), "absence de 100 s : revenu x 100 s");
+        var offCap = og2.Offline(100 * 3600);
+        Eq("True", (offCap.capped && System.Math.Abs(offCap.seconds - 4 * 3600) < 1e-6).ToString(), "plafond de 4 h");
+        og2.Pro = 1000; og2.BuyRep(5); og2.Recalc();
+        Eq("6", F(og2.Globals.offlineHours), "Veille automatique : +2 h de plafond");
+
+        // sauvegarde v8 : aller-retour identique
+        var sg = new IdleGame(cfg, 5, 100); sg.Cash = 1e7; sg.BuyUnlock(1); sg.BuyUpgrade(0, true, 5); sg.BuyUpgrade(1, false, 3); sg.Pro = 9; sg.ProTotal = 9; sg.BuyRep(0); sg.Tick(1);
+        sg.Accept(sg.Offers[0].id); sg.TryTurbo(); sg.Tick(5);
+        string json1 = JsonUtility.ToJson(sg.ToSave(12345));
+        var sg2 = new IdleGame(cfg, 5, 100);
+        sg2.Load(JsonUtility.FromJson<SaveData>(json1));
+        Eq(json1, JsonUtility.ToJson(sg2.ToSave(12345)), "sauvegarde -> chargement -> sauvegarde : identique");
+        Eq("True", (System.Math.Abs(sg2.Income - sg.Income) < 1e-9 && sg2.Active.Count == 1).ToString(), "état rechargé : revenu et commande en cours");
+
+        // sauvegarde abîmée ou valeurs absurdes
+        var bad = new SaveData { cash = double.NaN, earned = -5, proPoints = -3, version = 8 };
+        bad.stations.Add(new SaveData.StationSave { unlocked = false, speed = -9, add = 999999999 });
+        bad.reputation.Add(new SaveData.ReputationLevel { id = "rev", level = 99 });
+        bad.reputation.Add(new SaveData.ReputationLevel { id = "inconnu", level = 5 });
+        var bg = new IdleGame(cfg, 1, 0); bg.Load(bad);
+        Eq("10 0 True", F(bg.Cash) + " " + bg.Pro + " " + (bg.Stations[0].unlocked && bg.Stations[0].speed == 0 && bg.Stations[0].add <= 100000), "valeurs absurdes : repli sûr");
+        Eq("10", bg.Rep[bg.Eco.RepIndex("rev")].ToString(), "niveau de Réputation borné au maximum");
+        Eq("null", SaveSystem.TryParse("pas du json", cfg) == null ? "null" : "objet", "fichier abîmé : nouvelle partie");
+        Eq("null", SaveSystem.TryParse("", cfg) == null ? "null" : "objet", "fichier vide : nouvelle partie");
+
+        // migration v7 -> v8 : on garde l'argent, les Points Pro et la Réputation ; postes à zéro
+        string v7 = "{\"version\":7,\"money\":500,\"proPoints\":7,\"lastSaveUtc\":42,\"reputation\":[{\"id\":\"revenue\",\"level\":3},{\"id\":\"chain\",\"level\":2},{\"id\":\"discount\",\"level\":1},{\"id\":\"stack\",\"level\":4}],"
+                  + "\"pads\":[{\"id\":\"TestPad\",\"remaining\":0}],\"employees\":[\"hauler\"],\"soundOn\":false,\"settingsSaved\":true}";
+        SaveData mig = SaveSystem.TryParse(v7, cfg);
+        Eq("8 500 7 True", mig.version + " " + F(mig.cash) + " " + mig.proPoints + " " + (mig.stations.Count == 5 && mig.stations[0].unlocked && !mig.stations[1].unlocked), "migration v7 : argent, Points Pro, postes à zéro");
+        var mg = new IdleGame(cfg, 1, 0); mg.Load(mig);
+        Eq("3 2 1", mg.Rep[mg.Eco.RepIndex("rev")] + " " + mg.Rep[mg.Eco.RepIndex("spd")] + " " + mg.Rep[mg.Eco.RepIndex("cost")], "migration v7 : Réputation (revenus, cadence, remises)");
+        Eq("False", mig.soundOn.ToString(), "migration v7 : réglages conservés");
+        Eq("True", (SaveSystem.TryParse("{\"version\":99}", cfg) == null).ToString(), "version future refusée");
+
+        // ---------------------------------------------------------------- utilitaires conservés
+        Eq("fallback", Loc.Or("cle.inexistante", "fallback"), "Loc.Or : texte de repli");
+        {   // option « Moins de secousses »
+            bool before = MotionSettings.ReduceMotion;
+            MotionSettings.ReduceMotion = false;
+            Eq("0.08", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", inv), "secousse normale");
+            Eq("True", MotionSettings.AllowCameraGlide.ToString(), "glissement permis");
+            MotionSettings.ReduceMotion = true;
+            Eq("0.00", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", inv), "secousse coupée");
+            Eq("False", MotionSettings.AllowCameraGlide.ToString(), "glissement coupé");
+            Eq("1", PlayerPrefs.GetInt("reduce_motion", 0).ToString(), "option enregistrée");
+            MotionSettings.ReduceMotion = false;
+            Eq("False", MotionSettings.ReduceMotion.ToString(), "le cache suit le réglage");
+            MotionSettings.ReduceMotion = before;
+        }
+        Eq("21.0", AccessibilityAudit.Contrast(Color.white, Color.black).ToString("0.0", inv), "contraste blanc / noir");
+        Eq("1.0", AccessibilityAudit.Contrast(Color.gray, Color.gray).ToString("0.0", inv), "contraste d'une couleur avec elle-même");
+        {   // états d'un bouton (PressScale)
+            var go = new GameObject("TestButton", typeof(RectTransform), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button), typeof(PressScale));
+            var btn = go.GetComponent<UnityEngine.UI.Button>(); var ps = go.GetComponent<PressScale>();
+            btn.interactable = false; ps.OnPointerDown(null);
+            Eq("False", ps.IsPressed.ToString(), "bouton désactivé : pas d'appui");
+            btn.interactable = true; ps.Silent = true; ps.OnPointerDown(null);
+            Eq("True", ps.IsPressed.ToString(), "bouton actif : appui pris en compte");
+            ps.OnPointerUp(null);
+            Eq("False", ps.IsPressed.ToString(), "relâché : plus d'appui");
+            Object.DestroyImmediate(go);
+        }
+        Object.DestroyImmediate(cfg);
 
         if (failures.Count == 0)
             Debug.Log("Tests unitaires : " + count + " vérifications, toutes réussies.");
