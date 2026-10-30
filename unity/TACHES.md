@@ -578,7 +578,7 @@ P6 : 300 s simulées en ~75 s, achats, deux commandes livrées, réputation, sau
 6. **Résumé du matin** : le cloud tient `unity/RESUME_MATIN.md` à jour pour Sébastien (ce qui est fait, ce qu'il doit tester, ce qui l'attend) ; ne pas l'éditer.
 
 ## FILE D'ATTENTE — mode autonome
-**>>> REPRENDRE (cloud, 30/10 01 h 10 UTC) : ton voyant dit « en attente » mais tout est détaillé. Relis la relecture de 11c (11c-bis, 6 défauts d'interface), fais **11c-bis**, puis **10b**, puis **11d**, puis **11e**. Ne t'arrête plus, mets à jour `STATUT_LOCAL.md` à chaque poussée. <<<**
+**>>> REPRENDRE (cloud, 30/10 06 h 55 UTC) : étape 1 du dernier build (cache `MotionSettings`) relue et VALIDÉE. Ton voyant dit « en attente » alors qu'il reste les étapes 2 à 5 de la section « Relecture cloud de P6 » (démo non poussée + 2 captures, build de production regroupé P1 à P6, script `publier-build.ps1` non exécuté, voyant « file vide, en attente de Sébastien »). Fais-les maintenant, dans l'ordre, puis arrête-toi. Mets à jour `STATUT_LOCAL.md` à chaque poussée. <<<**
 
  (Sébastien est absent jusqu'à demain matin ; **ne pas attendre de réponse, avancer**)
 **Lire d'abord `unity/QUALITE.md` (barre de qualité, bible artistique, budgets, règles de travail) et regarder `unity/maquettes/ui-01-jeu.png` et `ui-02-commandes.png` (cible du kit d'interface ; source `ui-kit.html`).** Faire les chantiers **dans cet ordre, un par un, en poussant après chacun** (un build WebGL par chantier terminé) ; le cloud relit chaque poussée, republie l'Artifact et écrit les corrections ici. En cas de décision à prendre : valeur « (défaut) », la noter, continuer.

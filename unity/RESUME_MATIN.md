@@ -1,35 +1,35 @@
 # RÉSUMÉ DU MATIN (mis à jour par le cloud, pour Sébastien)
 
-**Dernière mise à jour : 29/10, 23 h 40 (heure du PC) ; 10b décor et 11d relus.** Ce fichier est réécrit à chaque relecture.
+**Dernière mise à jour : 30/10, ~08 h (heure du PC).** Ce fichier est réécrit à chaque relecture.
+
+## À FAIRE EN PREMIER AU RÉVEIL (5 minutes)
+1. **Ouvre le jeu** dans l'app Claude : https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X (écran de chargement jaune, « Idle Sécurité », « Jouer »).
+2. **Réglages (⚙), en bas : lis la version** (date et heure du build) et dis-la-moi. Si elle est antérieure à ce matin, le dernier build regroupé n'est pas encore publié : ce n'est pas grave, joue quand même.
+3. **Joue 2 à 5 minutes** et regarde ceci :
+   - joystick à droite, le technicien ne se balance plus, pas d'écran gris ;
+   - la **main de tutoriel** qui tape sur la première dalle ;
+   - le **bandeau « Commande livrée ! »** quand tu livres une commande (les gains s'envolent vers les pastilles) ;
+   - le bouton **Vue** (loupe) : glisser pour déplacer la caméra, pincer pour zoomer ;
+   - dans ⚙, l'option **« Moins de secousses »**.
+   Envoie-moi **une capture ou une courte vidéo**, même si tout va bien.
+4. **Réponds à ces 3 questions** (oui/non suffit) :
+   - **Branche « builds »** : j'autorise le PC à publier chaque build sur une branche séparée à un seul commit (remplacée à chaque fois) pour que le dépôt (~960 Mo) cesse de grossir ? Rien n'est fait sans ton accord.
+   - **Prochaine étape** : (a) la **2e usine « Chantiers chez les clients »** (11f), (b) encore du polissage et du son, (c) préparer l'**App Store** (icône, captures, build iPhone dans le cloud) ? Je recommande (a) ou (c) selon ce que tu ressens en jouant.
+   - **Images Grok** : tu ajoutes des crédits xAI, ou tu génères dans l'app Grok avec `unity/art/PROMPTS_GROK_ATELIER.md` et tu me donnes les images ?
+5. **Change ta clé xAI** : elle a été collée dans la conversation, considère-la comme exposée.
 
 ## Où tu en es
-- **Fait et relu** : 9a (joystick plein écran), 9b (balancement corrigé), 9c (écran gris : version visible dans ⚙, diagnostic), 10a (sensation de jeu), **K1 (police Lilita One, HUD en pastilles ardoise, écran titre « Jouer », dalles lisibles, nombres abrégés)**.
-- **Le jeu dans l'app Claude est à jour (build K1)** : https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X
-- **K1b et Q1 faites** (pile verticale, titre dégagé, test de fumée de 90 s, 38 vérifications, textes rangés, journal de déblocages) ; le jeu dans l'app Claude est au build K1b+Q1.
-- **En cours côté PC** : **11a** (la chaîne de production : machines, tapis, goulots) : **11a-1 faite et relue** (machine générique, stocks, voyants, prix de dalle dans la plaque) ; **11a-2 (machines Test et Emballage, produits testé/emballé avec valeur croissante) et 11a-3 (tapis, vue d'ensemble de la caméra) faites et relues** ; **11a-4 faite : la 11a est terminée** (machines arrondies et animées, pastilles de stock, tapis courts, livreur de bout en bout, gains hors ligne de la chaîne, sauvegarde v4, build). **Le jeu de l'app Claude est au build 11a.** Gain mesuré : ~650 $/min avec la chaîne complète, contre ~270 sans. Plan relu et approuvé (6 ajustements : vue d'ensemble de la caméra, machines arrondies et non cubiques, objets lisibles à chaque étape, valeur croissante par maillon).
-- **11b faite et relue** (dalles d'amélioration par machine : Vitesse et Ajouter, niveaux, paliers ×2 aux niveaux 10/25/50, flèche verte « meilleur achat » sur le goulot, pastille « Niv N », sauvegarde v5). **Le jeu de l'app Claude est au build 11b.**
-- **11c faite (logique validée)** : panneau « Commandes » avec 3 clients (portraits, contenu, $ et Points Pro, Refuser/Accepter/x2 bientôt), quai d'expédition, camionnette avec bulle d'humeur, Points Pro (pastille cyan). **11c-bis faite et relue** (croix de fermeture, fond cliquable, portraits pastel, texte à la ligne, boutons alignés, guide qui suit l'objectif réel) ; **le jeu de l'app Claude est au build 11c-bis**. Reste à retoucher : icône du bouton Commandes illisible, pastille de stock qui se chevauche, plaque du quai trop grande, **la camionnette n'est pas encore visible** (à rapprocher du quai).
-- **10b-1 partie 1 faite** (ciel clair à la place du noir, extérieur avec parking/arbres/lampadaire, planchette « Commandes » lisible) ; **le jeu de l'app Claude est au build 10b-1 partie 1** ; **le sol reste très vide** (ce que tu as critiqué) : j'ai demandé de reprendre le décor tout de suite (outil qui meuble l'atelier : marquages, étagères, établis, affiches, tuyaux, accessoires, avec une règle « chaque case de 3×3 m contient quelque chose »).
-- **Décor (10b) fait et relu** : sol à deux tons avec couloir bleu et marquages, étagères/établis/armoires/fûts, affiches, fenêtres, ventilateur, caméra qui pivote, route avec voiture qui passe, camionnette garée ; **86 % du sol meublé**. **Bug corrigé** : le joueur ne pouvait pas atteindre le quai (commandes impossibles pour lui). **11d faite et relue** : bouton « Réputation » (étoile) et panneau de 10 bonus permanents payés en Points Pro. **Le jeu de l'app Claude est au build 10b + 11d.**
-- **Le jeu de l'app Claude est maintenant au build 11e + K2 + Q2** (vue libre, décor adouci, 1re dalle à 60 $, prix ajustés). **Plus de build cette nuit** (le dépôt pèse ~960 Mo côté PC). **11e (vue libre) et K2 faites** : bouton « Vue » (loupe) pour déplacer la caméra au doigt et zoomer à deux doigts, fiche de machine au toucher, flèche sur une dalle ; K2 : damier adouci, chemin, haies et arbres au sud, prérequis lisibles et vraies icônes dans la réputation. **Les gestes tactiles ne sont pas encore testés sur téléphone** : ils le seront dans le navigateur avant le build.
-- **Q2 faite et relue** (robot qui joue 7 minutes à vitesse réelle) : 1re caisse 0:00, 1er billet 0:12, 1re dalle 0:49 (trop tard : j'ai demandé de baisser son prix de 100 à 60 $), employé 1:30, livreur 2:12, Test 2:48, Emballage 4:29 (prix baissé à 500), 1re commande 4:31. Cible du 1er tapis revue à 6:30.
-- **Q2 final fait** (1re dalle à 60 $ ; rythme en avance sur la cible pour tout le reste). **Point à surveiller** : trois parties du robot sont restées sans revenu, cause inconnue (peut-être un défaut du robot, peut-être un blocage du jeu) : j'ai demandé un journal et une enquête prioritaire.
-- **Blocage éventuel écarté** : les parties du robot sans revenu venaient d'un défaut du robot (il prenait un mauvais produit), corrigé ; 5 parties sur 5 OK. **Tests tactiles de la vue libre OK** (glisser, pincement, sortie, avec de vrais événements tactiles injectés).
-- **P1 et P2 faites (code, sans build)** : la **main de tutoriel qui tape** et le guide qui explique TEST, EMBALLAGE, TAPIS ; le **bandeau « Commande livrée ! »** avec les gains qui s'envolent vers les pastilles. **À voir au prochain build** (le jeu de l'app Claude ne les contient pas encore).
-- **P3, P4 et P5 faites (code)** : boutons cohérents (normal, pressé, grisé, même son), option **« Moins de secousses »** dans les réglages (coupe aussi le glissement de caméra), audit d'accessibilité (contraste, zones tactiles ≥ 122 px), tous les textes du jeu rangés pour une version anglaise avec un test de complétude.
-- **En cours côté PC maintenant : P6 (test de fumée étendu : achats, commande livrée, réputation)**, puis la file est vide, puis tests tactiles, **un dernier build**, puis petits polissages (main de tutoriel, bandeau de fin de commande, boutons, option « réduire les secousses », textes pour l'anglais) (la beauté : extérieur de l'atelier, ciel, sol varié, éclairage doux, décor vivant, machines moins « glacières »).
-- **File d'attente** : 11b (chaîne de production à tapis) -> 11b (améliorations par machine) -> 11c (commandes de clients) -> 10b (décor) -> 11d (Points Pro) -> 11e (caméra d'ensemble) -> 11f (deuxième usine).
+- **Fait et relu** : joystick plein écran (9a), balancement corrigé (9b), écran gris : version dans ⚙ + diagnostic (9c), sensation de jeu (10a), police Lilita One + interface en pastilles + écran titre (K1/K1b), **chaîne de production** (Réception, Assemblage, Test, Emballage, Expédition, tapis) (11a), **améliorations par machine** (Vitesse, Ajouter, paliers ×2 aux niveaux 10/25/50) (11b), **commandes de clients** avec Points Pro (11c), **décor de l'atelier** (10b), **Réputation** : 10 bonus permanents (11d), **vue libre** au doigt (11e), polissage K2/Q2.
+- **Dernier build visible dans l'app Claude : 11e + K2 + Q2** (commit 167aedc).
+- **Code terminé, pas encore dans un build : P1 à P6** : main de tutoriel (P1), bandeau « Commande livrée ! » (P2), boutons cohérents (P3), option « Moins de secousses » + audit d'accessibilité (P4), tous les textes rangés pour une version anglaise avec test de complétude (P5), test de fumée étendu de 300 s simulées (P6, OK : achats, 2 commandes livrées, réputation, sauvegarde relue identique, 0 erreur). 141 tests unitaires sur 141.
+- **En cours côté PC** : **le dernier build regroupé** (P1 à P6) : captures de la main et du bandeau, build de production, script `unity/tools/publier-build.ps1` **préparé mais non lancé**. Ensuite la file est vide : **le PC attend ta décision**, il ne démarre rien d'autre.
+- Rythme mesuré par le robot sur 7 minutes : 1re caisse 0:00, 1er billet 0:12, 1re dalle 0:49 (baissée à 60 $), employé 1:30, livreur 2:12, Test 2:48, Emballage 4:29, 1re commande 4:31 ; 1er tapis visé à 6:30.
 
-## À tester demain matin (2 minutes)
-1. Ouvre le jeu : https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X (écran de chargement jaune, puis « Idle Sécurité » et « Jouer »).
-2. Réglages (⚙), en bas : note la **version** (date et heure du build).
-3. **Pour voir la nouvelle chaîne, il faut jouer ~5 à 8 minutes** (dalles LIVREUR 250, TEST 400, EMBAUCHE 150, EMBALLAGE 900, TAPIS 600 et 1200) : tu verras les machines Test et Emballage, les tapis et la vue d'ensemble de la caméra (quand tu ne touches plus l'écran).
-4. Joue 2 minutes : joystick à droite OK ? le technicien se balance-t-il encore ? la pile de caisses penche-t-elle trop ? écran gris ? Envoie une capture ou une vidéo.
-
-## Ce qui t'attend
-- **Grok** : le compte xAI n'a plus de crédits (erreur de facturation). Ajoute des crédits ou génère dans l'app Grok avec `unity/art/PROMPTS_GROK_ATELIER.md` (P1 puis P2 sur ton image) ; **change ta clé xAI**, elle a été collée dans la conversation.
-- **Dépôt : ~940 Mo en local** ; chaque build ajoute ~17 Mo. **Décision pour toi** : accepter une branche séparée « builds » (un seul commit, remplacé à chaque build) pour ne plus grossir l'historique ? Oui/non. Cette nuit : 2 builds de plus maximum, puis arrêt.
-- **Décision pour toi** : le nœud « Commandes en cours +1 » de la Réputation n'est pas encore faisable (une seule commande à la fois) ; je le fais masquer.
+## Ce qui n'est pas vérifié (honnêtement)
+- **Aucun test sur ton iPhone** des derniers ajouts : les gestes de la vue libre sont testés avec de vrais événements tactiles injectés dans un navigateur, pas avec ton doigt. Dis-moi si ça accroche (inertie, pincement, tape sur une machine).
+- **La camionnette au quai** : une camionnette garée a été ajoutée au décor, mais je n'ai pas de capture de son arrivée à l'écran. À regarder quand une commande part.
+- **Images par seconde sur iPhone** : mesurées dans le navigateur du PC, jamais sur le téléphone. Si ça rame, dis-moi à quel moment.
+- Le bonus de Réputation « Commandes en cours +1 » est **masqué** (une seule commande à la fois pour l'instant).
 
 ## Si rien n'a bougé cette nuit
-Sur le PC : réveille-le, rouvre Claude Code, tape `/mcp` puis « Reconnect », puis `continue`. Tout le contexte est dans `TACHES.md`.
+Sur le PC : réveille-le, rouvre Claude Code, tape `/mcp` puis « Reconnect », puis `continue`. Tout le contexte est dans `unity/TACHES.md`.
