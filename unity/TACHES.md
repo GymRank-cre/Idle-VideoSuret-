@@ -584,6 +584,10 @@ Vérifié côté cloud : le build (commit `26d129e`) se charge à 100 % dans Chr
 4. **Fond de « QUAI »** : le texte passe sous le bandeau pendant l'animation, rien à faire, juste à regarder sur téléphone.
 Voyant, tests (144/144), fumée étendue et 59,6 i/s : relus, cohérents avec le journal.
 
+## CAP CHANGÉ PAR SÉBASTIEN (30/10 matin) : jeu idle SANS technicien, même DA qu'Idle Lumber. Le cloud l'a construit en version web ; le PC ne démarre rien
+Sébastien ne veut plus de petit personnage à déplacer : « on clique sur une icône, ça améliore ou ça achète, tu sais ce qui paye le mieux », avec la même direction artistique que le jeu de référence. Le cloud a donc écrit **une version web complète** (dossier `usine-web/` à la racine du dépôt, jouable dans l'app Claude : https://claude.ai/artifact/NZ4JHUmBRHR2EMo5DJ5siZ). Elle reprend nos acquis : chaîne Réception, Assemblage, Test, Emballage, Expédition, paliers ×2 aux niveaux 10/25/50/100…, commandes avec Points Pro, Réputation, turbo, gains hors ligne, police Lilita One, palette de `QUALITE.md`.
+**Pour le PC : ne rien démarrer, ne rien modifier dans `unity/`.** Le projet Unity reste tel quel (c'est la base si Sébastien décide de porter ce nouveau cap sur iPhone). Toute reprise côté Unity (supprimer le joueur et le joystick, scène en diorama, plaques d'achat tactiles, tiroir d'améliorations) se décide **avec lui**, après qu'il a joué à la version web.
+
 ## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
 1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
 2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.

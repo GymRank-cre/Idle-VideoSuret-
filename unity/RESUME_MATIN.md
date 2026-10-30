@@ -2,6 +2,9 @@
 
 **Dernière mise à jour : 30/10, ~08 h 45 (heure du PC) : le build final P1 à P6 est relu et publié.** Ce fichier est réécrit à chaque relecture.
 
+## NOUVEAU CAP (30/10 matin) : le jeu idle sans personnage est jouable
+Tu voulais un idle où on touche une icône pour acheter ou améliorer, sans technicien, avec la direction artistique d'Idle Lumber. Je l'ai construit en version web : **https://claude.ai/artifact/NZ4JHUmBRHR2EMo5DJ5siZ** (« Idle Sécurité Usine »). Le code est dans `usine-web/`. Le PC ne touche à rien d'autre. L'ancien jeu Unity reste disponible au lien précédent.
+
 ## À FAIRE EN PREMIER AU RÉVEIL (5 minutes)
 1. **Ouvre le jeu** dans l'app Claude : https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X (écran de chargement jaune, « Idle Sécurité », « Jouer »).
 2. **Réglages (⚙), en bas : lis la version** (date et heure du build) et dis-la-moi : elle doit dater de **ce matin, vers 08 h 15** (heure du PC). Si elle est plus ancienne, ferme et rouvre le lien (le navigateur a gardé l'ancien jeu).
