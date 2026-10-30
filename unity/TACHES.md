@@ -116,6 +116,11 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**U2c, machine 2 sur 5 — Assemblage : FAITE (sans build) + retouche des étiquettes. Compilation 0/0, tests 134/134, test de fumée OK. Capture : `captures/U2c-assemblage-390x844.png`.**
+- **Machine Assemblage** (`AssemblyMachine`) : établi gris-bleu `#8BA0B6` avec plateau clair, socle orange, **bras orange à deux segments qui oscille** (épaule `-1,0 + 0,55 sin(phase)`, coude `+1,5 + 0,5 cos(phase)` : les angles du web, déplacés dans un plan vertical tourné vers l'établi ; articulations jaunes), **pupitre sombre dont l'écran clignote** (cyan/bleu 2 fois par seconde), **caméra blanche à lentille bleue qui apparaît à 45 % du cycle** et reste jusqu'à la fin. Les segments du bras sont deux maillages unité étirés par `Place` (aucune allocation par image).
+- **Étiquettes** (retouche du cloud) : **pastille à coins complètement arrondis** `#1E2A38` (maillage « stade » généré, `MeshKit.Pill`), nom en blanc, centrée au-dessus de la machine, face caméra.
+- **À regarder** : sur la capture le bras est un peu plus petit que sur la cible et l'écran du pupitre est caché derrière l'établi depuis cet angle (comme dans le web, où le pupitre est à l'arrière gauche) ; je n'ai pas encore comparé la longueur des segments au pixel près (2 valeurs dans l'inspecteur : `upperLength`, `foreLength`).
+- **Reste d'U2c** : Test, Emballage, Expédition, une par poussée.
 **Corrections de la relecture cloud de U2b (5 points) + étiquettes de poste : FAITES (sans build). Compilation 0/0, tests 134/134. Capture refaite : `captures/U2c-reception-390x844.png` (3 postes ouverts, plaques, étiquettes).**
 1. **Positions des plaques** : `IdleLayout.Plates` = (1,35 ; 2,8), (4,0 ; 2,8), (7,1 ; 3,5), (4,0 ; 6,85), (1,35 ; 6,85) comme le web corrigé : **chaque plaque est devant son poste, aucune sur un tapis, aucune hors de la dalle** (vu sur la capture : 7, 24, 192 et « NOUVEAU 1,1M » bien dans la dalle).
 2. **Dalle plus profonde** : `FloorDepth` 6,6 -> **7,6** ; `slabSize` de `IdleCameraRig` mis à jour (le cadrage suit : la dalle remplit toujours la largeur, les 3 formats d'écran du test passent) ; arbres et route recalculés.

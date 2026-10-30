@@ -40,6 +40,7 @@ public static class IdleMachineBuilder
         switch (i)
         {
             case 0: Reception(root); break;
+            case 1: Assembly(root); break;
         }
         return root;
     }
@@ -54,8 +55,79 @@ public static class IdleMachineBuilder
         holder.SetParent(root, false);
         holder.localPosition = new Vector3(IdleLayout.StationSize * 0.5f, LabelHeight[i], IdleLayout.StationSize * 0.5f);
         float width = 0.3f + 0.115f * name.Length;
-        RoundedBox.Make(holder, "Pill", new Vector3(0f, 0f, 0.03f), new Vector3(width, 0.34f, 0.05f), 0.16f, IdleMaterials.Get("LabelPill", "#1E2A38"));
+        var pill = new MeshKit();
+        pill.Pill(width, 0.34f, 0.01f);   // coins complètement arrondis
+        var pillObject = pill.ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
+        pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
         IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+    }
+
+    // ------------------------------------------------------------------ 2. Assemblage : établi, bras orange, pupitre, caméra blanche
+
+    static void Assembly(Transform root)
+    {
+        var bench = new MeshKit();
+        B(bench, 0.1f, 0.55f, 0.12f, 1.4f, 0.85f, 0.5f);
+        Part(bench, "Bench", root, "#8BA0B6");
+        var top = new MeshKit();
+        B(top, 0.1f, 0.55f, 0.62f, 1.4f, 0.85f, 0.06f);
+        Part(top, "BenchTop", root, "#C3CCD7");
+        var baseKit = new MeshKit();
+        baseKit.Cylinder(new Vector3(0.8f, 0.68f, 0.55f), 0.2f, 0.22f, 10);
+        Part(baseKit, "ArmBase", root, "#FF7A1A");
+
+        // pupitre de commande avec son écran qui clignote
+        var console = new MeshKit();
+        B(console, 0.1f, 0.12f, 0.12f, 0.5f, 0.3f, 0.75f);
+        Part(console, "Console", root, "#2B3C50");
+        var screenKit = new MeshKit();
+        B(screenKit, 0.15f, 0.42f, 0.45f, 0.4f, 0.012f, 0.35f);
+        Material screenA = M("#27D3E6"), screenB = M("#1FA0FF");
+        GameObject screen = screenKit.ToObject("Screen", root, screenA);
+
+        // bras : deux segments (maillage unité le long de Z) et deux articulations jaunes
+        Material armMat = M("#FF7A1A"), foreMat = M("#FFA24D"), jointMat = M("#FFC400");
+        Transform upper = UnitSegment(root, "Upper", 0.15f, armMat);
+        Transform fore = UnitSegment(root, "Fore", 0.13f, foreMat);
+        Transform elbow = Joint(root, "Elbow", 0.2f, jointMat);
+        Transform hand = Joint(root, "Hand", 0.16f, jointMat);
+
+        // caméra blanche déposée sur l'établi à mi-cycle
+        var camera = new GameObject("Camera").transform;
+        camera.SetParent(root, false);
+        var body = new MeshKit();
+        B(body, 1.15f, 0.85f, 0.68f, 0.38f, 0.3f, 0.2f);
+        Part(body, "Body", camera, "#F2F5F8");
+        var lens = new MeshKit();
+        lens.Cylinder(new Vector3(1.0f, 0.88f, 1.34f), 0.08f, 0.06f, 8);
+        Part(lens, "Lens", camera, "#1FA0FF");
+
+        var machine = root.gameObject.AddComponent<AssemblyMachine>();
+        var so = new SerializedObject(machine);
+        so.FindProperty("upper").objectReferenceValue = upper;
+        so.FindProperty("fore").objectReferenceValue = fore;
+        so.FindProperty("elbowJoint").objectReferenceValue = elbow;
+        so.FindProperty("handJoint").objectReferenceValue = hand;
+        so.FindProperty("camera").objectReferenceValue = camera.gameObject;
+        so.FindProperty("screen").objectReferenceValue = screen.GetComponent<Renderer>();
+        so.FindProperty("screenA").objectReferenceValue = screenA;
+        so.FindProperty("screenB").objectReferenceValue = screenB;
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // Barre de section carrée de longueur 1 centrée sur l'origine, le long de Z (mise à l'échelle en Z par l'animation).
+    static Transform UnitSegment(Transform parent, string name, float thickness, Material mat)
+    {
+        var kit = new MeshKit();
+        kit.Box(new Vector3(-thickness * 0.5f, -thickness * 0.5f, -0.5f), new Vector3(thickness, thickness, 1f));
+        return kit.ToObject(name, parent, mat).transform;
+    }
+
+    static Transform Joint(Transform parent, string name, float size, Material mat)
+    {
+        var kit = new MeshKit();
+        kit.Box(new Vector3(-size * 0.5f, -size * 0.5f, -size * 0.5f), new Vector3(size, size, size));
+        return kit.ToObject(name, parent, mat).transform;
     }
 
     // ------------------------------------------------------------------ 1. Réception : quai, porte à lamelles, gyrophare, palette de caisses

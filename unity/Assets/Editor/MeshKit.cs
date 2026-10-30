@@ -73,6 +73,26 @@ public class MeshKit
         Quad(tail - side * shaft * 0.5f, neck - side * shaft * 0.5f, neck + side * shaft * 0.5f, tail + side * shaft * 0.5f);
     }
 
+    // Pastille plate (rectangle à demi-cercles aux extrémités), dans le plan XY, visible depuis -Z (face caméra d'une étiquette).
+    public void Pill(float width, float height, float z, int arcSegments = 10)
+    {
+        float r = height * 0.5f, cx = Mathf.Max(0f, width * 0.5f - r);
+        var ring = new List<Vector3> { new Vector3(-cx, r, z), new Vector3(cx, r, z) };
+        for (int i = 1; i < arcSegments; i++)   // arc droit, de haut en bas
+        {
+            float a = Mathf.PI * 0.5f - Mathf.PI * i / arcSegments;
+            ring.Add(new Vector3(cx + Mathf.Cos(a) * r, Mathf.Sin(a) * r, z));
+        }
+        ring.Add(new Vector3(cx, -r, z)); ring.Add(new Vector3(-cx, -r, z));
+        for (int i = 1; i < arcSegments; i++)   // arc gauche, de bas en haut
+        {
+            float a = -Mathf.PI * 0.5f - Mathf.PI * i / arcSegments;
+            ring.Add(new Vector3(-cx + Mathf.Cos(a) * r, Mathf.Sin(a) * r, z));
+        }
+        Vector3 center = new Vector3(0f, 0f, z);
+        for (int i = 0; i < ring.Count; i++) Tri(center, ring[i], ring[(i + 1) % ring.Count]);
+    }
+
     // Cône à base circulaire (pointe vers le haut).
     public void Cone(Vector3 baseCenter, float radius, float height, int segments = 7)
     {
