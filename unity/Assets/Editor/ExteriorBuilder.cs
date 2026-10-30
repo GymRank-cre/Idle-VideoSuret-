@@ -57,6 +57,14 @@ public static class ExteriorBuilder
         foreach (Vector3 p in new[] { new Vector3(16.6f, 0.2f, -9.6f), new Vector3(16.6f, 0.2f, -12.3f), new Vector3(19.4f, 0.2f, -8.6f) })
             Cylinder(root, "Cone", p, new Vector3(0.28f, 0.2f, 0.28f), cone);
 
+        // côté sud (derrière le mur bas de devant) : chemin de gravier, haie et deux arbres
+        Material path = M("Ext_Path", new Color32(0xE6, 0xDD, 0xC6, 0xFF));
+        Slab(root, "SouthPath", new Vector3(4f, -0.02f, -16.5f), new Vector3(2.4f, 0.1f, 4.2f), path);
+        RoundedBox.Make(root, "SouthHedgeL", new Vector3(-3f, 0.45f, -15.6f), new Vector3(14f, 0.9f, 1.1f), 0.3f, hedge);
+        RoundedBox.Make(root, "SouthHedgeR", new Vector3(14.5f, 0.45f, -15.6f), new Vector3(15f, 0.9f, 1.1f), 0.3f, hedge);
+        Tree(root, new Vector3(0.5f, 0f, -17.2f), trunk, crown);
+        Tree(root, new Vector3(9f, 0f, -17.4f), trunk, crown);
+
         // accessoires d'atelier
         Material red = M("Ext_Red", new Color32(0xF2, 0x45, 0x3D, 0xFF));
         Material pot = M("Ext_Pot", new Color32(0xB9, 0x82, 0x4A, 0xFF));

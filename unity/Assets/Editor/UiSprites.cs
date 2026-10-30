@@ -107,6 +107,39 @@ public static class UiSprites
             (x >= 48 && x <= 80 && y >= 16 && y <= 112) || (x >= 16 && x <= 112 && y >= 48 && y <= 80));
     }
 
+    // Pictogrammes blancs à contour sombre de l'arbre Réputation (clé = champ iconText du noeud).
+    public static Sprite Picto(string key)
+    {
+        string path = "Assets/Prototype/Textures/Picto_" + key + ".png";
+        System.Func<int, int, bool> shape;
+        switch (key)
+        {
+            case "coin": shape = (x, y) => { float d = Dist(x, y, 64, 64); return d <= 54 && (d <= 34 || d >= 42); }; break;
+            case "fast": shape = (x, y) => Chevron(x, y, 14) || Chevron(x, y, 58); break;
+            case "moon": shape = (x, y) => Dist(x, y, 62, 64) <= 50 && Dist(x, y, 86, 72) > 40; break;
+            case "clock": shape = (x, y) => { float d = Dist(x, y, 64, 64); return (d <= 54 && d >= 44) || (x >= 60 && x <= 68 && y >= 62 && y <= 98) || (x >= 62 && x <= 92 && y >= 60 && y <= 68); }; break;
+            case "crates": shape = (x, y) => (x >= 12 && x <= 116 && y >= 10 && y <= 60) || (x >= 30 && x <= 98 && y >= 66 && y <= 116); break;
+            case "runner": shape = (x, y) => Dist(x, y, 82, 104) <= 15 || Seg(x, y, 80, 88, 60, 56, 9) || Seg(x, y, 60, 56, 40, 20, 9) || Seg(x, y, 60, 56, 86, 24, 9) || Seg(x, y, 74, 80, 44, 76, 8) || Seg(x, y, 74, 80, 102, 66, 8); break;
+            case "smile": shape = (x, y) => { float d = Dist(x, y, 64, 64); if (d > 54) return false; if (Dist(x, y, 44, 78) <= 9 || Dist(x, y, 84, 78) <= 9) return false; float m = Dist(x, y, 64, 62); return !(m >= 26 && m <= 36 && y <= 56); }; break;
+            case "percent": shape = (x, y) => Dist(x, y, 38, 92) <= 18 || Dist(x, y, 90, 36) <= 18 || Seg(x, y, 102, 104, 26, 24, 8); break;
+            default: return Plus();
+        }
+        return Glyph(path, shape);
+    }
+
+    static float Dist(float x, float y, float cx, float cy) { return Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)); }
+
+    static bool Chevron(int x, int y, int x0)
+    {
+        float u = x - x0;
+        return u >= 0 && u <= 50 && Mathf.Abs(Mathf.Abs(y - 64f) - (50f - u)) <= 9f;
+    }
+
+    static bool Seg(int x, int y, float ax, float ay, float bx, float by, float half)
+    {
+        return SegDist(x, y, ax, ay, bx, by) <= half;
+    }
+
     // Étoile à cinq branches (pastille Points Pro).
     public static Sprite Star()
     {

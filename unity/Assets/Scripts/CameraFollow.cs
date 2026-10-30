@@ -17,6 +17,12 @@ public class CameraFollow : MonoBehaviour
     [SerializeField] float idleDelay = 1.5f;
     [SerializeField, Range(0f, 1f)] float overviewWeight = 0.65f; // part du chemin du joueur vers le centre de l'atelier
 
+    // vue libre (11e) : centre et distance choisis par le joueur, fondu depuis / vers le suivi du technicien
+    bool freeActive;
+    Vector3 freeCenter;
+    float freeMul = 1f;
+    float freeK, freeVel;
+
     Camera cam;
     PlayerController player;
     float idleTime;
@@ -101,6 +107,13 @@ public class CameraFollow : MonoBehaviour
         peekElapsed = 0f;
     }
 
+    public void SetFreeView(bool on, Vector3 center, float distanceMultiplier)
+    {
+        freeActive = on;
+        if (Finite(center)) freeCenter = center;
+        if (Finite(distanceMultiplier)) freeMul = Mathf.Clamp(distanceMultiplier, 0.6f, 2f);
+    }
+
     // 0 = cadrage normal, 1 = vue d'ensemble ; revient dès que le joueur bouge ou qu'un Peek est en cours.
     float UpdateOverview()
     {
@@ -151,9 +164,12 @@ public class CameraFollow : MonoBehaviour
             }
         }
 
-        float ov = UpdateOverview();
+        freeK = Mathf.SmoothDamp(freeK, freeActive ? 1f : 0f, ref freeVel, 0.25f, Mathf.Infinity, Time.unscaledDeltaTime);
+        if (!Finite(freeK)) { freeK = freeActive ? 1f : 0f; freeVel = 0f; Repair("vue libre"); }
+        float ov = freeActive || freeK > 0.001f ? 0f : UpdateOverview();   // le recul automatique attend la fin de la vue libre
         if (ov > 0.0001f) focus = Vector3.Lerp(focus, overviewFocus.position, overviewWeight * ov);
-        Vector3 desired = focus + offset * Mathf.Lerp(1f, overviewScale, ov);
+        if (freeK > 0.0001f) focus = Vector3.Lerp(focus, freeCenter, freeK);
+        Vector3 desired = focus + offset * Mathf.Lerp(Mathf.Lerp(1f, overviewScale, ov), freeMul, freeK);
         if (!Finite(desired)) { peekTarget = null; Repair("position visée"); return; }
         float t = 1f - Mathf.Exp(-smooth * Time.deltaTime);
         if (!Finite(t)) t = 1f;

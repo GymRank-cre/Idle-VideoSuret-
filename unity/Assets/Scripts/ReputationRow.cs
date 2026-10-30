@@ -6,7 +6,9 @@ public class ReputationRow : MonoBehaviour
 {
     [SerializeField] Image card;
     [SerializeField] Image iconBack;
-    [SerializeField] Text iconText;
+    [SerializeField] Text iconText;           // facultatif (ancien système)
+    [SerializeField] Image iconImage;         // pictogramme
+    [SerializeField] int nodeIndex;           // noeud de la config représenté par cette ligne
     [SerializeField] Text nameText;
     [SerializeField] Text effectText;
     [SerializeField] Text levelText;
@@ -21,16 +23,18 @@ public class ReputationRow : MonoBehaviour
     Vector3 baseScale;
 
     public Button Buy => buy;
+    public int NodeIndex => nodeIndex;
 
-    public void Init(ReputationState s, int i)
+    public void Init(ReputationState s)
     {
         state = s;
-        index = i;
+        index = nodeIndex;
+        int i = index;
         baseScale = transform.localScale;
         buy.onClick.AddListener(() => state.TryBuy(index));
         ReputationConfig.Node n = s.Config.Nodes[i];
         iconBack.color = n.iconColor;
-        iconText.text = n.iconText;
+        if (iconText != null) iconText.text = "";
         nameText.text = n.displayName;
         Refresh();
     }
@@ -53,7 +57,7 @@ public class ReputationRow : MonoBehaviour
         card.color = locked ? new Color32(0xDD, 0xD3, 0xC2, 0xFF) : new Color32(0xFF, 0xF1, 0xD6, 0xFF);
 
         if (!n.implemented) { SetBuy(Loc.T("rep.soon"), false, false); return; }
-        if (missing != null) { effectText.text = Loc.T("rep.locked", missing); SetBuy(Loc.T("rep.lockedshort"), false, false); return; } // le prérequis se lit sur la ligne d'effet
+        if (missing != null) { effectText.text = Loc.T("rep.locked", missing); SetBuy(Loc.T("rep.lockedshort"), false, false); return; } // « Prérequis : ... » sous le nom, jamais dans le bouton
         if (state.IsMax(index)) { SetBuy(Loc.T("rep.max"), false, false); return; }
         SetBuy(NumberFormat.Short(state.NextCost(index)), state.CanBuy(index), true);
     }

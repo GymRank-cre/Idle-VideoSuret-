@@ -368,7 +368,7 @@ public static class OrderBuilder
         so.FindProperty("dockPoint").objectReferenceValue = dock;
         so.FindProperty("backdrop").objectReferenceValue = backdropGo.GetComponent<Button>();
         SerializedProperty hn = so.FindProperty("hideNames");
-        string[] names = { "UpgradeButton", "OrdersButton", "GuideBar" };
+        string[] names = { "UpgradeButton", "OrdersButton", "ReputationButton", "ViewButton", "GuideBar" };
         hn.arraySize = names.Length;
         for (int i = 0; i < names.Length; i++) hn.GetArrayElementAtIndex(i).stringValue = names[i];
         SerializedProperty list = so.FindProperty("cards");

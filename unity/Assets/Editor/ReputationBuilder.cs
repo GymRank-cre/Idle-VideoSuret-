@@ -21,16 +21,16 @@ public static class ReputationBuilder
         // id, nom, description, icône, couleur, effet, valeur/niveau, niveau max, coût de base, prérequis, niveau requis, géré
         object[][] rows =
         {
-            new object[] { "revenue", "Revenus", "+{0} % de paiements", "$", "3DDC5A", ReputationEffect.Revenue, 10f, 10, 2, "", 0, true },
-            new object[] { "chain", "Vitesse de la chaîne", "+{0} % de vitesse", ">>", "27D3E6", ReputationEffect.ChainSpeed, 5f, 10, 3, "", 0, true },
-            new object[] { "offline", "Gains hors ligne", "+{0} % hors ligne", "Zz", "A855F7", ReputationEffect.OfflineGain, 20f, 5, 3, "", 0, true },
-            new object[] { "offlinecap", "Plafond hors ligne", "+{0} h de plafond", "8h", "7C4DFF", ReputationEffect.OfflineCap, 4f, 1, 6, "offline", 2, true },
-            new object[] { "stack", "Capacité de la pile", "+{0} caisse(s)", "+1", "B9824A", ReputationEffect.StackCapacity, 1f, 5, 4, "", 0, true },
-            new object[] { "speed", "Vitesse du technicien", "+{0} % de vitesse", "Run", "1FA0FF", ReputationEffect.PlayerSpeed, 4f, 5, 3, "", 0, true },
-            new object[] { "patience", "Patience des clients", "+{0} % de patience", ":)", "FFC400", ReputationEffect.OrderPatience, 15f, 4, 2, "", 0, true },
-            new object[] { "offers", "Offres de commandes", "+{0} offre affichée", "3+", "FF7A1A", ReputationEffect.OfferSlots, 1f, 1, 5, "", 0, true },
-            new object[] { "active", "Commandes en cours", "+{0} en parallèle", "x2", "F2453D", ReputationEffect.ActiveOrders, 1f, 1, 12, "offers", 1, false },
-            new object[] { "discount", "Remise sur les dalles", "-{0} % de prix", "%", "3DDC5A", ReputationEffect.PadDiscount, 4f, 5, 4, "", 0, true },
+            new object[] { "revenue", "Revenus", "+{0} % de paiements", "coin", "3DDC5A", ReputationEffect.Revenue, 10f, 10, 2, "", 0, true },
+            new object[] { "chain", "Vitesse de la chaîne", "+{0} % de vitesse", "fast", "27D3E6", ReputationEffect.ChainSpeed, 5f, 10, 3, "", 0, true },
+            new object[] { "offline", "Gains hors ligne", "+{0} % hors ligne", "moon", "A855F7", ReputationEffect.OfflineGain, 20f, 5, 3, "", 0, true },
+            new object[] { "offlinecap", "Plafond hors ligne", "+{0} h de plafond", "clock", "7C4DFF", ReputationEffect.OfflineCap, 4f, 1, 6, "offline", 2, true },
+            new object[] { "stack", "Capacité de la pile", "+{0} caisse(s)", "crates", "B9824A", ReputationEffect.StackCapacity, 1f, 5, 4, "", 0, true },
+            new object[] { "speed", "Vitesse du technicien", "+{0} % de vitesse", "runner", "1FA0FF", ReputationEffect.PlayerSpeed, 4f, 5, 3, "", 0, true },
+            new object[] { "patience", "Patience des clients", "+{0} % de patience", "smile", "FFC400", ReputationEffect.OrderPatience, 15f, 4, 2, "", 0, true },
+            new object[] { "offers", "Offres de commandes", "+{0} offre affichée", "plus", "FF7A1A", ReputationEffect.OfferSlots, 1f, 1, 5, "", 0, true },
+            new object[] { "active", "Commandes en cours", "+{0} en parallèle", "plus", "F2453D", ReputationEffect.ActiveOrders, 1f, 1, 12, "offers", 1, false },
+            new object[] { "discount", "Remise sur les dalles", "-{0} % de prix", "percent", "3DDC5A", ReputationEffect.PadDiscount, 4f, 5, 4, "", 0, true },
         };
         var so = new SerializedObject(config);
         SerializedProperty list = so.FindProperty("nodes");
@@ -122,7 +122,10 @@ public static class ReputationBuilder
         backdropGo.GetComponent<Button>().targetGraphic = bdImg;
         backdropGo.SetActive(false);
 
-        int n = config.Nodes.Length;
+        // seuls les noeuds déjà gérés ont une ligne (pas de « Bientôt » affiché)
+        var shown = new System.Collections.Generic.List<int>();
+        for (int i = 0; i < config.Nodes.Length; i++) if (config.Nodes[i].implemented) shown.Add(i);
+        int n = shown.Count;
         const float rowH = 118f;
         float height = 190f + rowH * n + 40f;
         GameObject panelGo = new GameObject("ReputationPanel", typeof(RectTransform), typeof(PopIn));
@@ -155,7 +158,7 @@ public static class ReputationBuilder
 
         var rows = new ReputationRow[n];
         for (int i = 0; i < n; i++)
-            rows[i] = BuildRow(panel, rounded, circle, new Vector2(0f, top - 190f - rowH * (i + 0.5f)), rowH - 10f);
+            rows[i] = BuildRow(panel, rounded, circle, new Vector2(0f, top - 190f - rowH * (i + 0.5f)), rowH - 10f, shown[i], UiSprites.Picto(config.Nodes[shown[i]].iconText));
 
         GameObject host = new GameObject("ReputationHost", typeof(RectTransform), typeof(ReputationUi));
         host.transform.SetParent(safe, false);
@@ -173,7 +176,7 @@ public static class ReputationBuilder
         PlayerController player = Object.FindFirstObjectByType<PlayerController>();
         so.FindProperty("player").objectReferenceValue = player != null ? player.transform : null;
         SerializedProperty hn = so.FindProperty("hideNames");
-        string[] names = { "UpgradeButton", "OrdersButton", "ReputationButton", "GuideBar", "OrderBar" };
+        string[] names = { "UpgradeButton", "OrdersButton", "ReputationButton", "ViewButton", "GuideBar", "OrderBar" };
         hn.arraySize = names.Length;
         for (int i = 0; i < names.Length; i++) hn.GetArrayElementAtIndex(i).stringValue = names[i];
         SerializedProperty rl = so.FindProperty("rows");
@@ -182,12 +185,14 @@ public static class ReputationBuilder
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
-    static ReputationRow BuildRow(RectTransform panel, Sprite rounded, Sprite circle, Vector2 pos, float height)
+    static ReputationRow BuildRow(RectTransform panel, Sprite rounded, Sprite circle, Vector2 pos, float height, int nodeIndex, Sprite picto)
     {
         RectTransform card = UpgradeBuilder.Box("Row", panel, rounded, new Color32(0xFF, 0xF1, 0xD6, 0xFF), pos, new Vector2(920f, height), false);
         card.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
         RectTransform icon = UpgradeBuilder.Box("Icon", card, circle, UiTheme.Green, new Vector2(-400f, 0f), new Vector2(84f, 84f), false);
-        Text iconText = UpgradeBuilder.Label("Symbol", icon, "$", 36, Color.white, Vector2.zero, new Vector2(84f, 84f));
+        RectTransform pic = UpgradeBuilder.Box("Picto", icon, picto, Color.white, Vector2.zero, new Vector2(54f, 54f), false);
+        pic.GetComponent<Image>().type = Image.Type.Simple;
+        pic.GetComponent<Image>().preserveAspect = true;
         Text nameText = Ink("Name", card, 36, new Vector2(-60f, 24f), new Vector2(560f, 46f));
         Text effect = Ink("Effect", card, 28, new Vector2(-60f, -20f), new Vector2(560f, 40f));
         effect.color = new Color32(0x2B, 0x6F, 0x3A, 0xFF);
@@ -205,7 +210,8 @@ public static class ReputationBuilder
         var so = new SerializedObject(row);
         so.FindProperty("card").objectReferenceValue = card.GetComponent<Image>();
         so.FindProperty("iconBack").objectReferenceValue = icon.GetComponent<Image>();
-        so.FindProperty("iconText").objectReferenceValue = iconText;
+        so.FindProperty("iconImage").objectReferenceValue = pic.GetComponent<Image>();
+        so.FindProperty("nodeIndex").intValue = nodeIndex;
         so.FindProperty("nameText").objectReferenceValue = nameText;
         so.FindProperty("effectText").objectReferenceValue = effect;
         so.FindProperty("levelText").objectReferenceValue = level;

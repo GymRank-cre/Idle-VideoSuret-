@@ -120,7 +120,7 @@ public static class DecorBuilder
             if (!AssetDatabase.IsValidFolder(TexFolder)) AssetDatabase.CreateFolder("Assets/Prototype", "Textures");
             const int n = 256, cell = 64;
             var tex = new Texture2D(n, n, TextureFormat.RGBA32, true);
-            Color a = new Color32(0xD5, 0xDC, 0xE4, 0xFF), b = new Color32(0xC3, 0xCC, 0xD7, 0xFF), grout = new Color32(0xAE, 0xB8, 0xC4, 0xFF);
+            Color a = new Color32(0xD5, 0xDC, 0xE4, 0xFF), b = new Color32(0xCC, 0xD4, 0xDE, 0xFF), grout = new Color32(0xBC, 0xC6, 0xD2, 0xFF); // K2 : damier adouci
             var rnd = new System.Random(7);
             for (int y = 0; y < n; y++)
             {

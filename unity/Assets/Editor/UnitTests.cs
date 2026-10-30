@@ -297,6 +297,20 @@ public static class UnitTests
         Eq("7", v6.version.ToString(), "migration v6 -> v7 : version");
         Eq("True", (v6.reputation != null && v6.reputation.Count == 0).ToString(), "migration v6 -> v7 : arbre vide");
 
+        // 11e : vue libre (limites de la caméra, zoom, valeurs invalides)
+        {
+            Vector3 fb = new Vector3(1f, 0f, 2f);
+            Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
+            Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
+            Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");
+            Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(0f, float.PositiveInfinity, 0f), fb).ToString("F1"), "infini rejeté");
+            Eq("0,60", FreeViewMath.PinchZoom(1f, 100f, 400f).ToString("0.00"), "doigts qui s'écartent beaucoup : zoom plafonné à 0,6");
+            Eq("2,00", FreeViewMath.PinchZoom(1f, 400f, 100f).ToString("0.00"), "doigts qui se rapprochent : plafonné à 2");
+            Eq("0,75", FreeViewMath.PinchZoom(1f, 300f, 400f).ToString("0.00"), "zoom proportionnel à l'écartement");
+            Eq("1,00", FreeViewMath.PinchZoom(1f, 0f, 100f).ToString("0.00"), "distance nulle : zoom inchangé");
+            Eq("1,00", FreeViewMath.PinchZoom(float.NaN, 100f, 100f).ToString("0.00"), "zoom invalide : retour à 1");
+        }
+
         // Économie : coût des améliorations strictement positif et croissant
         foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())
         {

@@ -43,7 +43,7 @@ public class ReputationUi : MonoBehaviour
 
     void Start()
     {
-        for (int i = 0; i < rows.Length; i++) rows[i].Init(state, i);
+        for (int i = 0; i < rows.Length; i++) rows[i].Init(state);
         Refresh();
     }
 
@@ -51,7 +51,7 @@ public class ReputationUi : MonoBehaviour
     {
         AudioManager.Play(SfxId.Upgrade);
         AudioManager.Vibrate();
-        rows[index].Pop();
+        foreach (ReputationRow r in rows) if (r.NodeIndex == index) r.Pop();
         if (feedback != null && player != null) feedback.Confetti(player.position + Vector3.up * 1.2f); // étoiles qui jaillissent
     }
 
