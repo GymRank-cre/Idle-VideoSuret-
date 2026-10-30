@@ -12,6 +12,12 @@ public class IdleHud : MonoBehaviour
     [SerializeField] GameObject ordersBadge;
     [SerializeField] Text ordersBadgeText;
     [SerializeField] GameObject reputationBadge;
+    [SerializeField] Button ordersButton;
+    [SerializeField] Button reputationButton;
+    [SerializeField] Button gearButton;
+    [SerializeField] IdleSheet ordersSheet;
+    [SerializeField] IdleSheet reputationSheet;
+    [SerializeField] IdleSheet settingsSheet;
     [SerializeField] Button turboButton;
     [SerializeField] Image turboFace;
     [SerializeField] Sprite turboIdleFace;
@@ -31,6 +37,9 @@ public class IdleHud : MonoBehaviour
     void Start()
     {
         turboButton.onClick.AddListener(OnTurbo);
+        ordersButton.onClick.AddListener(ordersSheet.Open);
+        reputationButton.onClick.AddListener(reputationSheet.Open);
+        gearButton.onClick.AddListener(settingsSheet.Open);
     }
 
     void Subscribe(IdleGame game)

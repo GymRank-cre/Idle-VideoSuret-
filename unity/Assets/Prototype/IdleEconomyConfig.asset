@@ -100,7 +100,7 @@ MonoBehaviour:
   proBase: 1
   proFromStation: 2
   proBigQuantity: 100
-  clientCount: 6
+  clientCount: 8
   sayCount: 6
   startCash: 10
   newStationFavor: 0.35

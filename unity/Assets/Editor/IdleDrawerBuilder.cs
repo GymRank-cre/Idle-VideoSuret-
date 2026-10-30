@@ -7,7 +7,7 @@ using static IdleHudBuilder;
 // Mêmes mesures que le web (pixels CSS passés dans Px) ; les pièces sont placées à la main, sans groupe de mise en page, sauf quand un prix change de largeur.
 public static class IdleDrawerBuilder
 {
-    const float RowHeight = 76f, RowPitch = 85f, UpWidth = 78f, UpHeight = 62f, WideHeight = 56f, RowPad = 8f, Gap = 7f;
+    const float FirstRow = 8f, RowHeight = 76f, RowPitch = 85f, UpWidth = 78f, UpHeight = 62f, WideHeight = 56f, RowPad = 8f, Gap = 7f;
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
 
     static readonly Color Orange = new Color32(0xFF, 0x7A, 0x1A, 0xFF), OrangeTop = new Color32(0xF2, 0x8A, 0x2E, 0xFF), OrangeEdge = new Color32(0xD9, 0x5E, 0x00, 0xFF);
@@ -20,7 +20,7 @@ public static class IdleDrawerBuilder
     static readonly Color[] Tiles = { new Color32(0xC9, 0x8B, 0x4A, 0xFF), new Color32(0xFF, 0x9A, 0x45, 0xFF), new Color32(0x1F, 0xA0, 0xFF, 0xFF), new Color32(0xE5, 0xB9, 0x6B, 0xFF), new Color32(0x7E, 0xC8, 0xFF, 0xFF) };
     static readonly string[] TileIcons = { "caisse", "camera", "bouclier", "caisse", "camionnette" };
 
-    public static void Build(Transform canvas)
+    public static RectTransform Build(Transform canvas)
     {
         RectTransform root = NewRect("Drawer", canvas);
         Stretch(root);
@@ -54,6 +54,7 @@ public static class IdleDrawerBuilder
         array.arraySize = rows.Length;
         for (int i = 0; i < rows.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = rows[i];
         so.ApplyModifiedPropertiesWithoutUndo();
+        return panel;
     }
 
     // ------------------------------------------------------------------ bandeau « Meilleur achat »
@@ -74,11 +75,23 @@ public static class IdleDrawerBuilder
         Corner(star.rectTransform, new Vector2(0f, 1f), new Vector2(-Px(8f), Px(12f)));
         star.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 14f);
 
-        Text title = AddPlainText(rt, "Title", "", 17f, UiTheme.Ink, TextAnchor.MiddleLeft);
-        Between(title.rectTransform, Px(30f), Px(116f), Px(10f), Px(21f));
-        title.resizeTextForBestFit = true;
-        title.resizeTextMinSize = Mathf.RoundToInt(Px(12f));
-        title.resizeTextMaxSize = title.fontSize;
+        RectTransform titleArea = NewRect("TitleArea", rt);
+        Between(titleArea, Px(30f), Px(116f), Px(10f), Px(21f));
+        RectTransform titleRow = NewRect("TitleRow", titleArea);
+        titleRow.anchorMin = titleRow.anchorMax = new Vector2(0f, 0.5f);
+        titleRow.pivot = new Vector2(0f, 0.5f);
+        titleRow.sizeDelta = new Vector2(0f, Px(21f));
+        var titleLayout = titleRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+        titleLayout.spacing = Px(5f);
+        titleLayout.childAlignment = TextAnchor.MiddleLeft;
+        titleLayout.childControlWidth = true;
+        titleLayout.childControlHeight = true;
+        titleLayout.childForceExpandWidth = false;
+        titleLayout.childForceExpandHeight = false;
+        titleRow.gameObject.AddComponent<ContentSizeFitter>().horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        Text title = AddPlainText(titleRow, "Title", "", 17f, UiTheme.Ink, TextAnchor.MiddleLeft);
+        Image titleArrow = AddIcon(titleRow, "Arrow", "Ico_arrow", 16f, true);
+        Text titleLevel = AddPlainText(titleRow, "Level", "", 17f, UiTheme.Ink, TextAnchor.MiddleLeft);
         Text detail = AddPlainText(rt, "Detail", "", 13f, BannerBrown, TextAnchor.UpperLeft);
         Between(detail.rectTransform, Px(30f), Px(116f), Px(32f), Px(30f));
         detail.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -115,6 +128,10 @@ public static class IdleDrawerBuilder
         var bar = bg.gameObject.AddComponent<IdleBestBar>();
         var so = new SerializedObject(bar);
         so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("titleRow").objectReferenceValue = titleRow;
+        so.FindProperty("titleArea").objectReferenceValue = titleArea;
+        so.FindProperty("titleArrow").objectReferenceValue = titleArrow.gameObject;
+        so.FindProperty("titleLevel").objectReferenceValue = titleLevel;
         so.FindProperty("detailText").objectReferenceValue = detail;
         so.FindProperty("buyButton").objectReferenceValue = go;
         so.FindProperty("waitFill").objectReferenceValue = fill.rectTransform;
@@ -178,7 +195,7 @@ public static class IdleDrawerBuilder
         list.anchorMin = Vector2.zero;
         list.anchorMax = Vector2.one;
         list.offsetMin = new Vector2(Px(14f), Px(30f));
-        list.offsetMax = new Vector2(-Px(14f), -Px(124f));
+        list.offsetMax = new Vector2(-Px(14f), -Px(118f));
         var catcher = list.gameObject.AddComponent<Image>();   // reçoit les glissements entre deux lignes
         catcher.color = Color.clear;
         list.gameObject.AddComponent<RectMask2D>();
@@ -187,7 +204,7 @@ public static class IdleDrawerBuilder
         content.anchorMin = new Vector2(0f, 1f);
         content.anchorMax = Vector2.one;
         content.pivot = new Vector2(0.5f, 1f);
-        content.sizeDelta = new Vector2(0f, Px(2f + count * RowPitch + 14f));
+        content.sizeDelta = new Vector2(0f, Px(FirstRow + count * RowPitch + 14f));
 
         var scroll = list.gameObject.AddComponent<ScrollRect>();
         scroll.content = content;
@@ -211,7 +228,7 @@ public static class IdleDrawerBuilder
         Image bg = Rounded("Row" + i, content, Cream, Px(18f));
         bg.raycastTarget = false;
         RectTransform rt = bg.rectTransform;
-        TopStretch(rt, Px(2f), Px(2f), Px(2f + i * RowPitch), Px(RowHeight));
+        TopStretch(rt, Px(2f), Px(2f), Px(FirstRow + i * RowPitch), Px(RowHeight));
         AddShadow(bg, 0.28f, Px(4f));
         string name = Loc.T(cfg.stations[i].nameKey);
         float mid = RowPad + 50f + Gap;   // début de la colonne du milieu
@@ -324,7 +341,7 @@ public static class IdleDrawerBuilder
         RectTransform b = badge.rectTransform;
         b.anchorMin = b.anchorMax = new Vector2(0f, 1f);
         b.pivot = new Vector2(0f, 1f);
-        b.anchoredPosition = new Vector2(-Px(5f), Px(8f));
+        b.anchoredPosition = new Vector2(-Px(5f), Px(14f));
         var fit = badge.gameObject.AddComponent<ContentSizeFitter>();
         fit.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fit.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
@@ -368,7 +385,7 @@ public static class IdleDrawerBuilder
     }
 
     // Racine fixe (appui et toucher), `Visual` qui peut battre, face à dégradé et épaisseur.
-    static IdleBuyButton BuyButton(RectTransform parent, string name, float width, float height)
+    internal static IdleBuyButton BuyButton(RectTransform parent, string name, float width, float height)
     {
         RectTransform rt = NewRect(name, parent);
         rt.sizeDelta = new Vector2(width, height);
@@ -410,7 +427,7 @@ public static class IdleDrawerBuilder
         return AddText(row, "Price", "0", css, Color.white, TextAnchor.MiddleCenter);
     }
 
-    static RectTransform CenteredRow(Transform parent, string name, float top, float height, float spacing)
+    internal static RectTransform CenteredRow(Transform parent, string name, float top, float height, float spacing)
     {
         RectTransform row = NewRect(name, parent);
         Between(row, 0f, 0f, top, height);
@@ -433,7 +450,7 @@ public static class IdleDrawerBuilder
         return rt;
     }
 
-    static Shadow AddEdge(Image img, Color color, float depth, bool upward)
+    internal static Shadow AddEdge(Image img, Color color, float depth, bool upward)
     {
         var edge = img.gameObject.AddComponent<Shadow>();
         edge.effectColor = color;
@@ -451,7 +468,7 @@ public static class IdleDrawerBuilder
     }
 
     // Bande horizontale : marges gauche et droite, distance depuis le haut, hauteur.
-    static void TopStretch(RectTransform rt, float left, float right, float top, float height)
+    internal static void TopStretch(RectTransform rt, float left, float right, float top, float height)
     {
         rt.anchorMin = new Vector2(0f, 1f);
         rt.anchorMax = Vector2.one;
@@ -463,7 +480,7 @@ public static class IdleDrawerBuilder
     static void Between(RectTransform rt, float left, float right, float top, float height) { TopStretch(rt, left, right, top, height); }
 
     // Placé depuis un coin de son parent ; `offset` : décalage vers le haut et la droite (ou la gauche pour un coin droit).
-    static void Corner(RectTransform rt, Vector2 anchor, Vector2 offset)
+    internal static void Corner(RectTransform rt, Vector2 anchor, Vector2 offset)
     {
         rt.anchorMin = rt.anchorMax = anchor;
         rt.pivot = new Vector2(0f, 1f);

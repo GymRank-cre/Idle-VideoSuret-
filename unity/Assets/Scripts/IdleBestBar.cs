@@ -4,7 +4,11 @@ using UnityEngine.UI;
 // Bandeau « Meilleur achat » (U3b) : le conseil d'IdleGame (même calcul que le web), son gain, et le bouton qui l'achète, grisé « Dans N s » si trop cher.
 public class IdleBestBar : MonoBehaviour
 {
+    [SerializeField] RectTransform titleRow;      // poste · axe, flèche, niveau ; rétrécit si tout ne tient pas
+    [SerializeField] RectTransform titleArea;
     [SerializeField] Text titleText;
+    [SerializeField] GameObject titleArrow;
+    [SerializeField] Text titleLevel;
     [SerializeField] Text detailText;
     [SerializeField] IdleBuyButton buyButton;
     [SerializeField] RectTransform waitFill;
@@ -27,17 +31,17 @@ public class IdleBestBar : MonoBehaviour
     {
         if (!found)
         {
-            titleText.text = Loc.T("drawer.best.none");
+            SetTitle(Loc.T("drawer.best.none"), null);
             detailText.text = "";
             return;
         }
         IdleEconomyConfig cfg = game.Eco.Config;
         string name = Loc.T(cfg.stations[o.station].nameKey);
-        if (o.kind == IdleEconomy.Kind.Unlock) titleText.text = Loc.T("drawer.best.unlock", name);
+        if (o.kind == IdleEconomy.Kind.Unlock) SetTitle(Loc.T("drawer.best.unlock", name), null);
         else
         {
             IdleEconomy.StationLevels st = game.Stations[o.station];
-            titleText.text = Loc.T("drawer.best.line", name, Loc.T(o.speedAxis ? "drawer.speed" : "drawer.add"), (o.speedAxis ? st.speed : st.add) + 1);
+            SetTitle(Loc.T("drawer.best.line", name, Loc.T(o.speedAxis ? "drawer.speed" : "drawer.add")), Loc.T("drawer.best.level", (o.speedAxis ? st.speed : st.add) + 1));
         }
 
         long price = IdleEconomy.Ceil(o.cost);
@@ -54,6 +58,19 @@ public class IdleBestBar : MonoBehaviour
         Vector2 max = waitFill.anchorMax;
         max.x = affordable ? 0f : Mathf.Clamp01((float)(game.Cash / price));
         waitFill.anchorMax = max;
+    }
+
+    void SetTitle(string main, string level)
+    {
+        if (main == titleText.text && (level ?? "") == titleLevel.text) return;
+        titleText.text = main;
+        titleLevel.text = level ?? "";
+        bool arrow = level != null;
+        titleArrow.SetActive(arrow);
+        titleLevel.gameObject.SetActive(arrow);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(titleRow);
+        float scale = Mathf.Min(1f, titleArea.rect.width / Mathf.Max(1f, titleRow.rect.width));
+        titleRow.localScale = new Vector3(scale, scale, 1f);
     }
 
     static string GoalName(IdleEconomyConfig cfg, IdleEconomy.Option goal)

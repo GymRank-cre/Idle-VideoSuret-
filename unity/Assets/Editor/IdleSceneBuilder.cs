@@ -76,6 +76,11 @@ public static class IdleSceneBuilder
         var so = new SerializedObject(go.GetComponent<IdleHost>());
         so.FindProperty("config").objectReferenceValue = AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>(ConfigPath);
         so.ApplyModifiedPropertiesWithoutUndo();
+
+        var audio = new GameObject("AudioManager", typeof(AudioManager), typeof(IdleAudioUnlock));
+        var audioSo = new SerializedObject(audio.GetComponent<AudioManager>());
+        audioSo.FindProperty("config").objectReferenceValue = AudioBuilder.LoadOrCreateConfig();
+        audioSo.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ sol, dalle, route

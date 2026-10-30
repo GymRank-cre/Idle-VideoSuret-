@@ -35,16 +35,21 @@ public static class IdleHudBuilder
 
         var hud = safe.gameObject.AddComponent<IdleHud>();
         var so = new SerializedObject(hud);
-        BuildTopBar(safe, so);
+        RectTransform cashPill, proPill;
+        BuildTopBar(safe, so, out cashPill, out proPill);
         BuildSideColumn(safe, so);
-        so.ApplyModifiedPropertiesWithoutUndo();
 
-        IdleDrawerBuilder.Build(canvasGo.transform);
+        RectTransform drawerPanel = IdleDrawerBuilder.Build(canvasGo.transform);
+        IdleWindowsBuilder.Result windows = IdleWindowsBuilder.Build(canvasGo.transform, safe, drawerPanel, cashPill, proPill);
+        so.FindProperty("ordersSheet").objectReferenceValue = windows.orders;
+        so.FindProperty("reputationSheet").objectReferenceValue = windows.reputation;
+        so.FindProperty("settingsSheet").objectReferenceValue = windows.settings;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ barre du haut
 
-    static void BuildTopBar(RectTransform parent, SerializedObject hud)
+    static void BuildTopBar(RectTransform parent, SerializedObject hud, out RectTransform cashPill, out RectTransform proPill)
     {
         RectTransform bar = NewRect("TopBar", parent);
         bar.anchorMin = new Vector2(0f, 1f);
@@ -61,6 +66,7 @@ public static class IdleHudBuilder
 
         // argent : largeur fixe du web (176), réduite sur les petits écrans
         Image cash = Pill("CashPill", bar, UiTheme.Slate);
+        cashPill = cash.rectTransform;
         Row(cash.gameObject, 8f, 14f, 7f, TextAnchor.MiddleLeft);
         Size(cash.gameObject, Px(120f), Px(176f), -1f);
         AddIcon(cash.transform, "Icon", "billet", 30f, true);
@@ -74,6 +80,7 @@ public static class IdleHudBuilder
 
         // Points Pro : cachés tant qu'aucune commande n'a été livrée
         Image pro = Pill("ProPill", bar, ProTeal);
+        proPill = pro.rectTransform;
         Row(pro.gameObject, 8f, 12f, 7f, TextAnchor.MiddleLeft);
         AddIcon(pro.transform, "Icon", "etoile", 30f, true);
         hud.FindProperty("proText").objectReferenceValue = AddText(pro.transform, "Pro", "0", 23f, Color.white, TextAnchor.MiddleLeft);
@@ -85,7 +92,9 @@ public static class IdleHudBuilder
 
         Image gear = Pill("GearButton", bar, UiTheme.Slate);
         Size(gear.gameObject, Px(42f), Px(42f), -1f);
-        gear.gameObject.AddComponent<Button>().transition = Selectable.Transition.None;
+        var gearButton = gear.gameObject.AddComponent<Button>();
+        gearButton.transition = Selectable.Transition.None;
+        hud.FindProperty("gearButton").objectReferenceValue = gearButton;
         gear.raycastPadding = new Vector4(-Px(2f), -Px(2f), -Px(2f), -Px(2f));   // zone tactile de 122 unités au moins
         gear.gameObject.AddComponent<PressScale>();
         Image gearIcon = AddIcon(gear.transform, "Icon", "engrenage", 32f, false);
@@ -103,9 +112,11 @@ public static class IdleHudBuilder
         Text ordersCount;
         hud.FindProperty("ordersBadge").objectReferenceValue = Badge(orders.transform, "0", out ordersCount);
         hud.FindProperty("ordersBadgeText").objectReferenceValue = ordersCount;
+        hud.FindProperty("ordersButton").objectReferenceValue = orders.GetComponent<Button>();
 
         Image reputation = SquareButton(parent, "ReputationButton", "etoile", orange, 1);
         hud.FindProperty("reputationBadge").objectReferenceValue = Badge(reputation.transform, "!", out _);
+        hud.FindProperty("reputationButton").objectReferenceValue = reputation.GetComponent<Button>();
 
         Image turbo = SquareButton(parent, "TurboButton", "flamme", orange, 2);
         hud.FindProperty("turboButton").objectReferenceValue = turbo.GetComponent<Button>();

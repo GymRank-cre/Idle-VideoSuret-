@@ -116,6 +116,26 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**U3c — Fenêtres, plus les 2 retouches de U3b : FAIT (sans build). Compilation 0/0, tests 167/167, test de fumée OK. Captures : `captures/U3c-commandes-390x844.png`, `U3c-commande-en-cours-390x844.png`, `U3c-bandeau-390x844.png`, `U3c-livraison-390x844.png`, `U3c-reputation-390x844.png`, `U3c-reglages-390x844.png`, `U3c-reglages-effacer-390x844.png`, `U3c-bon-retour-390x844.png`.**
+- **DÉFAUT GRAVE TROUVÉ ET CORRIGÉ : le jeu était muet depuis U1.** `AudioManager` n'avait jamais été remis dans la nouvelle scène : tous les « sons » d'achat que j'ai annoncés depuis U2b ne jouaient rien. Il est dans la scène, avec le déblocage au premier toucher pour le navigateur (`IdleAudioUnlock`). Vérifié : un effet est bien en lecture après un achat. **Aucun son n'a été écouté à l'oreille**, et la musique reste coupée par défaut (réglage de `MusicConfig`).
+- **Retouche 1** : pastille de niveau remontée de 6 px, elle ne touche plus « Vitesse » ni « Ajouter » ; la liste commence 6 px plus haut pour ne pas la couper.
+- **Retouche 2** : la **flèche est revenue en icône** dans le bandeau (« Assemblage · Ajouter -> Niv 1 ») ; le titre rétrécit s'il est trop long.
+- **Commandes** : feuille qui monte en 0,22 s, voile qui ferme au toucher, croix rouge, cartes avec les **8 portraits**, réplique, encadré pièces + gain + Points Pro, Refuser, Accepter (gris « Complet » si plus de place), barre et « En cours · 16 / 40 » qui avancent sans reconstruire la liste. `clientCount` passe à 8. Les portraits ont leurs coins arrondis par un masque, dont le bord est légèrement crénelé ; à reprendre si ça se voit sur téléphone.
+- **Bandeau sous le HUD** : une ligne par commande en cours (client, pièces, barre), un toucher ouvre Commandes.
+- **Livraison** : message « Commande livrée ! » juste au-dessus du tiroir (2 au plus), puces +$ et +Pro vers les pastilles, confettis au-dessus du poste : **dernier point d'U2d fait, sauf les ombres de contact (UW-1)**. Les messages et les puces de U3d existent donc déjà ; U3d n'aura plus qu'à les brancher (poste débloqué, ×2, Turbo).
+- **Réputation** : 7 cartes (icône, nom, effet, niveau, prix en étoiles, gris si insuffisant, « MAX »). **Réglages** : sons, moins d'effets, effacer en deux touches, version + total gagné. **Bon retour** : carte crème, gain en gros, Collecter avec puce ; il s'ouvre seul au lancement et au retour de pause.
+- **Vérifié avec de vrais événements souris** : ouverture de Commandes et de Réputation, Accepter (offre remplacée, commande en cours), croix de fermeture, achat de Réputation (9 -> 7 points, revenu 6,5 -> 7,1/s), interrupteur Sons, Collecter, Effacer en deux touches (nouvelle partie, aucune erreur après rechargement de la scène). **Non cliqués en vrai** : Refuser, le voile pour fermer, l'interrupteur Moins d'effets, l'ouverture par le bandeau. Le « MAX » de Réputation n'a pas été vu à l'écran. **Bon retour au retour de pause** non testé (seulement au lancement).
+- **Pour les relectures : ma capture changeait le rendu.** Les plaques et les « +x » passaient au-dessus de l'interface, à cause de la capture et pas du jeu. `DevCapture` rend maintenant la scène et l'interface séparément puis les superpose : **toutes les captures U3c sont fidèles à l'ordre du jeu**, pas celles d'avant.
+- **Nettoyage** : `SettingsPanel` et `OfflineWelcomeScreen` (anciens écrans) supprimés, `AudioBuilder` réduit à la config et aux outils d'écoute. La feuille suit la hauteur de l'écran si elle change.
+- **Mesures** : éditeur, Play, 3 postes, HUD, tiroir, sans fenêtre ouverte : **180 batches, 24 setPass**. **Pas mesuré** avec 5 postes ni avec une fenêtre ouverte (les portraits masqués en ajoutent). **Allocations toujours non mesurées.**
+- **Limites vues** : en paysage dans l'éditeur, le tiroir recouvre le bouton Réputation (le jeu est prévu en portrait ; le format large n'est pas traité). Le titre « Livre les pièces demandées… » remplit presque toute la largeur en 390 ; il n'a pas été vérifié en 320x568, comme le reste des fenêtres.
+
+**Questions**
+1. Musique : on la met en marche par défaut, ou elle reste coupée ? Il n'y a pas d'interrupteur Musique dans Réglages (ta consigne dit « son » seulement).
+2. Mes questions restées ouvertes : arrondi des prix, son dédié au Turbo, et les deux écarts à ta relecture d'U3a (sens du dégradé du tiroir, « +0,7 » sans « /s »).
+
+**Prochaine étape : U3d** (main de tutoriel sur le bouton conseillé pendant les 12 premiers achats, toasts restants, puces).
+
 **U3b, complément après lecture de ta relecture d'U3a (elle est arrivée pendant mon travail) : FAIT. Compilation 0/0, tests 165/165, test de fumée OK. Capture demandée : `captures/U3b-mode-max-3-postes-390x844.png` (3 postes, mode MAX, turbo actif).**
 - **Turbo actif** : le temps est maintenant dans une **petite pastille sombre en bas du bouton**, la flamme reste visible, en actif comme en recharge.
 - **Zones tactiles** : j'avais oublié cette règle. Sélecteur ×1/×10/MAX : 78 -> **124 unités de haut** (dessin inchangé, zone élargie). Engrenage : 116 -> **127**. Le reste du tiroir était déjà au-dessus de 122.

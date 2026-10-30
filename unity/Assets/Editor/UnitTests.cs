@@ -278,6 +278,15 @@ public static class UnitTests
         vg.Stations[4].speed = 1000; vg.Recalc();
         Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
 
+        // textes des fenêtres : rien ne manque dans Loc
+        var missing = new System.Collections.Generic.List<string>();
+        for (int c = 0; c < cfg.clientCount; c++) if (Loc.T("client." + c + ".name").StartsWith("client.")) missing.Add("client " + c);
+        for (int c = 0; c < cfg.sayCount; c++) if (Loc.T("order.say." + c).StartsWith("order.")) missing.Add("réplique " + c);
+        foreach (var st in cfg.stations) if (Loc.T("items." + st.id).StartsWith("items.")) missing.Add("pièces " + st.id);
+        foreach (var node in cfg.reputation) if (Loc.T("repnode." + node.id + ".name").StartsWith("repnode.") || Loc.T("repnode." + node.id + ".desc").StartsWith("repnode.")) missing.Add("réputation " + node.id);
+        Eq("", string.Join(", ", missing), "textes des fenêtres");
+        Eq("8", cfg.clientCount.ToString(), "8 clients, 8 portraits");
+
         // états des lignes du tiroir
         var rg = new IdleGame(cfg, 6, 0);
         Eq("Open Next Far Far Far", IdleStationRow.StateOf(rg, 0) + " " + IdleStationRow.StateOf(rg, 1) + " " + IdleStationRow.StateOf(rg, 2) + " " + IdleStationRow.StateOf(rg, 3) + " " + IdleStationRow.StateOf(rg, 4), "lignes au départ");

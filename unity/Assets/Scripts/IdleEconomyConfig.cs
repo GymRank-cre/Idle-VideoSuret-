@@ -93,7 +93,7 @@ public class IdleEconomyConfig : ScriptableObject
     public int proBase = 1;
     public int proFromStation = 2;                     // +1 Point Pro à partir de ce poste
     public int proBigQuantity = 100;                   // +1 Point Pro pour 100 pièces ou plus
-    [Min(1)] public int clientCount = 6;               // clients différents (clés Loc client.N.name)
+    [Min(1)] public int clientCount = 8;               // clients différents (clés Loc client.N.name)
     [Min(1)] public int sayCount = 6;                  // répliques différentes (clés Loc order.say.N)
 
     [Header("Animation des machines")]

@@ -33,6 +33,12 @@ public class IdleBuyButton : MonoBehaviour
         priceText.text = NumberFormat.Short(price);
     }
 
+    public void SetPriceText(string text)
+    {
+        shownPrice = -1;
+        priceText.text = text;
+    }
+
     public void SetLabel(string text) { labelText.text = text; }
     public void SetDelta(string text) { deltaText.text = text; }
     public void SetLevel(string text) { levelText.text = text; }
