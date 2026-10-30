@@ -33,6 +33,7 @@ public static class IdleSceneBuilder
         BuildBelts(world);
         BuildPlates(world);
         BuildCars(world);
+        IdleHudBuilder.Build();
         EditorSceneManager.SaveScene(scene, ScenePath);
         WebGLBuilder.EnsureSceneInBuildSettings();
         AssetDatabase.SaveAssets();
@@ -234,7 +235,13 @@ public static class IdleSceneBuilder
         so.FindProperty("config").objectReferenceValue = AssetDatabase.LoadAssetAtPath<FeedbackConfig>("Assets/Prototype/FeedbackConfig.asset");
         so.FindProperty("floatingTextPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_FloatingText.prefab");
         so.FindProperty("burstPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_Burst.prefab");
+        so.FindProperty("confettiMaterial").objectReferenceValue = ConfettiMaterial();
         so.ApplyModifiedPropertiesWithoutUndo();
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_FloatingText.prefab");
+        var textSo = new SerializedObject(prefab.GetComponent<FloatingText>());
+        textSo.FindProperty("outlinedFont").objectReferenceValue = FloatFontMaterial(UiTheme.Font);
+        textSo.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(prefab);
         foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
         {
             var vso = new SerializedObject(view);
@@ -467,6 +474,29 @@ public static class IdleSceneBuilder
         m.SetColor("_OutlineColor", UiTheme.Ink);
         m.SetFloat("_OutlineWidth", 3f);
         m.renderQueue = 3540;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    // Confettis : rectangles opaques, la couleur vient de chaque particule.
+    static Material ConfettiMaterial()
+    {
+        const string path = "Assets/Prototype/Materials/Idle_Confetti.mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")); AssetDatabase.CreateAsset(m, path); }
+        return m;
+    }
+
+    // Police des « +x » : contour plus épais que sur les plaques (texte plus petit à l'écran, ~12 % du corps).
+    static Material FloatFontMaterial(Font font)
+    {
+        const string path = "Assets/Prototype/Materials/Idle_FloatFont.mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/OverlayText")); AssetDatabase.CreateAsset(m, path); }
+        m.mainTexture = font.material.mainTexture;
+        m.SetColor("_OutlineColor", UiTheme.Ink);
+        m.SetFloat("_OutlineWidth", 5f);
+        m.renderQueue = 3545;
         EditorUtility.SetDirty(m);
         return m;
     }

@@ -21,7 +21,7 @@ public class IdleStationView : MonoBehaviour
     [SerializeField] Color lockFarColor = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
     [SerializeField, Min(0.1f)] float appearSpeed = 2.2f;
     [SerializeField] FeedbackSpawner feedback;      // textes « +x » et confettis (pools)
-    [SerializeField] float floatHeight = 2.6f;      // hauteur de départ du « +x » au-dessus du poste
+    [SerializeField] float floatHeight = 2.7f;      // hauteur de départ du « +x » au-dessus du poste
     [SerializeField, Min(0.1f)] float squashDecay = 2.4f;   // le « squash » d'un achat s'éteint en ~0,4 s
     [SerializeField] float squashAmount = 0.12f;
 
@@ -92,7 +92,7 @@ public class IdleStationView : MonoBehaviour
         float before = phase;
         phase += dt * game.VisualFrequency(station);
         if (feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
-            feedback.Message(transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Short((long)game.CycleGain(station)));
+            feedback.Message(transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
         if (bump > 0f) bump = Mathf.Max(0f, bump - dt * squashDecay);
         if (appear < 1f) appear = Mathf.Min(1f, appear + dt * appearSpeed);
         float scale = appear < 1f ? EaseOutBack(appear) : 1f;

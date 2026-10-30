@@ -239,7 +239,7 @@ public static class IdleMachineBuilder
         so.FindProperty("fore").objectReferenceValue = fore;
         so.FindProperty("elbowJoint").objectReferenceValue = elbow;
         so.FindProperty("handJoint").objectReferenceValue = hand;
-        so.FindProperty("camera").objectReferenceValue = camera.gameObject;
+        so.FindProperty("product").objectReferenceValue = camera.gameObject;
         so.FindProperty("screen").objectReferenceValue = screen.GetComponent<Renderer>();
         so.FindProperty("screenA").objectReferenceValue = screenA;
         so.FindProperty("screenB").objectReferenceValue = screenB;

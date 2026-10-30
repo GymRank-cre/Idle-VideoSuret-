@@ -9,6 +9,11 @@ public class FeedbackConfig : ScriptableObject
     [SerializeField, Min(0f)] float floatHeight = 1.3f;      // mètres montés pendant la durée
     [SerializeField] Color floatColor = new Color(0.55f, 1f, 0.45f);
 
+    [Header("Gain d'un poste (+x)")]
+    [SerializeField, Min(0.1f)] float messageDuration = 1.1f;
+    [SerializeField, Min(0f)] float messageRise = 1.1f;
+    [SerializeField] Color messageColor = new Color32(0x8C, 0xFF, 0x9E, 0xFF);
+
     [Header("Éclats de particules")]
     [SerializeField, Min(1)] int burstCount = 10;
     [SerializeField, Min(0.1f)] float burstLifetime = 0.5f;
@@ -24,6 +29,9 @@ public class FeedbackConfig : ScriptableObject
     public float FloatDuration => floatDuration;
     public float FloatHeight => floatHeight;
     public Color FloatColor => floatColor;
+    public float MessageDuration => messageDuration;
+    public float MessageRise => messageRise;
+    public Color MessageColor => messageColor;
     public int BurstCount => burstCount;
     public float BurstLifetime => burstLifetime;
     public float BurstSpeed => burstSpeed;

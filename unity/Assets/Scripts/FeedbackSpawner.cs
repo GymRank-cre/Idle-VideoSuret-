@@ -8,17 +8,25 @@ public class FeedbackSpawner : MonoBehaviour
     struct ActiveBurst
     {
         public GameObject go;
+        public ObjectPool pool;
         public float releaseAt;
     }
 
     [SerializeField] FeedbackConfig config;
     [SerializeField] GameObject floatingTextPrefab;
     [SerializeField] GameObject burstPrefab;
+    [SerializeField] Material confettiMaterial;   // rectangles pleins (les éclats, eux, sont des points ronds doux)
 
     const float MergeWindow = 0.25f;
+    static readonly Color[] ConfettiColors =
+    {
+        new Color(1f, 0.85f, 0.2f), new Color(1f, 0.55f, 0.2f), new Color(0.35f, 0.9f, 0.4f),
+        new Color(0.3f, 0.65f, 1f), new Color(1f, 0.3f, 0.3f), Color.white
+    };
 
     ObjectPool textPool;
     ObjectPool burstPool;
+    ObjectPool confettiPool;   // même prefab, réglé en confettis à chaque tir (taille constante, fondu à la fin)
     FloatingText currentText;
     float lastTextTime;
     readonly List<ActiveBurst> bursts = new List<ActiveBurst>();
@@ -27,6 +35,7 @@ public class FeedbackSpawner : MonoBehaviour
     {
         textPool = new ObjectPool(floatingTextPrefab, new GameObject("FloatingTexts").transform);
         burstPool = new ObjectPool(burstPrefab, new GameObject("Bursts").transform);
+        confettiPool = new ObjectPool(burstPrefab, new GameObject("Confetti").transform);
     }
 
     // Une caisse arrive au poste.
@@ -64,7 +73,7 @@ public class FeedbackSpawner : MonoBehaviour
     public void Message(Vector3 position, string text)
     {
         GameObject go = textPool.Get(position, Quaternion.identity);
-        go.GetComponent<FloatingText>().PlayText(text, position, config.FloatColor, config.FloatDuration * 1.6f, config.FloatHeight, textPool.Release);
+        go.GetComponent<FloatingText>().PlayText(text, position, config.MessageColor, config.MessageDuration, config.MessageRise, textPool.Release);
     }
 
     // Étincelles à une position (achat, apparition).
@@ -76,36 +85,68 @@ public class FeedbackSpawner : MonoBehaviour
     // Confettis de déblocage : plusieurs éclats colorés plus gros et plus longs.
     public void Confetti(Vector3 position)
     {
-        Color[] palette = { new Color(1f, 0.85f, 0.2f), new Color(0.3f, 0.9f, 1f), new Color(0.5f, 1f, 0.5f), new Color(1f, 0.55f, 0.2f) };
-        for (int i = 0; i < palette.Length; i++)
-            Burst(position + Vector3.up * 0.6f, palette[i], config.BurstCount * 2, config.BurstSpeed * 1.8f, 1.4f);
+        // 6 couleurs x 10 = 60 particules, 1,4 s : lancées vers le haut, retombent (gravité) en tournant
+        for (int i = 0; i < ConfettiColors.Length; i++)
+            Burst(position + Vector3.up * 0.6f, ConfettiColors[i], 10, 6.5f, 1.6f, 1.4f, true);
     }
 
     // Petit nuage de poussière sous les pieds en courant.
     public void Dust(Vector3 position)
     {
-        Burst(position + Vector3.up * 0.05f, new Color(0.8f, 0.75f, 0.65f, 0.7f), 3, 0.8f, 0.7f);
+        Burst(position + Vector3.up * 0.05f, new Color(0.8f, 0.75f, 0.65f, 0.7f), 3, 0.8f, 0.7f, config.BurstLifetime, false);
     }
 
     void Burst(Vector3 position, Color color)
     {
-        Burst(position, color, config.BurstCount, config.BurstSpeed, 1f);
+        Burst(position, color, config.BurstCount, config.BurstSpeed, 1f, config.BurstLifetime, false);
     }
 
-    void Burst(Vector3 position, Color color, int count, float speed, float sizeScale)
+    void Burst(Vector3 position, Color color, int count, float speed, float sizeScale, float lifetime, bool confetti)
     {
-        GameObject go = burstPool.Get(position, Quaternion.identity);
+        ObjectPool pool = confetti ? confettiPool : burstPool;
+        GameObject go = pool.Get(position, Quaternion.identity);
         var ps = go.GetComponent<ParticleSystem>();
 
         var main = ps.main;
         main.startColor = color;
-        main.startLifetime = config.BurstLifetime;
-        main.startSpeed = speed;
-        main.startSize = new ParticleSystem.MinMaxCurve(config.BurstSize * 0.7f * sizeScale, config.BurstSize * 1.2f * sizeScale);
+        main.startLifetime = lifetime;
+        main.gravityModifier = confetti ? 0.7f : 0f;
+        main.startRotation = confetti ? new ParticleSystem.MinMaxCurve(0f, 6.28f) : new ParticleSystem.MinMaxCurve(0f);
+        var rot = ps.rotationOverLifetime;
+        rot.enabled = confetti;
+        if (confetti) rot.z = new ParticleSystem.MinMaxCurve(-6f, 6f);
+        if (confetti)
+        {
+            var size = ps.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(0.75f, 1f), new Keyframe(1f, 0.3f)));
+            var fade = ps.colorOverLifetime;
+            fade.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                      new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 0.7f), new GradientAlphaKey(0f, 1f) });
+            fade.color = g;
+        }
+        var shape = ps.shape;
+        shape.angle = confetti ? 40f : 25f;
+        float small = config.BurstSize * 0.7f * sizeScale, large = config.BurstSize * 1.2f * sizeScale;
+        if (confetti)
+        {
+            main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.55f, speed);
+            main.startSize3D = true;
+            main.startSizeX = new ParticleSystem.MinMaxCurve(small, large);
+            main.startSizeY = new ParticleSystem.MinMaxCurve(small * 0.6f, large * 0.6f);
+            ps.GetComponent<ParticleSystemRenderer>().sharedMaterial = confettiMaterial;
+        }
+        else
+        {
+            main.startSpeed = speed;
+            main.startSize = new ParticleSystem.MinMaxCurve(small, large);
+        }
 
         ps.Clear();
         ps.Emit(count);
-        bursts.Add(new ActiveBurst { go = go, releaseAt = Time.time + config.BurstLifetime + 0.2f });
+        bursts.Add(new ActiveBurst { go = go, pool = pool, releaseAt = Time.time + lifetime + 0.2f });
     }
 
     void Update()
@@ -113,7 +154,7 @@ public class FeedbackSpawner : MonoBehaviour
         for (int i = bursts.Count - 1; i >= 0; i--)
         {
             if (Time.time < bursts[i].releaseAt) continue;
-            burstPool.Release(bursts[i].go);
+            bursts[i].pool.Release(bursts[i].go);
             bursts.RemoveAt(i);
         }
     }

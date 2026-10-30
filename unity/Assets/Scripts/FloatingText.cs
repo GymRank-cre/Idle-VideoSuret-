@@ -9,6 +9,11 @@ public class FloatingText : MonoBehaviour
     [SerializeField] TextMesh shadow; // contour sombre
     [SerializeField] Transform icon;  // billet à droite du nombre (caché pour un message libre)
 
+    [SerializeField] float messageScale = 0.6f;   // « +x » des postes : 40 % plus petits que les « +100 » de billets
+    [SerializeField] Material outlinedFont;       // contour dessiné par le shader, par-dessus le décor : remplace l'ombre (un seul maillage)
+    [SerializeField] float opaqueTime = 0.6f;
+
+    float baseScale = 1f;
     string custom; // texte libre (« +5 % vitesse ») ; null = « +valeur »
     Vector3 start;
     Color color;
@@ -20,6 +25,7 @@ public class FloatingText : MonoBehaviour
     {
         Play(0, position, textColor, lifetime, rise, releaseToPool);
         custom = text;
+        baseScale = messageScale;
         SetText();
     }
 
@@ -27,6 +33,7 @@ public class FloatingText : MonoBehaviour
     {
         total = value;
         custom = null;
+        baseScale = 1f;
         SetText();
         start = position;
         color = textColor;
@@ -43,6 +50,13 @@ public class FloatingText : MonoBehaviour
         total += value;
         SetText();
         elapsed = Mathf.Min(elapsed, duration * 0.05f);
+    }
+
+    void Awake()
+    {
+        if (outlinedFont == null) return;
+        main.GetComponent<MeshRenderer>().sharedMaterial = outlinedFont;
+        shadow.gameObject.SetActive(false);
     }
 
     void SetText()
@@ -77,9 +91,10 @@ public class FloatingText : MonoBehaviour
         transform.position = start + Vector3.up * (height * rise);
 
         float pop = 1f + 0.35f * Mathf.Clamp01(1f - k * 6f); // petit "pop" au début
-        transform.localScale = Vector3.one * pop;
+        transform.localScale = Vector3.one * (pop * baseScale);
 
-        float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.5f, 1f, k)); // s'efface sur la 2e moitié
+        float fadeStart = Mathf.Clamp01(opaqueTime / duration);   // opaque au début, puis s'efface
+        float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(fadeStart, 1f, k));
         main.color = new Color(color.r, color.g, color.b, alpha);
         shadow.color = new Color(0.05f, 0.07f, 0.1f, alpha);
     }

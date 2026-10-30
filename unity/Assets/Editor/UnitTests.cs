@@ -20,6 +20,22 @@ public static class UnitTests
         }
 
         // NumberFormat.Short
+        Eq("0/s", NumberFormat.Rate(0), "revenu nul");
+        Eq("0,6/s", NumberFormat.Rate(0.625), "revenu de départ");
+        Eq("6,1/s", NumberFormat.Rate(6.12), "revenu sous 10 : une décimale");
+        Eq("10/s", NumberFormat.Rate(9.96), "arrondi qui passe à 10");
+        Eq("100/s", NumberFormat.Rate(99.6), "entier arrondi");
+        Eq("1,2K/s", NumberFormat.Rate(1234), "revenu abrégé");
+        Eq("12 s", NumberFormat.Seconds(11.2), "turbo : secondes arrondies au-dessus");
+        Eq("60 s", NumberFormat.Wait(60), "recharge : secondes jusqu'à 60");
+        Eq("3 min", NumberFormat.Wait(121), "recharge : minutes au-delà");
+        Eq("0", NumberFormat.Gain(0), "gain nul");
+        Eq("0,1", NumberFormat.Gain(0.04), "gain minuscule : jamais 0");
+        Eq("1", NumberFormat.Gain(1), "gain 1");
+        Eq("1,7", NumberFormat.Gain(1.74), "gain 1,7");
+        Eq("9,9", NumberFormat.Gain(9.99), "gain sous 10 tronqué");
+        Eq("12", NumberFormat.Gain(12.8), "gain >= 10 : entier");
+        Eq("1,7K", NumberFormat.Gain(1750), "gain en K");
         Eq("0", NumberFormat.Short(0), "0");
         Eq("7", NumberFormat.Short(7), "7");
         Eq("999", NumberFormat.Short(999), "999");

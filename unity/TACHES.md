@@ -116,6 +116,25 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**U3a — HUD et colonne de boutons, plus les 3 défauts de la relecture U2d : FAIT (sans build). Compilation 0/0, tests 155/155 (16 nouveaux), test de fumée OK. Captures : `captures/U3a-hud-390x844.png`, `U3a-turbo-actif-390x844.png`, `U3a-turbo-recharge-390x844.png`, `U3a-petit-ecran-320x568.png`, `U2d-effets-390x844.png`, `U2d-confettis-390x844.png` (refaites).**
+- **HUD** (`IdleHud` pour l'affichage, `IdleHudBuilder` pour la construction, Canvas + zone sûre) : pastille d'argent avec billet, pastille de revenu/s (`NumberFormat.Rate`, port de `fmtRate`), pastille Points Pro cachée jusqu'à la 1re commande, engrenage, colonne Commandes / Réputation / Turbo, badges rouges (nombre d'offres, « ! » si une Réputation est abordable). Mesures reprises du web (grille 390 de large) ; tient en 320x568.
+- **Images** : icônes et faces des boutons **rendues depuis le SVG/CSS du web** par Chrome en PNG transparents (`Assets/Prototype/Textures/Ui`, 204 Ko, copiées dans le clone). Aucun paquet installé ni symbole Unicode.
+- **Turbo** : **vérifié par un vrai clic souris injecté** : le revenu passe de 6,5/s à 13/s, le bouton devient jaune et affiche « 60 s », puis voile sombre et « 4 min » en recharge. **Son provisoire** (`SfxId.Unlock`) : il n'existe pas de son turbo.
+- **Commandes, Réputation, engrenage** : s'enfoncent et font le clic, **mais n'ouvrent encore rien** (fenêtres prévues en U3c).
+- **Défaut 1 (« +0 »)** : `NumberFormat.Gain` : une décimale sous 10, jamais 0 si le gain est positif. Tests ajoutés.
+- **Défaut 2 (« +x »)** : 40 % plus petits, menthe `#8CFF9E` opaque 0,6 s, 1,1 m en 1,1 s (réglages dans `FeedbackConfig`), **contour sombre dessiné par le shader `Idle/OverlayText`** (1 maillage par texte, épaisseur 5 texels). **Écart à ta consigne : départ à 2,7 m au lieu de 3,0 m**, car à 3,0 m le « +x » de la Réception finissait contre la pastille d'argent. Il passe au-dessus de son étiquette.
+- **Défaut 3 (confettis)** : 60 rectangles (6 couleurs x 10), 1,4 s, lancés vers le haut, gravité légère, rotation, à l'ouverture d'un poste et au palier x2. Bien visibles sur la capture. Leur réglage alloue un peu de mémoire à chaque tir (événement rare, pas à chaque image).
+- **Correction d'un de mes comptes rendus** : j'ai annoncé « compilation 0/0 » sur les étapes précédentes alors qu'un avertissement existait et n'apparaissait qu'à la recompilation complète (`AssemblyMachine.camera` masque un membre hérité, CS0108). Corrigé : champ renommé `product`.
+- **U2d n'était pas complet, contrairement à ce que j'ai écrit.** Non faits : **ombres de contact** sous les machines, **plaque qui se « vide »** quand on la touche, **confettis à la livraison d'une commande**, **plafond de 22 « +x » à l'écran**. Je ne les ai pas ajoutés ici pour rester sur U3a.
+- **Mesures** : éditeur, Play, 4 postes ouverts, HUD compris : **193 batches, 23 setPass, 14 551 triangles** (encore au-dessus de 120 ; à refaire à 5 postes). **Allocations par image jamais mesurées** ; l'objectif « 0 allocation » n'est sûrement pas tenu : le HUD recrée ses textes 10 fois par seconde et chaque « +x » crée une chaîne.
+- **Limites vues** : sur les captures, un « +x » passe au-dessus de la pastille d'argent : c'est dû à la capture (Canvas rendu par la caméra) ; en jeu le Canvas est dessiné après la scène, mais je n'ai pas vérifié ce rendu-là. Un « +x » d'un poste de devant peut croiser l'étiquette d'un poste de derrière (« +287 » sur « Assemblage » en 320x568). En 320x568, le « +x » de la Réception sort par le haut de l'écran.
+
+**Questions**
+1. Où placer les 4 points manquants d'U2d ? Ma proposition : plafond de 22 et plaque qui se vide en U3b, confettis de livraison en U3c (avec la fenêtre Commandes), ombres de contact en UW-1. Sans réponse, je fais ainsi.
+2. Veux-tu un son dédié au turbo (une onde en dents de scie comme `sfx.turbo` du web) ? Sans réponse, je l'ajoute en UW-4.
+
+**Prochaine étape : U3b** (tiroir : bandeau Meilleur achat, modes ×1/×10/MAX, lignes).
+
 **U2d — Effets : FAIT, U2 TERMINÉ (sans build). Compilation 0/0, tests 139/139 (3 nouveaux), test de fumée OK. Captures : `captures/U2d-effets-390x844.png` (textes « +x » en l'air), `captures/U2d-confettis-390x844.png` (3 postes + ouverture).**
 - **Textes flottants « +x »** : à chaque cycle visuel d'un poste (fin de phase), un « +x » monte au-dessus de la machine (pool `FeedbackSpawner`/`FloatingText`). Le montant est `IdleGame.CycleGain` = revenu du poste / fréquence visuelle (turbo compris), donc gain par cycle x fréquence = revenu affiché (testé, y compris fréquence plafonnée et turbo).
 - **Squash à l'achat** : le poste s'écrase de 12 % en hauteur, s'élargit de 7 %, retour en ~0,4 s. **Confettis** : à l'ouverture d'un poste et à chaque palier x2. Tout est coupé par `MotionSettings.ReduceMotion`.

@@ -13,7 +13,7 @@ public class AssemblyMachine : MonoBehaviour, IMachineAnim
     [SerializeField] Vector2 reachDirection = new Vector2(0.2f, 0.79f);    // direction horizontale vers l'établi (X, Z)
     [SerializeField, Min(0.1f)] float upperLength = 1.2f;
     [SerializeField, Min(0.1f)] float foreLength = 0.95f;
-    [SerializeField] GameObject camera;         // la caméra blanche, visible de 45 % à 100 % du cycle
+    [SerializeField] GameObject product;        // la caméra blanche, visible de 45 % à 100 % du cycle
     [SerializeField] Renderer screen;
     [SerializeField] Material screenA;
     [SerializeField] Material screenB;
@@ -36,7 +36,7 @@ public class AssemblyMachine : MonoBehaviour, IMachineAnim
         handJoint.localPosition = hand;
 
         bool showCamera = phase > 0.45f;
-        if (camera.activeSelf != showCamera) camera.SetActive(showCamera);
+        if (product.activeSelf != showCamera) product.SetActive(showCamera);
         bool on = Mathf.FloorToInt(time * blinkRate) % 2 == 0;
         if (on != screenState) { screenState = on; screen.sharedMaterial = on ? screenA : screenB; }
     }
