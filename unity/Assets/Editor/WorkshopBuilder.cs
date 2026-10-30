@@ -25,7 +25,7 @@ public static class WorkshopBuilder
     public const float RightWallX = RoomRight;
 
     // Zone jouable : limites invisibles (centre du joueur).
-    const float PlayMinX = -7.2f, PlayMaxX = 8.2f, PlayMinZ = -5f, PlayMaxZ = 10.8f;
+    const float PlayMinX = -7.2f, PlayMaxX = 13.2f, PlayMinZ = -13.2f, PlayMaxZ = 10.8f; // 11d : étendu au quai et à la porte (avant : x <= 8,2, z >= -5)
 
     // ---- Palette (8 à 10 couleurs de base) ----
     static readonly Color Wood = new Color(0.80f, 0.62f, 0.40f);

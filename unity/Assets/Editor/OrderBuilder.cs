@@ -142,8 +142,12 @@ public static class OrderBuilder
         // petite camionnette posée sur la plaque : on comprend que c'est là que partent les colis
         Material vw = PrototypeSetup.MakeMaterial("VanWhite", new Color(0.94f, 0.95f, 0.97f));
         Material vb = PrototypeSetup.MakeMaterial("VanBlue", new Color32(0x1F, 0xA0, 0xFF, 0xFF));
-        RoundedBox.Make(dock.transform, "MiniVanBox", new Vector3(-0.15f, 0.2f, -0.35f), new Vector3(0.75f, 0.4f, 0.4f), 0.06f, vw);
-        RoundedBox.Make(dock.transform, "MiniVanCab", new Vector3(0.4f, 0.17f, -0.35f), new Vector3(0.34f, 0.3f, 0.4f), 0.06f, vb);
+        var mini = new GameObject("MiniVan").transform;
+        mini.SetParent(dock.transform, false);
+        mini.localPosition = new Vector3(0f, 0.04f, -0.55f);
+        mini.localRotation = Quaternion.Euler(0f, 90f, 0f);
+        mini.localScale = Vector3.one * 0.3f;
+        VanBody(mini);
 
         var sd = dock.AddComponent<ShippingDock>();
         var so = new SerializedObject(sd);
@@ -159,12 +163,9 @@ public static class OrderBuilder
         return dock;
     }
 
-    static Transform BuildVan(OrderBoard board, FeedbackSpawner feedback, CameraFollow cameraFollow)
+    // Corps de fourgon blanc arrondi à bande bleue, cabine, pare-brise et roues (camionnette livrée, garée, et mini-fourgon du quai).
+    public static void VanBody(Transform root)
     {
-        var root = new GameObject("DeliveryVan");
-        root.transform.position = VanAway;
-        root.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // le nez vers l'atelier (-x)
-
         Material white = PrototypeSetup.MakeMaterial("VanWhite", new Color(0.94f, 0.95f, 0.97f));
         Material blue = PrototypeSetup.MakeMaterial("VanBlue", new Color32(0x1F, 0xA0, 0xFF, 0xFF));
         Material glass = PrototypeSetup.MakeMaterial("VanGlass", new Color(0.2f, 0.3f, 0.4f));
@@ -184,6 +185,15 @@ public static class OrderBuilder
             wheel.transform.localScale = new Vector3(0.76f, 0.14f, 0.76f);
             wheel.GetComponent<Renderer>().sharedMaterial = tire;
         }
+    }
+
+    static Transform BuildVan(OrderBoard board, FeedbackSpawner feedback, CameraFollow cameraFollow)
+    {
+        var root = new GameObject("DeliveryVan");
+        root.transform.position = VanAway;
+        root.transform.rotation = Quaternion.Euler(0f, -90f, 0f); // le nez vers l'atelier (-x)
+
+        VanBody(root.transform);
 
         // bulle d'humeur au-dessus
         var bubble = new GameObject("Mood", typeof(SpriteRenderer), typeof(FaceCamera));

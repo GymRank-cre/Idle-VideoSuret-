@@ -185,7 +185,8 @@ public class ObjectiveGuide : MonoBehaviour
     {
         if (label == null || labelRoot == null) return;
         string text = null;
-        if (board != null && board.Unlocked && board.Offers.Count > 0 && !board.HasActive) text = Loc.T("guide.order");
+        if (board != null && board.HasActive) text = Loc.T("guide.deliver");   // une commande est en cours : la barre compacte affiche le détail
+        else if (board != null && board.Unlocked && board.Offers.Count > 0) text = Loc.T("guide.order");
         else if (machineUpgrades != null && advisor != null && !string.IsNullOrEmpty(advisor.Bottleneck)) // machine goulot abordable
         {
             string id = advisor.Bottleneck;

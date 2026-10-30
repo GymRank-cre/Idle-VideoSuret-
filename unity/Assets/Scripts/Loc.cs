@@ -27,6 +27,7 @@ public static class Loc
         { "title.play", "Jouer" },
         { "machine.level", "Niv {0}" },
         { "guide.order", "Une commande t'attend !" },
+        { "guide.deliver", "Apporte les colis au quai" },
         { "guide.upgrade", "Améliore : {0}" },
         { "rep.title", "RÉPUTATION" },
         { "rep.buy", "Acheter" },

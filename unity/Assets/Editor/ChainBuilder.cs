@@ -256,7 +256,20 @@ public static class ChainBuilder
         RoundedBox.Make(group, "Screen", new Vector3(0f, 1.45f, -0.78f), new Vector3(0.95f, 0.45f, 0.1f), 0.04f, dark);
         RoundedBox.Make(group, "Slot", new Vector3(-1.06f, 0.55f, 0f), new Vector3(0.12f, 0.4f, 0.75f), 0.04f, dark);   // entrée, côté tapis
         RoundedBox.Make(group, "Panel", new Vector3(0f, 0.65f, -0.76f), new Vector3(1.3f, 0.5f, 0.06f), 0.03f, steel); // trappe de service
-        RoundedBox.Make(group, "Hopper", new Vector3(0.45f, 1.9f, 0.1f), new Vector3(0.6f, 0.25f, 0.5f), 0.06f, steel);
+        Transform hopper = RoundedBox.Make(group, "Hopper", new Vector3(0.45f, 1.9f, 0.1f), new Vector3(0.6f, 0.25f, 0.5f), 0.06f, steel);
+        // détails de machine : jambes, tuyau vertical et coude, rouleaux côté tapis
+        foreach (Vector3 leg in new[] { new Vector3(-0.95f, 0.08f, -0.62f), new Vector3(0.95f, 0.08f, -0.62f), new Vector3(-0.95f, 0.08f, 0.62f), new Vector3(0.95f, 0.08f, 0.62f) })
+            RoundedBox.Make(group, "Leg", leg, new Vector3(0.18f, 0.16f, 0.18f), 0.04f, dark);
+        var pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        Object.DestroyImmediate(pipe.GetComponent<Collider>());
+        pipe.name = "Pipe";
+        pipe.transform.SetParent(group, false);
+        pipe.transform.localPosition = new Vector3(1.0f, 1.0f, 0.55f);
+        pipe.transform.localScale = new Vector3(0.12f, 0.95f, 0.12f);
+        pipe.GetComponent<Renderer>().sharedMaterial = steel;
+        RoundedBox.Make(group, "Elbow", new Vector3(0.85f, 1.95f, 0.55f), new Vector3(0.4f, 0.12f, 0.12f), 0.04f, steel);
+        for (int k = 0; k < 3; k++)
+            RoundedBox.Make(group, "Roller", new Vector3(-1.12f, 0.35f + k * 0.18f, -0.28f + k * 0.28f), new Vector3(0.1f, 0.1f, 0.45f), 0.03f, steel);
 
         Renderer lamp = MachineBuilder.MakeLampHead(group, new Vector3(-0.55f, 1.9f, 0.1f));
         lamp.transform.localScale = new Vector3(0.34f, 0.2f, 0.34f);
@@ -284,6 +297,7 @@ public static class ChainBuilder
         fxo.FindProperty("body").objectReferenceValue = group;
         fxo.FindProperty("lamp").objectReferenceValue = lamp.transform;
         fxo.FindProperty("sparkPoint").objectReferenceValue = lamp.transform;
+        fxo.FindProperty("piston").objectReferenceValue = hopper;
         fxo.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         fxo.ApplyModifiedPropertiesWithoutUndo();
 

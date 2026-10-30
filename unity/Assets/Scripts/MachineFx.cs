@@ -8,6 +8,7 @@ public class MachineFx : MonoBehaviour
     [SerializeField] Transform body;            // la partie qui vibre
     [SerializeField] Transform lamp;            // la lampe qui pulse
     [SerializeField] Transform sparkPoint;      // d'où partent les étincelles
+    [SerializeField] Transform piston;          // pièce qui monte et descend quand la machine travaille
     [SerializeField] FeedbackSpawner feedback;  // facultatif
     [SerializeField] float shakeAmount = 0.01f;
     [SerializeField] float shakeHz = 12f;
@@ -16,6 +17,7 @@ public class MachineFx : MonoBehaviour
     IMachineStatus status;
     Vector3 bodyRest;
     Vector3 lampRest;
+    Vector3 pistonRest;
     float sparkTimer;
 
     void Awake()
@@ -23,6 +25,7 @@ public class MachineFx : MonoBehaviour
         status = machine as IMachineStatus;
         if (body != null) bodyRest = body.localPosition;
         if (lamp != null) lampRest = lamp.localScale;
+        if (piston != null) pistonRest = piston.localPosition;
     }
 
     void Update()
@@ -36,6 +39,9 @@ public class MachineFx : MonoBehaviour
         }
         if (lamp != null)
             lamp.localScale = working ? lampRest * (1f + 0.18f * Mathf.Sin(Time.time * 9f)) : lampRest;
+
+        if (piston != null)
+            piston.localPosition = pistonRest + (working ? Vector3.up * (Mathf.Abs(Mathf.Sin(Time.time * 6f)) * 0.14f) : Vector3.zero);
 
         if (!working) { sparkTimer = 0f; return; }
         sparkTimer += Time.deltaTime;
