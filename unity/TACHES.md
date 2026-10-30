@@ -385,6 +385,15 @@ Les Points Pro sont gagnés par les commandes (11c). On les **dépense** dans un
 ### 11f (aperçu) — Deuxième usine « Chantiers chez les clients »
 Après 11e. Dalle/écran « ACHETER UNE USINE » (prix en $ **et** en Points Pro), nouvelle scène additive avec ses machines et son décor (voir `DESIGN.md`, monde 2), retour à l'usine 1 par un bouton ; détail à écrire par le cloud après la relecture de 11e.
 
+## Relecture cloud de 11c-bis : VALIDÉE (vérifiée dans le vrai navigateur : excellent réflexe du build de démonstration). 5 retouches à glisser dans 10b-1
+**Vu sur `11c-bis-bar-390x844-1.png` et `11c-bis-van-390x844-4.png`** : la consigne « Une commande t'attend ! / Améliore : Assemblage », la barre « Commande de Paul 0/1 » avec sa jauge jaune, les boutons orange à pastille, les dalles d'amélioration lisibles : le kit d'interface tient. Jeu de l'app Claude = build 11c-bis. Retouches :
+1. **L'icône du bouton « Commandes » est illisible** (ovale blanc rayé qui fait penser à une lanterne) : dessiner une **planchette** (rectangle arrondi blanc, pince orange en haut, 3 lignes orange, une coche verte) comme dans la maquette.
+2. **La pastille de stock se chevauche** : « 0/8 0/4 » s'affiche « 0/80/4 » sur la capture ; séparer par une flèche ou un espace de 0,2 m et une icône (caisse -> produit) et élargir encore la pastille.
+3. **Le quai est une énorme plaque noire dont le texte est coupé** (« QU… ») : même style que les autres dalles (plaque sombre arrondie, bordure jaune/noir, icône de camionnette, « QUAI » entier en blanc contouré), taille du texte adaptée (`PriceFit`).
+4. **La camionnette n'est pas visible** (déjà signalé) : **rapproche-la du quai et à l'intérieur de la zone visible** (par exemple garée juste à côté de la plaque, x ≈ 13, et non devant la porte à x = 15,4) ; le coup d'oeil de la caméra à l'acceptation doit la montrer **en entier avec sa bulle d'humeur** ; donne la capture. Sans camionnette visible le joueur ne comprend pas le principe des commandes.
+5. **La flèche jaune du guide recouvre « Niv 0 »** des dalles quand elles sont proches : décaler la flèche (au-dessus du centre de la cible, pas sur le texte) ou la faire plus petite.
+**Suite inchangée** : 10b-1 (décor et ambiance) -> 10b-2 (la vie et les détails) -> 11d -> 11e.
+
 ## PROTOCOLE DE NUIT — communication cloud <-> local (à suivre à la lettre ; Sébastien veut « aucun souci, il faut que vous communiquiez »)
 1. **Après chaque étape poussée** : `git pull --rebase`, relire `TACHES.md` (mes relectures et la suite), puis **enchaîner sans attendre** l'étape suivante de la file d'attente.
 2. **Voyant de vie** : à chaque poussée, et **au moins toutes les 45 minutes pendant un long travail**, écraser `unity/STATUT_LOCAL.md` (créer le fichier) avec : date et heure, étape en cours, état (`en cours` / `bloqué` / `terminé`), dernier numéro de build, prochaines actions, problème éventuel. Le cloud le lit à chaque contrôle ; un statut vieux de plus de 90 minutes sera signalé à Sébastien comme un silence.
