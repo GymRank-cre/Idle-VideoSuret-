@@ -14,6 +14,8 @@ public class IdleBestBar : MonoBehaviour
     [SerializeField] RectTransform waitFill;
     [SerializeField] IdleCameraRig rig;
 
+    float fittedWidth = -1f;
+
     public RectTransform BuyRect => (RectTransform)buyButton.transform;
 
     void Start()
@@ -28,9 +30,8 @@ public class IdleBestBar : MonoBehaviour
         IdleEconomy.Option goal;
         IdleEconomy.Option o = game.Advice(out found, out hasGoal, out goal);
         if (!found) return;
-        int where = o.kind == IdleEconomy.Kind.Hire ? IdleEconomy.SerreStation : o.station;
-        Vector3 at = o.kind == IdleEconomy.Kind.Slot ? IdleLayout.SlotCenter(o.station, game.Stations[o.station].slots) : IdleLayout.StationCenter(where);
-        if (!rig.IsOnScreen(at)) rig.FrameStation(where);   // on montre ce qu'on vient d'acheter
+        Vector2 pad;
+        if (IdleFraming.AdvisedPad(game, out pad) >= 0 && !rig.IsOnScreen(IdleLayout.ToWorld(pad))) rig.FrameDefault(false);   // on montre ce qu'on vient d'acheter
         IdleGame.PurchaseResult result = game.BuyAdvised();
         IdlePurchaseSound.Play(result, o.kind != IdleEconomy.Kind.Upgrade);
         if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(buyButton.transform.position, IdleEconomy.Ceil(o.cost));
@@ -38,6 +39,7 @@ public class IdleBestBar : MonoBehaviour
 
     public void Refresh(IdleGame game, IdleEconomy.Option o, bool found, bool hasGoal, IdleEconomy.Option goal)
     {
+        if (!Mathf.Approximately(fittedWidth, titleArea.rect.width)) FitTitle();
         if (!found)
         {
             SetTitle(Loc.T("drawer.best.none"), null);
@@ -85,8 +87,15 @@ public class IdleBestBar : MonoBehaviour
         bool arrow = level != null;
         titleArrow.SetActive(arrow);
         titleLevel.gameObject.SetActive(arrow);
+        FitTitle();
+    }
+
+    // Le titre rétrécit pour tenir à gauche du bouton ; il se remesure aussi si l'écran change de format.
+    void FitTitle()
+    {
         LayoutRebuilder.ForceRebuildLayoutImmediate(titleRow);
-        float scale = Mathf.Min(1f, titleArea.rect.width / Mathf.Max(1f, titleRow.rect.width));
+        fittedWidth = titleArea.rect.width;
+        float scale = Mathf.Min(1f, fittedWidth / Mathf.Max(1f, titleRow.rect.width));
         titleRow.localScale = new Vector3(scale, scale, 1f);
     }
 

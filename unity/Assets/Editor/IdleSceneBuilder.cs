@@ -518,7 +518,7 @@ public static class IdleSceneBuilder
             tops[bi] = top.ToObject("Top", belt, topMat).GetComponent<Renderer>();
 
             // caisses qui avancent (leur nombre dépend de la longueur ; IdleBeltView les déplace)
-            int count = Mathf.Clamp(Mathf.RoundToInt(acc / 0.5f), 3, 6);   // réserve : « Ajouter » en montre de plus en plus
+            int count = Mathf.Clamp(Mathf.RoundToInt(acc / 0.5f), 3, 4);   // réserve : « Ajouter » en montre de plus en plus
             float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
             var itemKit = new MeshKit();   // boîte + détail dans un maillage, le même pour toutes les caisses du tapis
             itemKit.SetPaint(itemHex[bi], 0.3f);
@@ -643,9 +643,11 @@ public static class IdleSceneBuilder
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = false;
 
+                GameObject tagRoot = null;
                 if (kind == IdleGame.PadKind.Unlock || kind == IdleGame.PadKind.Hire || kind == IdleGame.PadKind.Slot)
                 {
                     var tag = new GameObject("NewTag").transform;
+                    tagRoot = tag.gameObject;
                     tag.SetParent(visual, false);
                     tag.localPosition = PadPoint(9f, -9f, 0.56f);
                     tag.gameObject.AddComponent<FaceCamera>();
@@ -668,6 +670,7 @@ public static class IdleSceneBuilder
                 so.FindProperty("meshWaiting").objectReferenceValue = wait[k];
                 so.FindProperty("priceText").objectReferenceValue = price;
                 so.FindProperty("priceRoot").objectReferenceValue = priceRoot;
+                so.FindProperty("tagRoot").objectReferenceValue = tagRoot;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 views.Add(view);
             }

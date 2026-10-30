@@ -251,6 +251,20 @@ public static class IdleDockBuilder
         fill.rectTransform.anchorMax = new Vector2(0f, 1f);
         fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
 
+        // pastille posée sur la barre : le poste qui bloque la chaîne
+        Image pill = Rounded("Bottleneck", track.transform, UiTheme.Red, Px(7f));
+        pill.raycastTarget = false;
+        RectTransform pillRect = pill.rectTransform;
+        pillRect.anchorMin = pillRect.anchorMax = new Vector2(1f, 0.5f);
+        pillRect.pivot = new Vector2(1f, 0.5f);
+        pillRect.sizeDelta = new Vector2(Px(54f), Px(14f));
+        pillRect.anchoredPosition = Vector2.zero;
+        Text pillText = AddText(pillRect, "Text", Loc.T("drawer.bottleneck"), 10f, Color.white, TextAnchor.MiddleCenter, 1f);
+        pillText.rectTransform.anchorMin = Vector2.zero;
+        pillText.rectTransform.anchorMax = Vector2.one;
+        pillText.rectTransform.offsetMin = pillText.rectTransform.offsetMax = Vector2.zero;
+        pill.gameObject.SetActive(false);
+
         Text milestone = AddPlainText(open, "Milestone", "", 11.5f, HintBrown, TextAnchor.MiddleLeft);
         Between(milestone.rectTransform, Px(mid), Px(right), Px(57f), Px(14f));
 
@@ -281,6 +295,7 @@ public static class IdleDockBuilder
         so.FindProperty("nextRoot").objectReferenceValue = next.gameObject;
         so.FindProperty("farRoot").objectReferenceValue = far.gameObject;
         so.FindProperty("incomeText").objectReferenceValue = income;
+        so.FindProperty("bottleneckPill").objectReferenceValue = pill.gameObject;
         so.FindProperty("cycleFill").objectReferenceValue = fill.rectTransform;
         so.FindProperty("milestoneText").objectReferenceValue = milestone;
         so.FindProperty("speedButton").objectReferenceValue = speed;
@@ -320,7 +335,12 @@ public static class IdleDockBuilder
 
         LabelRow(visual, icon, label, 12.5f, Px(5f));
         Text delta = AddText(visual, "Delta", "", 12f, new Color32(0xE6, 0xFF, 0xE0, 0xFF), TextAnchor.MiddleCenter, 1.2f);
-        Between(delta.rectTransform, 0f, 0f, Px(20f), Px(14f));
+        Between(delta.rectTransform, Px(3f), Px(3f), Px(20f), Px(14f));
+        delta.horizontalOverflow = HorizontalWrapMode.Wrap;   // « attend Programmation » doit tenir sur le bouton
+        delta.verticalOverflow = VerticalWrapMode.Truncate;
+        delta.resizeTextForBestFit = true;
+        delta.resizeTextMinSize = Mathf.RoundToInt(Px(7f));
+        delta.resizeTextMaxSize = Mathf.RoundToInt(Px(12f));
         Text price = PriceRow(visual, 16f, Px(35f), Px(20f));
 
         // pastille de niveau, à cheval sur le coin haut gauche ; sa largeur suit le texte

@@ -96,6 +96,7 @@ public static class IdleChainBuilder
         Objects(so.FindProperty("stocks"), stocks);
         Objects(so.FindProperty("stockPiles"), piles);
         Objects(so.FindProperty("stockTexts"), texts);
+        Objects(so.FindProperty("stockLabels"), System.Array.ConvertAll(texts, t => t.transform.parent.gameObject));
         Objects(so.FindProperty("carts"), carts);
         Objects(so.FindProperty("cartLoads"), cartLoads);
         Vectors(so.FindProperty("cartFrom"), from);
@@ -257,9 +258,9 @@ public static class IdleChainBuilder
         holder.SetParent(parent, false);
         holder.position = IdleLayout.ToWorld(web, height);
         var pill = new MeshKit();
-        pill.Pill(1.44f, 0.34f, 0.01f);
+        pill.Pill(IdleLabelPlacement.StockWidth, 0.34f, 0.01f);
         pill.ToObject("Pill", holder, IdleMaterials.Overlay("LabelPill", "#1E2A38", 3541));
-        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", "", UiTheme.Font, 80, 0.035f, Vector3.zero, Color.white, true);
+        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", "", UiTheme.Font, 80, IdleLabelPlacement.StockCharacterSize, Vector3.zero, Color.white, true);
         text.GetComponent<MeshRenderer>().sharedMaterial = IdleSceneBuilder.LabelFontMaterial(UiTheme.Font);
         return text;
     }

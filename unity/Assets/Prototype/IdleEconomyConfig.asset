@@ -19,36 +19,42 @@ MonoBehaviour:
     value: 1
     unlockPayback: 0
     slots: 1
+    slotFactor: 1
   - id: assem
     nameKey: station.assem
     cycle: 3
     value: 12
     unlockPayback: 0
     slots: 3
+    slotFactor: 1
   - id: prog
     nameKey: station.prog
     cycle: 3.75
     value: 144
     unlockPayback: 2500
     slots: 3
+    slotFactor: 2
   - id: test
     nameKey: station.test
     cycle: 4.5
     value: 1728
     unlockPayback: 5000
     slots: 3
+    slotFactor: 4
   - id: pack
     nameKey: station.pack
     cycle: 6
     value: 20736
     unlockPayback: 15000
     slots: 3
+    slotFactor: 8
   - id: ship
     nameKey: station.ship
     cycle: 8
     value: 248832
     unlockPayback: 40000
     slots: 1
+    slotFactor: 1
   hirePrices:
   - 25
   - 30
@@ -64,7 +70,6 @@ MonoBehaviour:
   slotPayback:
   - 200000
   - 1500000
-  slotStep: 2
   speedStep: 0.12
   growthSpeed: 1.19
   growthAdd: 1.26

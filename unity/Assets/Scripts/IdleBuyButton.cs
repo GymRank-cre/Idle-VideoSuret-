@@ -21,6 +21,8 @@ public class IdleBuyButton : MonoBehaviour
     static readonly Color YellowTop = new Color32(0xFF, 0xE2, 0x7A, 0xFF), Yellow = new Color32(0xFF, 0xC4, 0x00, 0xFF), YellowEdge = new Color32(0xD9, 0x9A, 0x00, 0xFF);
     static readonly Color PaleTop = new Color32(0xFF, 0xE9, 0xA0, 0xFF), Pale = new Color32(0xF3, 0xCB, 0x4A, 0xFF), PaleEdge = new Color32(0xBF, 0xA0, 0x2B, 0xFF);
 
+    static readonly Color DeltaGain = new Color32(0xE6, 0xFF, 0xE0, 0xFF), DeltaMuted = new Color32(0xE8, 0xEC, 0xF0, 0xFF);
+
     long shownPrice = -1;
     bool pulsing;
 
@@ -40,7 +42,12 @@ public class IdleBuyButton : MonoBehaviour
     }
 
     public void SetLabel(string text) { labelText.text = text; }
-    public void SetDelta(string text) { deltaText.text = text; }
+    // `muted` : ce n'est pas un gain, le texte explique pourquoi.
+    public void SetDelta(string text, bool muted = false)
+    {
+        deltaText.text = text;
+        deltaText.color = muted ? DeltaMuted : DeltaGain;
+    }
     public void SetLevel(string text) { levelText.text = text; }
 
     // Conseillé et abordable : jaune qui bat ; conseillé mais trop cher : jaune pâle ; sinon vert ou gris.

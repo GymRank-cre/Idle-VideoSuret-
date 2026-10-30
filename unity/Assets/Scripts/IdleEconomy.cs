@@ -205,7 +205,7 @@ public class IdleEconomy
     public double SlotCost(int i, int owned, Globals g)
     {
         IdleEconomyConfig.Station last = config.stations[config.stations.Length - 1];
-        return last.value / last.cycle * config.slotPayback[owned - 1] * Math.Pow(config.slotStep, i - 1) * g.cost;
+        return last.value / last.cycle * config.slotPayback[owned - 1] * config.stations[i].slotFactor * g.cost;
     }
 
     public StationLevels With(StationLevels st, bool speedAxis, int k)

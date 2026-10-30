@@ -23,6 +23,7 @@ public class IdleChainView : MonoBehaviour
     [SerializeField] GameObject[] stocks;              // un par poste à partir de l'Assemblage : palette, tas et étiquette
     [SerializeField] MeshFilter[] stockPiles;
     [SerializeField] TextMesh[] stockTexts;
+    [SerializeField] GameObject[] stockLabels;
     [SerializeField, Min(0.02f)] float labelEvery = 0.2f;   // le chiffre change sans arrêt : on ne réécrit le texte que de temps en temps
     [SerializeField] Transform[] carts;                // un par poste qui en a un après lui, à partir de l'Assemblage
     [SerializeField] GameObject[] cartLoads;
@@ -131,7 +132,9 @@ public class IdleChainView : MonoBehaviour
         if (!open) return;
         double amount = game.Chain.Stock[station], size = game.Chain.StockSize(game.Rate(station));
         ShowPile(stockMeshes[index], stockFull[index], stockBaseIndices, amount / size, ref stockShown[index]);
-        if (!labels) return;
+        bool near = !IdleCameraRig.Overview;
+        if (stockLabels[index].activeSelf != near) stockLabels[index].SetActive(near);
+        if (!labels || !near) return;
         int number = (int)amount, total = (int)size;
         if (number == stockNumber[index] && total == stockTotal[index]) return;
         stockNumber[index] = number; stockTotal[index] = total;

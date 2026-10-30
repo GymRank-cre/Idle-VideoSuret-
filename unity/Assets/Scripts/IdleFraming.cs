@@ -6,6 +6,8 @@ public static class IdleFraming
 {
     public const float MinZoom = 0.55f, MaxZoom = 3f, DefaultMaxZoom = 2.6f, StationZoom = 2f;   // 0,55 : toute l'usine ; 1 : une rangée de machines
     public const float EdgeShare = 12f / 390f;   // au cadrage par défaut, rien à moins de 12 px du bord d'un écran de 390
+    public const float OverviewZoom = 0.8f;      // en dessous, les prix ne se lisent plus
+    public const float FreeRight = 0.82f;        // au-delà, les boutons de droite recouvrent le monde
     const float MinA = -13.5f, MaxA = 10f, MinB = 2.2f, MaxB = 25f;
     const float Margin = 1.8f, DownShift = 0.5f, StationDownShift = 1.3f;
     const float WidthShare = 0.94f, HeightShare = 0.56f, MachineHeight = 1f;
@@ -41,7 +43,21 @@ public static class IdleFraming
         return new View { focus = new Vector2(cx - cy, cx + cy + StationDownShift), zoom = Mathf.Max(currentZoom, StationZoom), viewportX = 0.5f };
     }
 
-    // Ce qu'on regarde : la dernière rangée ouverte, ses machines, son stock, ses plaques et la plaque de ce qui vient après ; au début, la serre et la première machine.
+    // La plaque du conseil et son poste ; -1 tant que l'équipe n'est pas complète.
+    public static int AdvisedPad(IdleGame game, out Vector2 pad)
+    {
+        pad = Vector2.zero;
+        if (!game.CrewReady) return -1;
+        bool found, hasGoal;
+        IdleEconomy.Option goal;
+        IdleEconomy.Option best = game.Advice(out found, out hasGoal, out goal);
+        if (!found) return -1;
+        IdleGame.PadKind kind = best.kind == IdleEconomy.Kind.Slot ? IdleGame.PadKind.Slot : best.kind == IdleEconomy.Kind.Unlock ? IdleGame.PadKind.Unlock : best.speedAxis ? IdleGame.PadKind.Speed : IdleGame.PadKind.Add;
+        pad = IdleLayout.PadPosition(best.station, kind, game.Stations[best.station].slots);
+        return best.station;
+    }
+
+    // Ce qu'on regarde : la rangée du conseil, ses machines, son stock, ses plaques ; au début, la serre et la première machine. La plaque conseillée reste dans la zone libre.
     // Le cadre tient dans la zone libre : la colonne de boutons de droite (`rightColumn`, en part de la largeur) est exclue, et il se décale vers la gauche tant qu'il y a la place.
     // `visibleWidth` et `visibleHeight` : ce que voit la caméra au zoom 1, en mètres.
     public static View Default(IdleGame game, float visibleWidth, float visibleHeight, float pitch, float rightColumn)
@@ -60,24 +76,23 @@ public static class IdleFraming
             Add(corner); Add(corner + new Vector2(size, size)); Add(corner + new Vector2(size, 0f)); Add(corner + new Vector2(0f, size));
         }
 
-        int last = IdleEconomy.SerreStation;
-        for (int i = 0; i < game.Stations.Count; i++) if (game.Stations[i].unlocked) last = i;
+        Vector2 advised;
+        int row = AdvisedPad(game, out advised);
+        bool hasPad = row >= 0;
+        if (!hasPad) for (int i = 0; i < game.Stations.Count; i++) if (game.Stations[i].unlocked) row = i;
 
-        if (last <= 1)
+        if (row <= 1)
         {
             AddMachine(IdleEconomy.SerreStation, 0);
             if (game.CrewReady) { Add(IdleLayout.PadSpeed[0]); Add(IdleLayout.PadAdd[0]); }
             else foreach (Vector2 pad in IdleLayout.PadHire) Add(pad);
+            row = 1;
         }
-        for (int k = 0; k < game.Stations[last].slots; k++) AddMachine(last, k);
-        Add(IdleLayout.Stocks[last]);
-        if (game.CrewReady)
-        {
-            Add(IdleLayout.PadSpeed[last]);
-            Add(IdleLayout.PadAdd[last]);
-            int next = game.NextLockedStation();
-            if (next >= 0) Add(IdleLayout.PadPosition(next, IdleGame.PadKind.Unlock));
-        }
+        IdleEconomy.StationLevels st = game.Stations[row];
+        for (int k = 0; k < st.slots; k++) AddMachine(row, k);
+        Add(IdleLayout.Stocks[row]);
+        if (game.CrewReady && st.unlocked) { Add(IdleLayout.PadSpeed[row]); Add(IdleLayout.PadAdd[row]); }
+        if (hasPad) Add(advised);
 
         float needWidth = (maxA - minA + Margin) / Root2;
         float needHeight = (maxB - minB + Margin) / Root2 * Mathf.Sin(pitch * Mathf.Deg2Rad) + MachineHeight;

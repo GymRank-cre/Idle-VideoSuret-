@@ -12,6 +12,7 @@ public class IdlePadView : MonoBehaviour
     [SerializeField] Mesh meshWaiting;
     [SerializeField] TextMesh priceText;
     [SerializeField] Transform priceRoot;            // le prix se tient face à la caméra : couché au sol, la perspective l'écraserait
+    [SerializeField] GameObject tagRoot;             // « NOUVEAU », « RECRUTER », « MACHINE »
     [SerializeField] Color affordableColor = Color.white;
     [SerializeField] Color waitingColor = new Color32(0xC3, 0xCC, 0xD7, 0xFF);
     [SerializeField, Min(1)] int bigSize = 130;
@@ -79,6 +80,12 @@ public class IdlePadView : MonoBehaviour
         pulse *= 1f - touchDip * dip * Mathf.Cos(dip * Mathf.PI * 2f);   // au retour, elle dépasse un peu : c'est le rebond
         visual.localScale = new Vector3(pulse, 1f, pulse);
         visual.localPosition = new Vector3(0f, -touchDepth * dip, 0f);
+        bool near = !IdleCameraRig.Overview;   // de loin : l'icône et le battement suffisent à dire où agir
+        if (priceRoot.gameObject.activeSelf != near)
+        {
+            priceRoot.gameObject.SetActive(near);
+            if (tagRoot != null) tagRoot.SetActive(near);
+        }
         float price = PriceScale(1f / IdleCameraRig.ScreenScale);
         priceRoot.localScale = new Vector3(price, price, 1f);
     }

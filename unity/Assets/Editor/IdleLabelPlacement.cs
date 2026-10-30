@@ -8,7 +8,8 @@ public static class IdleLabelPlacement
 {
     public const float Step = 0.3f;
     const float Gap = 0.03f, LabelHeight = 0.34f, PadWidth = 1.05f, PadHeight = 0.75f, PadLift = 0.12f;
-    const float StockBase = 0.62f, StockWidth = 1.44f;
+    public const float StockWidth = 1.6f, StockCharacterSize = 0.03f;
+    const float StockBase = 0.62f;
     const int MaxSteps = 12, WidestLevel = 3;   // niveau à 3 chiffres : l'étiquette la plus large
 
     static readonly float[] StationBase = { 1.7f, 2.3f, 1.6f, 1.75f, 2.1f, 1.6f };   // Assemblage : assez haut pour laisser le stock sous lui
@@ -20,6 +21,20 @@ public static class IdleLabelPlacement
     {
         public Vector3 position;
         public float width, height;
+    }
+
+    // Largeur réelle d'un texte de scène, en cases.
+    public static float TextWidth(string text, int fontSize, float characterSize)
+    {
+        Font font = UiTheme.Font;
+        font.RequestCharactersInTexture(text, fontSize);
+        float width = 0f;
+        foreach (char c in text)
+        {
+            CharacterInfo info;
+            if (font.GetCharacterInfo(c, out info, fontSize)) width += info.advance;
+        }
+        return width * characterSize * 0.1f;
     }
 
     // Se touchent-elles, vues de la caméra ?

@@ -99,6 +99,7 @@ public static class UnitTests
         Eq("22", IdleEconomy.Ceil(eco.BulkCost(true, 0, 0, 2, g0)).ToString(), "2 niveaux de vitesse : 10 + 11,9 -> 22");
         Eq("1 1 2", eco.MaxAffordable(true, 0, 0, 10.5, g0) + " " + eco.MaxAffordable(true, 0, 0, 21, g0) + " " + eco.MaxAffordable(true, 0, 0, 22, g0), "achat max");
         Eq("0", eco.MaxAffordable(true, 0, 0, 9, g0).ToString(), "achat max : trop cher");
+        Eq("True True", (System.Math.Abs(eco.SlotCost(3, 1, g0) - 31104 * cfg.slotPayback[0] * cfg.stations[3].slotFactor) < 1e-3) + " " + (eco.SlotCost(4, 2, g0) > eco.SlotCost(4, 1, g0)), "machines 2 et 3 : revenu de départ du dernier poste x remboursement visé x facteur du poste");
         Eq("True", (System.Math.Abs(eco.UnlockCost(2, g0) - 38.4 * cfg.stations[2].unlockPayback) < 1e-6).ToString(), "prix de la Programmation : son revenu de départ (38,4 $/s) x le temps de remboursement visé");
         List<IdleEconomy.StationLevels> Line(params IdleEconomy.StationLevels[] open)
         {
@@ -395,9 +396,25 @@ public static class UnitTests
         IdleFraming.View vRun = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
         for (int si = 2; si < 5; si++) fg.Stations[si].unlocked = true;
         fg.Stations[4].slots = 3;
+        fg.Cash = 1e15;
+        fg.Recalc();
         IdleFraming.View vFar = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        var walk = new IdleGame(cfg, 5, 0);
+        int outside = 0, framed = 0; float worst = 0f;
+        for (double t = 0; t < 5400; t += 3)   // tout au long d'une partie : la plaque conseillée reste dans la zone libre, à gauche des boutons
+        {
+            walk.Tick(3);
+            walk.BuyAdvised();
+            Vector2 advisedPad;
+            if (((int)t) % 60 != 0 || IdleFraming.AdvisedPad(walk, out advisedPad) < 0) continue;
+            float x = Screen(IdleFraming.Default(walk, fw, fh, 55f, 0.18f), advisedPad).x;
+            framed++;
+            worst = Mathf.Max(worst, x);
+            if (x > IdleFraming.FreeRight || x < 0f) outside++;
+        }
+        Eq("0 True", outside + " " + (framed > 60), "plaque conseillée dans la zone libre pendant toute une partie (x au plus " + Fr(worst) + ", " + framed + " cadrages)");
         Eq("True True", (vRun.zoom >= IdleFraming.MinZoom) + " " + (vRun.zoom <= IdleFraming.DefaultMaxZoom), "cadrage : zoom dans ses limites");
-        Eq("True True", (vFar.focus.y > vRun.focus.y) + " " + (vFar.zoom >= 0.8f), "cadrage : la caméra suit la dernière rangée ouverte, sans jamais perdre les machines de vue (zoom " + Fr(vFar.zoom) + ")");
+        Eq("True", (vFar.zoom >= 0.8f).ToString(), "cadrage : la caméra suit la rangée du conseil, sans jamais perdre les machines de vue (zoom " + Fr(vFar.zoom) + ")");
         Eq("True", (Screen(vFar, IdleLayout.PadAdd[4] + new Vector2(0.45f, -0.45f)).x < 1f).ToString(), "cadrage : la rangée tient dans l'écran");
         Eq("3,10", Fr(IdleFraming.Station(2, 3.1f).zoom), "sélection : on ne dézoome pas");
         Eq("2,00", Fr(IdleFraming.Station(2, 1f).zoom), "sélection : zoom d'au moins 2");
@@ -449,6 +466,8 @@ public static class UnitTests
 
         // étiquettes : aucune ne recouvre une autre étiquette ni une plaque, usine complète comprise (les 5 postes en sont une partie)
         Eq("0", IdleLabelPlacement.Collisions().ToString(), "étiquettes : aucune collision");
+        float stockText = IdleLabelPlacement.TextWidth("9,99M/9,99M", 80, IdleLabelPlacement.StockCharacterSize);
+        Eq("True", (stockText <= IdleLabelPlacement.StockWidth).ToString(), "étiquette de stock : le texte le plus long tient dans sa pastille (" + Fr(stockText) + " case)");
         var boxA = new IdleLabelPlacement.Box { position = Vector3.zero, width = 1f, height = 0.34f };
         var boxB = new IdleLabelPlacement.Box { position = Vector3.zero, width = 1f, height = 0.34f };
         Eq("True", IdleLabelPlacement.Touch(boxA, boxB).ToString(), "étiquettes : deux au même endroit se touchent");

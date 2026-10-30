@@ -15,9 +15,10 @@ public class IdleEconomyConfig : ScriptableObject
         public double value = 1;               // valeur d'une pièce au niveau 0
         public double unlockPayback = 0;       // prix de déblocage, en secondes de revenu du poste au niveau 0 (0 = ouvert d'emblée) : si la valeur change, le prix suit
         public int slots = 1;                  // emplacements : autant de machines au plus
-        public Station(string id, string nameKey, float cycle, double value, double unlockPayback, int slots)
+        public double slotFactor = 1;          // multiplie le prix de ses machines 2 et 3
+        public Station(string id, string nameKey, float cycle, double value, double unlockPayback, int slots, double slotFactor = 1)
         {
-            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlockPayback = unlockPayback; this.slots = slots;
+            this.id = id; this.nameKey = nameKey; this.cycle = cycle; this.value = value; this.unlockPayback = unlockPayback; this.slots = slots; this.slotFactor = slotFactor;
         }
     }
 
@@ -39,9 +40,9 @@ public class IdleEconomyConfig : ScriptableObject
     {
         new Station("recep", "station.recep", 1.6f, 1, 0, 1),         // la serre : elle ne vend rien, elle alimente l'Assemblage
         new Station("assem", "station.assem", 3.0f, 12, 0, 3),        // ouvert d'emblée : il faut bien une sortie à la chaîne
-        new Station("prog", "station.prog", 3.75f, 144, 2500, 3),
-        new Station("test", "station.test", 4.5f, 1728, 5000, 3),
-        new Station("pack", "station.pack", 6.0f, 20736, 15000, 3),
+        new Station("prog", "station.prog", 3.75f, 144, 2500, 3, 2),
+        new Station("test", "station.test", 4.5f, 1728, 5000, 3, 4),
+        new Station("pack", "station.pack", 6.0f, 20736, 15000, 3, 8),
         new Station("ship", "station.ship", 8.0f, 248832, 40000, 1),
     };
 
@@ -58,7 +59,6 @@ public class IdleEconomyConfig : ScriptableObject
 
     [Header("Emplacements")]
     public double[] slotPayback = { 200000, 1500000 };  // prix de la 2e puis de la 3e machine, en secondes du revenu de départ du dernier poste : elles se paient à la fin de la chaîne
-    [Min(1f)] public double slotStep = 2;              // chaque poste de la chaîne les paie ce facteur plus cher que le précédent
 
     [Header("Améliorations")]
     [Min(0f)] public double speedStep = 0.12;          // vitesse = 1 + speedStep x niveau

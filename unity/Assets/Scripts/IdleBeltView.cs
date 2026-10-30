@@ -64,15 +64,16 @@ public class IdleBeltView : MonoBehaviour
             travelled[i] += itemSpeed * speed;
             scrolled[i] += chevronSpeed * speed;
 
-            // chevrons : la texture défile dans le sens de la marche
-            if (chevronTops != null && i < chevronTops.Length && chevronTops[i] != null)
+            // chevrons : la texture défile dans le sens de la marche ; de loin, ça ne se voit pas
+            bool far = IdleCameraRig.Overview;
+            if (!far && chevronTops != null && i < chevronTops.Length && chevronTops[i] != null)
             {
                 block.SetVector(BaseMapST, new Vector4(1f, 1f, 0f, -scrolled[i] / chevronPeriod));
                 chevronTops[i].SetPropertyBlock(block);
             }
 
             // caisses : régulièrement espacées, elles avancent en boucle
-            int n = game.Chain.Stock[i + 1] < 1 ? 0 : game.BeltItemCount(i, items[i].Length);   // stock vide : plus rien sur le tapis
+            int n = far || game.Chain.Stock[i + 1] < 1 ? 0 : game.BeltItemCount(i, items[i].Length);   // stock vide : plus rien sur le tapis
             if (n != visibleItems[i])
             {
                 visibleItems[i] = n;

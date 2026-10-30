@@ -15,6 +15,7 @@ public class IdleStationRow : MonoBehaviour
     [SerializeField] GameObject nextRoot;
     [SerializeField] GameObject farRoot;
     [SerializeField] Text incomeText;
+    [SerializeField] GameObject bottleneckPill;
     [SerializeField] RectTransform cycleFill;
     [SerializeField] Text milestoneText;
     [SerializeField] IdleBuyButton speedButton;
@@ -85,7 +86,9 @@ public class IdleStationRow : MonoBehaviour
     {
         IdleEconomy.StationLevels st = game.Stations[station];
         string rate = NumberFormat.Gain(game.Flow(station));
-        incomeText.text = station == game.Bottleneck ? Loc.T("drawer.bottleneck", rate) : Loc.T(station == IdleEconomy.SerreStation ? "drawer.chips" : "drawer.pieces", rate);
+        incomeText.text = Loc.T(station == IdleEconomy.SerreStation ? "drawer.chips" : "drawer.pieces", rate);
+        bool slowest = station == game.Bottleneck;
+        if (bottleneckPill.activeSelf != slowest) bottleneckPill.SetActive(slowest);
         int level = st.speed + st.add;
         if (level != shownLevel)
         {
@@ -105,7 +108,9 @@ public class IdleStationRow : MonoBehaviour
         double delta = game.UpgradeGain(station, speedAxis, count);
         bool isBest = hasBest && best.kind == IdleEconomy.Kind.Upgrade && best.station == station && best.speedAxis == speedAxis;
         button.SetPrice(price);
-        button.SetDelta(delta > 0 ? "+" + NumberFormat.RateValue(delta * game.BoostMultiplier) : "·");
+        if (delta > 0) button.SetDelta("+" + NumberFormat.RateValue(delta * game.BoostMultiplier));
+        else if (station == game.Bottleneck) button.SetDelta("+0", true);
+        else button.SetDelta(Loc.T("drawer.waits", Loc.T(game.Eco.Config.stations[game.Bottleneck].nameKey)), true);   // la vraie raison : un autre poste bloque
         button.SetLevel(count > 1 ? Loc.T("drawer.levelplus", level, count) : Loc.T("drawer.level", level));
         button.SetState(game.CrewReady && game.Cash >= price, isBest, isBest);
     }

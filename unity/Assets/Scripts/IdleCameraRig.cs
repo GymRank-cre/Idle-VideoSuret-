@@ -34,6 +34,9 @@ public class IdleCameraRig : MonoBehaviour
     // Échelle à donner à un objet de la scène pour garder la même taille à l'écran quel que soit le zoom.
     public static float ScreenScale { get; private set; } = 1f;
 
+    // Vue d'ensemble : trop loin pour lire un prix ; plaques et tapis se simplifient.
+    public static bool Overview { get; private set; }
+
     void Awake()
     {
         cam = GetComponent<Camera>();
@@ -98,6 +101,7 @@ public class IdleCameraRig : MonoBehaviour
         float tanHalf = Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad);
         float distance = fitDistance / Mathf.Max(0.1f, zoom) * (1f - Push);
         ScreenScale = 1f / Mathf.Max(0.1f, zoom);
+        Overview = zoom < IdleFraming.OverviewZoom;
         float shiftUp = (centerHeight - 0.5f) * 2f * tanHalf * distance;
         float shiftRight = (viewportX - 0.5f) * 2f * tanHalf * distance * lastAspect;
         Quaternion rotation = transform.rotation;
@@ -141,7 +145,7 @@ public class IdleCameraRig : MonoBehaviour
     public bool IsOnScreen(Vector3 world)
     {
         Vector3 v = cam.WorldToViewportPoint(world);
-        return v.x > 0.05f && v.x < 0.95f && v.y > 0.26f && v.y < 0.89f;   // hors du haut de l'interface et du bas
+        return v.x > 0.05f && v.x < IdleFraming.FreeRight && v.y > 0.26f && v.y < 0.89f;   // hors des boutons de droite, du haut de l'interface et du bas
     }
 
     // ------------------------------------------------------------------ gestes
