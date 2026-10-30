@@ -5,7 +5,13 @@
 ## NOUVEAU CAP (30/10 matin) : idle sans personnage, fait sur le PC dans Unity
 Tu veux un idle où on touche une icône pour acheter ou améliorer, sans technicien, avec la DA d'Idle Lumber, et fait sur l'ordi. Le cloud a écrit une **version de référence jouable** (**https://claude.ai/artifact/NZ4JHUmBRHR2EMo5DJ5siZ**, code dans `usine-web/`) ; **le Claude Code du PC la reconstruit dans Unity** en 4 étapes (U1 cœur de jeu, U2 scène en diorama, U3 interface, U4 finition et un build) décrites dans `TACHES.md`. Pour que le PC démarre : réveille-le, `/mcp` puis « Reconnect » puis `continue` (ou écris-lui « lis TACHES.md et fais U1 »).
 
-## À FAIRE EN PREMIER AU RÉVEIL (5 minutes)
+## OÙ ÇA EN EST (30/10, ~15 h 35 heure du PC)
+- **Fait dans Unity sur le PC, relu par le cloud** : U1 (cœur de jeu), U2 (diorama), U3 (interface), UW-5 (écran titre, icône), UW-1 (lumière et matière, 102 appels de dessin), **UW-3 (l'usine grandit : 5 aspects par poste, arrivée des postes en spectacle, plaques arrondies)**. 180 tests sur 180.
+- **Ta remarque « trop peu d'espace »** : le tiroir cache la moitié de l'écran. Le cloud a refait la **version web en mode Idle Lumber** (monde plein écran, glisser/pincer, plaques au sol, toucher une machine pour ses boutons, pastille de revenu = liste des postes) : **https://claude.ai/artifact/NZ4JHUmBRHR2EMo5DJ5siZ**. Le PC la reproduit dans Unity maintenant (chantier **UL**), puis UW-4 (le jus), UW-2 (monde vivant) et U4 (**un seul build**, que tu pourras ouvrir dans l'app Claude).
+- **Pas encore testé sur ton iPhone** : le tactile de la version web v5 (glisser, pincer, toucher une plaque).
+- Pense à **changer ta clé xAI** (collée dans la conversation).
+
+## À FAIRE EN PREMIER AU RÉVEIL (5 minutes) — texte d'avant le nouveau cap, à lire seulement pour l'ancien jeu
 1. **Ouvre le jeu** dans l'app Claude : https://claude.ai/artifact/7yAkFibvWvKaahZygu5T1X (écran de chargement jaune, « Idle Sécurité », « Jouer »).
 2. **Réglages (⚙), en bas : lis la version** (date et heure du build) et dis-la-moi : elle doit dater de **ce matin, vers 08 h 15** (heure du PC). Si elle est plus ancienne, ferme et rouvre le lien (le navigateur a gardé l'ancien jeu).
 3. **Joue 2 à 5 minutes** et regarde ceci :
