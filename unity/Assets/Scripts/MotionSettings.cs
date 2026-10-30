@@ -7,12 +7,22 @@ public static class MotionSettings
 {
     const string Key = "reduce_motion";
 
+    static int cached = -1;   // lu une seule fois dans PlayerPrefs (cette propriété est interrogée à chaque secousse ou pulsation de caméra)
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetCache() { cached = -1; }   // Play sans rechargement de domaine : on relit la valeur enregistrée
+
     public static bool ReduceMotion
     {
-        get { return PlayerPrefs.GetInt(Key, 0) == 1; }
+        get
+        {
+            if (cached < 0) cached = PlayerPrefs.GetInt(Key, 0) == 1 ? 1 : 0;
+            return cached == 1;
+        }
         set
         {
-            PlayerPrefs.SetInt(Key, value ? 1 : 0);
+            cached = value ? 1 : 0;
+            PlayerPrefs.SetInt(Key, cached);
             PlayerPrefs.Save();
         }
     }

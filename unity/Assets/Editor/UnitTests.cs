@@ -333,6 +333,10 @@ public static class UnitTests
                 MotionSettings.ReduceMotion = true;
                 Eq("0.00", MotionSettings.ShakeAmplitude(0.08f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "secousse coupée");
                 Eq("False", MotionSettings.AllowCameraGlide.ToString(), "glissement coupé");
+                Eq("1", PlayerPrefs.GetInt("reduce_motion", 0).ToString(), "option : valeur enregistrée dans les préférences");
+                MotionSettings.ReduceMotion = false;
+                Eq("0", PlayerPrefs.GetInt("reduce_motion", 1).ToString(), "option : désactivation enregistrée");
+                Eq("False", MotionSettings.ReduceMotion.ToString(), "option : le cache suit le réglage");
                 MotionSettings.ReduceMotion = before;
             }
             {   // P5 : la table Loc couvre tous les textes venant des données (aucune clé oubliée)
