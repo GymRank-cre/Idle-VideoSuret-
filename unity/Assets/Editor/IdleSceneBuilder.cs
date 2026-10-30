@@ -24,15 +24,20 @@ public static class IdleSceneBuilder
         BuildCamera();
         BuildHost();
         var world = new GameObject("World").transform;
-        BuildGround(world);
-        BuildSlab(world);
-        BuildRoad(world);
-        BuildTrees(world);
+        var decor = new MeshKit();
+        var shadows = new MeshKit();
+        BuildGround(decor);
+        BuildGrassDetails(decor);
+        BuildSlab(decor, shadows);
+        BuildRoad(decor);
+        BuildTrees(decor, shadows);
+        decor.ToObject("Decor", world, IdleMaterials.Palette("PaletteGround", GroundY));   // tout le décor fixe : un seul appel de dessin
         BuildSlots(world);
         BuildFeedback(world);
         BuildBelts(world);
         BuildPlates(world);
         BuildCars(world);
+        BuildContactShadows(world, shadows);
         IdleHudBuilder.Build();
         EditorSceneManager.SaveScene(scene, ScenePath);
         WebGLBuilder.EnsureSceneInBuildSettings();
@@ -49,13 +54,13 @@ public static class IdleSceneBuilder
         lightGo.transform.rotation = Quaternion.Euler(52f, 150f, 0f);
         var light = lightGo.GetComponent<Light>();
         light.type = LightType.Directional;
-        light.color = new Color32(0xFF, 0xF1, 0xD6, 0xFF);
-        light.intensity = 0.92f;
+        light.color = new Color32(0xFF, 0xE8, 0xC4, 0xFF);   // soleil chaud
+        light.intensity = 0.86f;
         light.shadows = LightShadows.None;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.78f, 0.88f, 1f) * 0.74f;
-        RenderSettings.ambientEquatorColor = new Color(0.97f, 0.95f, 0.9f) * 0.76f;
-        RenderSettings.ambientGroundColor = new Color(0.72f, 0.82f, 0.7f) * 0.64f;
+        RenderSettings.ambientSkyColor = new Color(0.72f, 0.84f, 1f) * 0.66f;
+        RenderSettings.ambientEquatorColor = new Color(0.97f, 0.93f, 0.86f) * 0.62f;
+        RenderSettings.ambientGroundColor = new Color(0.62f, 0.74f, 0.58f) * 0.46f;
     }
 
     static void BuildCamera()
@@ -86,83 +91,147 @@ public static class IdleSceneBuilder
 
     // ------------------------------------------------------------------ sol, dalle, route
 
-    static void BuildGround(Transform parent)
+    // Herbe : deux verts qui alternent par grandes plaques aux contours doux (couleurs aux coins d'une grille).
+    static Color32 GrassColor(float x, float z)
     {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        go.name = "Grass";
-        Object.DestroyImmediate(go.GetComponent<Collider>());
-        go.transform.SetParent(parent, false);
-        go.transform.position = new Vector3(3f, GroundY - 0.1f, 4f);
-        go.transform.localScale = new Vector3(160f, 0.2f, 160f);
-        var r = go.GetComponent<MeshRenderer>();
-        r.sharedMaterial = IdleMaterials.Get("Grass", "#8BCB6B");
-        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        r.receiveShadows = false;
+        float n = Mathf.Sin(x * 0.33f + 1.3f) + Mathf.Sin(z * 0.29f + 0.7f) + Mathf.Sin((x + z) * 0.17f + 2.1f) * 0.8f + Mathf.Sin((x - z) * 0.41f) * 0.5f;
+        float t = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-0.45f, 0.45f, n));
+        return Color32.Lerp(MeshKit.Color("#5AAE38"), MeshKit.Color("#8ED74F"), t);
     }
 
-    static void BuildSlab(Transform parent)
+    static void BuildGround(MeshKit decor)
+    {
+        const float Cell = 2f;
+        float y = GroundY;
+        decor.SetPaint("#74C445");
+        decor.Box(new Vector3(-77f, y - 0.2f, -76f), new Vector3(160f, 0.19f, 160f));   // au loin, un seul vert
+        for (float x = -22f; x < 28f; x += Cell)
+            for (float z = -18f; z < 32f; z += Cell)
+                decor.ColoredQuad(new Vector3(x, y, z), new Vector3(x, y, z + Cell), new Vector3(x + Cell, y, z + Cell), new Vector3(x + Cell, y, z),
+                    GrassColor(x, z), GrassColor(x, z + Cell), GrassColor(x + Cell, z + Cell), GrassColor(x + Cell, z));
+    }
+
+    static bool OnSlabOrRoad(float x, float z, float margin)
+    {
+        bool slab = x > -margin && x < IdleLayout.FloorDepth + margin && z > -margin && z < IdleLayout.FloorWidth + margin;
+        bool road = z > 8.3f - margin && z < 10.4f + margin;
+        return slab || road;
+    }
+
+    // Touffes d'herbe et fleurs, semées au hasard (graine fixe) autour de la dalle.
+    static void BuildGrassDetails(MeshKit decor)
+    {
+        long seed = 11;
+        System.Func<float> r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647f; };
+        string[] blades = { "#4FA535", "#5DB53D", "#3F9430" };
+        float y = GroundY;
+        for (int n = 0; n < 260; n++)
+        {
+            float x = -11f + r() * 29f, z = -11f + r() * 33f, size = 1.05f + r() * 0.8f;
+            string color = blades[n % blades.Length];
+            if (OnSlabOrRoad(x, z, 0.25f)) continue;
+            decor.SetPaint(color);
+            for (int k = 0; k < 3; k++)
+                decor.Cone(new Vector3(x + (k - 1) * 0.055f * size, y, z + ((k * 7) % 3 - 1) * 0.04f * size), 0.036f * size, (0.14f + (k % 2) * 0.09f) * size, 3);
+        }
+        for (int n = 0; n < 150; n++)
+        {
+            float x = -11f + r() * 29f, z = -11f + r() * 33f;
+            bool yellow = r() < 0.3f;
+            if (OnSlabOrRoad(x, z, 0.2f)) continue;
+            int count = 1 + (int)(r() * 3f);
+            for (int k = 0; k < count; k++)
+            {
+                float fx = x + (r() - 0.5f) * 0.5f, fz = z + (r() - 0.5f) * 0.5f;
+                decor.SetPaint(yellow ? "#FFD23C" : "#FFFFFF");
+                decor.Cone(new Vector3(fx, y + 0.004f, fz), 0.1f, 0.02f, 6);
+                decor.SetPaint(yellow ? "#FF9A2E" : "#FFC400");
+                decor.Cone(new Vector3(fx, y + 0.012f, fz), 0.04f, 0.022f, 6);
+            }
+        }
+    }
+
+    // Ombre douce : un rectangle d'opacité `alpha` (0 à 1) dont les bords s'effacent sur `soft` mètres.
+    static void SoftShadow(MeshKit kit, Vector3 center, float halfX, float halfZ, float soft, float alpha)
+    {
+        Color32 inner = new Color32(20, 40, 20, (byte)Mathf.RoundToInt(alpha * 255f)), outer = new Color32(20, 40, 20, 0);
+        float x0 = center.x - halfX, x1 = center.x + halfX, z0 = center.z - halfZ, z1 = center.z + halfZ, y = center.y;
+        System.Func<float, float, Vector3> P = (x, z) => new Vector3(x, y, z);
+        kit.ColoredQuad(P(x0, z0), P(x0, z1), P(x1, z1), P(x1, z0), inner, inner, inner, inner);
+        kit.ColoredQuad(P(x0 - soft, z0), P(x0 - soft, z1), P(x0, z1), P(x0, z0), outer, outer, inner, inner);
+        kit.ColoredQuad(P(x1, z0), P(x1, z1), P(x1 + soft, z1), P(x1 + soft, z0), inner, inner, outer, outer);
+        kit.ColoredQuad(P(x0, z0 - soft), P(x0, z0), P(x1, z0), P(x1, z0 - soft), outer, inner, inner, outer);
+        kit.ColoredQuad(P(x0, z1), P(x0, z1 + soft), P(x1, z1 + soft), P(x1, z1), inner, outer, outer, inner);
+        kit.ColoredQuad(P(x0 - soft, z0 - soft), P(x0 - soft, z0), P(x0, z0), P(x0, z0 - soft), outer, outer, inner, outer);
+        kit.ColoredQuad(P(x0 - soft, z1), P(x0 - soft, z1 + soft), P(x0, z1 + soft), P(x0, z1), outer, outer, outer, inner);
+        kit.ColoredQuad(P(x1, z0 - soft), P(x1, z0), P(x1 + soft, z0), P(x1 + soft, z0 - soft), outer, inner, outer, outer);
+        kit.ColoredQuad(P(x1, z1), P(x1, z1 + soft), P(x1 + soft, z1 + soft), P(x1 + soft, z1), inner, outer, outer, outer);
+    }
+
+    static void BuildSlab(MeshKit decor, MeshKit shadows)
     {
         float w = IdleLayout.FloorDepth, d = IdleLayout.FloorWidth, t = IdleLayout.SlabThickness;
-        var slab = new GameObject("Slab").transform;
-        slab.SetParent(parent, false);
+        const float Wall = 0.07f, Rim = 0.15f;
 
-        var body = new MeshKit();
-        body.Box(new Vector3(0, -t, 0), new Vector3(w, t - 0.01f, d));
-        body.ToObject("Body", slab, IdleMaterials.Get("SlabSide", "#98A6B4"));
+        // muret gris tout autour, joints sombres
+        decor.SetPaint("#A3ACB6", 0.15f);
+        decor.BevelBox(new Vector3(-Wall, -t, -Wall), new Vector3(w + 2f * Wall, t - 0.03f, d + 2f * Wall), 0.02f);
+        decor.SetPaint("#7E8894");
+        const float Seam = 0.016f, Block = 0.8f;
+        for (float x = Block; x < w; x += Block)
+        {
+            decor.Box(new Vector3(x, -t, d + Wall - 0.002f), new Vector3(Seam, t - 0.04f, 0.006f));
+            decor.Box(new Vector3(x, -t, -Wall - 0.004f), new Vector3(Seam, t - 0.04f, 0.006f));
+        }
+        for (float z = Block; z < d; z += Block)
+        {
+            decor.Box(new Vector3(w + Wall - 0.002f, -t, z), new Vector3(0.006f, t - 0.04f, Seam));
+            decor.Box(new Vector3(-Wall - 0.004f, -t, z), new Vector3(0.006f, t - 0.04f, Seam));
+        }
 
-        var top = new MeshKit();
-        top.Box(new Vector3(0, -0.01f, 0), new Vector3(w, 0.01f, d));
-        top.ToObject("Top", slab, IdleMaterials.Get("SlabTop", "#D5DEE7"));
+        decor.SetPaint("#CBD6E2", 0.35f);
+        decor.Box(new Vector3(0, -0.03f, 0), new Vector3(w, 0.03f, d));
 
         // damier : une case sur deux, cases de 1 m (les dernières sont coupées par le bord)
-        var checker = new MeshKit();
+        decor.SetPaint("#B4C2D2", 0.35f);
         for (int x = 0; x < Mathf.CeilToInt(IdleLayout.FloorWidth); x++)
             for (int y = 0; y < Mathf.CeilToInt(IdleLayout.FloorDepth); y++)
             {
                 if ((x + y) % 2 != 0) continue;
                 float cw = Mathf.Min(1f, IdleLayout.FloorWidth - x), cd = Mathf.Min(1f, IdleLayout.FloorDepth - y);
-                checker.FlatQuad(IdleLayout.ToWorld(x + cw * 0.5f, y + cd * 0.5f, 0.004f), cd, cw);
+                decor.FlatQuad(IdleLayout.ToWorld(x + cw * 0.5f, y + cd * 0.5f, 0.004f), cd, cw);
             }
-        checker.ToObject("Checker", slab, IdleMaterials.Get("SlabChecker", "#C2CEDB"));
 
-        // bord jaune posé à 12 cm du bord
-        var border = new MeshKit();
-        float inset = 0.12f, lw = 0.07f, y0 = 0.006f;
-        border.Box(new Vector3(inset, y0, inset), new Vector3(w - 2 * inset, 0.004f, lw));
-        border.Box(new Vector3(inset, y0, d - inset - lw), new Vector3(w - 2 * inset, 0.004f, lw));
-        border.Box(new Vector3(inset, y0, inset), new Vector3(lw, 0.004f, d - 2 * inset));
-        border.Box(new Vector3(w - inset - lw, y0, inset), new Vector3(lw, 0.004f, d - 2 * inset));
-        border.ToObject("Border", slab, IdleMaterials.Get("SlabBorder", "#FFC400"));
+        // liseré jaune en relief sur tout le bord
+        decor.SetPaint("#FFC400", 0.6f);
+        const float RimY = -0.04f, RimH = 0.075f, RimBevel = 0.03f;
+        decor.BevelBox(new Vector3(-Wall, RimY, -Wall), new Vector3(w + 2f * Wall, RimH, Rim), RimBevel);
+        decor.BevelBox(new Vector3(-Wall, RimY, d + Wall - Rim), new Vector3(w + 2f * Wall, RimH, Rim), RimBevel);
+        decor.BevelBox(new Vector3(-Wall, RimY, -Wall), new Vector3(Rim, RimH, d + 2f * Wall), RimBevel);
+        decor.BevelBox(new Vector3(w + Wall - Rim, RimY, -Wall), new Vector3(Rim, RimH, d + 2f * Wall), RimBevel);
+
+        SoftShadow(shadows, new Vector3(w * 0.5f + 0.1f, GroundY + 0.012f, d * 0.5f + 0.1f), w * 0.5f + Wall, d * 0.5f + Wall, 0.5f, 0.5f);
     }
 
-    static void BuildRoad(Transform parent)
+    static void BuildRoad(MeshKit decor)
     {
         // route derrière la dalle : web x 8,6 -> 10,2 (Z), sur toute la longueur (X)
-        var road = new GameObject("Road").transform;
-        road.SetParent(parent, false);
         float y = GroundY + 0.01f;
-        var asphalt = new MeshKit();
-        asphalt.Box(new Vector3(-8f, y, 8.6f), new Vector3(24f, 0.01f, 1.6f));
-        asphalt.ToObject("Asphalt", road, IdleMaterials.Get("Asphalt", "#5C6773"));
-        var edges = new MeshKit();
-        edges.Box(new Vector3(-8f, y + 0.011f, 8.48f), new Vector3(24f, 0.004f, 0.12f));
-        edges.Box(new Vector3(-8f, y + 0.011f, 10.2f), new Vector3(24f, 0.004f, 0.12f));
-        edges.ToObject("Edges", road, IdleMaterials.Get("RoadEdge", "#EDE6D2"));
-        var dashes = new MeshKit();
-        for (float x = -8f; x < 16f; x += 1.6f) dashes.Box(new Vector3(x, y + 0.011f, 9.38f), new Vector3(0.8f, 0.004f, 0.06f));
-        dashes.ToObject("Dashes", road, IdleMaterials.Get("RoadDash", "#FFD84A"));
+        decor.SetPaint("#4E5864", 0.1f);
+        decor.Box(new Vector3(-22f, y, 8.6f), new Vector3(50f, 0.01f, 1.6f));
+        decor.SetPaint("#D9D2BE");
+        decor.Box(new Vector3(-22f, y + 0.011f, 8.48f), new Vector3(50f, 0.004f, 0.12f));
+        decor.Box(new Vector3(-22f, y + 0.011f, 10.2f), new Vector3(50f, 0.004f, 0.12f));
+        decor.SetPaint("#FFD23C");
+        for (float x = -22f; x < 28f; x += 1.6f) decor.Box(new Vector3(x, y + 0.011f, 9.38f), new Vector3(0.8f, 0.004f, 0.06f));
     }
 
     // ------------------------------------------------------------------ arbres (même tirage que le web : graine 7)
 
-    static void BuildTrees(Transform parent)
+    static void BuildTrees(MeshKit decor, MeshKit shadows)
     {
-        var trees = new GameObject("Trees").transform;
-        trees.SetParent(parent, false);
         long seed = 7;
         System.Func<float> r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647f; };
-        var groups = new Dictionary<string, MeshKit>();
-        MeshKit Group(string hex) { MeshKit m; if (!groups.TryGetValue(hex, out m)) { m = new MeshKit(); groups[hex] = m; } return m; }
         string[] pineDark = { "#2FA55B", "#1E8A4C", "#27994F" }, pineLight = { "#6BD65A", "#3FB84A" };
         for (int n = 0; n < 110; n++)
         {
@@ -173,13 +242,50 @@ public static class IdleSceneBuilder
             float s = (0.5f + r() * 0.3f) * 1.5f;
             bool light = r() < 0.25f;
             Vector3 b = IdleLayout.ToWorld(x, yy, GroundY);
-            Group("#8A5A2B").Cylinder(b, 0.07f * s, 0.4f * s);
+            decor.SetPaint("#8A5A2B");
+            decor.Cylinder(b, 0.07f * s, 0.4f * s);
             string[] cols = light ? pineLight : pineDark;
             int cones = light ? 2 : 3;
             for (int i = 0; i < cones; i++)
-                Group(cols[i % cols.Length]).Cone(b + new Vector3(0, (0.3f + i * 0.34f) * s, 0), (0.5f - i * 0.1f) * s, 0.62f * s);
+            {
+                decor.SetPaint(cols[i % cols.Length], 0.2f);
+                decor.Cone(b + new Vector3(0, (0.3f + i * 0.34f) * s, 0), (0.5f - i * 0.1f) * s, 0.62f * s);
+            }
+            SoftShadow(shadows, b + new Vector3(0.14f * s, 0.012f, 0.14f * s), 0.2f * s, 0.2f * s, 0.36f * s, 0.5f);
         }
-        foreach (var kv in groups) kv.Value.ToObject("Trees_" + kv.Key.TrimStart('#'), trees, IdleMaterials.Get("Tree_" + kv.Key.TrimStart('#'), kv.Key));
+    }
+
+    // ------------------------------------------------------------------ ombres de contact : un seul maillage, un groupe par poste
+
+    static void BuildContactShadows(Transform parent, MeshKit kit)
+    {
+        var starts = new List<int> { 0, kit.IndexCount };   // groupe 0 : dalle et arbres, déjà dans le maillage
+        const float Y = 0.012f, Offset = 0.1f;
+        for (int i = 0; i < IdleLayout.Stations.Length; i++)
+        {
+            Vector3 c = IdleLayout.StationCenter(i);
+            SoftShadow(kit, new Vector3(c.x + Offset, Y, c.z + Offset), 0.85f, 0.85f, 0.28f, 0.46f);
+            if (i > 0)   // le tapis i-1 apparaît avec le poste i
+            {
+                Vector2[] web = IdleLayout.Belts[i - 1];
+                for (int k = 0; k + 1 < web.Length; k++)
+                {
+                    Vector3 p = IdleLayout.ToWorld(web[k], Y), q = IdleLayout.ToWorld(web[k + 1], Y);
+                    Vector3 mid = (p + q) * 0.5f + new Vector3(Offset * 0.6f, 0f, Offset * 0.6f);
+                    float halfX = Mathf.Abs(p.x - q.x) * 0.5f + BeltWidth * 0.5f, halfZ = Mathf.Abs(p.z - q.z) * 0.5f + BeltWidth * 0.5f;
+                    SoftShadow(kit, mid, halfX, halfZ, 0.15f, 0.36f);
+                }
+            }
+            starts.Add(kit.IndexCount);
+        }
+        GameObject go = kit.ToObject("ContactShadows", parent, IdleMaterials.ContactShadow());
+        var script = go.AddComponent<IdleContactShadows>();
+        var so = new SerializedObject(script);
+        so.FindProperty("target").objectReferenceValue = go.GetComponent<MeshFilter>();
+        SerializedProperty list = so.FindProperty("groupStart");
+        list.arraySize = starts.Count;
+        for (int i = 0; i < starts.Count; i++) list.GetArrayElementAtIndex(i).intValue = starts[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ postes : fantôme (verrouillé) et machine (ouvert)
@@ -292,8 +398,6 @@ public static class IdleSceneBuilder
     {
         var root = new GameObject("Belts").transform;
         root.SetParent(parent, false);
-        Material bedMat = IdleMaterials.Get("BeltBed", "#46546A");
-        Material railMat = IdleMaterials.Get("BeltRail", "#FFC400");
         Material topMat = IdleMaterials.Get("BeltTop", "#FFFFFF");
         Texture2D chevrons = ChevronTexture();
         topMat.SetTexture("_BaseMap", chevrons);
@@ -308,7 +412,7 @@ public static class IdleSceneBuilder
             belt.SetParent(root, false);
             belts[bi] = belt;
             Vector2[] web = IdleLayout.Belts[bi];
-            var body = new MeshKit(); var top = new MeshKit(); var rails = new MeshKit();
+            var body = new MeshKit(); var top = new MeshKit();
             float ext = BeltWidth * 0.5f, acc = 0f;
             for (int k = 0; k < web.Length - 1; k++)
             {
@@ -318,7 +422,8 @@ public static class IdleSceneBuilder
                 Vector3 p2 = p - dir * ext, q2 = q + dir * ext;   // chaque tronçon dépasse d'une demi-largeur : les coins sont pleins
                 Vector3 c0 = p2 - nrm * ext, c1 = p2 + nrm * ext, c2 = q2 + nrm * ext, c3 = q2 - nrm * ext;
                 Vector3 min = Vector3.Min(Vector3.Min(c0, c1), Vector3.Min(c2, c3)), max = Vector3.Max(Vector3.Max(c0, c1), Vector3.Max(c2, c3));
-                body.Box(new Vector3(min.x, 0f, min.z), new Vector3(max.x - min.x, BeltHeight, max.z - min.z));
+                body.SetPaint("#3C485A", 0.25f);
+                body.BevelBox(new Vector3(min.x, 0f, min.z), new Vector3(max.x - min.x, BeltHeight, max.z - min.z), 0.02f);
                 float v0 = (acc - ext) / ChevronPeriod, v1 = (acc + len + ext) / ChevronPeriod;
                 Vector3 up = new Vector3(0f, BeltHeight + 0.004f, 0f);
                 top.UvQuad(c0 + up, c1 + up, c2 + up, c3 + up, new Vector2(0f, v0), new Vector2(1f, v0), new Vector2(1f, v1), new Vector2(0f, v1));
@@ -326,30 +431,33 @@ public static class IdleSceneBuilder
                 {
                     Vector3 a = p2 + nrm * side * (ext + 0.01f), b = q2 + nrm * side * (ext + 0.01f), t = nrm * 0.0175f;
                     Vector3 rmin = Vector3.Min(Vector3.Min(a - t, a + t), Vector3.Min(b - t, b + t)), rmax = Vector3.Max(Vector3.Max(a - t, a + t), Vector3.Max(b - t, b + t));
-                    rails.Box(new Vector3(rmin.x, BeltHeight, rmin.z), new Vector3(rmax.x - rmin.x, 0.04f, rmax.z - rmin.z));
+                    body.SetPaint("#FFC400", 0.6f);
+                    body.BevelBox(new Vector3(rmin.x, BeltHeight, rmin.z), new Vector3(rmax.x - rmin.x, 0.05f, rmax.z - rmin.z), 0.012f);
                 }
                 acc += len;
             }
-            body.ToObject("Body", belt, bedMat);
+            body.ToObject("Body", belt, IdleMaterials.Palette());
             tops[bi] = top.ToObject("Top", belt, topMat).GetComponent<Renderer>();
-            rails.ToObject("Rails", belt, railMat);
 
             // caisses qui avancent (leur nombre dépend de la longueur ; IdleBeltView les déplace)
-            Material itemMat = IdleMaterials.Get("Item_" + itemHex[bi].TrimStart('#'), itemHex[bi]);
-            Material detailMat = IdleMaterials.Get("ItemDetail_" + detailHex[bi].TrimStart('#'), detailHex[bi]);
             int count = Mathf.Max(2, Mathf.RoundToInt(acc / 0.95f));
+            float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
+            var itemKit = new MeshKit();   // boîte + détail dans un maillage, le même pour toutes les caisses du tapis
+            itemKit.SetPaint(itemHex[bi], 0.3f);
+            itemKit.BevelBox(new Vector3(-s * 0.5f, 0f, -s * 0.5f), new Vector3(s, h, s), 0.025f);
+            itemKit.SetPaint(detailHex[bi], 0.5f);
+            if (bi == 0 || bi == 3) itemKit.Box(new Vector3(-0.04f, h, -s * 0.5f), new Vector3(0.08f, 0.012f, s));   // ruban d'emballage
+            else itemKit.Cylinder(new Vector3(0f, h, 0f), 0.07f, 0.08f);                                            // voyant
+            Mesh itemMesh = itemKit.ToMesh("BeltItem_" + bi);
             for (int k = 0; k < count; k++)
             {
                 var item = new GameObject("Item_" + k).transform;
                 item.SetParent(belt, false);
-                float s = bi == 3 ? 0.34f : bi == 0 ? 0.32f : 0.3f, h = bi == 0 || bi == 3 ? 0.3f : 0.22f;
-                var box = new MeshKit();
-                box.Box(new Vector3(-s * 0.5f, 0f, -s * 0.5f), new Vector3(s, h, s));
-                box.ToObject("Box", item, itemMat);
-                var detail = new MeshKit();
-                if (bi == 0 || bi == 3) detail.Box(new Vector3(-0.04f, h, -s * 0.5f), new Vector3(0.08f, 0.012f, s));   // ruban d'emballage
-                else detail.Cylinder(new Vector3(0f, h, 0f), 0.07f, 0.08f);                                        // voyant
-                detail.ToObject("Detail", item, detailMat);
+                item.gameObject.AddComponent<MeshFilter>().sharedMesh = itemMesh;
+                var itemRenderer = item.gameObject.AddComponent<MeshRenderer>();
+                itemRenderer.sharedMaterial = IdleMaterials.Palette();
+                itemRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                itemRenderer.receiveShadows = false;
             }
         }
         var view = new GameObject("BeltView", typeof(IdleBeltView));
@@ -555,10 +663,17 @@ public static class IdleSceneBuilder
         var car = new GameObject(name, typeof(CarLoop)).transform;
         car.SetParent(parent, false);
         car.position = from;
-        Material body = IdleMaterials.Get("Car_" + hex.TrimStart('#'), hex, 0.15f);
-        Material glass = IdleMaterials.Get("CarGlass", "#BFE6FF", 0.5f);
-        RoundedBox.Make(car, "Body", new Vector3(0f, 0.17f, 0f), new Vector3(0.55f, 0.34f, 1.0f), 0.07f, body);
-        RoundedBox.Make(car, "Cabin", new Vector3(0f, 0.45f, -0.05f), new Vector3(0.46f, 0.26f, 0.55f), 0.07f, glass);
+        var kit = new MeshKit();
+        kit.SetPaint(hex, 0.8f);
+        kit.BevelBox(new Vector3(-0.275f, 0.06f, -0.5f), new Vector3(0.55f, 0.28f, 1.0f), 0.07f);
+        kit.SetPaint("#BFE6FF", 0.9f);
+        kit.BevelBox(new Vector3(-0.23f, 0.33f, -0.325f), new Vector3(0.46f, 0.25f, 0.55f), 0.07f);
+        var wheel = new MeshKit();
+        wheel.Cylinder(new Vector3(0f, -0.05f, 0f), 0.11f, 0.1f, 8);
+        foreach (float side in new[] { -0.26f, 0.26f })
+            foreach (float along in new[] { -0.3f, 0.3f })
+                kit.Append(wheel, MeshKit.Color("#1E2A38"), Matrix4x4.TRS(new Vector3(side, 0.11f, along), Quaternion.Euler(0f, 0f, 90f), Vector3.one));
+        kit.ToObject("Body", car, IdleMaterials.Palette("PaletteGround", GroundY));
         var so = new SerializedObject(car.GetComponent<CarLoop>());
         so.FindProperty("from").vector3Value = from;
         so.FindProperty("to").vector3Value = to;

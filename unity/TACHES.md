@@ -116,6 +116,23 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**UW-1 — Lumière, matière, ombres de contact : FAIT (sans build). Compilation 0/0, tests 171/171, test de fumée OK. Captures : `captures/UW1-scene-390x844.png` (5 postes), `UW1-debut-390x844.png` (1 poste).**
+- **Méthode, ce qui a tout débloqué** : 151 objets et 63 matériaux, un par couleur. Nouveau matériau unique `Idle/Palette` : la couleur et la brillance sont dans les sommets du maillage. Tout le décor fixe (herbe, dalle, muret, route, arbres, touffes, fleurs) tient en **un seul maillage**, chaque machine en un maillage par partie mobile, chaque voiture en un.
+- **Appels de dessin, 5 postes ouverts, HUD et tiroir compris : 102 avec le SRP Batcher, 74 sans** (247 avant, à décor bien plus pauvre) ; 21 à 27 setPass, ~30 000 triangles. **Objectif < 120 atteint dans l'éditeur.** Le regroupement dynamique a été activé dans les 3 profils de rendu, l'instanciation sur `Idle/Palette`. **Limites** : mesure lue dans la vue Game de l'éditeur, pas en 390x844 ni dans le navigateur ; ~30 000 triangles, c'est 2 fois plus qu'avant (surtout les arêtes biseautées et les fleurs) : à surveiller aux fps en U4. Les profils de rendu ne sont pas dans le dépôt (`Assets/Settings` n'est pas copié) : réglage local.
+- **(1) Ombres de contact** : sous chaque machine, tapis, arbre et sous la dalle, à bords doux, décalées vers l'avant, **un seul maillage** dont l'affichage suit les postes ouverts (`IdleContactShadows`, vérifié : 2 268 -> 2 808 indices en ouvrant les 4 postes). **Écart à ta consigne : opacité 36 à 50 %, pas 20 %** : le rendu en espace linéaire les atténue, à 20-30 % elles ne se voyaient presque pas. Pas d'ombre sous les voitures ni sous les caisses.
+- **(2) Herbe** : 2 verts par grandes plaques à contours doux, jusqu'à 260 touffes et 150 groupes de fleurs blanches et jaunes (semis fixe, ceux qui tombent sur la dalle ou la route sont retirés).
+- **(3) Muret** gris avec joints tout autour de la dalle, **liseré jaune en relief** sur le bord (remplace la ligne jaune intérieure). Coins carrés, pas arrondis comme la cible.
+- **(4) Matières** : reflet doux par sommet, arêtes biseautées sur les machines, caisses, tapis et voitures. Pied des objets assombri (fausse occlusion) par le shader, sans géométrie en plus. **Non converties** : écrans et gyrophares (matériaux qui alternent), tapis à chevrons, fantômes, plaques, étiquettes.
+- **(5) Lumière** : soleil chaud, ambiance plus contrastée. **Pas de ciel en dégradé** : avec cette caméra, on ne voit jamais le ciel, il aurait été invisible.
+- **Écran titre** : déjà centré et ancré en haut, rien à changer. Le logo tient en 390x844.
+- **Ma note face à `diorama-cible-1.jpg`, grille sur 10** : lisibilité 8, richesse du décor 6, lumière et couleur 7, vie 7, évolution visible 2, envie de jouer en 5 secondes 6. **Écarts restants** : machines bien plus simples que la cible (formes, portes, écrans), pas de buissons, lampadaires, étang (UW-2), dalle un peu plus grise que la cible, plaques carrées et non en pastilles arrondies.
+
+**Questions**
+1. La dalle : tu la veux plus claire et plus bleutée, comme la cible ? Je l'ai assombrie pour le contraste.
+2. Toujours ouvertes : logo sur écrans très allongés, musique par défaut, arrondi des prix, son du Turbo, sens du dégradé du tiroir, « +0,7 » sans « /s ».
+
+**Prochaine étape : UW-3** (l'usine qui grandit : aspects par palier, apparition spectaculaire des postes).
+
 **UW-5 — Écran titre, chargement, icône d'app, plus les 2 points de ta relecture : FAIT (sans build). Compilation 0/0, tests 171/171 (2 nouveaux), test de fumée OK. Captures : `captures/UW5-titre-390x844.png`, `UW5-chargement-390x844.png`, `UW5-main-bandeau-390x844.png`.**
 - **Écran titre** (`IdleTitleScreen`) : `ecran-titre-9x16.jpg` en plein écran (cover, ancré en haut), bouton **JOUER** vert qui bat, à chaque lancement. Le toucher libère le son, puis fondu de 0,45 s avec zoom de 6 %. **Vrai clic sur JOUER : l'écran se ferme.** Je n'ai pas regardé le fondu lui-même image par image. Sans le halo vert du web autour du bouton. L'ancien `TapToPlayScreen` et son code dans `WebGLBuilder` sont supprimés.
 - **Écran de chargement WebGL** : même image, la barre et « Chargement N % » à l'emplacement du bouton JOUER, pour un enchaînement sans saut ; le titre texte est retiré (le logo est dans l'image). **Vérifié sans build** : page générée et ouverte dans Chrome en 390x844, barre forcée à 62 %. Le vrai chargement se verra en U4.

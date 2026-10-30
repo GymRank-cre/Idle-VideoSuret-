@@ -44,6 +44,30 @@ public static class IdleMaterials
         return m;
     }
 
+    // Matériau unique du décor et des machines : la couleur est dans les sommets. `footBase` : niveau du sol sous ces objets.
+    public static Material Palette(string name = "Palette", float footBase = 0f)
+    {
+        if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Prototype", "Materials");
+        string path = Folder + "/Idle_" + name + ".mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/Palette")); AssetDatabase.CreateAsset(m, path); }
+        m.shader = Shader.Find("Idle/Palette");
+        m.SetFloat("_FootBase", footBase);
+        m.enableInstancing = true;
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
+    public static Material ContactShadow()
+    {
+        if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Prototype", "Materials");
+        string path = Folder + "/Idle_ContactShadow.mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/ContactShadow")); AssetDatabase.CreateAsset(m, path); }
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
     // Aplat dessiné par-dessus tout (plaques d'achat) ; `queue` fixe l'ordre entre les pièces d'une même plaque.
     public static Material Overlay(string name, string hex, int queue)
     {
