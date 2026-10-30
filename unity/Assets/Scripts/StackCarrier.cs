@@ -23,7 +23,7 @@ public class StackCarrier : MonoBehaviour
     const float BounceDuration = 0.22f;
 
     public int Count => items.Count;
-    public int Capacity => capacity + (upgrades == null ? 0 : employee ? upgrades.EmployeeExtraCapacity : upgrades.ExtraCapacity);
+    public int Capacity => capacity + (upgrades == null ? 0 : employee ? upgrades.EmployeeExtraCapacity : upgrades.ExtraCapacity) + (employee ? 0 : Bonuses.StackCapacity);
     public event System.Action OnCountChanged;
     public bool IsFull => items.Count >= Capacity;
     public bool MakesSound => makesSound;

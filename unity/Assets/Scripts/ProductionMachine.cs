@@ -18,7 +18,7 @@ public class ProductionMachine : MonoBehaviour, IMachineStatus, IThroughput
     public int InputCount => input;
     // Valeurs effectives : réglages + niveaux (AJOUTER = une unité de plus en parallèle, VITESSE = cycle plus court).
     int Extra => upgrades != null && !string.IsNullOrEmpty(machineId) ? upgrades.ExtraUnits(machineId) : 0;
-    public float CycleSeconds => config.CycleSeconds / (upgrades != null && !string.IsNullOrEmpty(machineId) ? upgrades.SpeedFactor(machineId) : 1f);
+    public float CycleSeconds => config.CycleSeconds / ((upgrades != null && !string.IsNullOrEmpty(machineId) ? upgrades.SpeedFactor(machineId) : 1f) * Bonuses.ChainSpeed);
     public int InputPerCycle => config.InputPerCycle + Extra;
     public int OutputPerCycle => config.OutputPerCycle + Extra;
     public int InputCapacity => config.InputCapacity + Extra * 2;

@@ -12,6 +12,7 @@ public class SaveSystem : MonoBehaviour
     [SerializeField] Wallet wallet;
     [SerializeField] UnlockPad[] pads;            // toutes les dalles, même cachées
     [SerializeField] ProPoints proPoints;         // Points Pro (11c)
+    [SerializeField] ReputationState reputation;  // arbre de bonus permanents (11d)
     [SerializeField] MachineUpgradeState machineUpgrades; // améliorations par machine (11b)
     [SerializeField] ProcessStation[] stations;   // machines de la chaîne (Test, Emballage)
     [SerializeField] GameObject belt1;            // tapis (actif = acheté)
@@ -75,6 +76,8 @@ public class SaveSystem : MonoBehaviour
             audioManager.Apply(loaded.soundOn, loaded.musicOn, loaded.vibrationOn);
         wallet.Add(loaded.money);
         if (proPoints != null && loaded.proPoints > 0) proPoints.Set(loaded.proPoints);
+        if (reputation != null && loaded.reputation != null)
+            foreach (SaveData.ReputationLevel r in loaded.reputation) reputation.SetLevel(r.id, r.level);
         if (upgradeState != null)
             foreach (SaveData.UpgradeLevel u in loaded.upgrades)
                 upgradeState.SetLevel(u.id, u.level);
@@ -148,7 +151,7 @@ public class SaveSystem : MonoBehaviour
     {
         float speed = machineUpgrades != null ? machineUpgrades.SpeedFactor(id) : 1f;
         int extra = machineUpgrades != null ? machineUpgrades.ExtraUnits(id) : 0;
-        return (c.OutputPerCycle + extra) / (c.CycleSeconds / speed);
+        return (c.OutputPerCycle + extra) / (c.CycleSeconds / (speed * Bonuses.ChainSpeed));
     }
 
     void Claim()
@@ -197,6 +200,9 @@ public class SaveSystem : MonoBehaviour
                 data.upgrades.Add(new SaveData.UpgradeLevel { id = upgradeState.Config.Upgrades[i].id, level = upgradeState.Level(i) });
         foreach (UnlockPad pad in pads)
             data.pads.Add(new SaveData.PadState { id = pad.SaveId, remaining = pad.RemainingPrice });
+        if (reputation != null)
+            for (int i = 0; i < reputation.Config.Nodes.Length; i++)
+                if (reputation.Level(i) > 0) data.reputation.Add(new SaveData.ReputationLevel { id = reputation.Config.Nodes[i].id, level = reputation.Level(i) });
         if (machineUpgrades != null)
             foreach (MachineUpgradeConfig.Machine m in machineUpgrades.Config.Machines)
                 data.machineLevels.Add(new SaveData.MachineLevel
@@ -334,6 +340,11 @@ public class SaveSystem : MonoBehaviour
         if (data.version < 6)
         {
             data.version = 6; // v5 : pas de Points Pro (0)
+        }
+        if (data.reputation == null) data.reputation = new System.Collections.Generic.List<SaveData.ReputationLevel>();
+        if (data.version < 7)
+        {
+            data.version = 7; // v6 : arbre Réputation vide (tous les niveaux à 0)
         }
         return data;
     }

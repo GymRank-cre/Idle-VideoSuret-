@@ -24,9 +24,9 @@ public static class OfflineEarnings
 
         long seconds = elapsedSeconds < 0 ? 0 : elapsedSeconds; // jamais négatif (horloge reculée)
         if (seconds < offline.MinSeconds) return 0;
-        double capped = Mathf.Min(seconds, offline.MaxHours * 3600f);
+        double capped = Mathf.Min(seconds, (offline.MaxHours + Bonuses.OfflineCapHours) * 3600f);
 
-        double assemblySpeed = chain.assemblySpeed > 0f ? chain.assemblySpeed : 1.0;
+        double assemblySpeed = (chain.assemblySpeed > 0f ? chain.assemblySpeed : 1.0) * Bonuses.ChainSpeed;
         int productsPerJob = Mathf.Min(station.ProductsPerJob + chain.assemblyExtraProducts, station.OutputCapacity);
         double stationRate = productsPerJob / ((double)station.JobDuration * jobDurationMultiplier / assemblySpeed);
         double haulerRate = (hauler.Capacity + employeeCapacityBonus) / ((double)offline.HaulerCycleSeconds / employeeSpeedMultiplier) * station.ProductsPerJob / station.CratesPerJob;
@@ -50,6 +50,6 @@ public static class OfflineEarnings
         }
         if (count == 0) return 0;
 
-        return (int)(rate * (sum / count) * chainMultiplier * payMultiplier * capped * offline.Efficiency);
+        return (int)(rate * (sum / count) * chainMultiplier * payMultiplier * Bonuses.Revenue * Bonuses.OfflineGain * capped * offline.Efficiency);
     }
 }

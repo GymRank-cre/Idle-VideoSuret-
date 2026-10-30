@@ -61,8 +61,9 @@ public class UnlockPad : MonoBehaviour
 
         // Sans argent le prix reste où il est : rien n'est perdu. Dalle répétable : n'importe quel prix se paie en ~1,5 s.
         int step = repeat != null ? Mathf.Max(config.PayStep, Mathf.CeilToInt(fullPrice * config.PayInterval / 1.5f)) : config.PayStep;
-        int amount = Mathf.Min(step, remainingPrice, wallet.Money);
-        if (amount <= 0 || !wallet.TrySpend(amount)) return;
+        int amount = Mathf.Min(step, remainingPrice, Mathf.FloorToInt(wallet.Money / Mathf.Max(0.2f, repeat != null ? 1f : Bonuses.PadPrice)));
+        int cost = repeat != null ? amount : Mathf.Max(1, Mathf.CeilToInt(amount * Bonuses.PadPrice)); // Réputation : remise sur les dalles
+        if (amount <= 0 || !wallet.TrySpend(cost)) return;
 
         remainingPrice -= amount;
         UpdateLabel();

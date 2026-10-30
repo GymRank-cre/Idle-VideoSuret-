@@ -75,7 +75,7 @@ public class OrderBoard : MonoBehaviour
         if (Unlocked)
         {
             offerTimer -= dt;
-            if (offerTimer <= 0f && offers.Count < config.MaxOffers)
+            if (offerTimer <= 0f && offers.Count < config.MaxOffers + Bonuses.OfferSlots)
             {
                 offers.Add(Generate(!firstOffered));
                 if (!firstOffered) { firstOffered = true; OnFirstOffer?.Invoke(); }
@@ -133,7 +133,7 @@ public class OrderBoard : MonoBehaviour
 
         int baseValue = 0;
         for (int i = 0; i < types.Length; i++) baseValue += types[i].Value * o.counts[i];
-        o.reward = config.Reward(baseValue);
+        o.reward = Mathf.RoundToInt(config.Reward(baseValue) * Bonuses.Revenue);
         o.pro = config.ProPoints(o.reward);
         return o;
     }
@@ -151,7 +151,7 @@ public class OrderBoard : MonoBehaviour
         active = offers[index];
         offers.RemoveAt(index);
         delivered = new int[types.Length];
-        patienceTotal = patienceLeft = config.Tiers[active.tier].patience;
+        patienceTotal = patienceLeft = config.Tiers[active.tier].patience * Bonuses.OrderPatience;
         OnAccepted?.Invoke(active);
         OnChanged?.Invoke();
         return true;

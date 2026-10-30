@@ -122,7 +122,7 @@ public class InstallStation : MonoBehaviour, IMachineStatus, IProductSource, ITh
     int ProductsPerJobNow => MakesProducts ? Mathf.Min(config.ProductsPerJob + ExtraUnits, config.OutputCapacity) : config.ProductsPerJob;
     int CratesPerJobNow => config.CratesPerJob * ProductsPerJobNow / Mathf.Max(1, config.ProductsPerJob);
     float JobDuration => config.JobDuration * (upgrades != null ? upgrades.JobDuration : 1f)
-        / (machineUpgrades != null ? machineUpgrades.SpeedFactor(machineId) : 1f);
+        / ((machineUpgrades != null ? machineUpgrades.SpeedFactor(machineId) : 1f) * Bonuses.ChainSpeed);
     public float ThroughputPerSecond => ProductsPerJobNow / JobDuration;
 
     void UpdateJob()

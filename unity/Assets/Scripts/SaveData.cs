@@ -5,7 +5,7 @@ using System.Collections.Generic;
 [Serializable]
 public class SaveData
 {
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
     [Serializable]
     public class PadState
@@ -37,6 +37,13 @@ public class SaveData
         public int add;
     }
 
+    [System.Serializable]
+    public class ReputationLevel
+    {
+        public string id;
+        public int level;
+    }
+
     public int version = CurrentVersion;
     public int money;
     public long lastSaveUtc;                 // secondes Unix
@@ -45,6 +52,7 @@ public class SaveData
     public List<UpgradeLevel> upgrades = new List<UpgradeLevel>(); // v2
     public List<MachineStock> machines = new List<MachineStock>(); // v4 : stocks des machines de la chaîne
     public List<MachineLevel> machineLevels = new List<MachineLevel>(); // v5 : améliorations par machine
+    public List<ReputationLevel> reputation = new List<ReputationLevel>(); // v7 : niveaux de l'arbre Réputation
     public int proPoints;                    // v6 : Points Pro (commandes de clients)
     public bool settingsSaved;               // v3 : faux = anciennes sauvegardes, on garde les réglages par défaut
     public bool soundOn = true;

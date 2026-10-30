@@ -16,6 +16,15 @@ public class ProPoints : MonoBehaviour
         OnChanged?.Invoke(points);
     }
 
+    // Dépense `amount` Points Pro s'il y en a assez ; sinon ne touche à rien.
+    public bool TrySpend(int amount)
+    {
+        if (amount <= 0 || amount > points) return false;
+        points -= amount;
+        OnChanged?.Invoke(points);
+        return true;
+    }
+
     // Restauration depuis la sauvegarde.
     public void Set(int value)
     {

@@ -69,7 +69,7 @@ public class PlayerController : MonoBehaviour
             right = Vector3.ProjectOnPlane(cameraTransform.right, Vector3.up).normalized;
         }
 
-        Vector3 planar = (forward * input.y + right * input.x) * moveSpeed * (upgrades != null ? upgrades.PlayerSpeed : 1f);
+        Vector3 planar = (forward * input.y + right * input.x) * moveSpeed * (upgrades != null ? upgrades.PlayerSpeed : 1f) * Bonuses.PlayerSpeed;
         Vector3 velocity = planar;
         velocity.y = -2f; // plaque le personnage au sol
 

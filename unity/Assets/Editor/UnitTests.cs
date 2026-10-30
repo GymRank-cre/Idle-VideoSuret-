@@ -54,7 +54,7 @@ public static class UnitTests
         Eq("9", cur.money.ToString(), "sauvegarde courante inchangée");
 
         SaveData v3 = SaveSystem.Migrate(new SaveData { version = 3, money = 7, machines = null });
-        Eq("6", v3.version.ToString(), "migration v3 -> version courante (6)");
+        Eq("7", v3.version.ToString(), "migration v3 -> version courante (7)");
         Eq("True", (v3.machines != null && v3.machines.Count == 0).ToString(), "migration v3 -> v4 : aucune machine");
         Eq("7", v3.money.ToString(), "migration v3 -> v4 : l'argent est conservé");
 
@@ -148,7 +148,7 @@ public static class UnitTests
         }
 
         SaveData v4 = SaveSystem.Migrate(new SaveData { version = 4, money = 9, machineLevels = null });
-        Eq("6", v4.version.ToString(), "migration v4 -> version courante (6)");
+        Eq("7", v4.version.ToString(), "migration v4 -> version courante (7)");
         Eq("True", (v4.machineLevels != null && v4.machineLevels.Count == 0).ToString(), "migration v4 -> v5 : tout à 0");
 
         // 11c : commandes de clients
@@ -219,8 +219,83 @@ public static class UnitTests
         }
 
         SaveData v5 = SaveSystem.Migrate(new SaveData { version = 5, money = 3 });
-        Eq("6", v5.version.ToString(), "migration v5 -> v6 : version");
+        Eq("7", v5.version.ToString(), "migration v5 -> version courante (7)");
         Eq("0", v5.proPoints.ToString(), "migration v5 -> v6 : 0 Point Pro");
+
+        // 11d : Réputation (arbre de bonus permanents)
+        {
+            ReputationConfig rc = ReputationBuilder.LoadOrCreateConfig();
+            var rgo = new GameObject("RepTest");
+            var points = rgo.AddComponent<ProPoints>();
+            var rep = rgo.AddComponent<ReputationState>();
+            var rso = new SerializedObject(rep);
+            rso.FindProperty("config").objectReferenceValue = rc;
+            rso.FindProperty("pro").objectReferenceValue = points;
+            rso.ApplyModifiedPropertiesWithoutUndo();
+            Bonuses.Reset();
+            rep.Recompute();
+            Eq("10", rc.Nodes.Length.ToString(), "10 noeuds de départ");
+            Eq("1,00", Bonuses.Revenue.ToString("0.00"), "aucun bonus au départ");
+            Eq("False", rep.TryBuy(0).ToString(), "sans Points Pro : pas d'achat");
+            points.Add(100);
+            int rIdx = rc.IndexOf("revenue");
+            Eq("2", rep.NextCost(rIdx).ToString(), "revenus niveau 1 : 2 Points Pro");
+            Eq("True", rep.TryBuy(rIdx).ToString(), "achat de Revenus");
+            Eq("98", points.Points.ToString(), "2 Points Pro dépensés");
+            rep.TryBuy(rIdx); rep.TryBuy(rIdx);
+            Eq("1,30", Bonuses.Revenue.ToString("0.00"), "Revenus niveau 3 : +30 %");
+            Eq("3", rep.NextCost(rIdx) > rep.NextCost(0) - 1 ? "3" : "x", "coût croissant (x1,6)");
+            int oIdx = rc.IndexOf("offlinecap");
+            Eq("False", rep.CanBuy(oIdx).ToString(), "plafond hors ligne verrouillé sans Gains hors ligne niv 2");
+            Eq("True", (rep.MissingPrerequisite(oIdx) != null).ToString(), "prérequis nommé");
+            int gIdx = rc.IndexOf("offline");
+            rep.TryBuy(gIdx); rep.TryBuy(gIdx);
+            Eq("True", rep.CanBuy(oIdx).ToString(), "plafond hors ligne débloqué au niveau 2");
+            rep.TryBuy(oIdx);
+            Eq("4,00", Bonuses.OfflineCapHours.ToString("0.00"), "plafond hors ligne +4 h");
+            Eq("1,40", Bonuses.OfflineGain.ToString("0.00"), "gains hors ligne +40 % (niveau 2)");
+            Eq("False", rep.CanBuy(rc.IndexOf("active")).ToString(), "noeud pas encore géré : non achetable");
+            rep.SetLevel("stack", 99);
+            Eq("5", Bonuses.StackCapacity.ToString(), "pile : niveau plafonné à 5 -> +5 caisses");
+            rep.SetLevel("discount", 5);
+            Eq("0,80", Bonuses.PadPrice.ToString("0.00"), "remise sur les dalles -20 %");
+            rep.SetLevel("patience", 4);
+            Eq("1,60", Bonuses.OrderPatience.ToString("0.00"), "patience des clients +60 %");
+            rep.SetLevel("offers", 1);
+            Eq("1", Bonuses.OfferSlots.ToString(), "une offre de plus");
+
+            // hors ligne : plafond relevé et gains multipliés
+            Bonuses.Reset();
+            var offCfg2 = ScriptableObject.CreateInstance<OfflineConfig>();
+            var stCfg2 = ScriptableObject.CreateInstance<StationConfig>();
+            var emp2 = ScriptableObject.CreateInstance<EmployeeConfig>();
+            var cust2 = ScriptableObject.CreateInstance<CustomerConfig>();
+            var pt2 = ScriptableObject.CreateInstance<ProductType>();
+            var s2 = new SerializedObject(stCfg2);
+            SerializedProperty pr2 = s2.FindProperty("products");
+            pr2.arraySize = 1; pr2.GetArrayElementAtIndex(0).objectReferenceValue = pt2;
+            s2.ApplyModifiedPropertiesWithoutUndo();
+            var p2 = new SerializedObject(pt2); p2.FindProperty("value").intValue = 100; p2.ApplyModifiedPropertiesWithoutUndo();
+            var o2 = new SerializedObject(offCfg2); o2.FindProperty("efficiency").floatValue = 1f; o2.FindProperty("minSeconds").floatValue = 0f; o2.FindProperty("maxHours").floatValue = 1f; o2.ApplyModifiedPropertiesWithoutUndo();
+            var c2 = new SerializedObject(cust2); c2.FindProperty("spawnInterval").floatValue = 0.5f; c2.ApplyModifiedPropertiesWithoutUndo();
+            var e2 = new SerializedObject(emp2); e2.FindProperty("capacity").intValue = 100; e2.ApplyModifiedPropertiesWithoutUndo();
+            int baseGain = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
+            Bonuses.OfflineGain = 2f;
+            int boosted = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
+            Eq(baseGain.ToString(), (boosted / 2).ToString(), "hors ligne : Gains x2 = gain doublé");
+            Bonuses.OfflineGain = 1f;
+            Bonuses.OfflineCapHours = 1f;   // plafond 1 h + 1 h : 2 h au lieu de 1 h
+            int capped = OfflineEarnings.Compute(7200, true, true, offCfg2, stCfg2, emp2, emp2, cust2);
+            Eq(baseGain.ToString(), (capped / 2).ToString(), "hors ligne : plafond relevé = 2x plus de temps pris en compte");
+            Bonuses.Reset();
+            Object.DestroyImmediate(rgo);
+            Object.DestroyImmediate(offCfg2); Object.DestroyImmediate(stCfg2); Object.DestroyImmediate(emp2);
+            Object.DestroyImmediate(cust2); Object.DestroyImmediate(pt2);
+        }
+
+        SaveData v6 = SaveSystem.Migrate(new SaveData { version = 6, money = 4, reputation = null });
+        Eq("7", v6.version.ToString(), "migration v6 -> v7 : version");
+        Eq("True", (v6.reputation != null && v6.reputation.Count == 0).ToString(), "migration v6 -> v7 : arbre vide");
 
         // Économie : coût des améliorations strictement positif et croissant
         foreach (UpgradeConfig cfg in Resources.FindObjectsOfTypeAll<UpgradeConfig>())

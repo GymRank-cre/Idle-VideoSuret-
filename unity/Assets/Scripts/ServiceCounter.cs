@@ -109,7 +109,7 @@ public class ServiceCounter : MonoBehaviour
 
     void CompleteOrder(Customer customer, bool byEmployee = false)
     {
-        int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * customer.AverageValueFactor * (upgrades != null ? upgrades.CustomerPay : 1f));
+        int total = Mathf.RoundToInt(customer.OrderType.Value * customer.Quantity * customer.AverageValueFactor * (upgrades != null ? upgrades.CustomerPay : 1f) * Bonuses.Revenue);
         SpawnBills(total);
         AudioManager.PlayAt(SfxId.OrderPaid, customer.transform.position, byEmployee);
         if (feedback != null) feedback.ProductReady(customer.transform.position + Vector3.up * 1.9f); // pop de bonheur

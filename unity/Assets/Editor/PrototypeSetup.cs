@@ -122,6 +122,7 @@ public static class PrototypeSetup
         MachineBuilder.Build(); // voyant et stocks au-dessus des machines (11a)
         MachineUpgradeBuilder.Build(); // améliorations par machine : dalles, niveaux, conseiller (11b)
         OrderBuilder.Build(); // commandes de clients : tableau, quai, camionnette, interface (11c)
+        ReputationBuilder.Build(); // arbre de bonus permanents « Réputation » (11d)
         DemandBuilder.Build(); // production à la demande des clients (étape 6c)
         UpgradeBuilder.Build(); // améliorations : état, bouton et panneau (étape 7b)
         AudioBuilder.Build(); // sons, musique, réglages (étape 8a)
