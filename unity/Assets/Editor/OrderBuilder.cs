@@ -81,7 +81,7 @@ public static class OrderBuilder
             GameObject g = GameObject.Find(old);
             if (g != null) Object.DestroyImmediate(g);
         }
-        foreach (string old in new[] { "OrdersButton", "OrdersPanel", "OrdersHost", "OrderBar", "ProPill" })
+        foreach (string old in new[] { "OrdersButton", "OrdersPanel", "OrdersHost", "OrderBar", "ProPill", "OrderDoneBanner", "OrderDoneHost" })
         {
             Transform t = safe.Find(old);
             if (t != null) Object.DestroyImmediate(t.gameObject);
@@ -347,6 +347,8 @@ public static class OrderBuilder
         star.GetComponent<Image>().preserveAspect = true;
         Text proText = UpgradeBuilder.Label("Value", proPill, "0", 70, Color.white, new Vector2(34f, 0f), new Vector2(180f, 100f));
 
+        BuildDoneBanner(safe, board, rounded, proPill);
+
         GameObject host = new GameObject("OrdersHost", typeof(RectTransform), typeof(OrdersUi));
         host.transform.SetParent(safe, false);
         var ui = host.GetComponent<OrdersUi>();
@@ -374,6 +376,44 @@ public static class OrderBuilder
         SerializedProperty list = so.FindProperty("cards");
         list.arraySize = cards.Length;
         for (int i = 0; i < cards.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = cards[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // P2 : bandeau « Commande livrée ! » (caché), avec les puces +$ et +Points Pro qui s'envolent vers les pastilles.
+    static void BuildDoneBanner(Transform safe, OrderBoard board, Sprite rounded, RectTransform proPill)
+    {
+        RectTransform banner = UpgradeBuilder.Box("OrderDoneBanner", safe, rounded, new Color32(0x12, 0x1A, 0x24, 0xF2), Vector2.zero, new Vector2(820f, 270f), false);
+        banner.anchorMin = banner.anchorMax = banner.pivot = new Vector2(0.5f, 1f);
+        banner.anchoredPosition = new Vector2(0f, -560f);
+        banner.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
+        Text title = UpgradeBuilder.Label("Title", banner, "", 64, UiTheme.Yellow, new Vector2(0f, 82f), new Vector2(780f, 80f));
+        Text client = UpgradeBuilder.Label("Client", banner, "", 44, Color.white, new Vector2(0f, 14f), new Vector2(780f, 60f));
+
+        RectTransform moneyChip = UpgradeBuilder.Box("MoneyChip", banner, rounded, new Color32(0x3D, 0xDC, 0x5A, 0xFF), new Vector2(-170f, -78f), new Vector2(320f, 90f), false);
+        RectTransform bill = UpgradeBuilder.Box("Bill", moneyChip, UiSprites.Bill(), Color.white, new Vector2(-112f, 0f), new Vector2(78f, 50f), false);
+        bill.GetComponent<Image>().type = Image.Type.Simple;
+        bill.GetComponent<Image>().preserveAspect = true;
+        Text moneyText = UpgradeBuilder.Label("Value", moneyChip, "+0", 54, Color.white, new Vector2(34f, 0f), new Vector2(210f, 80f));
+
+        RectTransform proChip = UpgradeBuilder.Box("ProChip", banner, rounded, new Color32(0x1B, 0xA8, 0xBB, 0xFF), new Vector2(190f, -78f), new Vector2(280f, 90f), false);
+        RectTransform star = UpgradeBuilder.Box("Star", proChip, UiSprites.Star(), Color.white, new Vector2(-96f, 0f), new Vector2(60f, 60f), false);
+        star.GetComponent<Image>().type = Image.Type.Simple;
+        star.GetComponent<Image>().preserveAspect = true;
+        Text proText = UpgradeBuilder.Label("Value", proChip, "+0", 54, Color.white, new Vector2(30f, 0f), new Vector2(170f, 80f));
+
+        GameObject host = new GameObject("OrderDoneHost", typeof(RectTransform), typeof(OrderDoneBanner));
+        host.transform.SetParent(safe, false);
+        var so = new SerializedObject(host.GetComponent<OrderDoneBanner>());
+        so.FindProperty("board").objectReferenceValue = board;
+        so.FindProperty("banner").objectReferenceValue = banner;
+        so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("clientText").objectReferenceValue = client;
+        so.FindProperty("moneyChip").objectReferenceValue = moneyChip;
+        so.FindProperty("moneyText").objectReferenceValue = moneyText;
+        so.FindProperty("proChip").objectReferenceValue = proChip;
+        so.FindProperty("proText").objectReferenceValue = proText;
+        so.FindProperty("moneyTarget").objectReferenceValue = safe.Find("MoneyPill");
+        so.FindProperty("proTarget").objectReferenceValue = proPill;
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 

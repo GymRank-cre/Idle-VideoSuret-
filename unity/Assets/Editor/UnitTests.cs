@@ -301,6 +301,12 @@ public static class UnitTests
         {
             Vector3 fb = new Vector3(1f, 0f, 2f);
             Eq(ObjectiveGuide.PhraseCount.ToString(), ScriptableObject.CreateInstance<GuideConfig>().Phrases.Length.ToString(), "guide : une phrase par étape (TEST, EMBALLAGE, TAPIS inclus)");
+            Eq("0.00", OrderDoneBanner.FlyEase(0f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : départ de la puce");
+            Eq("1.00", OrderDoneBanner.FlyEase(1f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : la puce arrive");
+            Eq("1.00", OrderDoneBanner.FlyEase(5f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : au-delà de la fin, bornée à 1");
+            Eq("0.00", OrderDoneBanner.SlideEase(-3f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : avant le début, borné à 0");
+            Eq("1.00", OrderDoneBanner.SlideEase(1f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), "bandeau : posé exactement à sa place");
+            Eq("True", (OrderDoneBanner.SlideEase(0.7f) > 1f).ToString(), "bandeau : léger dépassement avant de se poser");
             Eq("(-8.0, 0.0, 11.0)", FreeViewMath.ClampCenter(new Vector3(-50f, 3f, 99f), fb).ToString("F1"), "limites de l'atelier");
             Eq("(5.0, 0.0, 5.0)", FreeViewMath.ClampCenter(new Vector3(5f, 7f, 5f), fb).ToString("F1"), "dans l'atelier : inchangé, hauteur à 0");
             Eq("(1.0, 0.0, 2.0)", FreeViewMath.ClampCenter(new Vector3(float.NaN, 0f, 0f), fb).ToString("F1"), "NaN rejeté : on garde la position précédente");

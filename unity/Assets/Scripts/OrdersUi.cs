@@ -26,6 +26,8 @@ public class OrdersUi : MonoBehaviour
 
     bool hintShown;
     float proPop = -1f;
+    float proShown;   // valeur affichée, qui défile vers les points réels
+    int proTarget;
     Vector3 proBase;
 
     void Awake()
@@ -78,8 +80,8 @@ public class OrdersUi : MonoBehaviour
 
     void OnPro(int points)
     {
-        proText.text = NumberFormat.Short(points);
-        if (!proPill.activeSelf) proPill.SetActive(true);
+        proTarget = points;
+        if (!proPill.activeSelf) { proShown = points; proText.text = NumberFormat.Short(points); proPill.SetActive(true); }
         proPop = 0f;
     }
 
@@ -167,6 +169,11 @@ public class OrdersUi : MonoBehaviour
     void Update()
     {
         if (board.HasActive && bar.activeSelf) barFill.fillAmount = board.PatienceFraction;
+        if (!Mathf.Approximately(proShown, proTarget))   // le compteur de Points Pro défile comme celui de l'argent
+        {
+            proShown = proTarget < proShown ? proTarget : Mathf.MoveTowards(proShown, proTarget, Mathf.Max(1f, Mathf.Abs(proTarget - proShown)) * 6f * Time.deltaTime);
+            proText.text = NumberFormat.Short(Mathf.RoundToInt(proShown));
+        }
         if (proPop >= 0f)
         {
             proPop += Time.deltaTime;
