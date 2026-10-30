@@ -24,6 +24,10 @@ public class ObjectiveGuide : MonoBehaviour
     [SerializeField] Transform arrow;             // flèche 3D (enfant de rien : placée par ce script)
     [SerializeField] Text label;
     [SerializeField] GameObject labelRoot;
+    [Header("Objectif réel après le tutoriel (11c-bis)")]
+    [SerializeField] OrderBoard board;
+    [SerializeField] MachineUpgradeState machineUpgrades;
+    [SerializeField] MachineUpgradeAdvisor advisor;
 
     Step step;
     string[] phrases;
@@ -45,9 +49,19 @@ public class ObjectiveGuide : MonoBehaviour
         ShowPhrase();
     }
 
+    float lateTimer;
+
     void Update()
     {
-        if (step == Step.Done) return;
+        if (step == Step.Done)
+        {
+            lateTimer += Time.deltaTime;
+            if (lateTimer >= 0.5f) { lateTimer = 0f; LateGuide(); }
+            return;
+        }
+
+        // le joueur est déjà en pleine chaîne (Emballage débloquée) : le tutoriel du début n'a plus lieu d'être
+        if (board != null && board.Unlocked && board.gameObject.activeInHierarchy) Finish(true);
 
         // Les états coûteux (recherche des produits et billets) ne sont lus que quelques fois par seconde.
         checkTimer += Time.deltaTime;
@@ -163,6 +177,24 @@ public class ObjectiveGuide : MonoBehaviour
     {
         if (label != null && (int)step < phrases.Length) label.text = phrases[(int)step];
         if (upgradePanel != null) upgradePanel.SetHighlight(step == Step.OpenUpgrades); // le bouton bat pendant la dernière étape
+    }
+
+    // Après le tutoriel : une commande à prendre d'abord, puis la machine à améliorer si on en a les moyens, sinon silence.
+    void LateGuide()
+    {
+        if (label == null || labelRoot == null) return;
+        string text = null;
+        if (board != null && board.Unlocked && board.Offers.Count > 0 && !board.HasActive) text = Loc.T("guide.order");
+        else if (machineUpgrades != null && advisor != null && !string.IsNullOrEmpty(advisor.Bottleneck)) // machine goulot abordable
+        {
+            string id = advisor.Bottleneck;
+            int cost = machineUpgrades.IsMax(id, MachineUpgradeState.Speed) ? int.MaxValue : machineUpgrades.NextCost(id, MachineUpgradeState.Speed);
+            int i = machineUpgrades.Config.IndexOf(id);
+            if (i >= 0 && wallet.Money >= cost) text = Loc.T("guide.upgrade", machineUpgrades.Config.Machines[i].displayName);
+        }
+        if (text == null) { if (labelRoot.activeSelf) labelRoot.SetActive(false); return; }
+        label.text = text;
+        if (!labelRoot.activeSelf) labelRoot.SetActive(true);
     }
 
     void Finish(bool remember)

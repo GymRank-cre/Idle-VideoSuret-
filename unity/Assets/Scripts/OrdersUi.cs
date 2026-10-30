@@ -21,6 +21,8 @@ public class OrdersUi : MonoBehaviour
     [SerializeField] Text proText;
     [SerializeField] CameraFollow cameraFollow;
     [SerializeField] Transform dockPoint;
+    [SerializeField] Button backdrop;                 // fond sombre cliquable : toucher en dehors = fermer
+    [SerializeField] string[] hideNames;              // consigne et boutons carrés (enfants de la zone sûre), masqués quand le panneau est ouvert
 
     bool hintShown;
     float proPop = -1f;
@@ -35,6 +37,7 @@ public class OrdersUi : MonoBehaviour
         proBase = proPill.transform.localScale;
         openButton.onClick.AddListener(Toggle);
         closeButton.onClick.AddListener(Close);
+        if (backdrop != null) { backdrop.onClick.AddListener(Close); backdrop.gameObject.SetActive(false); }
         for (int i = 0; i < cards.Length; i++)
         {
             int index = i;
@@ -86,16 +89,36 @@ public class OrdersUi : MonoBehaviour
         if (panel.activeSelf) Close(); else Open();
     }
 
-    void Open()
+    public void Open()
     {
+        if (backdrop != null) { backdrop.gameObject.SetActive(true); backdrop.transform.SetAsLastSibling(); }
         panel.SetActive(true);
-        panel.transform.SetAsLastSibling(); // au-dessus des boutons voisins (Améliorations, Commandes)
+        panel.transform.SetAsLastSibling(); // au-dessus de tout, fond sombre compris
+        SetHidden(true);
         hintShown = false;
         Refresh();
     }
 
+    // Consigne et boutons carrés : invisibles et non cliquables tant que le panneau est ouvert.
+    void SetHidden(bool hidden)
+    {
+        if (hideNames == null) return;
+        foreach (string n in hideNames)
+        {
+            Transform t = transform.parent != null ? transform.parent.Find(n) : null; // construits après ce script : résolus à l'ouverture
+            if (t == null) continue;
+            GameObject g = t.gameObject;
+            CanvasGroup cg = g.GetComponent<CanvasGroup>();
+            if (cg == null) cg = g.AddComponent<CanvasGroup>();
+            cg.alpha = hidden ? 0f : 1f;
+            cg.blocksRaycasts = !hidden;
+        }
+    }
+
     void Close()
     {
+        SetHidden(false);
+        if (backdrop != null) backdrop.gameObject.SetActive(false);
         panel.SetActive(false);
         RefreshBar();
     }

@@ -67,6 +67,9 @@ public static class GuideBuilder
         so.FindProperty("courierPadObject").objectReferenceValue = FindPad("HirePadCourier");
         so.FindProperty("upgradePanel").objectReferenceValue = Object.FindFirstObjectByType<UpgradePanel>();
         so.FindProperty("arrow").objectReferenceValue = arrow;
+        so.FindProperty("board").objectReferenceValue = Object.FindFirstObjectByType<OrderBoard>();
+        so.FindProperty("machineUpgrades").objectReferenceValue = Object.FindFirstObjectByType<MachineUpgradeState>();
+        so.FindProperty("advisor").objectReferenceValue = Object.FindFirstObjectByType<MachineUpgradeAdvisor>();
         so.FindProperty("label").objectReferenceValue = label;
         so.FindProperty("labelRoot").objectReferenceValue = bar;
         so.ApplyModifiedPropertiesWithoutUndo();

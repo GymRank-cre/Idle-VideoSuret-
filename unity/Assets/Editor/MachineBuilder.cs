@@ -74,15 +74,15 @@ public static class MachineBuilder
         SpriteRenderer pill = pillGo.GetComponent<SpriteRenderer>();
         pill.sprite = UiSprites.Rounded();
         pill.drawMode = SpriteDrawMode.Sliced;
-        pill.size = new Vector2(2.05f, 0.55f);
+        pill.size = new Vector2(2.5f, 0.55f);
         pill.color = UiTheme.Slate;
         pill.sortingOrder = 10;
 
         // icônes : caisse (entrée) et produit (sortie) en petits carrés arrondis colorés
-        Icon(visual, "CrateIcon", new Vector3(-0.82f, 0f, 0f), new Color32(0xB9, 0x82, 0x4A, 0xFF));
-        Icon(visual, "ProductIcon", new Vector3(0.12f, 0f, 0f), new Color32(0xE8, 0xEE, 0xF5, 0xFF));
-        TextMesh[] inputs = Number(visual, "In", new Vector3(-0.6f, 0f, 0f));
-        TextMesh[] outputs = Number(visual, "Out", new Vector3(0.34f, 0f, 0f));
+        Icon(visual, "CrateIcon", new Vector3(-1.02f, 0f, 0f), new Color32(0xB9, 0x82, 0x4A, 0xFF));
+        Icon(visual, "ProductIcon", new Vector3(0.18f, 0f, 0f), new Color32(0xE8, 0xEE, 0xF5, 0xFF));
+        TextMesh[] inputs = Number(visual, "In", new Vector3(-0.8f, 0f, 0f));
+        TextMesh[] outputs = Number(visual, "Out", new Vector3(0.4f, 0f, 0f));
         visual.localScale = Vector3.one * 0.6f; // pastille ~ 0,9 m à la distance de référence (< 9 % de la largeur d'écran)
 
         var label = root.AddComponent<StockLabel>();

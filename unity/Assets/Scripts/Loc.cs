@@ -26,6 +26,8 @@ public static class Loc
         { "title.sub", "Installation de sécurité électronique" },
         { "title.play", "Jouer" },
         { "machine.level", "Niv {0}" },
+        { "guide.order", "Une commande t'attend !" },
+        { "guide.upgrade", "Améliore : {0}" },
         { "orders.title", "COMMANDES" },
         { "orders.accept", "Accepter" },
         { "orders.refuse", "Refuser" },

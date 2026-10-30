@@ -9,6 +9,7 @@ public class DeliveryVan : MonoBehaviour
     [SerializeField] OrderBoard board;
     [SerializeField] Transform awayPoint;     // hors de l'atelier
     [SerializeField] Transform parkPoint;     // au quai
+    [SerializeField] Transform peekPoint;     // ce que la caméra montre à l'arrivée (entre le quai et la camionnette)
     [SerializeField] SpriteRenderer moodBubble;
     [SerializeField] Sprite[] moodSprites;    // content, neutre, en colère
     [SerializeField] FeedbackSpawner feedback;
@@ -43,7 +44,7 @@ public class DeliveryVan : MonoBehaviour
     {
         state = State.Arriving;
         t = 0f;
-        if (cameraFollow != null) cameraFollow.Peek(parkPoint, 1.4f);
+        if (cameraFollow != null) cameraFollow.Peek(peekPoint != null ? peekPoint : parkPoint, 2.6f);
     }
 
     void OnCompleted(OrderBoard.Offer o)

@@ -13,6 +13,7 @@ public class OrderConfig : ScriptableObject
         public Color skin = new Color32(0xE0, 0xAC, 0x82, 0xFF);
         public Color hair = new Color32(0x3B, 0x2A, 0x20, 0xFF);
         public Color cloth = new Color32(0x1F, 0xA0, 0xFF, 0xFF);
+        public Color backdrop = new Color32(0xCF, 0xE6, 0xFF, 0xFF); // fond pastel clair du portrait
     }
 
     [Serializable]

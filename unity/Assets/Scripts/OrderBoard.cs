@@ -138,6 +138,13 @@ public class OrderBoard : MonoBehaviour
         return o;
     }
 
+    // Ajoute une offre à la liste (démonstration, tests).
+    public void AddOffer(Offer offer)
+    {
+        offers.Add(offer);
+        OnChanged?.Invoke();
+    }
+
     public bool Accept(int index)
     {
         if (index < 0 || index >= offers.Count || active != null) return false; // une commande en cours à la fois

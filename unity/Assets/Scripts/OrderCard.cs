@@ -5,7 +5,11 @@ using UnityEngine.UI;
 // Une carte du panneau des commandes : portrait (formes simples), contenu, valeur, boutons Refuser / Accepter / x2.
 public class OrderCard : MonoBehaviour
 {
+    [SerializeField] Image bg;
     [SerializeField] Image skin;
+    [SerializeField] Image earLeft;
+    [SerializeField] Image earRight;
+    [SerializeField] Image nose;
     [SerializeField] Image hair;
     [SerializeField] Image cloth;
     [SerializeField] Text nameText;
@@ -26,7 +30,10 @@ public class OrderCard : MonoBehaviour
     {
         OrderBoard.Offer o = board.Offers[index];
         OrderConfig.Client c = board.Config.Clients[o.clientIndex];
+        bg.color = c.backdrop;
         skin.color = c.skin; hair.color = c.hair; cloth.color = c.cloth;
+        earLeft.color = earRight.color = c.skin;
+        nose.color = Color.Lerp(c.skin, Color.black, 0.18f);
         nameText.text = c.displayName + " - " + c.job;
         contentText.text = Describe(board, o);
         rewardText.text = "$ " + NumberFormat.Short(o.reward) + "   " + Loc.T("orders.reward", "", o.pro).Trim();
@@ -41,9 +48,19 @@ public class OrderCard : MonoBehaviour
         {
             if (o.counts[i] <= 0) continue;
             if (sb.Length > 0) sb.Append(" + ");
-            sb.Append(o.counts[i]).Append(' ').Append(board.Types[i].DisplayName);
+            sb.Append(o.counts[i]).Append(' ').Append(Plural(board.Types[i].DisplayName, o.counts[i]));
         }
         return sb.ToString();
+    }
+
+    // « Caméra dôme » -> « caméras dôme », « Badgeuse » -> « badgeuses » : minuscule, « s » sur le premier mot si plusieurs.
+    public static string Plural(string name, int count)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        string lower = char.ToLower(name[0]) + name.Substring(1);
+        if (count <= 1) return lower;
+        int space = lower.IndexOf(' ');
+        return space < 0 ? lower + "s" : lower.Substring(0, space) + "s" + lower.Substring(space);
     }
 
     public void ShowLater()

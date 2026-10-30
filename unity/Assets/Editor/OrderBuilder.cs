@@ -21,12 +21,12 @@ public static class OrderBuilder
         var so = new SerializedObject(config);
         object[][] clients =
         {
-            new object[] { "Karim", "Gérant", "E0AC82", "3B2A20", "1FA0FF" },
-            new object[] { "Léa", "Boulangère", "F2C9A5", "7A4A2A", "F2453D" },
-            new object[] { "Marc", "Garagiste", "C68A5E", "1A1A1A", "3DDC5A" },
-            new object[] { "Inès", "Pharmacienne", "8D5A3C", "0E0E12", "A855F7" },
-            new object[] { "Paul", "Hôtelier", "F5D2B3", "C9A24A", "FF7A1A" },
-            new object[] { "Sofia", "Directrice", "D9A074", "5A2E1A", "27D3E6" },
+            new object[] { "Karim", "Gérant", "E0AC82", "3B2A20", "1FA0FF", "CFE6FF" },
+            new object[] { "Léa", "Boulangère", "F2C9A5", "7A4A2A", "F2453D", "FFD6DC" },
+            new object[] { "Marc", "Garagiste", "C68A5E", "1A1A1A", "3DDC5A", "D6F5D2" },
+            new object[] { "Inès", "Pharmacienne", "8D5A3C", "0E0E12", "A855F7", "E8D9FF" },
+            new object[] { "Paul", "Hôtelier", "F5D2B3", "C9A24A", "FF7A1A", "FFE8C7" },
+            new object[] { "Sofia", "Directrice", "D9A074", "5A2E1A", "27D3E6", "CFF3F7" },
         };
         SerializedProperty list = so.FindProperty("clients");
         list.arraySize = clients.Length;
@@ -38,6 +38,7 @@ public static class OrderBuilder
             e.FindPropertyRelative("skin").colorValue = Hex((string)clients[i][2]);
             e.FindPropertyRelative("hair").colorValue = Hex((string)clients[i][3]);
             e.FindPropertyRelative("cloth").colorValue = Hex((string)clients[i][4]);
+            e.FindPropertyRelative("backdrop").colorValue = Hex((string)clients[i][5]);
         }
         object[][] tiers =
         {
@@ -58,6 +59,7 @@ public static class OrderBuilder
         }
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(config);
+        AssetDatabase.SaveAssetIfDirty(config); // sur disque tout de suite : un rechargement de domaine ne doit pas perdre les données
         return config;
     }
 
@@ -189,6 +191,8 @@ public static class OrderBuilder
         var park = new GameObject("VanPark").transform;
         park.position = VanPark;
         park.SetParent(root.transform.parent, true);
+        var peek = new GameObject("VanPeek").transform;
+        peek.position = new Vector3(13.2f, 0f, -10.2f);
         var away = new GameObject("VanAway").transform;
         away.position = VanAway;
 
@@ -197,6 +201,7 @@ public static class OrderBuilder
         so.FindProperty("board").objectReferenceValue = board;
         so.FindProperty("awayPoint").objectReferenceValue = away;
         so.FindProperty("parkPoint").objectReferenceValue = park;
+        so.FindProperty("peekPoint").objectReferenceValue = peek;
         so.FindProperty("moodBubble").objectReferenceValue = sr;
         SerializedProperty moods = so.FindProperty("moodSprites");
         moods.arraySize = 3;
@@ -238,6 +243,7 @@ public static class OrderBuilder
         Sprite circle = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
         Sprite rounded = UiSprites.Rounded();
         OrderConfig config = board.Config;
+        Transform canvasRoot = safe.parent;
 
         // bouton carré orange « Commandes » sous le bouton Améliorations, avec la pastille rouge du nombre d'offres
         GameObject rootGo = new GameObject("OrdersButton", typeof(RectTransform), typeof(Button));
@@ -264,6 +270,16 @@ public static class OrderBuilder
         Text badgeText = UpgradeBuilder.Label("Count", dot, "1", 40, Color.white, Vector2.zero, new Vector2(60f, 60f));
         button.gameObject.AddComponent<PopIn>();
 
+        // fond sombre plein écran, cliquable : toucher en dehors du panneau le ferme
+        GameObject backdropGo = new GameObject("OrdersBackdrop", typeof(RectTransform), typeof(Image), typeof(Button));
+        backdropGo.transform.SetParent(safe, false);
+        var bdRt = backdropGo.GetComponent<RectTransform>();
+        bdRt.anchorMin = Vector2.zero; bdRt.anchorMax = Vector2.one; bdRt.offsetMin = bdRt.offsetMax = Vector2.zero;
+        var bdImg = backdropGo.GetComponent<Image>();
+        bdImg.color = new Color(0f, 0f, 0f, 0.6f);
+        backdropGo.GetComponent<Button>().targetGraphic = bdImg;
+        backdropGo.SetActive(false);
+
         // panneau : orange, bandeau sombre COMMANDES, cartes crème
         GameObject panelGo = new GameObject("OrdersPanel", typeof(RectTransform), typeof(PopIn));
         panelGo.transform.SetParent(safe, false);
@@ -279,7 +295,8 @@ public static class OrderBuilder
         RectTransform header = UpgradeBuilder.Box("Header", panel, rounded, UiTheme.Slate, new Vector2(0f, 560f), new Vector2(940f, 130f), false);
         header.GetComponent<Image>().pixelsPerUnitMultiplier = 0.8f;
         UpgradeBuilder.Label("Title", header, Loc.T("orders.title"), 78, Color.white, Vector2.zero, new Vector2(700f, 120f));
-        RectTransform close = UpgradeBuilder.Box("CloseButton", panel, circle, UiTheme.Red, new Vector2(420f, 560f), new Vector2(96f, 96f), true);
+        UpgradeBuilder.Box("CloseRim", panel, circle, Color.white, new Vector2(418f, 560f), new Vector2(112f, 112f), false);
+        RectTransform close = UpgradeBuilder.Box("CloseButton", panel, circle, UiTheme.Red, new Vector2(418f, 560f), new Vector2(100f, 100f), true);
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X1", close, round, Color.white, Vector2.zero, new Vector2(14f, 54f), false), 45f);
         UpgradeBuilder.Rot(UpgradeBuilder.Box("X2", close, round, Color.white, Vector2.zero, new Vector2(14f, 54f), false), -45f);
 
@@ -330,6 +347,11 @@ public static class OrderBuilder
         so.FindProperty("proText").objectReferenceValue = proText;
         so.FindProperty("cameraFollow").objectReferenceValue = cameraFollow;
         so.FindProperty("dockPoint").objectReferenceValue = dock;
+        so.FindProperty("backdrop").objectReferenceValue = backdropGo.GetComponent<Button>();
+        SerializedProperty hn = so.FindProperty("hideNames");
+        string[] names = { "UpgradeButton", "OrdersButton", "GuideBar" };
+        hn.arraySize = names.Length;
+        for (int i = 0; i < names.Length; i++) hn.GetArrayElementAtIndex(i).stringValue = names[i];
         SerializedProperty list = so.FindProperty("cards");
         list.arraySize = cards.Length;
         for (int i = 0; i < cards.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = cards[i];
@@ -342,27 +364,39 @@ public static class OrderBuilder
         card.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
 
         // portrait : fond ardoise, épaules, tête, cheveux
-        RectTransform frame = UpgradeBuilder.Box("Portrait", card, rounded, UiTheme.Slate, new Vector2(-352f, 40f), new Vector2(190f, 190f), false);
+        RectTransform frame = UpgradeBuilder.Box("Portrait", card, rounded, new Color32(0xCF, 0xE6, 0xFF, 0xFF), new Vector2(-352f, 30f), new Vector2(190f, 190f), false);
         frame.GetComponent<Image>().pixelsPerUnitMultiplier = 0.9f;
-        RectTransform shoulders = UpgradeBuilder.Box("Cloth", frame, rounded, UiTheme.Orange, new Vector2(0f, -62f), new Vector2(150f, 74f), false);
+        RectTransform shoulders = UpgradeBuilder.Box("Cloth", frame, rounded, UiTheme.Orange, new Vector2(0f, -66f), new Vector2(150f, 70f), false);
+        RectTransform earL = UpgradeBuilder.Box("EarL", frame, circle, UiTheme.Orange, new Vector2(-48f, 6f), new Vector2(26f, 32f), false);
+        RectTransform earR = UpgradeBuilder.Box("EarR", frame, circle, UiTheme.Orange, new Vector2(48f, 6f), new Vector2(26f, 32f), false);
         RectTransform head = UpgradeBuilder.Box("Skin", frame, circle, UiTheme.Orange, new Vector2(0f, 10f), new Vector2(92f, 98f), false);
-        RectTransform hairTop = UpgradeBuilder.Box("Hair", frame, circle, UiTheme.Ink, new Vector2(0f, 42f), new Vector2(98f, 52f), false);
+        RectTransform hairTop = UpgradeBuilder.Box("Hair", frame, circle, UiTheme.Ink, new Vector2(0f, 44f), new Vector2(98f, 50f), false);
+        RectTransform noseRt = UpgradeBuilder.Box("Nose", frame, circle, UiTheme.Orange, new Vector2(0f, 2f), new Vector2(16f, 20f), false);
+        UpgradeBuilder.Box("EyeL", frame, circle, UiTheme.Ink, new Vector2(-18f, 14f), new Vector2(10f, 12f), false);
+        UpgradeBuilder.Box("EyeR", frame, circle, UiTheme.Ink, new Vector2(18f, 14f), new Vector2(10f, 12f), false);
 
         Text nameText = InkLabel("Name", card, 44, new Vector2(100f, 118f), new Vector2(620f, 60f), TextAnchor.MiddleLeft);
-        Text content = InkLabel("Content", card, 34, new Vector2(100f, 50f), new Vector2(620f, 100f), TextAnchor.UpperLeft);
+        Text content = InkLabel("Content", card, 36, new Vector2(98f, 44f), new Vector2(610f, 110f), TextAnchor.UpperLeft);
+        content.horizontalOverflow = HorizontalWrapMode.Wrap;
+        content.verticalOverflow = VerticalWrapMode.Overflow;
+        content.lineSpacing = 0.9f;
         Text reward = InkLabel("Reward", card, 50, new Vector2(70f, -16f), new Vector2(560f, 70f), TextAnchor.MiddleLeft);
         reward.color = new Color32(0x1F, 0x8F, 0x3A, 0xFF);
 
-        RectTransform refuse = UpgradeBuilder.Box("Refuse", card, rounded, UiTheme.Red, new Vector2(-340f, -118f), new Vector2(250f, 90f), true);
-        UpgradeBuilder.Label("Text", refuse, Loc.T("orders.refuse"), 44, Color.white, Vector2.zero, new Vector2(250f, 90f));
-        RectTransform accept = UpgradeBuilder.Box("Accept", card, rounded, UiTheme.Green, new Vector2(-60f, -118f), new Vector2(290f, 90f), true);
-        UpgradeBuilder.Label("Text", accept, Loc.T("orders.accept"), 46, Color.white, Vector2.zero, new Vector2(290f, 90f));
-        RectTransform later = UpgradeBuilder.Box("Later", card, rounded, UiTheme.Cyan, new Vector2(240f, -118f), new Vector2(200f, 90f), true);
+        RectTransform refuse = UpgradeBuilder.Box("Refuse", card, rounded, UiTheme.Red, new Vector2(-301f, -118f), new Vector2(270f, 90f), true);
+        UpgradeBuilder.Label("Text", refuse, Loc.T("orders.refuse"), 44, Color.white, Vector2.zero, new Vector2(270f, 90f));
+        RectTransform accept = UpgradeBuilder.Box("Accept", card, rounded, UiTheme.Green, new Vector2(25f, -118f), new Vector2(300f, 90f), true);
+        UpgradeBuilder.Label("Text", accept, Loc.T("orders.accept"), 46, Color.white, Vector2.zero, new Vector2(300f, 90f));
+        RectTransform later = UpgradeBuilder.Box("Later", card, rounded, UiTheme.Cyan, new Vector2(326f, -118f), new Vector2(220f, 90f), true);
         later.GetComponent<Image>().color = new Color32(0x1F, 0xA0, 0xFF, 0xFF);
-        Text laterLabel = UpgradeBuilder.Label("Text", later, Loc.T("orders.x2"), 44, Color.white, Vector2.zero, new Vector2(200f, 90f));
+        Text laterLabel = UpgradeBuilder.Label("Text", later, Loc.T("orders.x2"), 44, Color.white, Vector2.zero, new Vector2(220f, 90f));
 
         var c = card.gameObject.AddComponent<OrderCard>();
         var so = new SerializedObject(c);
+        so.FindProperty("bg").objectReferenceValue = frame.GetComponent<Image>();
+        so.FindProperty("earLeft").objectReferenceValue = earL.GetComponent<Image>();
+        so.FindProperty("earRight").objectReferenceValue = earR.GetComponent<Image>();
+        so.FindProperty("nose").objectReferenceValue = noseRt.GetComponent<Image>();
         so.FindProperty("skin").objectReferenceValue = head.GetComponent<Image>();
         so.FindProperty("hair").objectReferenceValue = hairTop.GetComponent<Image>();
         so.FindProperty("cloth").objectReferenceValue = shoulders.GetComponent<Image>();
