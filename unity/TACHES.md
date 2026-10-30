@@ -116,6 +116,7 @@ Le dépôt privé `GymRank-cre/idle-securite-unity` doit être créé par Sébas
 5. Noter dans Résultats l'URL du dépôt et les réglages faits.
 
 ## Résultats (à remplir par Claude Code local)
+**Tests tactiles de 11e : FAITS sans build, avec de VRAIS événements tactiles de l'Input System** (outil `Tools > Idle Prototype > Test gestes tactiles (Play)`, fichier `Editor/TouchProbe.cs` : crée un écran tactile virtuel et y injecte des `TouchState`, que `FreeViewController` lit via `Touchscreen.current`). Résultat : **un doigt qui glisse déplace la caméra de 4,57 m : OK ; deux doigts qui s'écartent font passer le zoom de 1,00 à 0,60 (limite basse) : OK ; sortie de la vue libre (bouton, joystick rétabli) : OK.** Tests unitaires 117/117, test de fumée OK (0 erreur, sauvegarde relue identique). **Non couvert** : toucher une machine/une dalle (fiche, flèche) au doigt, et la sensation réelle sur téléphone (inertie, seuil de tap 14 px) : à confirmer sur Android. Je n'ai donc pas eu besoin du build de démonstration (budget intact : 1 build prévu + 1 réserve).
 **Q2 final (décisions du cloud appliquées) : 1re dalle 100 -> 60 $ (`UnlockConfig`, via `PrototypeSetup`), cible du tapis 6:30 dans le test.** Passage avec journal toutes les 30 s (prix Emballage 500, tapis 700 / 1500) :
 | jalon | cible | mesuré | écart |
 |---|---|---|---|
