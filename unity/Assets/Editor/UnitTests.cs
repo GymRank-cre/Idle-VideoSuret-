@@ -447,6 +447,15 @@ public static class UnitTests
         ug.Stations[0].add = 600;
         Eq("6 8", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plafonné");
 
+        // étiquettes : aucune ne recouvre une autre étiquette ni une plaque, usine complète comprise (les 5 postes en sont une partie)
+        Eq("0", IdleLabelPlacement.Collisions().ToString(), "étiquettes : aucune collision");
+        var boxA = new IdleLabelPlacement.Box { position = Vector3.zero, width = 1f, height = 0.34f };
+        var boxB = new IdleLabelPlacement.Box { position = Vector3.zero, width = 1f, height = 0.34f };
+        Eq("True", IdleLabelPlacement.Touch(boxA, boxB).ToString(), "étiquettes : deux au même endroit se touchent");
+        float[] moved = IdleLabelPlacement.Resolve(new[] { boxA, boxB }, new IdleLabelPlacement.Box[0]);
+        Eq("True 0", (moved[1] > moved[0]) + " " + F(moved[0]), "étiquettes : la seconde monte, la première ne bouge pas");
+        Eq("0", F((moved[1] / IdleLabelPlacement.Step) % 1), "étiquettes : par pas de 0,3 case");
+
         // prix des plaques : il tient dans la pastille, sans jamais devenir illisible
         Eq("130 117 104 104", IdlePadView.FitSize(130, 0.8f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 1.125f, 0.9f, 0.8f) + " " + IdlePadView.FitSize(130, 3f, 0.9f, 0.8f), "prix : réduit seulement s'il dépasse, jamais sous 80 %");
 

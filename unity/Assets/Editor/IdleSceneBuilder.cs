@@ -383,7 +383,7 @@ public static class IdleSceneBuilder
                     so.FindProperty("ghostFar").objectReferenceValue = ghostFar;
                     so.FindProperty("lockIcon").objectReferenceValue = sr;
                     so.FindProperty("machine").objectReferenceValue = first.gameObject;
-                    so.FindProperty("floatHeight").floatValue = IdleMachineBuilder.LabelHeight[i] + 0.5f;   // le « +x » part au-dessus de l'étiquette
+                    so.FindProperty("floatHeight").floatValue = IdleLabelPlacement.StationHeight(i) + 0.5f;   // le « +x » part au-dessus de l'étiquette
                 }
                 else
                 {

@@ -61,7 +61,7 @@ public static class IdleChainBuilder
             holder.transform.SetParent(root, false);
             stocks[i] = holder;
             piles[i] = stock.ToObject("Pile", holder.transform, IdleMaterials.Palette()).GetComponent<MeshFilter>();
-            texts[i] = StockLabel(holder.transform, at);
+            texts[i] = StockLabel(holder.transform, at, IdleLabelPlacement.StockHeight(i + 1));
         }
 
         var carts = new Transform[IdleLayout.CartFrom.Length - 1];
@@ -251,11 +251,11 @@ public static class IdleChainBuilder
     }
 
     // Pastille « Stock 12/30 », toujours face à la caméra, au-dessus du tas.
-    static TextMesh StockLabel(Transform parent, Vector2 web)
+    static TextMesh StockLabel(Transform parent, Vector2 web, float height)
     {
         var holder = new GameObject("StockLabel", typeof(FaceCamera)).transform;
         holder.SetParent(parent, false);
-        holder.position = IdleLayout.ToWorld(web, 0.62f);
+        holder.position = IdleLayout.ToWorld(web, height);
         var pill = new MeshKit();
         pill.Pill(1.44f, 0.34f, 0.01f);
         pill.ToObject("Pill", holder, IdleMaterials.Overlay("LabelPill", "#1E2A38", 3541));

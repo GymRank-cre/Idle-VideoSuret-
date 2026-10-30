@@ -184,14 +184,12 @@ public static class IdleMachineBuilder
     }
 
     // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
-    public static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.6f, 1.75f, 2.1f, 1.6f };
-
     static void Label(Transform root, int i)
     {
         string name = Loc.T(AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>("Assets/Prototype/IdleEconomyConfig.asset").stations[i].nameKey);
         var holder = new GameObject("Label", typeof(FaceCamera)).transform;
         holder.SetParent(root, false);
-        holder.localPosition = new Vector3(IdleLayout.StationSize * 0.5f, LabelHeight[i], IdleLayout.StationSize * 0.5f);
+        holder.localPosition = new Vector3(IdleLayout.StationSize * 0.5f, IdleLabelPlacement.StationHeight(i), IdleLayout.StationSize * 0.5f);
 
         var pills = new Mesh[3];
         for (int digits = 1; digits <= pills.Length; digits++)
