@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// Main de tutoriel (UL) : pendant les 12 premiers achats, dès qu'on peut payer le conseil, elle tapote la plaque au sol ; si cette plaque est hors de l'écran,
-// elle tapote le bouton ACHETER du bandeau. Cachée quand une fenêtre, l'écran de retour ou la fiche d'un poste sont ouverts.
+// Main de tutoriel (UL) : pendant les 12 premiers achats, dès qu'on peut payer le conseil, elle tapote le bord de la plaque au sol et retombe vers le bas à gauche,
+// pour laisser le prix lisible ; si cette plaque est hors de l'écran, elle tapote le bouton ACHETER. Cachée quand une fenêtre, l'écran de retour ou la fiche d'un poste sont ouverts.
 public class IdleTutorialHand : MonoBehaviour
 {
     public const int MaxBuys = 12;
@@ -13,7 +13,7 @@ public class IdleTutorialHand : MonoBehaviour
     [SerializeField] IdleSelection selection;
     [SerializeField] IdleSheet[] sheets;
     [SerializeField] GameObject welcomeRoot;
-    [SerializeField] Vector2 padOffset = new Vector2(-17f, 11f);
+    [SerializeField] Vector2 padOffset = new Vector2(-61f, 0f);   // le bout du doigt sur le bord gauche de la plaque
     [SerializeField] float barOffsetX = 39f;          // vers la droite du milieu du bouton : prix et libellé restent lisibles
     [SerializeField, Range(0f, 1f)] float barOffsetDown = 0.62f;  // le bandeau est tout en bas : la main reste à l'écran, à côté du prix
     [SerializeField] Vector2 tapMove = new Vector2(-11f, 22f);
@@ -54,7 +54,8 @@ public class IdleTutorialHand : MonoBehaviour
         if (!wanted || pads.Advised == null) return;
 
         Vector3 v = Camera.main.WorldToViewportPoint(pads.Advised.Position);
-        if (PadOnScreen(v.x, v.y))
+        bool onPad = PadOnScreen(v.x, v.y);
+        if (onPad)
         {
             hand.anchorMin = hand.anchorMax = new Vector2(v.x, v.y);
             hand.anchoredPosition = padOffset;
@@ -69,7 +70,8 @@ public class IdleTutorialHand : MonoBehaviour
         bool calm = MotionSettings.ReduceMotion;
         float k = calm ? 0f : 0.5f - 0.5f * Mathf.Cos(Time.unscaledTime * Mathf.PI * 2f / tapPeriod);
         picture.anchoredPosition = tapMove * k;
-        picture.localScale = Vector3.one * Mathf.Lerp(1f, tapScale, k);
-        picture.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        float scale = Mathf.Lerp(1f, tapScale, k);
+        picture.localScale = new Vector3(onPad ? -scale : scale, scale, 1f);   // sur une plaque, la main est retournée
+        picture.localRotation = Quaternion.Euler(0f, 0f, onPad ? -tilt : tilt);
     }
 }

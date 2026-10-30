@@ -183,7 +183,7 @@ public static class IdleMachineBuilder
     }
 
     // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
-    static readonly float[] LabelHeight = { 1.7f, 1.6f, 2.15f, 2.1f, 1.6f };
+    static readonly float[] LabelHeight = { 1.7f, 1.6f, 1.15f, 2.1f, 1.6f };   // Test : posée sur le portique, pour ne pas couvrir les prix de l'Assemblage juste derrière
 
     static void Label(Transform root, int i)
     {
@@ -200,10 +200,11 @@ public static class IdleMachineBuilder
             pill.Pill(0.34f + 0.142f * length, 0.34f, 0.01f);   // coins complètement arrondis
             pills[digits - 1] = pill.ToMesh("LabelPill_" + i + "_" + digits);
         }
-        var pillObject = new MeshKit().ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
+        // dessinée après les plaques : jamais coupée par l'une d'elles
+        var pillObject = new MeshKit().ToObject("Pill", holder, IdleMaterials.Overlay("LabelPill", "#1E2A38", 3541));
         pillObject.GetComponent<MeshFilter>().sharedMesh = pills[0];
-        pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
-        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white, true);
+        text.GetComponent<MeshRenderer>().sharedMaterial = IdleSceneBuilder.LabelFontMaterial(UiTheme.Font);
 
         var label = holder.gameObject.AddComponent<IdleStationLabel>();
         var so = new SerializedObject(label);
@@ -246,6 +247,12 @@ public static class IdleMachineBuilder
         Box(root, "#E5B96B", 1.5f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f, 0.15f);
         Flat(root, Yellow, 1.5f, 1.42f, 0.4f, 0.3f, 0.06f, 0.012f, 0.15f);
         Hazard(root, 0.02f, 1.3f, 0.12f, 0.9f, true, 0.07f);
+
+        // auvent de la couleur de l'aspect au-dessus du quai, sur deux poteaux du côté où la camionnette ne passe pas
+        Box(root, Metal, 0.08f, 0.3f, 0.12f, 0.07f, 0.07f, 0.9f);
+        Box(root, Metal, 0.08f, 0.8f, 0.12f, 0.07f, 0.07f, 0.9f);
+        Box(root, wall, 0f, 0.26f, 1.0f, IdleLayout.StationSize, 0.68f, 0.1f);
+        Flat(root, Yellow, 0f, 0.94f, 1.03f, IdleLayout.StationSize, 0.012f, 0.05f, 0.9f);
         if (a >= 2)   // module : plus de colis qui attendent
         {
             Box(root, "#E5B96B", 1.15f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f, 0.15f);

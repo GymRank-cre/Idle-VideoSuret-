@@ -269,6 +269,11 @@ public static class IdleSceneBuilder
         so.FindProperty("cameraRig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
         so.FindProperty("feedback").objectReferenceValue = Object.FindFirstObjectByType<FeedbackSpawner>();
         so.FindProperty("beam").objectReferenceValue = beam.transform;
+        var slow = new GameObject("SlowMo", typeof(IdleSlowMo));
+        slow.transform.SetParent(parent, false);
+        var slowSo = new SerializedObject(slow.GetComponent<IdleSlowMo>());
+        slowSo.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
+        slowSo.ApplyModifiedPropertiesWithoutUndo();
         var views = new IdleStationView[IdleLayout.Stations.Length];
         foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
             views[new SerializedObject(v).FindProperty("station").intValue] = v;
@@ -375,13 +380,25 @@ public static class IdleSceneBuilder
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_FloatingText.prefab");
         var textSo = new SerializedObject(prefab.GetComponent<FloatingText>());
         textSo.FindProperty("outlinedFont").objectReferenceValue = FloatFontMaterial(UiTheme.Font);
-        textSo.FindProperty("messageScale").floatValue = 0.5f;
+        textSo.FindProperty("messageScale").floatValue = 0.68f;
         textSo.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(prefab);
+        // particules des postes : un seul système ; chaque poste a son moment dans le cycle
+        var fxObject = new GameObject("StationFx", typeof(ParticleSystem), typeof(IdleStationFx));
+        fxObject.transform.SetParent(parent, false);
+        Material spark = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prototype/FX_Burst.prefab").GetComponent<ParticleSystemRenderer>().sharedMaterial;
+        fxObject.GetComponent<ParticleSystemRenderer>().sharedMaterial = spark;
+        var fxSo = new SerializedObject(fxObject.GetComponent<IdleStationFx>());
+        fxSo.FindProperty("system").objectReferenceValue = fxObject.GetComponent<ParticleSystem>();
+        fxSo.ApplyModifiedPropertiesWithoutUndo();
+
+        float[] fxPhase = { 0.02f, 0.45f, 0.6f, 0.5f, 0.72f };   // caisse posée, caméra montée, balayage, presse en bas, départ de la camionnette
         foreach (IdleStationView view in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
         {
             var vso = new SerializedObject(view);
             vso.FindProperty("feedback").objectReferenceValue = go.GetComponent<FeedbackSpawner>();
+            vso.FindProperty("fx").objectReferenceValue = fxObject.GetComponent<IdleStationFx>();
+            vso.FindProperty("fxPhase").floatValue = fxPhase[vso.FindProperty("station").intValue];
             vso.ApplyModifiedPropertiesWithoutUndo();
         }
     }
@@ -501,15 +518,17 @@ public static class IdleSceneBuilder
     // ------------------------------------------------------------------ plaques d'achat au sol, gestes, sélection (UL)
 
     const float PadUnit = IdleLayout.PadSize / 50f;   // le dessin du web fait 50 de côté
-    static readonly Quaternion PadText = Quaternion.Euler(90f, 180f, 0f);   // texte couché sur le sol, aligné sur l'axe de la dalle
 
     // Point du dessin du web (u vers la droite, v vers le bas de la plaque) dans le repère de la plaque.
     static Vector3 PadPoint(float u, float v, float y) { return new Vector3(-u * PadUnit, y, v * PadUnit); }
 
+    // Point de l'icône : dessin réduit et remonté vers la pointe haute de la pastille à l'écran.
+    static Vector3 PadIcon(float u, float v) { return PadPoint(u * 0.72f + 8f, v * 0.72f - 6f, 0.006f); }
+
     // Un maillage par sorte de plaque et par état : tout tient dans un seul appel de dessin, dans l'ordre d'écriture (pas de test de profondeur).
     static Mesh PadMesh(IdleGame.PadKind kind, bool affordable)
     {
-        const float Corner = 0.17f;
+        const float Corner = 0.19f;
         float half = IdleLayout.PadSize * 0.5f, width = 4f * PadUnit;
         var k = new MeshKit();
         k.SetPaint("#141C26");
@@ -522,13 +541,14 @@ public static class IdleSceneBuilder
         if (kind == IdleGame.PadKind.Speed)
         {
             k.SetPaint(affordable ? "#FFD84A" : "#9AA6B3");
-            k.Polygon(PadPoint(-1f, -3f, 0.006f), PadPoint(-5f, 8f, 0.006f), PadPoint(10f, -10f, 0.006f), PadPoint(2f, -10f, 0.006f), PadPoint(5f, -21f, 0.006f), PadPoint(-9f, -3f, 0.006f));
+            // l'icône occupe la pointe haute de la pastille, le prix reste en bas
+            k.Polygon(PadIcon(-1f, -3f), PadIcon(-5f, 8f), PadIcon(10f, -10f), PadIcon(2f, -10f), PadIcon(5f, -21f), PadIcon(-9f, -3f));
         }
         else if (kind == IdleGame.PadKind.Add)
         {
             k.SetPaint(affordable ? "#FFFFFF" : "#9AA6B3");
-            k.FlatQuad(PadPoint(0f, -10f, 0.006f), 7f * PadUnit, 20f * PadUnit);
-            k.FlatQuad(PadPoint(0f, -10f, 0.006f), 20f * PadUnit, 7f * PadUnit);
+            k.FlatQuad(PadIcon(0f, -6f), 6f * PadUnit, 16f * PadUnit);
+            k.FlatQuad(PadIcon(0f, -6f), 16f * PadUnit, 6f * PadUnit);
         }
         return k.ToMesh("Pad_" + kind + (affordable ? "_On" : "_Wait"));
     }
@@ -567,14 +587,16 @@ public static class IdleSceneBuilder
                 {
                     var tag = new GameObject("NewTag").transform;
                     tag.SetParent(visual, false);
-                    tag.localPosition = PadPoint(0f, -12f, 0.01f);
-                    MakeFlatText(tag, Loc.T("pad.new"), font, 70, 0.0285f, PadText, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
+                    tag.localPosition = PadPoint(9f, -9f, 0.3f);
+                    tag.gameObject.AddComponent<FaceCamera>();
+                    MakeFlatText(tag, Loc.T("pad.new"), font, 70, 0.0345f, Quaternion.identity, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
                 }
                 var priceRoot = new GameObject("Price").transform;
                 priceRoot.SetParent(visual, false);
-                priceRoot.localPosition = PadPoint(0f, 11f, 0.01f);
+                priceRoot.localPosition = PadPoint(-5f, 5f, 0.01f);
+                priceRoot.gameObject.AddComponent<FaceCamera>();
                 TextMesh price;
-                MakeFlatText(priceRoot, "0", font, 90, 0.0385f, PadText, Color.white, out price, true);
+                MakeFlatText(priceRoot, "0", font, 130, 0.0385f, Quaternion.identity, Color.white, out price, true);
 
                 var view = pad.GetComponent<IdlePadView>();
                 var so = new SerializedObject(view);
@@ -585,6 +607,7 @@ public static class IdleSceneBuilder
                 so.FindProperty("meshAffordable").objectReferenceValue = on[k];
                 so.FindProperty("meshWaiting").objectReferenceValue = wait[k];
                 so.FindProperty("priceText").objectReferenceValue = price;
+                so.FindProperty("priceRoot").objectReferenceValue = priceRoot;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 views.Add(view);
             }
@@ -592,9 +615,9 @@ public static class IdleSceneBuilder
         // étoile dorée au-dessus de la plaque conseillée
         var starKit = new MeshKit();
         starKit.SetPaint("#0E1620");
-        starKit.Star(0.46f, 0.23f, 0f);
+        starKit.Star(0.3f, 0.15f, 0f);
         starKit.SetPaint("#FFC400");
-        starKit.Star(0.34f, 0.16f, -0.001f);
+        starKit.Star(0.21f, 0.1f, -0.001f);
         GameObject star = starKit.ToObject("AdvisedStar", root, IdleMaterials.Overlay("PadStar", "#FFFFFF", 3530));
         star.AddComponent<FaceCamera>();
         star.SetActive(false);
@@ -621,6 +644,7 @@ public static class IdleSceneBuilder
         iso.FindProperty("rig").objectReferenceValue = rig;
         iso.FindProperty("pads").objectReferenceValue = field.GetComponent<IdlePadField>();
         iso.FindProperty("selection").objectReferenceValue = input.GetComponent<IdleSelection>();
+        iso.FindProperty("fx").objectReferenceValue = Object.FindFirstObjectByType<IdleStationFx>();
         iso.ApplyModifiedPropertiesWithoutUndo();
         var sso = new SerializedObject(input.GetComponent<IdleSelection>());
         sso.FindProperty("rig").objectReferenceValue = rig;
@@ -656,7 +680,7 @@ public static class IdleSceneBuilder
         m.shader = Shader.Find("Idle/OverlayText");
         m.mainTexture = font.material.mainTexture;
         m.SetColor("_OutlineColor", UiTheme.Ink);
-        m.SetFloat("_OutlineWidth", 3f);
+        m.SetFloat("_OutlineWidth", 5f);
         m.renderQueue = 3540;
         EditorUtility.SetDirty(m);
         return m;
@@ -668,6 +692,20 @@ public static class IdleSceneBuilder
         const string path = "Assets/Prototype/Materials/Idle_Confetti.mat";
         Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit")); AssetDatabase.CreateAsset(m, path); }
+        return m;
+    }
+
+    // Police des étiquettes : par-dessus les plaques et leur pastille.
+    internal static Material LabelFontMaterial(Font font)
+    {
+        const string path = "Assets/Prototype/Materials/Idle_LabelFont.mat";
+        Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m == null) { m = new Material(Shader.Find("Idle/OverlayText")); AssetDatabase.CreateAsset(m, path); }
+        m.mainTexture = font.material.mainTexture;
+        m.SetColor("_OutlineColor", UiTheme.Ink);
+        m.SetFloat("_OutlineWidth", 2f);
+        m.renderQueue = 3542;
+        EditorUtility.SetDirty(m);
         return m;
     }
 

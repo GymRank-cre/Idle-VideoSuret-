@@ -48,7 +48,7 @@ public class IdleHost : MonoBehaviour
 
     void Update()
     {
-        Game.Tick(Math.Min(Time.deltaTime, maxFrameSeconds));
+        Game.Tick(Math.Min(Time.unscaledDeltaTime, maxFrameSeconds));   // temps réel : le ralenti d'un palier ne coûte rien au joueur
         timer += Time.unscaledDeltaTime;
         if (timer >= autosaveInterval) { timer = 0f; Save(false); }
     }

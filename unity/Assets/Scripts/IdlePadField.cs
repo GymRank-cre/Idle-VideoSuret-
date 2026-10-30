@@ -6,8 +6,8 @@ public class IdlePadField : MonoBehaviour
 {
     [SerializeField] IdlePadView[] pads;
     [SerializeField] Transform star;
-    [SerializeField] float starHeight = 1f;
-    [SerializeField] float starBob = 0.07f;
+    [SerializeField] float starHeight = 1.35f;     // assez haut pour ne jamais couvrir un chiffre
+    [SerializeField] float starBob = 0.09f;
     [SerializeField, Min(0.1f)] float starBobSpeed = 4f;
     [SerializeField, Min(0.02f)] float refreshEvery = 0.1f;
 

@@ -293,7 +293,7 @@ public static class UnitTests
         IdleFraming.View v5 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
         Eq("True True", (v1.zoom >= v2.zoom) + " " + (v2.zoom > v5.zoom), "cadrage : plus il y a de postes, moins on zoome");
         Eq("True True", (v1.zoom <= IdleFraming.DefaultMaxZoom) + " " + (v5.zoom >= IdleFraming.MinZoom), "cadrage : zoom entre 1 et 2,6");
-        Eq("(1.2, 4.5)", Inv(v1.focus), "cadrage d'un poste ouvert : milieu de ses plaques et du poste suivant (a -1,85 à 4,25 ; b 1,1 à 6,95, + 0,5)");
+        Eq("(1.2, 4.5)", Inv(v1.focus), "cadrage d'un poste ouvert : milieu de ses plaques et du poste suivant (a -1,95 à 4,25 ; b 1,1 à 6,95, + 0,5)");
         Eq("True", (v5.focus.y > v1.focus.y).ToString(), "cadrage de 5 postes : centré plus bas sur la dalle");
         Eq("3,10", Fr(IdleFraming.Station(2, 3.1f).zoom), "sélection : on ne dézoome pas");
         Eq("2,00", Fr(IdleFraming.Station(2, 1f).zoom), "sélection : zoom d'au moins 2");
@@ -343,6 +343,17 @@ public static class UnitTests
         ug.Stations[0].add = 600;
         Eq("6 8", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plafonné");
 
+        // le jus (UW-4)
+        float padGap = float.MaxValue;
+        for (int st2 = 0; st2 < 5; st2++) padGap = Mathf.Min(padGap, Vector2.Distance(IdleLayout.PadSpeed[st2], IdleLayout.PadAdd[st2]) - IdleLayout.PadSize);
+        Eq("True", (padGap >= 0.06f).ToString(), "plaques d'une paire : au moins 0,06 case de vide");
+        Eq("1 2 8 8 0", IdlePurchaseSound.NextSteps(0, 0.5f) + " " + IdlePurchaseSound.NextSteps(1, 1.1f) + " " + IdlePurchaseSound.NextSteps(7, 0.1f) + " " + IdlePurchaseSound.NextSteps(8, 0.1f) + " " + IdlePurchaseSound.NextSteps(5, 1.3f), "son d'achat : +1 demi-ton, plafond 8, retour à 0 après 1,2 s");
+        Eq("1,00 2,00", Fr(IdlePurchaseSound.Pitch(0)) + " " + Fr(IdlePurchaseSound.Pitch(12)), "hauteur du son : 12 demi-tons = une octave");
+        Eq("0,00 0,08 0,00 0,00", Fr(IdleSlowMo.PushAt(0f, 0.6f, 0.08f)) + " " + Fr(IdleSlowMo.PushAt(0.3f, 0.6f, 0.08f)) + " " + Fr(IdleSlowMo.PushAt(0.6f, 0.6f, 0.08f)) + " " + Fr(IdleSlowMo.PushAt(1f, 0.6f, 0.08f)), "ralenti : la caméra pousse puis revient");
+        Vector2 cvA = Vector2.zero, cvC = new Vector2(1f, 0f), cvB = new Vector2(1f, 1f);
+        Eq("(0.0, 0.0) (0.8, 0.3) (1.0, 1.0)", Inv(IdleBills.Curve(cvA, cvC, cvB, 0f)) + " " + Inv(IdleBills.Curve(cvA, cvC, cvB, 0.5f)) + " " + Inv(IdleBills.Curve(cvA, cvC, cvB, 1f)), "billets : la courbe part du poste et arrive à la pastille");
+
+        // main de tutoriel
         // main de tutoriel
         Eq("True False False False", IdleTutorialHand.Wanted(0, false, true) + " " + IdleTutorialHand.Wanted(0, true, true) + " " + IdleTutorialHand.Wanted(0, false, false) + " " + IdleTutorialHand.Wanted(12, false, true), "main : abordable, sans fenêtre, 12 premiers achats");
         Eq("True False", IdleTutorialHand.Wanted(11, false, true) + " " + IdleTutorialHand.Wanted(13, false, true), "main : jusqu'au 12e achat");

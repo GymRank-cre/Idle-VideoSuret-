@@ -106,7 +106,7 @@ public class FeedbackSpawner : MonoBehaviour
     // Grand nuage de poussière au sol : un poste vient d'arriver.
     public void DustRing(Vector3 position)
     {
-        Burst(position + Vector3.up * 0.12f, new Color(0.86f, 0.8f, 0.68f, 0.85f), 28, 2.8f, 2.6f, 0.8f, false);
+        Burst(position + Vector3.up * 0.12f, new Color32(0xCD, 0xB4, 0x8A, 0xCC), 28, 2.8f, 5.2f, 0.8f, false);
     }
 
     // Petit nuage de poussière sous les pieds en courant.

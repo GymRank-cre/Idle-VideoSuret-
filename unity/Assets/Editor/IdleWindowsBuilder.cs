@@ -11,6 +11,7 @@ public static class IdleWindowsBuilder
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
     const float BottomOverlap = 30f, CardHeight = 166f, CardPitch = 176f;
     const float MinTouch = 124f;    // unités du Canvas
+    const int BillCount = 24;       // jamais plus en vol
     const int OrderCards = 6;       // 3 commandes en cours au plus (Réputation) + 3 offres
 
     static readonly Color Orange = new Color32(0xFF, 0x7A, 0x1A, 0xFF), OrangeTop = new Color32(0xF2, 0x8A, 0x2E, 0xFF), OrangeEdge = new Color32(0xD9, 0x5E, 0x00, 0xFF);
@@ -47,6 +48,7 @@ public static class IdleWindowsBuilder
         RectTransform chipsHost = NewRect("Chips", canvas);
         Stretch(chipsHost);
         chips = BuildChips(chipsHost, cashPill, proPill);
+        BuildBills(canvas, cashPill);
         BuildWelcome(welcomeHost, chips);
         IdleToasts toasts = BuildToasts(toastsHost, dock);
 
@@ -170,7 +172,7 @@ public static class IdleWindowsBuilder
         so.FindProperty("pads").objectReferenceValue = Object.FindFirstObjectByType<IdlePadField>();
         so.FindProperty("selection").objectReferenceValue = selection;
         so.FindProperty("welcomeRoot").objectReferenceValue = welcomeRoot;
-        so.FindProperty("padOffset").vector2Value = new Vector2(-Px(6f), Px(4f));
+        so.FindProperty("padOffset").vector2Value = new Vector2(-Px(22f), -Px(8f));
         so.FindProperty("barOffsetX").floatValue = Px(26f);
         so.FindProperty("tapMove").vector2Value = new Vector2(-Px(4f), Px(8f));
 
@@ -723,6 +725,25 @@ public static class IdleWindowsBuilder
         so.FindProperty("flameSprite").objectReferenceValue = Ui("flamme");
         so.ApplyModifiedPropertiesWithoutUndo();
         return toasts;
+    }
+
+    static void BuildBills(Transform canvas, RectTransform cashPill)
+    {
+        RectTransform host = NewRect("Bills", canvas);
+        Stretch(host);
+        var bills = host.gameObject.AddComponent<IdleBills>();
+        var so = new SerializedObject(bills);
+        so.FindProperty("cashPill").objectReferenceValue = cashPill;
+        SerializedProperty list = so.FindProperty("bills");
+        list.arraySize = BillCount;
+        for (int i = 0; i < BillCount; i++)
+        {
+            Image bill = AddIcon(host, "Bill" + i, "billet", 24f, false);
+            bill.rectTransform.anchorMin = bill.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            list.GetArrayElementAtIndex(i).objectReferenceValue = bill.rectTransform;
+            bill.gameObject.SetActive(false);
+        }
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     static IdleChips BuildChips(RectTransform host, RectTransform cashPill, RectTransform proPill)

@@ -13,6 +13,7 @@ public class IdleWorldInput : MonoBehaviour
     [SerializeField] IdleCameraRig rig;
     [SerializeField] IdlePadField pads;
     [SerializeField] IdleSelection selection;
+    [SerializeField] IdleStationFx fx;
 
     static readonly Vector3[] Corners = new Vector3[8];
     readonly List<RaycastResult> hits = new List<RaycastResult>();
@@ -30,13 +31,12 @@ public class IdleWorldInput : MonoBehaviour
     {
         IdleHost host = IdleHost.Instance;
         if (host == null || host.Game == null) return;
-        if (Pinch()) return;
-
         // les fronts plutôt que l'état : un toucher très bref peut s'appuyer et se relâcher dans la même image
         Vector2 position;
         ButtonControl button = ReadPointer(out position);
         if (button == null) return;
         if (button.wasPressedThisFrame) Press(position);
+        if (Pinch()) return;
         if (tracking && button.isPressed) Move(position);
         if (button.wasReleasedThisFrame) Release(position, host.Game);
 
@@ -74,9 +74,10 @@ public class IdleWorldInput : MonoBehaviour
         float distance = Mathf.Max(1f, Vector2.Distance(touch.touches[0].position.ReadValue(), touch.touches[1].position.ReadValue()));
         if (pinchStart < 0f)
         {
+            if (!tracking) return false;    // le premier doigt est sur l'interface
             pinchStart = distance;
             pinchZoom = rig.TargetZoom;
-            moved = true;      // le geste ne sera pas un toucher
+            tracking = false;               // jusqu'au dernier doigt levé : ni glissement ni toucher
             rig.EndDrag();
         }
         rig.SetZoom(pinchZoom * distance / pinchStart);
@@ -120,13 +121,15 @@ public class IdleWorldInput : MonoBehaviour
         else selection.Deselect();
     }
 
-    static void Buy(IdlePadView pad, Vector2 screen, IdleGame game)
+    void Buy(IdlePadView pad, Vector2 screen, IdleGame game)
     {
         long price = game.PadPrice(pad.Station, pad.Kind);
         IdleGame.PurchaseResult result = game.BuyPad(pad.Station, pad.Kind);
         pad.Touched();
         IdlePurchaseSound.Play(result, pad.Kind == IdleGame.PadKind.Unlock);
-        if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(new Vector3(screen.x, screen.y, 0f), price);   // part du doigt (Canvas en superposition : position = pixels de l'écran)
+        if (!IdlePurchaseSound.Bought(result)) return;
+        IdleChips.Spent(new Vector3(screen.x, screen.y, 0f), price);   // part du doigt (Canvas en superposition : position = pixels de l'écran)
+        if (!MotionSettings.ReduceMotion) fx.PadRing(pad.Position);
     }
 
     // Le poste sous le doigt : rectangle d'écran englobant sa machine ; si plusieurs conviennent, le centre le plus proche.

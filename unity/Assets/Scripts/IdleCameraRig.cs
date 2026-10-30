@@ -27,6 +27,10 @@ public class IdleCameraRig : MonoBehaviour
     float lastMoveTime;
 
     public float TargetZoom => targetZoom;
+    public float Push { get; set; }                  // poussée brève de la caméra (ralenti du palier x2), en part de la distance
+
+    // Échelle à donner à un objet de la scène pour garder la même taille à l'écran quel que soit le zoom.
+    public static float ScreenScale { get; private set; } = 1f;
 
     void Awake()
     {
@@ -90,7 +94,8 @@ public class IdleCameraRig : MonoBehaviour
     void Place()
     {
         float tanHalf = Mathf.Tan(fieldOfView * 0.5f * Mathf.Deg2Rad);
-        float distance = fitDistance / Mathf.Max(0.1f, zoom);
+        float distance = fitDistance / Mathf.Max(0.1f, zoom) * (1f - Push);
+        ScreenScale = 1f / Mathf.Max(0.1f, zoom);
         float shiftUp = (centerHeight - 0.5f) * 2f * tanHalf * distance;
         float shiftRight = (viewportX - 0.5f) * 2f * tanHalf * distance * lastAspect;
         Quaternion rotation = transform.rotation;

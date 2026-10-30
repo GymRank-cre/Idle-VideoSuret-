@@ -27,6 +27,7 @@ public class FloatingText : MonoBehaviour
         custom = text;
         baseScale = messageScale;
         SetText();
+        Apply(0f);
     }
 
     public void Play(int value, Vector3 position, Color textColor, float lifetime, float rise, Action<GameObject> releaseToPool)
@@ -91,7 +92,7 @@ public class FloatingText : MonoBehaviour
         transform.position = start + Vector3.up * (height * rise);
 
         float pop = 1f + 0.35f * Mathf.Clamp01(1f - k * 6f); // petit "pop" au début
-        transform.localScale = Vector3.one * (pop * baseScale);
+        transform.localScale = Vector3.one * (pop * baseScale * IdleCameraRig.ScreenScale);
 
         float fadeStart = Mathf.Clamp01(opaqueTime / duration);   // opaque au début, puis s'efface
         float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(fadeStart, 1f, k));

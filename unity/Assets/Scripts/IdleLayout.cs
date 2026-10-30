@@ -16,10 +16,10 @@ public static class IdleLayout
     };
 
     // Plaques d'achat au sol (centres, x, y du web) : Vitesse et Ajouter d'un poste ouvert, ou Débloquer, devant le poste, jamais sur un tapis ni hors de la dalle.
-    public const float PadSize = 0.82f;
+    public const float PadSize = 0.9f;
     public const float PadHitSize = PadSize * 1.7f;   // zone de toucher, plus grande que la plaque
-    public static readonly Vector2[] PadSpeed = { new Vector2(0.95f, 2.8f), new Vector2(3.6f, 2.8f), new Vector2(7.1f, 3.05f), new Vector2(3.6f, 6.85f), new Vector2(0.95f, 6.85f) };
-    public static readonly Vector2[] PadAdd = { new Vector2(1.8f, 2.8f), new Vector2(4.45f, 2.8f), new Vector2(7.1f, 3.95f), new Vector2(4.45f, 6.85f), new Vector2(1.8f, 6.85f) };
+    public static readonly Vector2[] PadSpeed = { new Vector2(0.85f, 2.8f), new Vector2(3.5f, 2.8f), new Vector2(7.1f, 2.95f), new Vector2(3.5f, 6.85f), new Vector2(0.85f, 6.85f) };
+    public static readonly Vector2[] PadAdd = { new Vector2(1.9f, 2.8f), new Vector2(4.55f, 2.8f), new Vector2(7.1f, 4.05f), new Vector2(4.55f, 6.85f), new Vector2(1.9f, 6.85f) };
     public static readonly Vector2[] PadUnlock = { new Vector2(1.35f, 2.8f), new Vector2(4.0f, 2.8f), new Vector2(7.1f, 3.5f), new Vector2(4.0f, 6.85f), new Vector2(1.35f, 6.85f) };
 
     public static Vector2 PadPosition(int station, IdleGame.PadKind kind)

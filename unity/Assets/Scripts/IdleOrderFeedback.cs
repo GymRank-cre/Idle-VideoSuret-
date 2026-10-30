@@ -28,6 +28,7 @@ public class IdleOrderFeedback : MonoBehaviour
         string money = "+" + NumberFormat.Short((long)order.reward);
         toasts.Show(Loc.T("orders.done.toast", Loc.T("client." + order.client + ".name"), money, order.pro));
         chips.Fly(chipOrigin.position, money, false);
+        if (IdleBills.Instance != null) IdleBills.Instance.Send(stations[order.station].transform.position + Vector3.up * 0.8f, 10);
         chips.Fly(chipOrigin.position, "+" + order.pro + " Pro", true);
         if (!MotionSettings.ReduceMotion) feedback.Confetti(stations[order.station].transform.position);
     }

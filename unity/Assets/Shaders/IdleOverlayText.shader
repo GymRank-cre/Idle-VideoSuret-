@@ -42,15 +42,20 @@ Shader "Idle/OverlayText"
                 return output;
             }
             half Alpha(float2 uv) { return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).a; }
+            // 12 directions : un contour rond, sans marches d'escalier
+            static const float2 Ring[12] =
+            {
+                float2(1.0, 0.0), float2(0.866, 0.5), float2(0.5, 0.866), float2(0.0, 1.0), float2(-0.5, 0.866), float2(-0.866, 0.5),
+                float2(-1.0, 0.0), float2(-0.866, -0.5), float2(-0.5, -0.866), float2(0.0, -1.0), float2(0.5, -0.866), float2(0.866, -0.5)
+            };
             half4 frag(Varyings input) : SV_Target
             {
                 float2 d = _MainTex_TexelSize.xy * _OutlineWidth;
                 half a0 = Alpha(input.uv);
-                half a1 = max(max(Alpha(input.uv + float2(d.x, 0)), Alpha(input.uv - float2(d.x, 0))), max(Alpha(input.uv + float2(0, d.y)), Alpha(input.uv - float2(0, d.y))));
-                half a2 = max(max(Alpha(input.uv + d), Alpha(input.uv - d)), max(Alpha(input.uv + float2(d.x, -d.y)), Alpha(input.uv + float2(-d.x, d.y))));
-                half outline = max(a1, a2);
+                half outline = a0;
+                for (int i = 0; i < 12; i++) outline = max(outline, Alpha(input.uv + Ring[i] * d));
                 half3 rgb = lerp(_OutlineColor.rgb, input.color.rgb, saturate(a0 * 2));
-                return half4(rgb, max(a0, outline) * input.color.a);
+                return half4(rgb, outline * input.color.a);
             }
             ENDHLSL
         }

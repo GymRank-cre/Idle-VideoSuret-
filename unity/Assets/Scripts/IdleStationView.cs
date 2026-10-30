@@ -32,6 +32,10 @@ public class IdleStationView : MonoBehaviour
     [SerializeField] Color lockFarColor = new Color32(0xB8, 0xC2, 0xCC, 0xFF);
     [SerializeField, Min(0.1f)] float appearSpeed = 2.2f;
     [SerializeField] FeedbackSpawner feedback;      // textes « +x » et confettis (pools)
+    [SerializeField] IdleStationFx fx;              // particules propres au poste
+    [SerializeField, Range(0f, 1f)] float fxPhase;  // moment du cycle où elles partent
+    [SerializeField, Min(0.5f)] float lotEvery = 4f;   // un lot de billets s'envole au plus toutes ces secondes
+    [SerializeField, Min(1)] int lotSize = 6;
     [SerializeField] float floatHeight = 2.7f;      // hauteur de départ du « +x » au-dessus du poste
     [SerializeField, Min(0.1f)] float squashDecay = 2.4f;   // le « squash » d'un achat s'éteint en ~0,4 s
     [SerializeField] float squashAmount = 0.12f;
@@ -39,7 +43,7 @@ public class IdleStationView : MonoBehaviour
     IMachineAnim anim;
     IMachineLoad load;
     bool known, wasOpen, wasNext;
-    float phase, appear = 1f, bump;
+    float phase, appear = 1f, bump, sinceLot;
     IdleGame subscribed;
 
     public int Station => station;
@@ -106,6 +110,16 @@ public class IdleStationView : MonoBehaviour
         phase += dt * game.VisualFrequency(station);
         if (feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
             feedback.StationGain(station, transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
+        sinceLot += dt;
+        if (appear >= 1f && !MotionSettings.ReduceMotion)
+        {
+            if (fx != null && Mathf.FloorToInt(phase - fxPhase) != Mathf.FloorToInt(before - fxPhase)) fx.Cycle(station, transform.position);
+            if (sinceLot >= lotEvery && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && IdleBills.Instance != null)
+            {
+                sinceLot = 0f;
+                IdleBills.Instance.Send(transform.position + Vector3.up * 0.8f, lotSize);
+            }
+        }
         if (bump > 0f) bump = Mathf.Max(0f, bump - dt * squashDecay);
         if (appear < 1f) appear = Mathf.Min(1f, appear + dt * appearSpeed);
         float scale = appear < 1f ? EaseOutBack(appear) : 1f;
