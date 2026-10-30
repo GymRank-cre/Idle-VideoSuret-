@@ -11,8 +11,8 @@ public class AssemblyMachine : MonoBehaviour, IMachineAnim
     [SerializeField] Transform handJoint;
     [SerializeField] Vector3 shoulder = new Vector3(0.8f, 0.98f, 0.55f);   // base du bras, dans le repère de la machine
     [SerializeField] Vector2 reachDirection = new Vector2(0.2f, 0.79f);    // direction horizontale vers l'établi (X, Z)
-    [SerializeField, Min(0.1f)] float upperLength = 0.62f;
-    [SerializeField, Min(0.1f)] float foreLength = 0.5f;
+    [SerializeField, Min(0.1f)] float upperLength = 1.2f;
+    [SerializeField, Min(0.1f)] float foreLength = 0.95f;
     [SerializeField] GameObject camera;         // la caméra blanche, visible de 45 % à 100 % du cycle
     [SerializeField] Renderer screen;
     [SerializeField] Material screenA;

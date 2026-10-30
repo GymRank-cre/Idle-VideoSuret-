@@ -18,7 +18,7 @@ public static class IdleLayout
     // Plaques d'achat au sol (centres, x, y du web) : une par poste, devant son poste, jamais sur un tapis ni hors de la dalle.
     public static readonly Vector2[] Plates =
     {
-        new Vector2(1.35f, 2.8f), new Vector2(4.0f, 2.8f), new Vector2(7.1f, 3.5f), new Vector2(4.0f, 6.85f), new Vector2(1.35f, 6.85f),
+        new Vector2(1.35f, 2.8f), new Vector2(3.6f, 2.8f), new Vector2(7.1f, 3.5f), new Vector2(4.0f, 6.85f), new Vector2(1.35f, 6.85f),
     };
 
     // 4 tapis (suites de points x, y du web) entre les postes.

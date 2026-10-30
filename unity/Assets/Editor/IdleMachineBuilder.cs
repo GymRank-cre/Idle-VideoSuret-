@@ -43,6 +43,7 @@ public static class IdleMachineBuilder
             case 1: Assembly(root); break;
             case 2: Scanner(root); break;
             case 3: Packer(root); break;
+            case 4: Shipping(root); break;
         }
         return root;
     }
@@ -62,6 +63,50 @@ public static class IdleMachineBuilder
         var pillObject = pill.ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
         pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
         IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+    }
+
+    // ------------------------------------------------------------------ 5. Expédition : quai, camionnette qui part et revient
+
+    static void Shipping(Transform root)
+    {
+        var wall = new MeshKit();
+        B(wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.0f);
+        Part(wall, "Wall", root, "#7D93AB");
+        var door = new MeshKit();
+        B(door, 0.25f, 0.26f, 0.2f, 1.1f, 0.012f, 0.7f);
+        Part(door, "Door", root, "#22303F");
+        var parcel = new MeshKit();
+        B(parcel, 1.5f, 1.3f, 0.12f, 0.3f, 0.3f, 0.28f);
+        Part(parcel, "Parcel", root, "#E5B96B");
+
+        // camionnette : un objet qui porte tout (corps, cabine, pare-brise, roues) et glisse vers l'avant (axe X)
+        var van = new GameObject("Van").transform;
+        van.SetParent(root, false);
+        var body = new MeshKit();
+        B(body, 0.3f, 0.55f, 0.18f, 1.15f, 0.72f, 0.6f);
+        Part(body, "Body", van, "#FFFFFF");
+        var cab = new MeshKit();
+        B(cab, 1.45f, 0.6f, 0.18f, 0.5f, 0.6f, 0.42f);
+        Part(cab, "Cab", van, "#1FA0FF");
+        var glass = new MeshKit();
+        B(glass, 1.95f, 0.67f, 0.32f, 0.012f, 0.43f, 0.18f);
+        Part(glass, "Windshield", van, "#BFE3FF");
+        Material wheelMat = M("#1E2A38");
+        foreach (float wx in new[] { 0.6f, 1.2f })   // deux roues du côté visible (y = +0,72 du corps), axe le long de X
+        {
+            var wheel = new GameObject("Wheel").transform;
+            wheel.SetParent(van, false);
+            wheel.localPosition = new Vector3(0.55f + 0.72f, 0.1f, wx);
+            wheel.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            var wk = new MeshKit();
+            wk.Cylinder(new Vector3(0f, -0.06f, 0f), 0.17f, 0.12f, 10);
+            wk.ToObject("Tire", wheel, wheelMat);
+        }
+
+        var machine = root.gameObject.AddComponent<ShipMachine>();
+        var so = new SerializedObject(machine);
+        so.FindProperty("van").objectReferenceValue = van;
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // ------------------------------------------------------------------ 4. Emballage : cabine blanche, presse, colis fini
@@ -173,10 +218,10 @@ public static class IdleMachineBuilder
 
         // bras : deux segments (maillage unité le long de Z) et deux articulations jaunes
         Material armMat = M("#FF7A1A"), foreMat = M("#FFA24D"), jointMat = M("#FFC400");
-        Transform upper = UnitSegment(root, "Upper", 0.15f, armMat);
-        Transform fore = UnitSegment(root, "Fore", 0.13f, foreMat);
-        Transform elbow = Joint(root, "Elbow", 0.2f, jointMat);
-        Transform hand = Joint(root, "Hand", 0.16f, jointMat);
+        Transform upper = UnitSegment(root, "Upper", 0.24f, armMat);
+        Transform fore = UnitSegment(root, "Fore", 0.2f, foreMat);
+        Transform elbow = Joint(root, "Elbow", 0.3f, jointMat);
+        Transform hand = Joint(root, "Hand", 0.24f, jointMat);
 
         // caméra blanche déposée sur l'établi à mi-cycle
         var camera = new GameObject("Camera").transform;

@@ -254,6 +254,11 @@ public static class UnitTests
         vg.Stations[4].speed = 1000; vg.Recalc();
         Eq("0.45", F(vg.VisualFrequency(4)), "Expédition plafonnée à 0,45");
 
+        // camionnette de l'Expédition
+        Eq("0.00 0.00 0.65 -2.20 0.00 0.00", F(ShipMachine.VanOffset(0.5f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.72f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0.8f, 2.6f, 2.2f), "0.00")
+           + " " + F(ShipMachine.VanOffset(0.88f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(1.0f, 2.6f, 2.2f), "0.00") + " " + F(ShipMachine.VanOffset(0f, 2.6f, 2.2f), "0.00"), "camionnette : à l'arrêt, part, arrive, s'arrête");
+        Eq("True", (ShipMachine.VanOffset(0.95f, 2.6f, 2.2f) < 0f && ShipMachine.VanOffset(0.95f, 2.6f, 2.2f) > -2.2f).ToString(), "camionnette : arrive en ralentissant");
+
         // ---------------------------------------------------------------- caméra de la scène (U2a)
         foreach (float aspect in new[] { 390f / 844f, 0.56f, 1.5f })
         {
