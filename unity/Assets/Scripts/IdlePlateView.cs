@@ -19,7 +19,7 @@ public class IdlePlateView : MonoBehaviour
     [SerializeField] Color waitingColor = new Color32(0xC3, 0xCC, 0xD7, 0xFF);
     [SerializeField, Min(0f)] float pulseAmount = 0.05f;
     [SerializeField, Min(0f)] float pulseSpeed = 6f;
-    [SerializeField] float halfHitSize = 1.05f;      // moitié du côté de la zone de toucher (mètres)
+    [SerializeField] float halfHitSize = 0.8f;       // moitié du côté de la zone de toucher : 1,6 m pour une plaque de 1 m (1,5 fois le visuel)
 
     long shownPrice = -1;
     int shownState = -1;
@@ -66,7 +66,8 @@ public class IdlePlateView : MonoBehaviour
         {
             shownPrice = price;
             string label = NumberFormat.Short(price);
-            foreach (TextMesh t in priceTexts) { t.text = label; t.fontSize = label.Length >= 5 ? 60 : 90; }
+            int size = Mathf.RoundToInt(90f * Mathf.Min(1f, 3.0f / Mathf.Max(1, label.Length)));   // un prix tient toujours dans la plaque
+            foreach (TextMesh t in priceTexts) { t.text = label; t.fontSize = size; }
         }
         if (affordable != shownAffordable || pulseStart == 0f)
         {

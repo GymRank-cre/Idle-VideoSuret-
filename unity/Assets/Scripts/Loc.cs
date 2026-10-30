@@ -56,6 +56,7 @@ public static class Loc
         { "diag.session", "Session : {0} s" },
         { "diag.events", "Événements :" },
         { "diag.none", "aucun" },
+        { "station.recep", "Réception" }, { "station.assem", "Assemblage" }, { "station.test", "Test" }, { "station.pack", "Emballage" }, { "station.ship", "Expédition" },
         { "guide.step.0", "Ramasse des caisses sur la palette" },
         { "guide.step.1", "Dépose-les au poste bleu" },
         { "guide.step.2", "Prends le produit sur le plateau" },

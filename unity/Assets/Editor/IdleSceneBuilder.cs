@@ -335,7 +335,7 @@ public static class IdleSceneBuilder
 
     // ------------------------------------------------------------------ plaques d'achat au sol (U2b)
 
-    const float PlateSize = 1.25f;
+    const float PlateSize = 1.0f;
 
     static void BuildPlates(Transform parent)
     {
@@ -360,7 +360,7 @@ public static class IdleSceneBuilder
             visual.SetParent(plate, false);
             RoundedBox.Make(visual, "Base", new Vector3(0f, 0.025f, 0f), new Vector3(PlateSize, 0.05f, PlateSize), 0.1f, baseMat);
 
-            float half = PlateSize * 0.5f - 0.08f, lw = 0.07f, top = 0.052f;
+            float half = PlateSize * 0.5f - 0.07f, lw = 0.06f, top = 0.052f;
             var solid = new MeshKit();
             solid.Box(new Vector3(-half, top, -half), new Vector3(half * 2, 0.006f, lw));
             solid.Box(new Vector3(-half, top, half - lw), new Vector3(half * 2, 0.006f, lw));
@@ -379,19 +379,19 @@ public static class IdleSceneBuilder
             GameObject yellow = dashed.ToObject("BorderYellow", visual, yellowMat);
 
             var arrowKit = new MeshKit();
-            arrowKit.FlatArrow(textUp * 0.3f + new Vector3(0f, top + 0.012f, 0f), along, 0.42f, 0.3f);   // flèche vers le haut à droite
+            arrowKit.FlatArrow(textUp * 0.24f + new Vector3(0f, top + 0.012f, 0f), along, 0.34f, 0.24f);   // flèche vers le haut à droite
             GameObject arrow = arrowKit.ToObject("Arrow", visual, arrowOff);
 
             var tag = new GameObject("NewTag").transform;
             tag.SetParent(visual, false);
-            tag.localPosition = textUp * 0.38f + new Vector3(0f, top + 0.012f, 0f);
-            MakeFlatText(tag, "NOUVEAU", font, 70, 0.034f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _);
+            tag.localPosition = textUp * 0.31f + new Vector3(0f, top + 0.012f, 0f);
+            MakeFlatText(tag, "NOUVEAU", font, 70, 0.027f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _);
 
             var priceRoot = new GameObject("Price").transform;
             priceRoot.SetParent(visual, false);
-            priceRoot.localPosition = -textUp * 0.12f + new Vector3(0f, top + 0.015f, 0f);
+            priceRoot.localPosition = -textUp * 0.1f + new Vector3(0f, top + 0.015f, 0f);
             TextMesh main;
-            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.085f, flat, Color.white, out main);
+            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.068f, flat, Color.white, out main);
             var texts = new List<TextMesh> { main };
             foreach (TextMesh outline in label.GetComponentsInChildren<TextMesh>()) if (outline != main) texts.Add(outline);
 
@@ -423,7 +423,7 @@ public static class IdleSceneBuilder
         var holder = new GameObject("Text").transform;
         holder.SetParent(parent, false);
         holder.localRotation = rotation;
-        float o = 0.03f;
+        float o = 0.024f;
         Vector2[] offsets = { new Vector2(o, o), new Vector2(-o, o), new Vector2(o, -o), new Vector2(-o, -o) };
         foreach (Vector2 off in offsets) MakeTextMesh(holder, "Outline", text, font, fontSize, characterSize, new Vector3(off.x, off.y, 0.002f), UiTheme.Ink);
         main = MakeTextMesh(holder, "Main", text, font, fontSize, characterSize, Vector3.zero, color);
@@ -431,7 +431,7 @@ public static class IdleSceneBuilder
     }
 
     // Deux matériaux de police : le contour est dessiné avant le texte (file de rendu plus basse), pour ne jamais le recouvrir.
-    static Material FontMaterial(Font font, bool main)
+    internal static Material FontMaterial(Font font, bool main)
     {
         string path = "Assets/Prototype/Materials/Idle_Font" + (main ? "Main" : "Outline") + ".mat";
         Material m = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -442,7 +442,7 @@ public static class IdleSceneBuilder
         return m;
     }
 
-    static TextMesh MakeTextMesh(Transform parent, string name, string text, Font font, int fontSize, float characterSize, Vector3 localPos, Color color)
+    internal static TextMesh MakeTextMesh(Transform parent, string name, string text, Font font, int fontSize, float characterSize, Vector3 localPos, Color color)
     {
         var go = new GameObject(name, typeof(TextMesh));
         go.transform.SetParent(parent, false);

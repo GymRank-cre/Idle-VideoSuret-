@@ -36,11 +36,26 @@ public static class IdleMachineBuilder
         root.SetParent(parent, false);
         root.localPosition = new Vector3(-IdleLayout.StationSize * 0.5f, 0f, -IdleLayout.StationSize * 0.5f);   // coin arrière du poste
         Platform(root);
+        Label(root, i);
         switch (i)
         {
             case 0: Reception(root); break;
         }
         return root;
+    }
+
+    // Étiquette du poste : pastille sombre arrondie avec le nom en blanc, toujours face à la caméra, au-dessus de la machine.
+    static readonly float[] LabelHeight = { 1.55f, 1.6f, 2.15f, 2.1f, 1.5f };
+
+    static void Label(Transform root, int i)
+    {
+        string name = Loc.T(AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>("Assets/Prototype/IdleEconomyConfig.asset").stations[i].nameKey);
+        var holder = new GameObject("Label", typeof(FaceCamera)).transform;
+        holder.SetParent(root, false);
+        holder.localPosition = new Vector3(IdleLayout.StationSize * 0.5f, LabelHeight[i], IdleLayout.StationSize * 0.5f);
+        float width = 0.3f + 0.115f * name.Length;
+        RoundedBox.Make(holder, "Pill", new Vector3(0f, 0f, 0.03f), new Vector3(width, 0.34f, 0.05f), 0.16f, IdleMaterials.Get("LabelPill", "#1E2A38"));
+        IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
     }
 
     // ------------------------------------------------------------------ 1. Réception : quai, porte à lamelles, gyrophare, palette de caisses

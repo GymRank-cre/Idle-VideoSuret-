@@ -6,7 +6,7 @@ using UnityEngine;
 public class IdleCameraRig : MonoBehaviour
 {
     [SerializeField] Vector3 slabMin = new Vector3(0f, -0.3f, 0f);      // le dessus de la dalle est à y = 0
-    [SerializeField] Vector3 slabSize = new Vector3(6.6f, 0.3f, 7.8f);   // X = web y (6,6), Y = épaisseur, Z = web x (7,8)
+    [SerializeField] Vector3 slabSize = new Vector3(7.6f, 0.3f, 7.8f);   // X = web y (7,6), Y = épaisseur, Z = web x (7,8)
     [SerializeField, Range(10f, 60f)] float fieldOfView = 30f;
     [SerializeField, Range(30f, 80f)] float pitch = 55f;
     [SerializeField] float yaw = 225f;                                   // regarde vers -X, -Z : le coin (0,0) est au fond

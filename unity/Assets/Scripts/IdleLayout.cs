@@ -5,7 +5,7 @@ using UnityEngine;
 public static class IdleLayout
 {
     public const float FloorWidth = 7.8f;     // web x -> Z
-    public const float FloorDepth = 6.6f;     // web y -> X
+    public const float FloorDepth = 7.6f;     // web y -> X (plus profonde que 6,6 pour loger les plaques du bas)
     public const float SlabThickness = 0.3f;
     public const float StationSize = 1.6f;
 
@@ -15,10 +15,10 @@ public static class IdleLayout
         new Vector2(0.55f, 0.55f), new Vector2(3.2f, 0.55f), new Vector2(4.9f, 2.7f), new Vector2(3.2f, 4.4f), new Vector2(0.55f, 4.4f),
     };
 
-    // Plaques d'achat au sol (x, y du web) : une par poste.
+    // Plaques d'achat au sol (centres, x, y du web) : une par poste, devant son poste, jamais sur un tapis ni hors de la dalle.
     public static readonly Vector2[] Plates =
     {
-        new Vector2(1.35f, 3.3f), new Vector2(4.0f, 3.2f), new Vector2(7.05f, 3.5f), new Vector2(5.95f, 5.7f), new Vector2(1.35f, 6.95f),
+        new Vector2(1.35f, 2.8f), new Vector2(4.0f, 2.8f), new Vector2(7.1f, 3.5f), new Vector2(4.0f, 6.85f), new Vector2(1.35f, 6.85f),
     };
 
     // 4 tapis (suites de points x, y du web) entre les postes.
