@@ -35,7 +35,7 @@ public static class IdleSceneBuilder
         BuildSlots(world);
         BuildFeedback(world);
         BuildBelts(world);
-        BuildPlates(world);
+        BuildPads(world);
         BuildCars(world);
         BuildContactShadows(world, shadows);
         BuildUnlockShow(world);
@@ -234,11 +234,11 @@ public static class IdleSceneBuilder
         long seed = 7;
         System.Func<float> r = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647f; };
         string[] pineDark = { "#2FA55B", "#1E8A4C", "#27994F" }, pineLight = { "#6BD65A", "#3FB84A" };
-        for (int n = 0; n < 110; n++)
+        for (int n = 0; n < 420; n++)
         {
-            float x = -4f + r() * 16f, yy = -4f + r() * 14f;
+            float x = -7f + r() * 22f, yy = -7f + r() * 22f;
             bool inFloor = x > -0.9f && x < IdleLayout.FloorWidth + 0.9f && yy > -0.9f && yy < IdleLayout.FloorDepth + 1.1f;
-            bool onRoad = x > 8.2f && x < 10.8f;
+            bool onRoad = x > 8.3f && x < 10.6f;
             if (inFloor || onRoad) continue;
             float s = (0.5f + r() * 0.3f) * 1.5f;
             bool light = r() < 0.25f;
@@ -498,87 +498,134 @@ public static class IdleSceneBuilder
         for (int i = 0; i < objects.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = objects[i];
     }
 
-    // ------------------------------------------------------------------ plaques d'achat au sol (U2b)
+    // ------------------------------------------------------------------ plaques d'achat au sol, gestes, sélection (UL)
 
-    const float PlateSize = 1.0f;
+    const float PadUnit = IdleLayout.PadSize / 50f;   // le dessin du web fait 50 de côté
+    static readonly Quaternion PadText = Quaternion.Euler(90f, 180f, 0f);   // texte couché sur le sol, aligné sur l'axe de la dalle
 
-    static void BuildPlates(Transform parent)
+    // Point du dessin du web (u vers la droite, v vers le bas de la plaque) dans le repère de la plaque.
+    static Vector3 PadPoint(float u, float v, float y) { return new Vector3(-u * PadUnit, y, v * PadUnit); }
+
+    // Un maillage par sorte de plaque et par état : tout tient dans un seul appel de dessin, dans l'ordre d'écriture (pas de test de profondeur).
+    static Mesh PadMesh(IdleGame.PadKind kind, bool affordable)
     {
-        var root = new GameObject("Plates").transform;
-        root.SetParent(parent, false);
-        Material baseMat = IdleMaterials.Overlay("PlateBase", "#FFFFFF", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
-        Material greenMat = IdleMaterials.Overlay("PlateGreen", "#3DDC5A", 3510);
-        Material yellowMat = IdleMaterials.Overlay("PlateYellow", "#FFC400", 3510);
-        Material arrowOn = IdleMaterials.Overlay("PlateArrowOn", "#8CFF9E", 3520);
-        Material arrowOff = IdleMaterials.Overlay("PlateArrowOff", "#9AA6B3", 3520);
-        Font font = UiTheme.Font;
-        Vector3 textUp = new Vector3(0f, 0f, -1f);               // « haut » du texte sur le sol : vers le haut-gauche de l'écran
-        Vector3 along = new Vector3(-1f, 0f, 0f);                // sens de lecture : de gauche à droite en montant vers la droite
-        Quaternion flat = Quaternion.Euler(90f, 180f, 0f);       // texte couché sur le sol, aligné sur l'axe de la dalle
-        var views = new IdlePlateView[IdleLayout.Plates.Length];
-        for (int i = 0; i < views.Length; i++)
+        const float Corner = 0.17f;
+        float half = IdleLayout.PadSize * 0.5f, width = 4f * PadUnit;
+        var k = new MeshKit();
+        k.SetPaint("#141C26");
+        k.RoundedPlate(half + 0.02f, Corner + 0.02f, 0f);
+        k.SetPaint(kind == IdleGame.PadKind.Unlock ? "#26323F" : "#2A3644");
+        k.RoundedPlate(half, Corner, 0.002f);
+        k.SetPaint(affordable ? "#3DDC5A" : "#FFC400");
+        if (affordable) k.RoundedRing(half, Corner, width, 0.004f);
+        else k.RoundedRing(half, Corner, width, 0.004f, 0.13f, 0.09f);
+        if (kind == IdleGame.PadKind.Speed)
         {
-            var plate = new GameObject("Plate_" + i, typeof(IdlePlateView)).transform;
-            plate.SetParent(root, false);
-            plate.position = IdleLayout.ToWorld(IdleLayout.Plates[i], 0.012f);
-            var visual = new GameObject("Visual").transform;
-            visual.SetParent(plate, false);
-            // pastille arrondie : liseré clair, relief sombre, dessus ardoise
-            float half = PlateSize * 0.5f, corner = 0.26f, top = 0.052f;
-            var baseKit = new MeshKit();
-            baseKit.SetPaint("#141C26");
-            baseKit.RoundedPlate(half, corner, 0f);                                    // ombre dure dessous
-            baseKit.SetPaint("#6F7F93");
-            baseKit.RoundedPlate(half - 0.015f, corner - 0.015f, 0.05f);               // liseré clair
-            baseKit.SetPaint("#2A3644");
-            baseKit.RoundedPlate(half - 0.05f, corner - 0.05f, 0.052f);
-            baseKit.ToObject("Base", visual, baseMat);
-
-            float ring = half - 0.075f, ringCorner = corner - 0.075f, lw = 0.05f;
-            var solid = new MeshKit();
-            solid.RoundedRing(ring, ringCorner, lw, top);
-            GameObject green = solid.ToObject("BorderGreen", visual, greenMat);
-            var dashed = new MeshKit();
-            dashed.RoundedRing(ring, ringCorner, lw, top, 0.14f, 0.1f);
-            GameObject yellow = dashed.ToObject("BorderYellow", visual, yellowMat);
-
-            var arrowKit = new MeshKit();
-            arrowKit.FlatArrow(textUp * 0.24f + new Vector3(0f, top + 0.012f, 0f), along, 0.34f, 0.24f);   // flèche vers le haut à droite
-            GameObject arrow = arrowKit.ToObject("Arrow", visual, arrowOff);
-
-            var tag = new GameObject("NewTag").transform;
-            tag.SetParent(visual, false);
-            tag.localPosition = textUp * 0.31f + new Vector3(0f, top + 0.012f, 0f);
-            MakeFlatText(tag, "NOUVEAU", font, 70, 0.027f, flat, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
-
-            var priceRoot = new GameObject("Price").transform;
-            priceRoot.SetParent(visual, false);
-            priceRoot.localPosition = -textUp * 0.1f + new Vector3(0f, top + 0.015f, 0f);
-            TextMesh main;
-            Transform label = MakeFlatText(priceRoot, "0", font, 90, 0.068f, flat, Color.white, out main, true);
-            var texts = new List<TextMesh> { main };
-            foreach (TextMesh outline in label.GetComponentsInChildren<TextMesh>()) if (outline != main) texts.Add(outline);
-
-            var view = plate.GetComponent<IdlePlateView>();
-            var so = new SerializedObject(view);
-            so.FindProperty("station").intValue = i;
-            so.FindProperty("visual").objectReferenceValue = visual;
-            so.FindProperty("borderAffordable").objectReferenceValue = green;
-            so.FindProperty("borderWaiting").objectReferenceValue = yellow;
-            so.FindProperty("arrow").objectReferenceValue = arrow;
-            so.FindProperty("arrowRenderer").objectReferenceValue = arrow.GetComponent<Renderer>();
-            so.FindProperty("arrowOn").objectReferenceValue = arrowOn;
-            so.FindProperty("arrowOff").objectReferenceValue = arrowOff;
-            so.FindProperty("newTag").objectReferenceValue = tag.gameObject;
-            SetObjects(so.FindProperty("priceTexts"), texts.ToArray());
-            so.ApplyModifiedPropertiesWithoutUndo();
-            views[i] = view;
+            k.SetPaint(affordable ? "#FFD84A" : "#9AA6B3");
+            k.Polygon(PadPoint(-1f, -3f, 0.006f), PadPoint(-5f, 8f, 0.006f), PadPoint(10f, -10f, 0.006f), PadPoint(2f, -10f, 0.006f), PadPoint(5f, -21f, 0.006f), PadPoint(-9f, -3f, 0.006f));
         }
-        var input = new GameObject("PlateInput", typeof(IdlePlateInput));
+        else if (kind == IdleGame.PadKind.Add)
+        {
+            k.SetPaint(affordable ? "#FFFFFF" : "#9AA6B3");
+            k.FlatQuad(PadPoint(0f, -10f, 0.006f), 7f * PadUnit, 20f * PadUnit);
+            k.FlatQuad(PadPoint(0f, -10f, 0.006f), 20f * PadUnit, 7f * PadUnit);
+        }
+        return k.ToMesh("Pad_" + kind + (affordable ? "_On" : "_Wait"));
+    }
+
+    static void BuildPads(Transform parent)
+    {
+        var root = new GameObject("Pads").transform;
+        root.SetParent(parent, false);
+        Material face = IdleMaterials.Overlay("PadFace", "#FFFFFF", 3500);   // les plaques sont dessinées par-dessus tout, comme dans le web
+        Font font = UiTheme.Font;
+        var kinds = new[] { IdleGame.PadKind.Speed, IdleGame.PadKind.Add, IdleGame.PadKind.Unlock };
+        var on = new Mesh[3];
+        var wait = new Mesh[3];
+        for (int k = 0; k < 3; k++) { on[k] = PadMesh(kinds[k], true); wait[k] = PadMesh(kinds[k], false); }
+
+        var views = new List<IdlePadView>();
+        for (int i = 0; i < IdleLayout.Stations.Length; i++)
+            for (int k = 0; k < 3; k++)
+            {
+                IdleGame.PadKind kind = kinds[k];
+                var pad = new GameObject("Pad_" + i + "_" + kind, typeof(IdlePadView)).transform;
+                pad.SetParent(root, false);
+                pad.position = IdleLayout.ToWorld(IdleLayout.PadPosition(i, kind), 0.03f);
+                var visual = new GameObject("Visual").transform;
+                visual.SetParent(pad, false);
+
+                var faceObject = new GameObject("Face", typeof(MeshFilter), typeof(MeshRenderer));
+                faceObject.transform.SetParent(visual, false);
+                faceObject.GetComponent<MeshFilter>().sharedMesh = wait[k];
+                var renderer = faceObject.GetComponent<MeshRenderer>();
+                renderer.sharedMaterial = face;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+
+                if (kind == IdleGame.PadKind.Unlock)
+                {
+                    var tag = new GameObject("NewTag").transform;
+                    tag.SetParent(visual, false);
+                    tag.localPosition = PadPoint(0f, -12f, 0.01f);
+                    MakeFlatText(tag, Loc.T("pad.new"), font, 70, 0.0285f, PadText, new Color32(0xFF, 0xC4, 0x00, 0xFF), out _, true);
+                }
+                var priceRoot = new GameObject("Price").transform;
+                priceRoot.SetParent(visual, false);
+                priceRoot.localPosition = PadPoint(0f, 11f, 0.01f);
+                TextMesh price;
+                MakeFlatText(priceRoot, "0", font, 90, 0.0385f, PadText, Color.white, out price, true);
+
+                var view = pad.GetComponent<IdlePadView>();
+                var so = new SerializedObject(view);
+                so.FindProperty("station").intValue = i;
+                so.FindProperty("kind").enumValueIndex = k;
+                so.FindProperty("visual").objectReferenceValue = visual;
+                so.FindProperty("face").objectReferenceValue = faceObject.GetComponent<MeshFilter>();
+                so.FindProperty("meshAffordable").objectReferenceValue = on[k];
+                so.FindProperty("meshWaiting").objectReferenceValue = wait[k];
+                so.FindProperty("priceText").objectReferenceValue = price;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                views.Add(view);
+            }
+
+        // étoile dorée au-dessus de la plaque conseillée
+        var starKit = new MeshKit();
+        starKit.SetPaint("#0E1620");
+        starKit.Star(0.46f, 0.23f, 0f);
+        starKit.SetPaint("#FFC400");
+        starKit.Star(0.34f, 0.16f, -0.001f);
+        GameObject star = starKit.ToObject("AdvisedStar", root, IdleMaterials.Overlay("PadStar", "#FFFFFF", 3530));
+        star.AddComponent<FaceCamera>();
+        star.SetActive(false);
+
+        // anneau jaune sous le poste sélectionné
+        var ringKit = new MeshKit();
+        ringKit.Paint = new Color32(255, 196, 0, 46);
+        ringKit.RoundedPlate(1.0f, 0.1f, 0f);
+        ringKit.Paint = new Color32(255, 196, 0, 255);
+        ringKit.RoundedRing(1.04f, 0.12f, 0.1f, 0.003f);
+        GameObject ring = ringKit.ToObject("SelectionRing", root, IdleMaterials.ContactShadow());
+        
+        var field = new GameObject("PadField", typeof(IdlePadField));
+        field.transform.SetParent(root, false);
+        var fso = new SerializedObject(field.GetComponent<IdlePadField>());
+        SetObjects(fso.FindProperty("pads"), views.ToArray());
+        fso.FindProperty("star").objectReferenceValue = star.transform;
+        fso.ApplyModifiedPropertiesWithoutUndo();
+
+        var input = new GameObject("WorldInput", typeof(IdleWorldInput), typeof(IdleSelection));
         input.transform.SetParent(root, false);
-        var iso = new SerializedObject(input.GetComponent<IdlePlateInput>());
-        SetObjects(iso.FindProperty("plates"), views);
+        var rig = Object.FindFirstObjectByType<IdleCameraRig>();
+        var iso = new SerializedObject(input.GetComponent<IdleWorldInput>());
+        iso.FindProperty("rig").objectReferenceValue = rig;
+        iso.FindProperty("pads").objectReferenceValue = field.GetComponent<IdlePadField>();
+        iso.FindProperty("selection").objectReferenceValue = input.GetComponent<IdleSelection>();
         iso.ApplyModifiedPropertiesWithoutUndo();
+        var sso = new SerializedObject(input.GetComponent<IdleSelection>());
+        sso.FindProperty("rig").objectReferenceValue = rig;
+        sso.FindProperty("ring").objectReferenceValue = ring.transform;
+        sso.ApplyModifiedPropertiesWithoutUndo();
     }
 
     // Texte couché sur le sol : le texte principal et 4 copies sombres décalées en diagonale (contour).

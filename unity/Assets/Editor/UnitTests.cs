@@ -242,29 +242,64 @@ public static class UnitTests
         // ---------------------------------------------------------------- plaques d'achat au sol (U2b)
         var pg = new IdleGame(cfg, 2, 0);
         Eq("Open Unlock Hidden Hidden Hidden", pg.PlateStateOf(0) + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2) + " " + pg.PlateStateOf(3) + " " + pg.PlateStateOf(4), "plaques : ouvert, prochain à débloquer, le reste caché");
-        Eq("7 True", pg.PlatePrice(0) + " " + pg.PlateAffordable(0), "plaque du 1er poste : 7 $ (Ajouter, meilleur remboursement), abordable avec 10 $");
+        var S = IdleGame.PadKind.Speed; var A = IdleGame.PadKind.Add; var U = IdleGame.PadKind.Unlock;
+        Eq("True True False", pg.PadVisible(0, S) + " " + pg.PadVisible(0, A) + " " + pg.PadVisible(0, U), "poste ouvert : plaques Vitesse et Ajouter");
+        Eq("False False True", pg.PadVisible(1, S) + " " + pg.PadVisible(1, A) + " " + pg.PadVisible(1, U), "prochain poste : plaque Débloquer");
+        Eq("False False False", pg.PadVisible(2, S) + " " + pg.PadVisible(2, A) + " " + pg.PadVisible(2, U), "postes suivants : aucune plaque");
+        Eq("10 7 180 0", pg.PadPrice(0, S) + " " + pg.PadPrice(0, A) + " " + pg.PadPrice(1, U) + " " + pg.PadPrice(2, U), "prix des plaques ; plaque cachée : pas de prix");
         pg.Cash = 5;
-        Eq("False", pg.PlateAffordable(0).ToString(), "plaque : pas assez d'argent");
-        Eq("TooExpensive", pg.BuyPlate(0).ToString(), "toucher la plaque sans argent : refusé");
-        Eq("180", pg.PlatePrice(1).ToString(), "plaque de déblocage de l'Assemblage : 180");
-        Eq("0", pg.PlatePrice(2).ToString(), "plaque cachée : pas de prix");
-        Eq("Invalid", pg.BuyPlate(3).ToString(), "plaque cachée : achat impossible");
+        Eq("TooExpensive", pg.BuyPad(0, A).ToString(), "toucher la plaque sans argent : refusé");
+        Eq("Invalid", pg.BuyPad(3, U).ToString(), "plaque cachée : achat impossible");
+        Eq("Invalid", pg.BuyPad(0, U).ToString(), "plaque Débloquer d'un poste déjà ouvert : impossible");
         pg.Cash = 1000;
         double cash0 = pg.Cash;
-        Eq("Ok", pg.BuyPlate(0).ToString(), "plaque du poste ouvert : achat");
-        Eq("True", (pg.Cash < cash0 && pg.Stations[0].speed + pg.Stations[0].add == 1).ToString(), "un niveau acheté, argent dépensé");
-        Eq("Ok", pg.BuyPlate(1).ToString(), "plaque de déblocage : poste débloqué");
+        Eq("Ok", pg.BuyPad(0, A).ToString(), "plaque Ajouter : achat");
+        Eq("True 0 1", (pg.Cash < cash0) + " " + pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Ajouter : un niveau d'Ajouter, argent dépensé");
+        Eq("Ok", pg.BuyPad(0, S).ToString(), "plaque Vitesse : achat");
+        Eq("1 1", pg.Stations[0].speed + " " + pg.Stations[0].add, "plaque Vitesse : un niveau de Vitesse");
+        Eq("Ok", pg.BuyPad(1, U).ToString(), "plaque de déblocage : poste débloqué");
         Eq("True Open Unlock", pg.Stations[1].unlocked + " " + pg.PlateStateOf(1) + " " + pg.PlateStateOf(2), "après le déblocage : poste ouvert, le suivant à débloquer");
         pg.BuyMode = 10; pg.Cash = 1e9;
-        long p10 = pg.PlatePrice(0);
-        int before10 = pg.Stations[0].speed + pg.Stations[0].add;
-        pg.BuyPlate(0);
-        Eq("True", (pg.Stations[0].speed + pg.Stations[0].add - before10 == 10 && p10 > 0).ToString(), "mode x10 : 10 niveaux d'un coup");
+        int before10 = pg.Stations[0].add;
+        Eq("True", (pg.PadPrice(0, A) > 0).ToString(), "mode x10 : prix sur la plaque");
+        pg.BuyPad(0, A);
+        Eq("10", (pg.Stations[0].add - before10).ToString(), "mode x10 : 10 niveaux d'un coup");
         pg.BuyMode = 0;
         pg.Cash = 1e5;
-        int beforeMax = pg.Stations[0].speed + pg.Stations[0].add;
-        pg.BuyPlate(0);
-        Eq("True", (pg.Stations[0].speed + pg.Stations[0].add - beforeMax > 10 && pg.Cash >= 0).ToString(), "mode MAX : plusieurs niveaux, argent jamais négatif");
+        int beforeMax = pg.Stations[0].add;
+        pg.BuyPad(0, A);
+        Eq("True", (pg.Stations[0].add - beforeMax > 10 && pg.Cash >= 0).ToString(), "mode MAX : plusieurs niveaux, argent jamais négatif");
+        bool af, ah; IdleEconomy.Option ag;
+        var ap = new IdleGame(cfg, 2, 0);
+        IdleEconomy.Option ao = ap.Advice(out af, out ah, out ag);
+        Eq("True False", IdleGame.IsAdvised(ao, 0, A) + " " + IdleGame.IsAdvised(ao, 0, S), "le conseil désigne une seule plaque");
+
+        // ---------------------------------------------------------------- caméra libre et gestes (UL)
+        Eq("False True", IdleWorldInput.Moved(9f, 1f) + " " + IdleWorldInput.Moved(9.5f, 1f), "seuil du glissement : 9 px");
+        Eq("False True", IdleWorldInput.Moved(27f, 3f) + " " + IdleWorldInput.Moved(28f, 3f), "seuil du glissement : suit la densité de l'écran");
+        Eq("True False False", IdleWorldInput.IsTap(false, 0.5f) + " " + IdleWorldInput.IsTap(true, 0.1f) + " " + IdleWorldInput.IsTap(false, 0.7f), "toucher : court et sans mouvement");
+        Eq("(-6.2, 2.2) (6.6, 13.4) (1.0, 5.0)", Inv(IdleFraming.Clamp(new Vector2(-50f, -50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(50f, 50f))) + " " + Inv(IdleFraming.Clamp(new Vector2(1f, 5f))), "limites de la caméra");
+        Eq("1 3 2", IdleFraming.ClampZoom(0.2f) + " " + IdleFraming.ClampZoom(9f) + " " + IdleFraming.ClampZoom(2f), "limites du zoom");
+        Vector3 planPoint = IdleLayout.ToWorld(3f, 5f);
+        Eq("(-2.0, 8.0)", Inv(IdleFraming.ToPlan(planPoint)), "plan a, b : a = x - y, b = x + y");
+        Eq("True", (Vector3.Distance(IdleFraming.ToWorld(IdleFraming.ToPlan(planPoint)), planPoint) < 0.001f).ToString(), "plan a, b : aller-retour");
+        Eq("0,41 0,41", Fr(IdleFramingViewX(cfg, 0)) + " " + Fr(IdleFramingViewX(cfg, 1)), "cadrage : la colonne de droite est exclue");
+        var fg = new IdleGame(cfg, 2, 0);
+        float fh = 24.5f, fw = fh * 390f / 844f;   // ce que voit la caméra au zoom 1 sur un écran 390 x 844
+        IdleFraming.View v1 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        fg.Stations[1].unlocked = true;
+        IdleFraming.View v2 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        for (int si = 2; si < 5; si++) fg.Stations[si].unlocked = true;
+        IdleFraming.View v5 = IdleFraming.Default(fg, fw, fh, 55f, 0.18f);
+        Eq("True True", (v1.zoom >= v2.zoom) + " " + (v2.zoom > v5.zoom), "cadrage : plus il y a de postes, moins on zoome");
+        Eq("True True", (v1.zoom <= IdleFraming.DefaultMaxZoom) + " " + (v5.zoom >= IdleFraming.MinZoom), "cadrage : zoom entre 1 et 2,6");
+        Eq("(1.2, 4.5)", Inv(v1.focus), "cadrage d'un poste ouvert : milieu de ses plaques et du poste suivant (a -1,85 à 4,25 ; b 1,1 à 6,95, + 0,5)");
+        Eq("True", (v5.focus.y > v1.focus.y).ToString(), "cadrage de 5 postes : centré plus bas sur la dalle");
+        Eq("3,10", Fr(IdleFraming.Station(2, 3.1f).zoom), "sélection : on ne dézoome pas");
+        Eq("2,00", Fr(IdleFraming.Station(2, 1f).zoom), "sélection : zoom d'au moins 2");
+        Eq("0 1 -1", IdleFramingPick(0.1f) + " " + IdleFramingPick(0.8f) + " " + IdleFramingPick(5f), "la plaque la plus proche du doigt gagne ; loin de tout : aucune");
+        Eq("3 -1 1", IdleSelection.Next(-1, 3) + " " + IdleSelection.Next(3, 3) + " " + IdleSelection.Next(3, 1), "fiche : ouvrir, refermer sur le même poste, changer de poste");
+
         var pj = JsonUtility.ToJson(pg.ToSave(1));
         var pg2 = new IdleGame(cfg, 2, 0); pg2.Load(JsonUtility.FromJson<SaveData>(pj));
         Eq("0", pg2.BuyMode.ToString(), "mode d'achat sauvegardé");
@@ -307,11 +342,11 @@ public static class UnitTests
         Eq("4 6", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plus de caisses sur le tapis et dans la pile");
         ug.Stations[0].add = 600;
         Eq("6 8", ug.BeltItemCount(0, 6) + " " + ug.StackSize(0), "Ajouter : plafonné");
-        Eq("0,00 0,50 1,00 1,00 0,50 0,00", string.Join(" ", new[] { 0f, 0.4f, 0.8f, 1.5f, 1.85f, 2.2f }.Select(t => IdleCameraRig.FocusAmount(t, 0.8f, 0.7f, 0.7f).ToString("0.00", fr))), "caméra : aller, pause, retour");
 
         // main de tutoriel
         Eq("True False False False", IdleTutorialHand.Wanted(0, false, true) + " " + IdleTutorialHand.Wanted(0, true, true) + " " + IdleTutorialHand.Wanted(0, false, false) + " " + IdleTutorialHand.Wanted(12, false, true), "main : abordable, sans fenêtre, 12 premiers achats");
-        Eq("True True False False", IdleTutorialHand.Wanted(11, false, true) + " " + IdleTutorialHand.UseBar(2) + " " + IdleTutorialHand.UseBar(3) + " " + IdleTutorialHand.Wanted(13, false, true), "main : bandeau pour les 3 premiers achats, puis les lignes");
+        Eq("True False", IdleTutorialHand.Wanted(11, false, true) + " " + IdleTutorialHand.Wanted(13, false, true), "main : jusqu'au 12e achat");
+        Eq("True False False", IdleTutorialHand.PadOnScreen(0.5f, 0.5f) + " " + IdleTutorialHand.PadOnScreen(0.5f, 0.1f) + " " + IdleTutorialHand.PadOnScreen(0.98f, 0.5f), "main : sur la plaque si elle est visible, sinon sur le bandeau");
 
         // états des lignes du tiroir
         var rg = new IdleGame(cfg, 6, 0);
@@ -391,4 +426,26 @@ public static class UnitTests
         else
             Debug.LogError("Tests unitaires : " + failures.Count + " échec(s) sur " + count + "\n" + string.Join("\n", failures));
     }
+
+    static string Inv(Vector2 v) { return "(" + v.x.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + ", " + v.y.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + ")"; }
+
+    static string Fr(float value) { return value.ToString("0.00", new System.Globalization.CultureInfo("fr-FR")); }
+
+    // Écran assez large pour que le décalage vers la gauche soit entier.
+    static float IdleFramingViewX(IdleEconomyConfig cfg, int extraOpen)
+    {
+        var game = new IdleGame(cfg, 2, 0);
+        for (int i = 1; i <= extraOpen; i++) game.Stations[i].unlocked = true;
+        return IdleFraming.Default(game, 20f, 40f, 55f, 0.18f).viewportX;
+    }
+
+    // Deux plaques à 0,85 m l'une de l'autre, zone de toucher 0,7 m de chaque côté.
+    static int IdleFramingPick(float x)
+    {
+        Vector3 ground = new Vector3(x, 0f, 0f), a = Vector3.zero, b = new Vector3(0.85f, 0f, 0f);
+        float da = IdlePadField.PadDistance(a, ground), db = IdlePadField.PadDistance(b, ground), limit = IdleLayout.PadHitSize * 0.5f;
+        if (da > limit && db > limit) return -1;
+        return da <= db ? 0 : 1;
+    }
+
 }

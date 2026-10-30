@@ -9,7 +9,8 @@ public static class DevMouse
 {
     const int TicksPerStep = 3;
 
-    static Vector2 clickAt;
+    static Vector2 clickAt, dragFrom, dragTo;
+    static int dragSteps;
     static int ticks;
 
     public static Vector2 CenterOf(string path)
@@ -18,6 +19,32 @@ public static class DevMouse
         if (go == null) return Vector2.zero;
         var rt = (RectTransform)go.transform;
         return RectTransformUtility.WorldToScreenPoint(null, rt.TransformPoint(rt.rect.center));
+    }
+
+    // Glissement : appui, quelques mouvements, relâchement (vérification des gestes sur le monde).
+    public static string Drag(Vector2 from, Vector2 to, int steps = 8)
+    {
+        dragFrom = from;
+        dragTo = to;
+        dragSteps = steps;
+        ticks = 0;
+        EditorApplication.update -= StepDrag;
+        EditorApplication.update += StepDrag;
+        return "glissement demandé de " + from + " à " + to;
+    }
+
+    static void StepDrag()
+    {
+        int step = ticks / TicksPerStep;
+        if (ticks % TicksPerStep == 0)
+        {
+            if (step == 0) Send(dragFrom, false);
+            else if (step == 1) Send(dragFrom, true);
+            else if (step <= dragSteps + 1) Send(Vector2.Lerp(dragFrom, dragTo, (step - 1f) / dragSteps), true);
+            else if (step == dragSteps + 2) Send(dragTo, false);
+            else EditorApplication.update -= StepDrag;
+        }
+        ticks++;
     }
 
     public static string Click(Vector2 p)

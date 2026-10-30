@@ -12,6 +12,7 @@ public class IdleGame
     }
 
     public enum PurchaseResult { Ok, Milestone, TooExpensive, Invalid }
+    public enum PadKind { Speed, Add, Unlock }
 
     public struct OfflineResult
     {
@@ -187,58 +188,39 @@ public class IdleGame
         return Math.Min(cfg.stackMax, cfg.stackBase + Stations[station].add / cfg.addPerStackCrate);
     }
 
-    // Une plaque au sol par poste : ouvert -> achète sa meilleure option ; prochain verrouillé -> déblocage ; les suivants sont cachés.
+    // Un poste ouvert a ses plaques Vitesse et Ajouter, le prochain verrouillé sa plaque Débloquer, les suivants rien.
     public PlateState PlateStateOf(int station)
     {
         if (Stations[station].unlocked) return PlateState.Open;
         return station == NextLockedStation() ? PlateState.Unlock : PlateState.Hidden;
     }
 
-    // Meilleure option d'un poste ouvert (meilleur délai de remboursement entre Vitesse et Ajouter), pour `k` niveaux (0 = maximum).
-    public IdleEconomy.Option BestOfStation(int station, int k)
+    public bool PadVisible(int station, PadKind kind)
     {
-        IdleEconomy.StationLevels st = Stations[station];
-        IdleEconomy.Option best = default(IdleEconomy.Option);
-        bool have = false;
-        for (int axis = 0; axis < 2; axis++)
-        {
-            bool speedAxis = axis == 0;
-            int level = speedAxis ? st.speed : st.add;
-            int count = k > 0 ? k : Math.Max(1, Eco.MaxAffordable(speedAxis, station, level, Cash, g));
-            double cost = Eco.BulkCost(speedAxis, station, level, count, g);
-            double delta = Eco.Income(station, Eco.With(st, speedAxis, count), g) - Eco.Income(station, st, g);
-            double payback = delta > 0 ? cost / delta : 1e18;
-            if (!have || payback < best.payback)
-            {
-                best = new IdleEconomy.Option { kind = IdleEconomy.Kind.Upgrade, station = station, speedAxis = speedAxis, count = count, cost = cost, delta = delta, payback = payback };
-                have = true;
-            }
-        }
-        return best;
+        PlateState state = PlateStateOf(station);
+        return kind == PadKind.Unlock ? state == PlateState.Unlock : state == PlateState.Open;
     }
 
-    // Prix entier affiché sur la plaque d'un poste (0 si la plaque est cachée).
-    public long PlatePrice(int station)
+    // Prix affiché sur une plaque (0 si elle est cachée) : suit le mode ×1/×10/MAX.
+    public long PadPrice(int station, PadKind kind)
     {
-        switch (PlateStateOf(station))
-        {
-            case PlateState.Open: return IdleEconomy.Ceil(BestOfStation(station, BuyMode).cost);
-            case PlateState.Unlock: return UnlockPrice(station);
-            default: return 0;
-        }
+        if (!PadVisible(station, kind)) return 0;
+        return kind == PadKind.Unlock ? UnlockPrice(station) : UpgradePrice(station, kind == PadKind.Speed, BuyMode);
     }
-
-    public bool PlateAffordable(int station) { long p = PlatePrice(station); return p > 0 && Cash >= p; }
 
     // Touche sur une plaque : achète ce qu'elle propose.
-    public PurchaseResult BuyPlate(int station)
+    public PurchaseResult BuyPad(int station, PadKind kind)
     {
-        switch (PlateStateOf(station))
-        {
-            case PlateState.Open: return BuyUpgrade(station, BestOfStation(station, BuyMode).speedAxis, BuyMode);
-            case PlateState.Unlock: return BuyUnlock(station);
-            default: return PurchaseResult.Invalid;
-        }
+        if (!PadVisible(station, kind)) return PurchaseResult.Invalid;
+        return kind == PadKind.Unlock ? BuyUnlock(station) : BuyUpgrade(station, kind == PadKind.Speed, BuyMode);
+    }
+
+    // Ce conseil correspond-il à cette plaque ?
+    public static bool IsAdvised(IdleEconomy.Option best, int station, PadKind kind)
+    {
+        if (best.station != station) return false;
+        if (best.kind == IdleEconomy.Kind.Unlock) return kind == PadKind.Unlock;
+        return kind == (best.speedAxis ? PadKind.Speed : PadKind.Add);
     }
 
     // Achat conseillé du moment (et son objectif lointain éventuel).

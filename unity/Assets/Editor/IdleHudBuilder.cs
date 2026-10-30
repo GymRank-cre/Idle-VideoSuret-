@@ -39,12 +39,14 @@ public static class IdleHudBuilder
         BuildTopBar(safe, so, out cashPill, out proPill);
         BuildSideColumn(safe, so);
 
-        RectTransform drawerPanel = IdleDrawerBuilder.Build(canvasGo.transform);
-        IdleWindowsBuilder.Result windows = IdleWindowsBuilder.Build(canvasGo.transform, safe, drawerPanel, cashPill, proPill);
+        IdleDock dock = IdleDockBuilder.Build(canvasGo.transform);
+        IdleWindowsBuilder.Result windows = IdleWindowsBuilder.Build(canvasGo.transform, safe, dock, cashPill, proPill);
         so.FindProperty("ordersSheet").objectReferenceValue = windows.orders;
         so.FindProperty("reputationSheet").objectReferenceValue = windows.reputation;
         so.FindProperty("settingsSheet").objectReferenceValue = windows.settings;
         so.FindProperty("toasts").objectReferenceValue = windows.toasts;
+        so.FindProperty("postesSheet").objectReferenceValue = windows.postes;
+        so.FindProperty("selection").objectReferenceValue = Object.FindFirstObjectByType<IdleSelection>();
         so.ApplyModifiedPropertiesWithoutUndo();
     }
 
@@ -76,8 +78,14 @@ public static class IdleHudBuilder
         hud.FindProperty("cashText").objectReferenceValue = cashText;
 
         Image rate = Pill("RatePill", bar, UiTheme.Slate);
-        Row(rate.gameObject, 12f, 12f, 0f, TextAnchor.MiddleCenter);
+        Row(rate.gameObject, 12f, 10f, 5f, TextAnchor.MiddleCenter);
         hud.FindProperty("rateText").objectReferenceValue = AddText(rate.transform, "Rate", "0/s", 17f, Color.white, TextAnchor.MiddleCenter);
+        AddIcon(rate.transform, "Caret", "Ico_caret", 12f, true);
+        rate.raycastPadding = new Vector4(0f, -Px(2f), 0f, -Px(2f));              // zone tactile de 122 unités au moins
+        var rateButton = rate.gameObject.AddComponent<Button>();
+        rateButton.transition = Selectable.Transition.None;
+        rate.gameObject.AddComponent<PressScale>();
+        hud.FindProperty("rateButton").objectReferenceValue = rateButton;
 
         // Points Pro : cachés tant qu'aucune commande n'a été livrée
         Image pro = Pill("ProPill", bar, ProTeal);

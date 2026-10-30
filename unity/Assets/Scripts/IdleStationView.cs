@@ -105,7 +105,7 @@ public class IdleStationView : MonoBehaviour
         float before = phase;
         phase += dt * game.VisualFrequency(station);
         if (feedback != null && Mathf.FloorToInt(phase) != Mathf.FloorToInt(before) && appear >= 1f)   // un cycle visuel vient de finir : « +x » qui monte
-            feedback.Message(transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
+            feedback.StationGain(station, transform.position + Vector3.up * floatHeight, "+" + NumberFormat.Gain(game.CycleGain(station)));
         if (bump > 0f) bump = Mathf.Max(0f, bump - dt * squashDecay);
         if (appear < 1f) appear = Mathf.Min(1f, appear + dt * appearSpeed);
         float scale = appear < 1f ? EaseOutBack(appear) : 1f;

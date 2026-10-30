@@ -17,7 +17,7 @@ public class IdleSheet : MonoBehaviour
     [SerializeField, Min(0.01f)] float duration = 0.22f;
     [SerializeField, Min(0f)] float slide = 110f;
 
-    float contentHeight;
+    [SerializeField, Min(0f)] float contentHeight;
     float elapsed;
     float fittedCanvasHeight;
 

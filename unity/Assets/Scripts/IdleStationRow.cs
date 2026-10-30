@@ -57,13 +57,6 @@ public class IdleStationRow : MonoBehaviour
         if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(unlockButton.transform.position, price);
     }
 
-    // Le bouton qui réalise ce conseil : la main de tutoriel vient le tapoter.
-    public RectTransform ButtonFor(IdleEconomy.Option option)
-    {
-        if (option.kind == IdleEconomy.Kind.Unlock) return (RectTransform)unlockButton.transform;
-        return (RectTransform)(option.speedAxis ? speedButton : addButton).transform;
-    }
-
     public void Refresh(IdleGame game, IdleEconomy.Option best, bool hasBest)
     {
         RowState state = StateOf(game, station);

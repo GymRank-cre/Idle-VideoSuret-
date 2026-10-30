@@ -62,16 +62,23 @@ public class MeshKit
     }
 
     // Contour d'un carré à coins arrondis, vu de dessus (x, z), en partant du milieu d'un côté.
-    static List<Vector2> RoundedPath(float half, float radius, int arc = 6)
+    static List<Vector2> RoundedPath(float half, float radius, int arc = 6, int sideSteps = 16)
     {
         var path = new List<Vector2>();
         Vector2[] centers = { new Vector2(half - radius, half - radius), new Vector2(-half + radius, half - radius), new Vector2(-half + radius, -half + radius), new Vector2(half - radius, -half + radius) };
         for (int c = 0; c < 4; c++)
+        {
             for (int i = 0; i <= arc; i++)
             {
                 float a = (c + (float)i / arc) * Mathf.PI * 0.5f;
                 path.Add(centers[c] + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius);
             }
+            // côtés découpés : les pointillés suivent tout le tour, pas seulement les coins
+            Vector2 from = path[path.Count - 1], next = c + 1 < 4 ? centers[c + 1] : centers[0];
+            float angle = (c + 1) * Mathf.PI * 0.5f;
+            Vector2 to = next + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+            for (int i = 1; i < sideSteps; i++) path.Add(Vector2.Lerp(from, to, (float)i / sideSteps));
+        }
         return path;
     }
 
@@ -271,8 +278,25 @@ public class MeshKit
             float a0 = i * Mathf.PI * 2f / segments, a1 = (i + 1) * Mathf.PI * 2f / segments;
             Vector3 p0 = baseCenter + new Vector3(Mathf.Cos(a0) * radius, 0, Mathf.Sin(a0) * radius);
             Vector3 p1 = baseCenter + new Vector3(Mathf.Cos(a1) * radius, 0, Mathf.Sin(a1) * radius);
-            Tri(p0, tip, p1);
-            Tri(baseCenter, p0, p1);
+            Tri(p0, tip, p1);        // sans fond : on ne voit jamais le dessous, autant de triangles en moins
+        }
+    }
+
+    // Polygone en éventail depuis son premier point (qui doit voir tous les autres). Vu de dessus : le sens n'a pas d'importance avec un shader sans tri des faces.
+    public void Polygon(params Vector3[] points)
+    {
+        for (int i = 1; i + 1 < points.Length; i++) Tri(points[0], points[i], points[i + 1]);
+    }
+
+    // Étoile plate dans le plan XY, centrée sur l'origine (`depth` : décalage en Z).
+    public void Star(float radius, float inner, float depth, int tips = 5)
+    {
+        var center = new Vector3(0f, 0f, depth);
+        for (int i = 0; i < tips * 2; i++)
+        {
+            float a0 = Mathf.PI * 0.5f + i * Mathf.PI / tips, a1 = Mathf.PI * 0.5f + (i + 1) * Mathf.PI / tips;
+            float r0 = i % 2 == 0 ? radius : inner, r1 = i % 2 == 0 ? inner : radius;
+            Tri(center, center + new Vector3(Mathf.Cos(a1) * r1, Mathf.Sin(a1) * r1, 0f), center + new Vector3(Mathf.Cos(a0) * r0, Mathf.Sin(a0) * r0, 0f));
         }
     }
 

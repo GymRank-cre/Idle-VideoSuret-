@@ -3,14 +3,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using static IdleHudBuilder;
 
-// Construit le tiroir orange (U3b) : bandeau « Meilleur achat », sélecteur ×1/×10/MAX et une ligne par poste, dans une liste qui défile.
+// Construit le bas de l'écran (UL) : bandeau « Meilleur achat », sélecteur ×1/×10/MAX, loupe, emplacement de la fiche ; et les lignes des postes.
 // Mêmes mesures que le web (pixels CSS passés dans Px) ; les pièces sont placées à la main, sans groupe de mise en page, sauf quand un prix change de largeur.
-public static class IdleDrawerBuilder
+public static class IdleDockBuilder
 {
-    const float FirstRow = 8f, RowHeight = 76f, RowPitch = 85f, UpWidth = 78f, UpHeight = 62f, WideHeight = 56f, RowPad = 8f, Gap = 7f;
+    const float BarHeight = 66f, TopRowBottom = 84f, FicheBottom = 140f, FirstRow = 8f, RowHeight = 76f, RowPitch = 85f, UpWidth = 78f, UpHeight = 62f, WideHeight = 56f, RowPad = 8f, Gap = 7f;
     const string ConfigPath = "Assets/Prototype/IdleEconomyConfig.asset";
 
-    static readonly Color Orange = new Color32(0xFF, 0x7A, 0x1A, 0xFF), OrangeTop = new Color32(0xF2, 0x8A, 0x2E, 0xFF), OrangeEdge = new Color32(0xD9, 0x5E, 0x00, 0xFF);
     static readonly Color YellowTop = new Color32(0xFF, 0xE2, 0x7A, 0xFF), YellowEdge = new Color32(0xD9, 0x9A, 0x00, 0xFF);
     static readonly Color Cream = new Color32(0xF6, 0xEF, 0xE2, 0xFF), Green2 = new Color32(0x1F, 0x9D, 0x3A, 0xFF), Blue = new Color32(0x1F, 0xA0, 0xFF, 0xFF);
     static readonly Color HintBrown = new Color32(0x7A, 0x6A, 0x4C, 0xFF), BannerBrown = new Color32(0x6B, 0x4A, 0x00, 0xFF), Unknown = new Color32(0x8A, 0x8F, 0x98, 0xFF);
@@ -20,51 +19,67 @@ public static class IdleDrawerBuilder
     static readonly Color[] Tiles = { new Color32(0xC9, 0x8B, 0x4A, 0xFF), new Color32(0xFF, 0x9A, 0x45, 0xFF), new Color32(0x1F, 0xA0, 0xFF, 0xFF), new Color32(0xE5, 0xB9, 0x6B, 0xFF), new Color32(0x7E, 0xC8, 0xFF, 0xFF) };
     static readonly string[] TileIcons = { "caisse", "camera", "bouclier", "caisse", "camionnette" };
 
-    public static RectTransform Build(Transform canvas)
+    public static IdleDock Build(Transform canvas)
     {
-        RectTransform root = NewRect("Drawer", canvas);
-        Stretch(root);
+        RectTransform area = NewRect("DockArea", canvas);
+        Stretch(area);
+        area.gameObject.AddComponent<SafeAreaFitter>();
 
-        // panneau : son bas dépasse de l'écran pour cacher ses coins arrondis
-        Image panelImage = Rounded("Panel", root, Color.white, Px(28f));
-        RectTransform panel = panelImage.rectTransform;
-        panel.anchorMin = Vector2.zero;
-        panel.anchorMax = new Vector2(1f, 0f);
-        panel.pivot = new Vector2(0.5f, 0f);
-        panel.offsetMin = new Vector2(0f, -Px(30f));
-        panel.offsetMax = new Vector2(0f, ReferenceHeight * 0.47f);
-        panelImage.gameObject.AddComponent<VerticalGradient>().Set(OrangeTop, Orange);
-        AddEdge(panelImage, OrangeEdge, Px(5f), true);
+        IdleBestBar bar = BuildBestBar(area);
+        BuildModes(area);
+        Button view = BuildViewButton(area);
 
-        Image handle = Rounded("Handle", panel, new Color(1f, 1f, 1f, 0.55f), Px(2.5f));
-        handle.raycastTarget = false;
-        TopCenter(handle.rectTransform, new Vector2(Px(46f), Px(5f)), Px(5f));
+        RectTransform fiche = NewRect("Fiche", area);
+        BottomStretch(fiche, Px(14f), Px(14f), Px(FicheBottom), Px(RowHeight));
+        fiche.gameObject.SetActive(false);
 
-        IdleBestBar bar = BuildBestBar(panel);
-        BuildModes(panel);
-        IdleStationRow[] rows;
-        RectTransform list = BuildList(panel, out rows);
-
-        var drawer = root.gameObject.AddComponent<IdleDrawer>();
-        var so = new SerializedObject(drawer);
-        so.FindProperty("panel").objectReferenceValue = panel;
-        so.FindProperty("list").objectReferenceValue = list;
+        var dock = area.gameObject.AddComponent<IdleDock>();
+        var so = new SerializedObject(dock);
+        so.FindProperty("area").objectReferenceValue = area;
+        so.FindProperty("fiche").objectReferenceValue = fiche;
         so.FindProperty("bestBar").objectReferenceValue = bar;
-        SerializedProperty array = so.FindProperty("rows");
-        array.arraySize = rows.Length;
-        for (int i = 0; i < rows.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = rows[i];
+        so.FindProperty("viewButton").objectReferenceValue = view;
+        so.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
+        so.FindProperty("selection").objectReferenceValue = Object.FindFirstObjectByType<IdleSelection>();
+        so.FindProperty("barsTop").floatValue = Px(FicheBottom);
+        so.FindProperty("ficheTop").floatValue = Px(FicheBottom + RowHeight + 8f);
+        so.FindProperty("ficheBottom").floatValue = Px(FicheBottom);
+        so.FindProperty("ficheSlide").floatValue = Px(40f);
         so.ApplyModifiedPropertiesWithoutUndo();
-        return panel;
+
+        var selection = new SerializedObject(Object.FindFirstObjectByType<IdleSelection>());
+        selection.FindProperty("dock").objectReferenceValue = dock;
+        selection.FindProperty("fiche").objectReferenceValue = fiche;
+        selection.ApplyModifiedPropertiesWithoutUndo();
+        return dock;
+    }
+
+    static Button BuildViewButton(RectTransform parent)
+    {
+        RectTransform rt = NewRect("ViewButton", parent);
+        rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f);
+        rt.pivot = new Vector2(1f, 0f);
+        rt.sizeDelta = new Vector2(Px(46f), Px(51f));
+        rt.anchoredPosition = new Vector2(-Px(14f), Px(TopRowBottom - 5f));
+        var img = rt.gameObject.AddComponent<Image>();
+        img.sprite = Ui("Face_orange");
+        img.raycastPadding = new Vector4(-Px(2f), -Px(2f), -Px(2f), -Px(2f));
+        var button = rt.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        rt.gameObject.AddComponent<PressScale>();
+        Image ico = AddIcon(rt, "Icon", "Ico_view", 30f, false);
+        ico.rectTransform.anchorMin = ico.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+        ico.rectTransform.anchoredPosition = new Vector2(0f, -Px(23f));
+        return button;
     }
 
     // ------------------------------------------------------------------ bandeau « Meilleur achat »
 
-    static IdleBestBar BuildBestBar(RectTransform panel)
+    static IdleBestBar BuildBestBar(RectTransform parent)
     {
-        Image bg = Rounded("BestBar", panel, Color.white, Px(18f));
-        bg.raycastTarget = false;
+        Image bg = Rounded("BestBar", parent, Color.white, Px(18f));
         RectTransform rt = bg.rectTransform;
-        TopStretch(rt, Px(14f), Px(14f), Px(14f), Px(66f));
+        BottomStretch(rt, Px(14f), Px(14f), Px(10f), Px(BarHeight));
         bg.gameObject.AddComponent<VerticalGradient>().Set(YellowTop, UiTheme.Yellow);
         AddEdge(bg, YellowEdge, Px(4f), false);
         var shadow = bg.gameObject.AddComponent<Shadow>();
@@ -135,19 +150,17 @@ public static class IdleDrawerBuilder
         so.FindProperty("detailText").objectReferenceValue = detail;
         so.FindProperty("buyButton").objectReferenceValue = go;
         so.FindProperty("waitFill").objectReferenceValue = fill.rectTransform;
+        so.FindProperty("rig").objectReferenceValue = Object.FindFirstObjectByType<IdleCameraRig>();
         so.ApplyModifiedPropertiesWithoutUndo();
         return bar;
     }
 
     // ------------------------------------------------------------------ ×1 / ×10 / MAX
 
-    static void BuildModes(RectTransform panel)
+    static void BuildModes(RectTransform parent)
     {
-        RectTransform row = NewRect("BuyModes", panel);
-        TopStretch(row, Px(14f), Px(14f), Px(88f), Px(28f));
-        Text label = AddText(row, "Label", Loc.T("drawer.mode"), 14f, Color.white, TextAnchor.MiddleLeft);
-        Corner(label.rectTransform, new Vector2(0f, 1f), Vector2.zero);
-        label.rectTransform.sizeDelta = new Vector2(Px(56f), Px(28f));
+        RectTransform row = NewRect("BuyModes", parent);
+        BottomStretch(row, Px(14f), Px(74f), Px(TopRowBottom + 9f), Px(28f));
 
         string[] names = { "×1", "×10", "MAX" };
         int[] modes = { 1, 10, 0 };
@@ -156,7 +169,7 @@ public static class IdleDrawerBuilder
         var so = new SerializedObject(modesScript);
         SerializedProperty choices = so.FindProperty("choices");
         choices.arraySize = names.Length;
-        float x = 58f;
+        float x = 0f;
         for (int i = 0; i < names.Length; i++)
         {
             Image ring = Rounded("Ring" + i, row, UiTheme.Yellow, Px(16f));
@@ -186,41 +199,19 @@ public static class IdleDrawerBuilder
 
     // ------------------------------------------------------------------ liste des postes
 
-    static RectTransform BuildList(RectTransform panel, out IdleStationRow[] rows)
+    public const float RowsHeight = FirstRow + 5 * RowPitch + 6f;
+
+    // Une ligne par poste, dans la feuille « Postes ».
+    public static IdleStationRow[] BuildRows(RectTransform content)
     {
         var cfg = AssetDatabase.LoadAssetAtPath<IdleEconomyConfig>(ConfigPath);
         int count = cfg.stations.Length;
-
-        RectTransform list = NewRect("List", panel);
-        list.anchorMin = Vector2.zero;
-        list.anchorMax = Vector2.one;
-        list.offsetMin = new Vector2(Px(14f), Px(30f));
-        list.offsetMax = new Vector2(-Px(14f), -Px(118f));
-        var catcher = list.gameObject.AddComponent<Image>();   // reçoit les glissements entre deux lignes
-        catcher.color = Color.clear;
-        list.gameObject.AddComponent<RectMask2D>();
-
-        RectTransform content = NewRect("Rows", list);
-        content.anchorMin = new Vector2(0f, 1f);
-        content.anchorMax = Vector2.one;
-        content.pivot = new Vector2(0.5f, 1f);
-        content.sizeDelta = new Vector2(0f, Px(FirstRow + count * RowPitch + 14f));
-
-        var scroll = list.gameObject.AddComponent<ScrollRect>();
-        scroll.content = content;
-        scroll.viewport = list;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Elastic;
-        scroll.scrollSensitivity = Px(20f);
-
         var views = new IdleStationView[count];
         foreach (IdleStationView v in Object.FindObjectsByType<IdleStationView>(FindObjectsSortMode.None))
             views[new SerializedObject(v).FindProperty("station").intValue] = v;
-
-        rows = new IdleStationRow[count];
+        var rows = new IdleStationRow[count];
         for (int i = 0; i < count; i++) rows[i] = BuildRow(content, cfg, i, views[i]);
-        return list;
+        return rows;
     }
 
     static IdleStationRow BuildRow(RectTransform content, IdleEconomyConfig cfg, int i, IdleStationView view)
@@ -459,12 +450,14 @@ public static class IdleDrawerBuilder
         return edge;
     }
 
-    static void TopCenter(RectTransform rt, Vector2 size, float top)
+    // Bande horizontale posée depuis le bas : marges gauche et droite, distance au bas, hauteur.
+    internal static void BottomStretch(RectTransform rt, float left, float right, float bottom, float height)
     {
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
-        rt.pivot = new Vector2(0.5f, 1f);
-        rt.sizeDelta = size;
-        rt.anchoredPosition = new Vector2(0f, -top);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = new Vector2(1f, 0f);
+        rt.pivot = new Vector2(0.5f, 0f);
+        rt.offsetMin = new Vector2(left, bottom);
+        rt.offsetMax = new Vector2(-right, bottom + height);
     }
 
     // Bande horizontale : marges gauche et droite, distance depuis le haut, hauteur.

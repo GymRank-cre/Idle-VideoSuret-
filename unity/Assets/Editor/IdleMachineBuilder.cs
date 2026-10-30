@@ -10,15 +10,8 @@ public static class IdleMachineBuilder
     const float Bevel = 0.035f, Gloss = 0.7f;
     const string Yellow = "#FFC400", Ink = "#1E2A38", Screen = "#27D3E6", Metal = "#C3CCD7";
 
-    // couleur principale par poste et par aspect : le joueur voit l'usine monter en gamme
-    static readonly string[][] Paint =
-    {
-        new[] { "#2F7BE0", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
-        new[] { "#8BA0B6", "#5F8FB0", "#6C63B5", "#B5525A", "#D9A520" },
-        new[] { "#2F7BE0", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
-        new[] { "#F2F5F8", "#DFF6FA", "#ECE6FF", "#FFE3DE", "#FFF1C2" },
-        new[] { "#7D93AB", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" },
-    };
+    // couleur principale par aspect, la même pour tous les postes : le joueur voit l'usine monter en gamme
+    static readonly string[] Paint = { "#2F7BE0", "#16A5B8", "#7A55E0", "#E0483E", "#F0B21C" };
 
     public const int AspectCount = 5;
 
@@ -198,12 +191,37 @@ public static class IdleMachineBuilder
         var holder = new GameObject("Label", typeof(FaceCamera)).transform;
         holder.SetParent(root, false);
         holder.localPosition = new Vector3(IdleLayout.StationSize * 0.5f, LabelHeight[i], IdleLayout.StationSize * 0.5f);
-        float width = 0.3f + 0.115f * name.Length;
-        var pill = new MeshKit();
-        pill.Pill(width, 0.34f, 0.01f);   // coins complètement arrondis
-        var pillObject = pill.ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
+
+        var pills = new Mesh[3];
+        for (int digits = 1; digits <= pills.Length; digits++)
+        {
+            int length = Loc.T("label.level", name, 0).Length + digits - 1;
+            var pill = new MeshKit();
+            pill.Pill(0.34f + 0.142f * length, 0.34f, 0.01f);   // coins complètement arrondis
+            pills[digits - 1] = pill.ToMesh("LabelPill_" + i + "_" + digits);
+        }
+        var pillObject = new MeshKit().ToObject("Pill", holder, IdleMaterials.Get("LabelPill", "#1E2A38"));
+        pillObject.GetComponent<MeshFilter>().sharedMesh = pills[0];
         pillObject.GetComponent<MeshRenderer>().sharedMaterial.SetInt("_Cull", 0);   // visible quel que soit le sens de la face
-        IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+        TextMesh text = IdleSceneBuilder.MakeTextMesh(holder, "Main", name, UiTheme.Font, 80, 0.037f, Vector3.zero, Color.white);
+
+        var label = holder.gameObject.AddComponent<IdleStationLabel>();
+        var so = new SerializedObject(label);
+        so.FindProperty("station").intValue = i;
+        so.FindProperty("stationName").stringValue = name;
+        so.FindProperty("text").objectReferenceValue = text;
+        so.FindProperty("pill").objectReferenceValue = pillObject.GetComponent<MeshFilter>();
+        SerializedProperty list = so.FindProperty("pillByDigits");
+        list.arraySize = pills.Length;
+        for (int d = 0; d < pills.Length; d++) list.GetArrayElementAtIndex(d).objectReferenceValue = pills[d];
+        so.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static MeshKit RoofKit2(int a)
+    {
+        var k = new MeshKit();
+        B(k, 0.15f, 0.15f, 0.98f, 1.3f, 0.55f, 0.1f);
+        return k;
     }
 
     static MeshKit RoofKit(float z)
@@ -217,7 +235,7 @@ public static class IdleMachineBuilder
 
     static void ShippingBody(Transform root, int a)
     {
-        string wall = Paint[4][a];
+        string wall = Paint[a];
         Box(root, wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.0f);
         Part(RoofKit(1.12f), root, Shade(wall, -0.25f), Matrix4x4.identity);
         Box(root, Yellow, 0.2f, 0.26f, 0.14f, 1.2f, 0.02f, 0.82f);
@@ -265,8 +283,10 @@ public static class IdleMachineBuilder
 
     static void PackerBody(Transform root, int a)
     {
-        Box(root, Paint[3][a], 0.15f, 0.15f, 0.12f, 1.3f, 1.3f, 0.78f);
-        Box(root, a >= 4 ? "#F0B21C" : "#FF7A1A", 0.15f, 0.15f, 0.9f, 1.3f, 0.55f, 0.16f);
+        Box(root, "#F2F5F8", 0.15f, 0.15f, 0.12f, 1.3f, 1.3f, 0.78f);            // façade crème
+        Box(root, Paint[a], 0.11f, 0.11f, 0.9f, 1.38f, 1.38f, 0.08f);             // toit et panneaux de la couleur de l'aspect
+        Box(root, Paint[a], 0.12f, 0.14f, 0.12f, 0.06f, 1.3f, 0.78f);
+        Part(RoofKit2(a), root, Shade(Paint[a], 0.18f), Matrix4x4.identity);
         Box(root, "#22303F", 0.3f, 1.42f, 0.34f, 1.0f, 0.03f, 0.44f, 0.3f);       // ouverture
         Hazard(root, 0.3f, 1.44f, 0.8f, 1.0f, true, 0.02f, 0.07f);
         Flat(root, "#FF7A1A", 1.45f, 0.5f, 0.3f, 0.02f, 0.6f, 0.5f);              // pupitre sur le flanc
@@ -311,7 +331,7 @@ public static class IdleMachineBuilder
 
     static void ScannerBody(Transform root, int a)
     {
-        string body = Paint[2][a];
+        string body = Paint[a];
         Box(root, body, 0f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
         Box(root, body, 1.3f, 0.05f, 0.12f, 0.3f, 1.5f, 0.9f);
         var beam = new MeshKit();
@@ -363,7 +383,7 @@ public static class IdleMachineBuilder
 
     static void AssemblyBody(Transform root, int a)
     {
-        Box(root, Paint[1][a], 0.1f, 0.55f, 0.12f, 1.4f, 0.85f, 0.5f);
+        Box(root, Paint[a], 0.1f, 0.55f, 0.12f, 1.4f, 0.85f, 0.5f);
         Box(root, Metal, 0.1f, 0.55f, 0.62f, 1.4f, 0.85f, 0.06f, 0.9f);
         Hazard(root, 0.12f, 1.33f, 0.68f, 1.36f, true, 0.06f);
         Hazard(root, 0.12f, 1.4f, 0.3f, 1.36f, true, 0.012f, 0.08f);
@@ -440,7 +460,7 @@ public static class IdleMachineBuilder
 
     static void ReceptionBody(Transform root, int a)
     {
-        string wall = Paint[0][a];
+        string wall = Paint[a];
         Box(root, wall, 0f, 0f, 0.12f, IdleLayout.StationSize, 0.26f, 1.1f);
         Part(RoofKit(1.22f), root, Shade(wall, -0.25f), Matrix4x4.identity);
         Box(root, Yellow, 0.24f, 0.26f, 0.14f, 1.12f, 0.02f, 0.86f);

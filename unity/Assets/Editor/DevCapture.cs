@@ -39,7 +39,6 @@ public static class DevCapture
                 canvas.worldCamera = uiCam;
                 canvas.planeDistance = 1f;
                 Canvas.ForceUpdateCanvases();
-                foreach (IdleDrawer drawer in Object.FindObjectsByType<IdleDrawer>(FindObjectsSortMode.None)) drawer.Fit();   // sa hauteur suit le format de la capture
                 foreach (IdleSheet sheet in Object.FindObjectsByType<IdleSheet>(FindObjectsSortMode.None)) sheet.Fit();
                 foreach (IdleToasts toasts in Object.FindObjectsByType<IdleToasts>(FindObjectsSortMode.None)) toasts.Reposition();
                 foreach (IdleTitleScreen title in Object.FindObjectsByType<IdleTitleScreen>(FindObjectsSortMode.None)) title.Fit();
@@ -96,35 +95,37 @@ public static class DevCapture
         }
     }
 
-    // Le même poste à tous ses aspects, côte à côte : une caméra rapprochée, un cadre par aspect.
-    public static string CaptureAspects(string path, int station, int tile = 300)
+    // Tous les postes à tous leurs aspects : une ligne par poste, une colonne par aspect, avec une caméra rapprochée.
+    public static string CaptureAspects(string path, int tile = 240)
     {
-        IdleMachineAspect target = null;
-        foreach (IdleMachineAspect a in Object.FindObjectsByType<IdleMachineAspect>(FindObjectsSortMode.None))
-            if (a.GetComponentInParent<IdleStationView>().Station == station) target = a;
-        if (target == null) return "poste fermé";
-
         Camera main = Camera.main;
-        int count = IdleMachineBuilder.AspectCount;
-        var sheet = new Texture2D(tile * count, tile, TextureFormat.RGBA32, false);
+        int columns = IdleMachineBuilder.AspectCount;
+        IdleMachineAspect[] machines = Object.FindObjectsByType<IdleMachineAspect>(FindObjectsSortMode.None);
+        if (machines.Length == 0) return "aucun poste ouvert";
+        var sheet = new Texture2D(tile * columns, tile * machines.Length, TextureFormat.RGBA32, false);
         var go = new GameObject("CaptureAspects");
         var cam = go.AddComponent<Camera>();
         cam.CopyFrom(main);
         cam.enabled = false;
-        cam.fieldOfView = 14f;
+        cam.fieldOfView = 12f;
         go.transform.rotation = main.transform.rotation;
-        go.transform.position = target.transform.parent.position + Vector3.up * 0.55f - go.transform.forward * 15f;
         var rt = new RenderTexture(tile, tile, 24, RenderTextureFormat.ARGB32);
         cam.targetTexture = rt;
         try
         {
-            for (int a = 0; a < count; a++)
+            for (int m = 0; m < machines.Length; m++)
             {
-                target.Apply(a);
-                cam.Render();
-                Texture2D one = Read(rt, tile, tile);
-                sheet.SetPixels(a * tile, 0, tile, tile, one.GetPixels());
-                Object.DestroyImmediate(one);
+                IdleMachineAspect machine = machines[m];
+                int row = machines.Length - 1 - machine.GetComponentInParent<IdleStationView>().Station;
+                go.transform.position = machine.transform.parent.position + Vector3.up * 0.55f - go.transform.forward * 15f;
+                for (int a = 0; a < columns; a++)
+                {
+                    machine.Apply(a);
+                    cam.Render();
+                    Texture2D one = Read(rt, tile, tile);
+                    sheet.SetPixels(a * tile, Mathf.Clamp(row, 0, machines.Length - 1) * tile, tile, tile, one.GetPixels());
+                    Object.DestroyImmediate(one);
+                }
             }
             sheet.Apply();
             File.WriteAllBytes(path, sheet.EncodeToPNG());

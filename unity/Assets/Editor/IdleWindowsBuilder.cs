@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using static IdleHudBuilder;
-using static IdleDrawerBuilder;
+using static IdleDockBuilder;
 
 // Construit les fenêtres (U3c) : Commandes, Réputation, Réglages, Bon retour, plus le bandeau des commandes en cours, les messages et les puces.
 // Mesures du web : `Px` convertit les pixels CSS (écran 390 de large) en unités du Canvas.
@@ -23,11 +23,11 @@ public static class IdleWindowsBuilder
 
     public struct Result
     {
-        public IdleSheet orders, reputation, settings;
+        public IdleSheet orders, reputation, settings, postes;
         public IdleToasts toasts;
     }
 
-    public static Result Build(Transform canvas, RectTransform safe, RectTransform drawerPanel, RectTransform cashPill, RectTransform proPill)
+    public static Result Build(Transform canvas, RectTransform safe, IdleDock dock, RectTransform cashPill, RectTransform proPill)
     {
         var result = new Result();
         IdleTutorialHand hand = BuildHand(canvas);   // au-dessus du tiroir, sous les fenêtres
@@ -35,6 +35,8 @@ public static class IdleWindowsBuilder
         RectTransform strip = BuildStrip(safe, result.orders);
         result.reputation = BuildReputation(canvas);
         result.settings = BuildSettings(canvas);
+        IdleStationRow[] rows;
+        result.postes = BuildPostes(canvas, out rows);
 
         // toujours au-dessus des fenêtres : Bon retour, messages, puces
         IdleChips chips = null;
@@ -46,13 +48,13 @@ public static class IdleWindowsBuilder
         Stretch(chipsHost);
         chips = BuildChips(chipsHost, cashPill, proPill);
         BuildWelcome(welcomeHost, chips);
-        IdleToasts toasts = BuildToasts(toastsHost, drawerPanel);
+        IdleToasts toasts = BuildToasts(toastsHost, dock);
 
         var milestones = toastsHost.gameObject.AddComponent<IdleMilestoneToasts>();
         var milestoneSo = new SerializedObject(milestones);
         milestoneSo.FindProperty("toasts").objectReferenceValue = toasts;
         milestoneSo.ApplyModifiedPropertiesWithoutUndo();
-        WireHand(hand, drawerPanel, result, welcomeHost.Find("Root").gameObject);
+        WireHand(hand, dock, rows, result, welcomeHost.Find("Root").gameObject);
         result.toasts = toasts;
 
         BuildTitle(canvas);
@@ -144,33 +146,54 @@ public static class IdleWindowsBuilder
         return root.gameObject.AddComponent<IdleTutorialHand>();
     }
 
-    static void WireHand(IdleTutorialHand hand, RectTransform drawerPanel, Result windows, GameObject welcomeRoot)
+    static void WireHand(IdleTutorialHand hand, IdleDock dock, IdleStationRow[] rows, Result windows, GameObject welcomeRoot)
     {
-        var drawer = drawerPanel.GetComponentInParent<IdleDrawer>(true);
-        var drawerSo = new SerializedObject(drawer);
-        drawerSo.FindProperty("tutorial").objectReferenceValue = hand;
+        var dockSo = new SerializedObject(dock);
+        dockSo.FindProperty("tutorial").objectReferenceValue = hand;
+        SerializedProperty dockRows = dockSo.FindProperty("rows");
+        dockRows.arraySize = rows.Length;
+        for (int i = 0; i < rows.Length; i++) dockRows.GetArrayElementAtIndex(i).objectReferenceValue = rows[i];
+        dockSo.ApplyModifiedPropertiesWithoutUndo();
+
+        var selection = Object.FindFirstObjectByType<IdleSelection>();
+        var selectionSo = new SerializedObject(selection);
+        SerializedProperty selectionRows = selectionSo.FindProperty("rows");
+        selectionRows.arraySize = rows.Length;
+        for (int i = 0; i < rows.Length; i++) selectionRows.GetArrayElementAtIndex(i).objectReferenceValue = rows[i];
+        selectionSo.ApplyModifiedPropertiesWithoutUndo();
 
         var so = new SerializedObject(hand);
         Transform handRect = hand.transform.Find("Hand");
         so.FindProperty("hand").objectReferenceValue = handRect;
         so.FindProperty("picture").objectReferenceValue = handRect.Find("Picture");
-        so.FindProperty("bestBar").objectReferenceValue = drawerSo.FindProperty("bestBar").objectReferenceValue;
-        so.FindProperty("list").objectReferenceValue = drawerSo.FindProperty("list").objectReferenceValue;
+        so.FindProperty("bestBar").objectReferenceValue = dockSo.FindProperty("bestBar").objectReferenceValue;
+        so.FindProperty("pads").objectReferenceValue = Object.FindFirstObjectByType<IdlePadField>();
+        so.FindProperty("selection").objectReferenceValue = selection;
         so.FindProperty("welcomeRoot").objectReferenceValue = welcomeRoot;
-        so.FindProperty("offsetX").floatValue = Px(14f);
+        so.FindProperty("padOffset").vector2Value = new Vector2(-Px(6f), Px(4f));
+        so.FindProperty("barOffsetX").floatValue = Px(26f);
         so.FindProperty("tapMove").vector2Value = new Vector2(-Px(4f), Px(8f));
 
-        SerializedProperty sourceRows = drawerSo.FindProperty("rows");
-        SerializedProperty rows = so.FindProperty("rows");
-        rows.arraySize = sourceRows.arraySize;
-        for (int i = 0; i < sourceRows.arraySize; i++) rows.GetArrayElementAtIndex(i).objectReferenceValue = sourceRows.GetArrayElementAtIndex(i).objectReferenceValue;
-
-        IdleSheet[] sheets = { windows.orders, windows.reputation, windows.settings };
+        IdleSheet[] sheets = { windows.orders, windows.reputation, windows.settings, windows.postes };
         SerializedProperty list = so.FindProperty("sheets");
         list.arraySize = sheets.Length;
         for (int i = 0; i < sheets.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = sheets[i];
         so.ApplyModifiedPropertiesWithoutUndo();
-        drawerSo.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    // ------------------------------------------------------------------ feuille « Postes »
+
+    static IdleSheet BuildPostes(Transform canvas, out IdleStationRow[] rows)
+    {
+        Sheet s = NewSheet(canvas, "PostesSheet", Loc.T("postes.title"), 86f);
+        Text sub = AddText(s.sheet, "Sub", Loc.T("postes.sub"), 15f, Color.white, TextAnchor.MiddleCenter, 1f);
+        TopStretch(sub.rectTransform, 0f, 0f, Px(52f), Px(22f));
+        rows = BuildRows(s.content);
+        s.content.sizeDelta = new Vector2(0f, Px(RowsHeight));
+        var so = new SerializedObject(s.script);
+        so.FindProperty("contentHeight").floatValue = Px(RowsHeight);
+        so.ApplyModifiedPropertiesWithoutUndo();
+        return s.script;
     }
 
     // ------------------------------------------------------------------ feuille commune
@@ -653,12 +676,12 @@ public static class IdleWindowsBuilder
 
     // ------------------------------------------------------------------ messages et puces
 
-    static IdleToasts BuildToasts(RectTransform host, RectTransform drawerPanel)
+    static IdleToasts BuildToasts(RectTransform host, IdleDock dock)
     {
         var toasts = host.gameObject.AddComponent<IdleToasts>();
         var so = new SerializedObject(toasts);
-        so.FindProperty("drawerPanel").objectReferenceValue = drawerPanel;
-        so.FindProperty("gapAboveDrawer").floatValue = Px(26f);
+        so.FindProperty("dock").objectReferenceValue = dock;
+        so.FindProperty("gapAboveDock").floatValue = Px(16f);
         so.FindProperty("slotHeight").floatValue = Px(78f);
         so.FindProperty("rise").floatValue = Px(34f);
         SerializedProperty slots = so.FindProperty("slots");

@@ -1,7 +1,7 @@
 using UnityEngine;
 
-// Un nouveau poste arrive en spectacle (UW-3) : la caméra glisse vers lui puis revient, poussière au sol, colonne de lumière qui monte puis s'amincit.
-// La machine, elle, rebondit déjà en apparaissant (IdleStationView). Tout est coupé par « moins de secousses », sauf le rebond qui reste bref.
+// Un nouveau poste arrive en spectacle (UW-3, UL) : la caméra recadre pour l'inclure, poussière au sol, colonne de lumière qui monte puis s'amincit.
+// La machine, elle, rebondit déjà en apparaissant (IdleStationView). Avec « moins de secousses », le cadrage est immédiat et le reste est coupé.
 public class IdleUnlockShow : MonoBehaviour
 {
     [SerializeField] IdleCameraRig cameraRig;
@@ -28,9 +28,9 @@ public class IdleUnlockShow : MonoBehaviour
 
     void Unlocked(int station)
     {
+        cameraRig.FrameDefault(MotionSettings.ReduceMotion);
         if (MotionSettings.ReduceMotion) return;
         Vector3 position = stations[station].transform.position;
-        cameraRig.FocusOn(position);
         feedback.DustRing(position);
         beam.position = position;
         beam.gameObject.SetActive(true);

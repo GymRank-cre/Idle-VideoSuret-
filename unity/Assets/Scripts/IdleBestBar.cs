@@ -12,6 +12,7 @@ public class IdleBestBar : MonoBehaviour
     [SerializeField] Text detailText;
     [SerializeField] IdleBuyButton buyButton;
     [SerializeField] RectTransform waitFill;
+    [SerializeField] IdleCameraRig rig;
 
     public RectTransform BuyRect => (RectTransform)buyButton.transform;
 
@@ -27,6 +28,7 @@ public class IdleBestBar : MonoBehaviour
         IdleEconomy.Option goal;
         IdleEconomy.Option o = game.Advice(out found, out hasGoal, out goal);
         if (!found) return;
+        if (!rig.IsOnScreen(IdleLayout.StationCenter(o.station))) rig.FrameStation(o.station);   // on montre ce qu'on vient d'acheter
         IdleGame.PurchaseResult result = game.BuyAdvised();
         IdlePurchaseSound.Play(result, o.kind == IdleEconomy.Kind.Unlock);
         if (IdlePurchaseSound.Bought(result)) IdleChips.Spent(buyButton.transform.position, IdleEconomy.Ceil(o.cost));

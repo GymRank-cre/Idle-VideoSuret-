@@ -18,9 +18,9 @@ public class IdleToasts : MonoBehaviour
     [SerializeField] Slot[] slots;
     [SerializeField] Sprite lockSprite;
     [SerializeField] Sprite flameSprite;
-    [SerializeField] RectTransform drawerPanel;
+    [SerializeField] IdleDock dock;
     [SerializeField, Min(0.1f)] float lifetime = 2.6f;
-    [SerializeField] float gapAboveDrawer = 72f;
+    [SerializeField] float gapAboveDock = 72f;
     [SerializeField] float slotHeight = 215f;
     [SerializeField] float rise = 94f;
 
@@ -72,7 +72,7 @@ public class IdleToasts : MonoBehaviour
         float leaving = Mathf.InverseLerp(0.85f, 1f, t);
         slots[i].group.alpha = Mathf.Min(Mathf.Clamp01(t / 0.1f), 1f - leaving);
         slots[i].rect.localScale = new Vector3(scale, scale, 1f);
-        float baseY = drawerPanel.offsetMax.y + gapAboveDrawer + i * slotHeight;
+        float baseY = dock.TopHeight + gapAboveDock + i * slotHeight;
         slots[i].rect.anchoredPosition = new Vector2(0f, baseY + (calm ? 0f : leaving * rise));
     }
 }

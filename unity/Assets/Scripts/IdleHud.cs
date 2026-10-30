@@ -15,9 +15,12 @@ public class IdleHud : MonoBehaviour
     [SerializeField] Button ordersButton;
     [SerializeField] Button reputationButton;
     [SerializeField] Button gearButton;
+    [SerializeField] Button rateButton;
     [SerializeField] IdleSheet ordersSheet;
     [SerializeField] IdleSheet reputationSheet;
     [SerializeField] IdleSheet settingsSheet;
+    [SerializeField] IdleSheet postesSheet;
+    [SerializeField] IdleSelection selection;
     [SerializeField] IdleToasts toasts;
     [SerializeField] Button turboButton;
     [SerializeField] Image turboFace;
@@ -41,6 +44,7 @@ public class IdleHud : MonoBehaviour
         ordersButton.onClick.AddListener(ordersSheet.Open);
         reputationButton.onClick.AddListener(reputationSheet.Open);
         gearButton.onClick.AddListener(settingsSheet.Open);
+        rateButton.onClick.AddListener(OpenPostes);
     }
 
     void Subscribe(IdleGame game)
@@ -56,6 +60,12 @@ public class IdleHud : MonoBehaviour
     }
 
     void MarkDirty() { dirty = true; }
+
+    void OpenPostes()
+    {
+        selection.Deselect();      // la fiche ouverte est l'une des lignes de cette feuille
+        postesSheet.Open();
+    }
 
     void OnTurbo()
     {
