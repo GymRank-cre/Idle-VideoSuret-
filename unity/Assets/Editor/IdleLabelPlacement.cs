@@ -8,10 +8,10 @@ public static class IdleLabelPlacement
 {
     public const float Step = 0.3f;
     const float Gap = 0.03f, LabelHeight = 0.34f, PadWidth = 1.05f, PadHeight = 0.75f, PadLift = 0.12f;
-    const float StockBase = 0.32f, StockWidth = 1.44f;
+    const float StockBase = 0.62f, StockWidth = 1.44f;
     const int MaxSteps = 12, WidestLevel = 3;   // niveau à 3 chiffres : l'étiquette la plus large
 
-    static readonly float[] StationBase = { 1.7f, 1.6f, 1.6f, 1.75f, 2.1f, 1.6f };
+    static readonly float[] StationBase = { 1.7f, 2.3f, 1.6f, 1.75f, 2.1f, 1.6f };   // Assemblage : assez haut pour laisser le stock sous lui
     static readonly Quaternion View = Quaternion.Euler(IdleCameraRig.Pitch, IdleCameraRig.Yaw, 0f);
 
     static float[] stationHeights, stockHeights;

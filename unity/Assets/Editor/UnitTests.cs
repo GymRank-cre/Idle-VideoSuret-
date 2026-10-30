@@ -137,7 +137,7 @@ public static class UnitTests
         {
             var rb = new IdleGame(cfg, 7, 0); var openAt = new double[cfg.stations.Length];
             double crewAt = 0, firstSale = 0, lastBuy = 0, longestWait = 0, secondAt = 0, thirdAt = 0; long buys = 0;
-            for (double t = 0; t < 3.8 * 3600; t += 3)
+            for (double t = 0; t < 2.5 * 3600; t += 3)
             {
                 rb.Tick(3);
                 rb.BuyAdvised();
@@ -158,11 +158,11 @@ public static class UnitTests
             {
                 Eq("True", (openAt[station] >= low * 0.85 && openAt[station] <= high * 1.15).ToString(), "rythme : " + name + " entre " + low + " et " + high + " s (mesuré " + openAt[station] + " s)");
             }
-            Window("1re Programmation", 2, 240, 360);
-            Window("1er Test", 3, 600, 840);
-            Window("1er Emballage", 4, 1500, 2100);
-            Eq("True", (secondAt >= 2400 * 0.85 && secondAt <= 5400 * 1.15).ToString(), "rythme : 2e machine de chaque poste entre 40 min et 1 h 30 (mesuré " + (secondAt / 60).ToString("0") + " min)");
-            Eq("True", (thirdAt >= 9000 * 0.85 && thirdAt <= 12600 * 1.15).ToString(), "rythme : usine complète entre 2 h 30 et 3 h 30 (mesuré " + (thirdAt / 60).ToString("0") + " min)");
+            Window("1re Programmation", 2, 150, 240);
+            Window("1er Test", 3, 480, 720);
+            Window("1er Emballage", 4, 1080, 1560);
+            Eq("True", (secondAt >= 2400 * 0.85 && secondAt <= 3600 * 1.15).ToString(), "rythme : 2e machine de chaque poste entre 40 min et 1 h (mesuré " + (secondAt / 60).ToString("0") + " min)");
+            Eq("True", (thirdAt >= 5400 * 0.85 && thirdAt <= 7800 * 1.15).ToString(), "rythme : usine complète entre 1 h 30 et 2 h 10 (mesuré " + (thirdAt / 60).ToString("0") + " min)");
             Eq("True", (longestWait <= 480).ToString(), "rythme : jamais plus de 8 min sans achat pendant la 1re heure (mesuré " + longestWait + " s)");
         }
 

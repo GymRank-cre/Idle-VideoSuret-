@@ -32,8 +32,8 @@ public static class IdleLayout
     // Plaques d'achat au sol (centres) : sous le tapis, au plus près de la première machine de la rangée.
     public const float PadSize = 0.9f;
     public const float PadHitSize = PadSize * 1.7f;   // zone de toucher, plus grande que la plaque
-    public static readonly Vector2[] PadSpeed = { new Vector2(0.85f, 2.8f), new Vector2(3.75f, 3.3f), new Vector2(8f, 6.85f), new Vector2(3.75f, 10.4f), new Vector2(8f, 13.95f), new Vector2(0.85f, 14.65f) };
-    public static readonly Vector2[] PadAdd = { new Vector2(1.9f, 2.8f), new Vector2(4.8f, 3.3f), new Vector2(9.05f, 6.85f), new Vector2(4.8f, 10.4f), new Vector2(9.05f, 13.95f), new Vector2(1.9f, 14.65f) };
+    public static readonly Vector2[] PadSpeed = { new Vector2(0.5f, 2.8f), new Vector2(3.75f, 3.3f), new Vector2(8f, 6.85f), new Vector2(3.75f, 10.4f), new Vector2(8f, 13.95f), new Vector2(0.85f, 14.65f) };
+    public static readonly Vector2[] PadAdd = { new Vector2(1.55f, 2.8f), new Vector2(4.8f, 3.3f), new Vector2(9.05f, 6.85f), new Vector2(4.8f, 10.4f), new Vector2(9.05f, 13.95f), new Vector2(1.9f, 14.65f) };
     public static readonly Vector2[] PadHire = { new Vector2(1.5f, 2.85f), new Vector2(1.5f, 2.85f), new Vector2(1.5f, 2.85f) };   // un recrutement à la fois, toujours au même endroit
 
     // Début de la chaîne : du découpeur au stock, le long du bord avant de la serre.

@@ -39,10 +39,10 @@ public class IdleEconomyConfig : ScriptableObject
     {
         new Station("recep", "station.recep", 1.6f, 1, 0, 1),         // la serre : elle ne vend rien, elle alimente l'Assemblage
         new Station("assem", "station.assem", 3.0f, 12, 0, 3),        // ouvert d'emblée : il faut bien une sortie à la chaîne
-        new Station("prog", "station.prog", 3.75f, 144, 5000, 3),
-        new Station("test", "station.test", 4.5f, 1728, 10000, 3),
-        new Station("pack", "station.pack", 6.0f, 20736, 30000, 3),
-        new Station("ship", "station.ship", 8.0f, 248832, 100000, 1),
+        new Station("prog", "station.prog", 3.75f, 144, 2500, 3),
+        new Station("test", "station.test", 4.5f, 1728, 5000, 3),
+        new Station("pack", "station.pack", 6.0f, 20736, 15000, 3),
+        new Station("ship", "station.ship", 8.0f, 248832, 40000, 1),
     };
 
     [Header("Chaîne de départ : recrutements, tas, stock, drone")]
@@ -57,7 +57,7 @@ public class IdleEconomyConfig : ScriptableObject
     [Min(0f)] public double carrierMinLoad = 1;        // un porteur attend d'avoir au moins ça à porter
 
     [Header("Emplacements")]
-    public double[] slotPayback = { 400000, 3000000 };  // prix de la 2e puis de la 3e machine, en secondes du revenu de départ du dernier poste : elles se paient à la fin de la chaîne
+    public double[] slotPayback = { 200000, 1500000 };  // prix de la 2e puis de la 3e machine, en secondes du revenu de départ du dernier poste : elles se paient à la fin de la chaîne
     [Min(1f)] public double slotStep = 2;              // chaque poste de la chaîne les paie ce facteur plus cher que le précédent
 
     [Header("Améliorations")]

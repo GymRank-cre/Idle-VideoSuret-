@@ -29,25 +29,25 @@ MonoBehaviour:
     nameKey: station.prog
     cycle: 3.75
     value: 144
-    unlockPayback: 5000
+    unlockPayback: 2500
     slots: 3
   - id: test
     nameKey: station.test
     cycle: 4.5
     value: 1728
-    unlockPayback: 10000
+    unlockPayback: 5000
     slots: 3
   - id: pack
     nameKey: station.pack
     cycle: 6
     value: 20736
-    unlockPayback: 30000
+    unlockPayback: 15000
     slots: 3
   - id: ship
     nameKey: station.ship
     cycle: 8
     value: 248832
-    unlockPayback: 100000
+    unlockPayback: 40000
     slots: 1
   hirePrices:
   - 25
@@ -62,8 +62,8 @@ MonoBehaviour:
   cartTrip: 5
   carrierMinLoad: 1
   slotPayback:
-  - 400000
-  - 3000000
+  - 200000
+  - 1500000
   slotStep: 2
   speedStep: 0.12
   growthSpeed: 1.19

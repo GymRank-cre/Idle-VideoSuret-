@@ -26,6 +26,23 @@ On reprend les mécaniques et le style jouet, on ne copie ni les images ni l'int
 6. **Nouvelles machines** : Programmation, robots, drone, caméras, en vrais modèles.
 7. UW-2 (budget et décor fusionné), puis U4.
 
-## Proposé à Sébastien, pas encore validé
-- 5 usines, une génération de caméra par usine : dôme, motorisée 4K, thermique, intelligence artificielle, sentinelle. Elles remplaceraient les 4 sites proposés avant (Atelier, Entrepôt, Banque, Aéroport).
-- Des intrus arrivent à la clôture, les caméras les repoussent. Échec : quelques dizaines de secondes d'arrêt, sans perte d'argent. Aucune trace de cette idée dans Idle Lumber : ce serait notre signature.
+## Décisions de Sébastien du 30/10
+- **Build de contrôle : oui.**
+- **Rythme : plus rapide que le tableau proposé.** Il n'a pas chiffré : réglé à environ un tiers de moins, à lui de juger en jouant.
+- **Usines et intrus : validés.**
+
+## Tableau de jalons (robot 1 achat toutes les 3 s, sans turbo ; un joueur tranquille sera 2 à 4 fois plus lent)
+| Jalon | Fourchette du test (tolérance 15 %) | Mesuré |
+|---|---|---|
+| 3 recrutements | moins de 40 s | 6 s |
+| 1re pièce vendue | moins de 70 s | 9 s |
+| Programmation | 2 min 30 à 4 min | 3,4 min |
+| Test | 8 à 12 min | 11,4 min |
+| Emballage | 18 à 26 min | 22,5 min |
+| 2e machine de chaque poste | 40 min à 1 h | 53 min |
+| Usine complète | 1 h 30 à 2 h 10 | 1 h 49 |
+| Changement d'usine | environ 2 h 15, à construire | pas encore |
+
+## À construire après la livraison et le HUD
+- **5 usines**, une génération de caméra par usine : dôme, motorisée 4K, thermique, intelligence artificielle, sentinelle. On repart de zéro avec un multiplicateur permanent, la Réputation reste. Elles remplacent les 4 sites proposés avant (Atelier, Entrepôt, Banque, Aéroport). Elles doivent se ressembler le moins possible.
+- **Intrus** : un point rouge qui clignote sur la clôture, un faisceau de caméra qui balaie, aucun personnage qui marche. Le joueur ne joue pas : le niveau des caméras décide. Échec : quelques dizaines de secondes d'arrêt, sans perte d'argent. Aucune trace de cette idée dans Idle Lumber : ce serait notre signature.
