@@ -553,7 +553,7 @@ function genOffer() {
   var i = Math.random() < 0.55 ? unl[unl.length - 1] : pick(unl);
   var st = S.st[i], rate = E.itemsPerSec(i, st, G), qty = Math.max(3, Math.round(rate * rnd(70, 130)));
   if (qty > 40) qty = Math.round(qty / 10) * 10; else if (qty > 12) qty = Math.round(qty / 5) * 5;
-  var reward = qty * E.moneyPerItem(i, st, G) * 3.5 * G.order;
+  var reward = qty * E.moneyPerItem(i, st, G) * 1.5 * G.order;
   var pts = 1 + (i >= 2 ? 1 : 0) + (qty >= 100 ? 1 : 0);
   var ci = (Math.random() * CLIENTS.length) | 0;
   var says = ['Il me faut ça vite !', 'Du matériel fiable, s’il vous plaît.', 'Mon chantier démarre lundi.', 'Livré à temps, je recommande !', 'Qualité maximale, merci.', 'Je vous fais confiance.'];
